@@ -1,96 +1,155 @@
 import type { User } from "@supabase/supabase-js";
-import { CloudOff, Github, LogOut, UserRound } from "lucide-react";
+import { ChevronDown, Github, LogOut, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
-import { isSupabaseConfigured, supabaseConfigurationNotice } from "@/lib/supabase";
-import { consumeOAuthError, getAccountIdentity, signInWithGitHub, signOut } from "./auth-service";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { clearRememberedTimetable } from "@/hooks/use-preferences";
+import { isSupabaseConfigured } from "@/lib/supabase";
+import {
+  consumeOAuthError,
+  deleteAccount,
+  getAccountIdentity,
+  signInWithGitHub,
+  signOut,
+} from "./auth-service";
 
-export function AccountStatus({ user, loading }: { user: User | null; loading: boolean }) {
+export function AccountStatus({
+  user,
+  loading,
+  onAccountDeleted,
+}: {
+  user: User | null;
+  loading: boolean;
+  onAccountDeleted: (clearLocal: boolean) => void;
+}) {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [clearLocal, setClearLocal] = useState(false);
 
   useEffect(() => {
     const error = consumeOAuthError(window.location, window.history);
-    if (error) setMessage(error);
+    if (error) setMessage("GitHub sign-in did not complete. Please try again.");
   }, []);
 
-  async function run(action: () => Promise<void>) {
+  async function removeAccount() {
+    if (busy) return;
     setBusy(true);
     setMessage(null);
     try {
-      await action();
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Account action failed.");
+      await deleteAccount();
+      if (clearLocal) clearRememberedTimetable();
+      onAccountDeleted(clearLocal);
+      await signOut().catch(() => undefined);
+      setDeleteOpen(false);
+      setMessage("Your account and cloud data were permanently deleted.");
+    } catch {
+      setMessage("We couldn't delete your account. Your session and local data are unchanged.");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <aside className="surface p-4" aria-label="Account status">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="rounded-full bg-secondary p-2 text-accent">
-            {isSupabaseConfigured ? (
-              <UserRound className="h-4 w-4" aria-hidden="true" />
-            ) : (
-              <CloudOff className="h-4 w-4" aria-hidden="true" />
-            )}
-          </span>
-          <div>
-            <p className="text-sm font-semibold">
-              {loading ? "Checking account…" : user ? getAccountIdentity(user) : "Guest mode"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {user
-                ? "Cloud controls are available when you choose to use them."
-                : "No account is required; your imported schedule can stay in this browser."}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {!user ? (
-            <>
-              <button
-                type="button"
-                onClick={() => setMessage("Guest mode active. Nothing has been sent to the cloud.")}
-                className="rounded-lg border border-input bg-card px-3 py-2 text-xs font-semibold hover:bg-secondary"
+    <div className="flex items-center gap-2" aria-label="Account">
+      {loading ? (
+        <span className="text-sm text-muted-foreground" role="status">
+          Checking account…
+        </span>
+      ) : user ? (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex min-h-11 max-w-52 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary">
+              <UserRound className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+              <span className="truncate">{getAccountIdentity(user)}</span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Account settings</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => void signOut()}>
+                <LogOut aria-hidden="true" /> Sign out
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onSelect={() => setDeleteOpen(true)}
               >
-                Continue as guest
-              </button>
-              <button
-                type="button"
-                onClick={() => void run(signInWithGitHub)}
-                disabled={!isSupabaseConfigured || busy || loading}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <Github className="h-3.5 w-3.5" aria-hidden="true" />
-                Sign in with GitHub
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => void run(signOut)}
-              disabled={busy}
-              className="inline-flex items-center gap-2 rounded-lg border border-input bg-card px-3 py-2 text-xs font-semibold hover:bg-secondary disabled:opacity-50"
-            >
-              <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-              Sign out
-            </button>
-          )}
-        </div>
-      </div>
-      {import.meta.env.DEV && !isSupabaseConfigured ? (
-        <p className="mt-3 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
-          Developer setup: {supabaseConfigurationNotice}
-        </p>
-      ) : null}
+                <Trash2 aria-hidden="true" /> Delete account and cloud data
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <AlertDialog open={deleteOpen} onOpenChange={(open) => !busy && setDeleteOpen(open)}>
+            <AlertDialogContent className="mx-4 w-[calc(100%-2rem)] rounded-xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete account and cloud data?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This permanently removes your Supabase account, normalized cloud timetable, saved
+                  preferences, and every other server-side record you own. Your original .ics file
+                  was never uploaded.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <label className="flex min-h-11 items-center gap-3 rounded-lg border border-border p-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={clearLocal}
+                  onChange={(event) => setClearLocal(event.target.checked)}
+                  disabled={busy}
+                  className="h-4 w-4"
+                />
+                Also clear the remembered timetable from this browser
+              </label>
+              <p className="text-xs text-muted-foreground">
+                If unchecked, local browser data stays available in guest mode.
+              </p>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={busy}>Keep account</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={busy}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    void removeAccount();
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {busy ? "Deleting…" : "Permanently delete account"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
+      ) : (
+        <button
+          type="button"
+          onClick={() =>
+            void signInWithGitHub().catch(() => setMessage("Sign-in failed. Please try again."))
+          }
+          disabled={!isSupabaseConfigured}
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+        >
+          <Github className="h-4 w-4" aria-hidden="true" /> Sign in
+        </button>
+      )}
       {message ? (
-        <p role="status" className="mt-3 text-xs text-muted-foreground">
+        <span role="status" className="sr-only">
           {message}
-        </p>
+        </span>
       ) : null}
-    </aside>
+    </div>
   );
 }

@@ -46,14 +46,43 @@ export function useIntroDismissed() {
 const REMEMBER_KEY = "gapwise:remember";
 const TIMETABLE_KEY = "gapwise:timetable";
 
+export type RememberedRecord<T> = { data: T; updatedAt: string | null };
+
 export function loadRemembered<T>(): { remember: boolean; data: T | null } {
+  const record = loadRememberedRecord<T>();
+  return { remember: record.remember, data: record.record?.data ?? null };
+}
+
+export function loadRememberedRecord<T>(): {
+  remember: boolean;
+  record: RememberedRecord<T> | null;
+} {
   try {
     const remember = window.localStorage.getItem(REMEMBER_KEY) === "1";
-    if (!remember) return { remember, data: null };
+    if (!remember) return { remember, record: null };
     const raw = window.localStorage.getItem(TIMETABLE_KEY);
-    return { remember, data: raw ? (JSON.parse(raw) as T) : null };
+    if (!raw) return { remember, record: null };
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "data" in parsed &&
+      "updatedAt" in parsed
+    ) {
+      const value = parsed as { data: T; updatedAt: unknown };
+      return {
+        remember,
+        record: {
+          data: value.data,
+          updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : null,
+        },
+      };
+    }
+    // Records saved before timestamps were introduced remain valid, but local wins
+    // when its age cannot be compared safely with a cloud record.
+    return { remember, record: { data: parsed as T, updatedAt: null } };
   } catch {
-    return { remember: false, data: null };
+    return { remember: false, record: null };
   }
 }
 
@@ -61,10 +90,22 @@ export function saveRemembered(remember: boolean, data: unknown) {
   try {
     window.localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
     if (remember && data) {
-      window.localStorage.setItem(TIMETABLE_KEY, JSON.stringify(data));
+      window.localStorage.setItem(
+        TIMETABLE_KEY,
+        JSON.stringify({ data, updatedAt: new Date().toISOString() }),
+      );
     } else {
       window.localStorage.removeItem(TIMETABLE_KEY);
     }
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+export function clearRememberedTimetable() {
+  try {
+    window.localStorage.removeItem(TIMETABLE_KEY);
+    window.localStorage.setItem(REMEMBER_KEY, "0");
   } catch {
     /* storage unavailable */
   }

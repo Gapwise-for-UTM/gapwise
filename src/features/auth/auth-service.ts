@@ -15,12 +15,19 @@ export async function signInWithGitHub(): Promise<void> {
 export function getAccountIdentity(user: User): string {
   const metadata = user.user_metadata ?? {};
   return (
-    user.email ||
+    (typeof metadata["name"] === "string" ? metadata["name"] : "") ||
     (typeof metadata["user_name"] === "string" ? metadata["user_name"] : "") ||
     (typeof metadata["preferred_username"] === "string" ? metadata["preferred_username"] : "") ||
     (typeof metadata["full_name"] === "string" ? metadata["full_name"] : "") ||
+    user.email ||
     "Signed in"
   );
+}
+
+export async function deleteAccount(): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const { error } = await supabase.functions.invoke("delete-account", { body: {} });
+  if (error) throw new Error("We couldn't delete your account. Please try again.");
 }
 
 export function consumeOAuthError(

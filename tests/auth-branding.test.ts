@@ -24,10 +24,10 @@ describe("GitHub authentication", () => {
       getAccountIdentity(
         user({
           email: "student@example.com",
-          user_metadata: { user_name: "octo", full_name: "Student" },
+          user_metadata: { name: "GitHub Student", user_name: "octo", full_name: "Student" },
         }),
       ),
-    ).toBe("student@example.com");
+    ).toBe("GitHub Student");
     expect(
       getAccountIdentity(user({ user_metadata: { user_name: "octo", full_name: "Student" } })),
     ).toBe("octo");
@@ -37,6 +37,7 @@ describe("GitHub authentication", () => {
       ),
     ).toBe("preferred");
     expect(getAccountIdentity(user({ user_metadata: { full_name: "Student" } }))).toBe("Student");
+    expect(getAccountIdentity(user({ email: "student@example.com" }))).toBe("student@example.com");
     expect(getAccountIdentity(user({}))).toBe("Signed in");
   });
   test("parses OAuth errors and cleans the URL without navigation", () => {

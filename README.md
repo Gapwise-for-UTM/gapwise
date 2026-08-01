@@ -1,49 +1,92 @@
-# ![Gapwise route G](public/favicon.svg) Gapwise UTM
+<p align="center">
+  <img src="public/logo-mark.svg" width="112" alt="Gapwise route-shaped G logo">
+</p>
+<h1 align="center">Gapwise UTM</h1>
+<p align="center">A private timetable gap and campus route planner for University of Toronto Mississauga students.</p>
+<p align="center"><a href="https://campus-gap-finder.vercel.app"><strong>Open Gapwise</strong></a> · React 19 · TypeScript · MapLibre</p>
 
-**Smarter campus gaps.** Gapwise turns an ACORN `.ics` calendar into a weekly timetable, route-aware gap plan, and interactive day route for University of Toronto Mississauga. Gapwise UTM is an independent student project and is not affiliated with the University of Toronto.
+## What Gapwise does
 
-## Privacy model
+Import an ACORN `.ics` export to see a readable weekly timetable, usable gaps between classes, and deterministic route guidance around UTM. The calendar is parsed locally, so the result appears quickly and guest mode works without a backend.
 
-The calendar file is parsed entirely in the browser; the original `.ics` file is never uploaded. Guest mode needs no account or environment variables. Cloud sync is explicit and opt-in: only normalized meeting fields and an optional source filename are stored after **Sync timetable** is pressed. Signing in never uploads data. Calculated gaps and routes stay in the browser. Authentication uses `sessionStorage`, not `localStorage`, and sign-out is local to the browser session.
+Gapwise exists because a free hour is only useful when travel time, buildings, and the next class are clear.
 
-## Stack and development
+## Privacy by design
 
-React 19, TypeScript, Vite, TanStack Router, Bun, `ical.js`, MapLibre/OpenFreeMap, and optional Supabase Auth/PostgREST. Routing uses a deterministic in-browser graph and conservatively labels inferred routes.
+- The original `.ics` file never leaves the browser.
+- Cloud sync is optional and stores only normalized meeting fields (course, section, time, building, and room).
+- **Saving is always explicit:** only pressing **Sync timetable** changes cloud data.
+- After sign-in or refresh, Gapwise checks for an existing cloud timetable automatically. Automatic loading is not automatic uploading.
+- Calculated gaps and routes remain browser-side. There is no analytics, advertising, or tracking.
+
+## Key features
+
+- Desktop weekly grid and comfortable mobile day list
+- Fall and Winter views with gap duration and leave-by guidance
+- Free OpenFreeMap/OpenStreetMap basemap with textual routes
+- Route confidence labelled **verified**, **approximate**, or **unavailable**
+- Light and dark themes, keyboard navigation, reduced-motion support, and map alternatives
+- Optional private sync through GitHub OAuth and Supabase RLS
+
+Campus route coverage is incomplete. “Verified” refers to reviewed campus routing data; “approximate” is a clearly labelled estimate; “unavailable” means Gapwise will not invent a route. Basemap geometry is not evidence that an indoor path has been verified.
+
+## Cloud sync and restoration
+
+When both remembered local and cloud copies exist, Gapwise uses the newest safely comparable timestamp. If timestamps cannot be compared, it keeps the local copy and notes that a cloud version is available. An already loaded timetable is never replaced automatically. Manual cloud loading remains available for recovery.
+
+## Account and data deletion
+
+Open the signed-in account menu and choose **Delete account and cloud data**. One confirmation permanently removes the Supabase authentication account, normalized timetable, preferences, and all other user-owned server records. You may also clear this browser's remembered timetable; it remains in guest mode when that option is unchecked. The original `.ics` was never uploaded. **Account deletion is permanent.**
+
+## Local development
 
 ```sh
-bun install
+bun install --frozen-lockfile
 bun run dev
+```
+
+Browser-safe configuration only:
+
+```dotenv
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
+
+Never put the service-role key in a `VITE_` variable. Without these values, guest mode remains fully functional. See [Supabase setup](docs/SUPABASE.md), [Vercel deployment](docs/VERCEL.md), and [Cloudflare Pages notes](docs/CLOUDFLARE_PAGES.md).
+
+## Testing and assets
+
+```sh
 bun run lint
 bun test
 bun run build
 bunx prettier --check .
-```
-
-## Optional GitHub authentication and cloud sync
-
-Copy `.env.example` to `.env.local` and add the browser-safe values if wanted:
-
-```env
-VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_BROWSER_SAFE_PUBLISHABLE_KEY
-```
-
-The publishable key is browser-safe. Never expose a database password, GitHub OAuth secret, or Supabase secret/service-role key in Vite variables. Apply the migration under `supabase/migrations/` and follow [`docs/SUPABASE.md`](docs/SUPABASE.md).
-
-## Deployment
-
-The static `dist/` build supports both [Vercel](docs/VERCEL.md) and [Cloudflare Pages](docs/CLOUDFLARE_PAGES.md). Vercel Production and Preview environments need the same two variables when cloud features are enabled.
-
-## Original brand assets
-
-`public/favicon.svg` is the canonical, transparent-background Gapwise mark: an original geometric route-shaped **G** with connected stops. It does not use university artwork. `scripts/generate-icons.ts` reproducibly creates `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `icon-192.png`, and `icon-512.png` without an image dependency:
-
-```sh
 bun run generate:icons
 ```
 
-## Data attribution
+SVG files are canonical brand sources; the icon generator creates deterministic favicon, Apple, and PWA PNGs.
 
-The basemap is [OpenFreeMap](https://openfreemap.org/) with [OpenStreetMap](https://www.openstreetmap.org/copyright) data; attribution remains visible. Campus records retain source and verification metadata. See `src/data/utm/indoor/README.md` before contributing routing data.
+## Project structure
 
-Originally built with [Lovable](https://lovable.dev); do not rewrite published Lovable-connected history.
+- `src/routes` — application screens and shell
+- `src/features` — auth, restoration, sync, and routing logic
+- `src/components` — timetable, gap, route, and accessible UI components
+- `src/data/utm` — deterministic campus graph and reviewed indoor data
+- `supabase` — migrations and the authenticated deletion Edge Function
+- `tests` — parser, routing, restoration, privacy, and asset checks
+
+## Contributing campus route data
+
+Follow [`src/data/utm/indoor/README.md`](src/data/utm/indoor/README.md). Contributions must describe their source and confidence; do not promote estimates to verified routes without review.
+
+## Deployment
+
+Vite emits a static `dist/` directory compatible with Vercel and Cloudflare Pages. Deep-link rewrites are included. Deploy the Supabase migration and deletion function separately using the steps in [`docs/SUPABASE.md`](docs/SUPABASE.md).
+
+## Current limitations and roadmap
+
+Indoor coverage is limited to contributed buildings and cannot guarantee that every entrance, closure, elevator, or accessibility condition is current. Planned work focuses on reviewed route coverage, timetable edge cases, and continued accessibility testing—not paid maps or background tracking.
+
+## Independent project
+
+Gapwise UTM is an independent student project. It is not affiliated with, endorsed by, or an official service of the University of Toronto.
