@@ -1,0 +1,54 @@
+import type { ActivityType, Meeting, Term, Weekday } from "./timetable-types";
+
+interface Row {
+  courseCode: string;
+  courseName: string;
+  activityType: ActivityType;
+  sectionCode: string;
+  weekday: Weekday;
+  start: number;
+  end: number;
+  building: string | null;
+  room: string | null;
+  term: Term;
+}
+
+const h = (hour: number, minute = 0) => hour * 60 + minute;
+
+const ROWS: Row[] = [
+  // Fall
+  { courseCode: "DEM101H5", courseName: "Intro to Sample Studies", activityType: "LEC", sectionCode: "0101", weekday: "Monday", start: h(9), end: h(11), building: "DV", room: "2080", term: "Fall" },
+  { courseCode: "DEM101H5", courseName: "Intro to Sample Studies", activityType: "TUT", sectionCode: "0104", weekday: "Monday", start: h(14), end: h(15), building: "IB", room: "245", term: "Fall" },
+  { courseCode: "DEM210H5", courseName: "Applied Demo Methods", activityType: "LEC", sectionCode: "0102", weekday: "Monday", start: h(16), end: h(18), building: "MN", room: "1210", term: "Fall" },
+  { courseCode: "DEM240H5", courseName: "Data Practice Lab", activityType: "PRA", sectionCode: "0103", weekday: "Tuesday", start: h(11), end: h(13), building: "DH", room: "2020", term: "Fall" },
+  { courseCode: "DEM101H5", courseName: "Intro to Sample Studies", activityType: "LEC", sectionCode: "0101", weekday: "Wednesday", start: h(9), end: h(11), building: "DV", room: "2080", term: "Fall" },
+  { courseCode: "DEM305H5", courseName: "Writing for Demos", activityType: "LEC", sectionCode: "0116", weekday: "Wednesday", start: h(12), end: h(15), building: null, room: null, term: "Fall" },
+  { courseCode: "DEM210H5", courseName: "Applied Demo Methods", activityType: "TUT", sectionCode: "0113", weekday: "Thursday", start: h(10), end: h(11), building: "MN", room: "3230", term: "Fall" },
+  { courseCode: "DEM240H5", courseName: "Data Practice Lab", activityType: "LEC", sectionCode: "0101", weekday: "Thursday", start: h(15), end: h(17), building: "DH", room: "2010", term: "Fall" },
+  { courseCode: "DEM101H5", courseName: "Intro to Sample Studies", activityType: "LEC", sectionCode: "0101", weekday: "Friday", start: h(9), end: h(11), building: "DV", room: "2080", term: "Fall" },
+  { courseCode: "DEM210H5", courseName: "Applied Demo Methods", activityType: "LEC", sectionCode: "0102", weekday: "Friday", start: h(13), end: h(14), building: "MN", room: "1210", term: "Fall" },
+  // Winter
+  { courseCode: "DEM102H5", courseName: "Sample Studies II", activityType: "LEC", sectionCode: "0101", weekday: "Monday", start: h(10), end: h(12), building: "MN", room: "2170", term: "Winter" },
+  { courseCode: "DEM250H5", courseName: "Quantitative Demos", activityType: "LEC", sectionCode: "0101", weekday: "Monday", start: h(15), end: h(17), building: "IB", room: "110", term: "Winter" },
+  { courseCode: "DEM102H5", courseName: "Sample Studies II", activityType: "PRA", sectionCode: "0106", weekday: "Tuesday", start: h(13), end: h(15), building: "DH", room: "2030", term: "Winter" },
+  { courseCode: "DEM250H5", courseName: "Quantitative Demos", activityType: "TUT", sectionCode: "0102", weekday: "Wednesday", start: h(9), end: h(10), building: "MN", room: "3140", term: "Winter" },
+  { courseCode: "DEM320H5", courseName: "Field Seminar", activityType: "LEC", sectionCode: "0104", weekday: "Wednesday", start: h(14), end: h(16), building: null, room: null, term: "Winter" },
+  { courseCode: "DEM102H5", courseName: "Sample Studies II", activityType: "LEC", sectionCode: "0101", weekday: "Thursday", start: h(10), end: h(12), building: "MN", room: "2170", term: "Winter" },
+  { courseCode: "DEM320H5", courseName: "Field Seminar", activityType: "TUT", sectionCode: "0101", weekday: "Friday", start: h(11), end: h(12), building: "DV", room: "3130", term: "Winter" },
+  { courseCode: "DEM250H5", courseName: "Quantitative Demos", activityType: "LEC", sectionCode: "0101", weekday: "Friday", start: h(16), end: h(18), building: "IB", room: "110", term: "Winter" },
+];
+
+export const DEMO_MEETINGS: Meeting[] = ROWS.map((r) => ({
+  id: `${r.term}-${r.courseCode}-${r.activityType}-${r.sectionCode}-${r.weekday}-${r.start}`,
+  courseCode: r.courseCode,
+  activityType: r.activityType,
+  sectionCode: r.sectionCode,
+  courseName: r.courseName,
+  startTime: r.start,
+  endTime: r.end,
+  weekday: r.weekday,
+  buildingCode: r.building,
+  room: r.room,
+  term: r.term,
+  locationUnknown: r.building === null,
+}));
