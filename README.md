@@ -1,85 +1,49 @@
-# Gapwise UTM
+# ![Gapwise route G](public/favicon.svg) Gapwise UTM
 
-Gapwise UTM turns an ACORN `.ics` calendar into a weekly timetable, a route-aware
-gap plan, and an interactive day route for University of Toronto Mississauga. It is
-an independent student project and is not affiliated with the University of Toronto.
+**Smarter campus gaps.** Gapwise turns an ACORN `.ics` calendar into a weekly timetable, route-aware gap plan, and interactive day route for University of Toronto Mississauga. Gapwise UTM is an independent student project and is not affiliated with the University of Toronto.
 
 ## Privacy model
 
-The calendar file is parsed entirely in the browser. The original `.ics` file is
-never uploaded. Guest mode needs no account and works when Supabase is absent.
+The calendar file is parsed entirely in the browser; the original `.ics` file is never uploaded. Guest mode needs no account or environment variables. Cloud sync is explicit and opt-in: only normalized meeting fields and an optional source filename are stored after **Sync timetable** is pressed. Signing in never uploads data. Calculated gaps and routes stay in the browser. Authentication uses `sessionStorage`, not `localStorage`, and sign-out is local to the browser session.
 
-Cloud sync is optional and opt-in. If a signed-in user presses **Sync timetable**,
-the app stores only normalized meeting fields (course/section labels, times,
-weekday, term, building, room, and optional source filename) in that user's private
-row. Calculated gaps and routes are always recreated in the browser and are never
-stored. Supabase auth persistence uses `sessionStorage`, not `localStorage`.
+## Stack and development
 
-The optional **Remember on this device** control still governs local timetable
-persistence independently of cloud sync.
-
-## Architecture
-
-- React 19, TypeScript, Vite, TanStack Router, and Bun
-- `ical.js` for browser-side ACORN calendar normalization
-- MapLibre GL JS with a keyless OpenFreeMap/OpenStreetMap vector style
-- Deterministic browser-side Dijkstra routing over one indoor/outdoor graph
-- Per-building location/floor rules that distinguish verified, inferred, and unknown
-- Optional browser-side Supabase Auth and PostgREST sync protected by row-level security
-- A client-only `dist/` deployment with a Cloudflare Pages SPA fallback
-
-The routing data model supports a continuous room → hallway → vertical circulation →
-entrance → outdoor path → entrance → hallway → room route. Current production campus
-data is intentionally conservative: MN, DH, and IB have OSM-backed entrance points,
-but detailed paths and indoor geometry are not yet published. The UI therefore labels
-cross-building dashed lines as approximate and does not claim they are optimal. The
-algorithm's full behavior is covered by synthetic graph tests.
-
-The map provider is isolated in `src/config/map.ts`; routing delays and defaults live
-in `src/config/routing.ts`. See
-[`src/data/utm/indoor/README.md`](src/data/utm/indoor/README.md) before contributing
-campus or indoor data.
-
-## Local development
+React 19, TypeScript, Vite, TanStack Router, Bun, `ical.js`, MapLibre/OpenFreeMap, and optional Supabase Auth/PostgREST. Routing uses a deterministic in-browser graph and conservatively labels inferred routes.
 
 ```sh
 bun install
 bun run dev
+bun run lint
 bun test
 bun run build
+bunx prettier --check .
 ```
 
-`bun run build` produces a static site in `dist/`. No server runtime or route API is
-required.
+## Optional GitHub authentication and cloud sync
 
-## Optional Supabase setup
-
-Copy `.env.example` to `.env.local` and add only the browser-safe publishable key:
+Copy `.env.example` to `.env.local` and add the browser-safe values if wanted:
 
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_BROWSER_SAFE_PUBLISHABLE_KEY
 ```
 
-Never use a service-role key. Apply the SQL migration in `supabase/migrations/`, then
-follow [`docs/SUPABASE.md`](docs/SUPABASE.md) for Google OAuth redirect setup. With
-both variables blank, the app starts normally in guest mode and disables cloud controls.
+The publishable key is browser-safe. Never expose a database password, GitHub OAuth secret, or Supabase secret/service-role key in Vite variables. Apply the migration under `supabase/migrations/` and follow [`docs/SUPABASE.md`](docs/SUPABASE.md).
 
 ## Deployment
 
-See [`docs/CLOUDFLARE_PAGES.md`](docs/CLOUDFLARE_PAGES.md). The required Pages values
-are:
+The static `dist/` build supports both [Vercel](docs/VERCEL.md) and [Cloudflare Pages](docs/CLOUDFLARE_PAGES.md). Vercel Production and Preview environments need the same two variables when cloud features are enabled.
 
-- Build command: `bun run build`
-- Output directory: `dist`
-- Framework preset: none / Vite
+## Original brand assets
 
-## Data sources and attribution
+`public/favicon.svg` is the canonical, transparent-background Gapwise mark: an original geometric route-shaped **G** with connected stops. It does not use university artwork. `scripts/generate-icons.ts` reproducibly creates `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `icon-192.png`, and `icon-512.png` without an image dependency:
 
-The vector basemap is provided by [OpenFreeMap](https://openfreemap.org/) using
-[OpenStreetMap](https://www.openstreetmap.org/copyright) data. Campus records carry
-source URLs, verification dates, and verification status alongside the data. Map
-attribution remains visible in the MapLibre control.
+```sh
+bun run generate:icons
+```
 
-This project was originally built with [Lovable](https://lovable.dev). Keep published
-Git history linear and do not force-push the Lovable-connected branch.
+## Data attribution
+
+The basemap is [OpenFreeMap](https://openfreemap.org/) with [OpenStreetMap](https://www.openstreetmap.org/copyright) data; attribution remains visible. Campus records retain source and verification metadata. See `src/data/utm/indoor/README.md` before contributing routing data.
+
+Originally built with [Lovable](https://lovable.dev); do not rewrite published Lovable-connected history.

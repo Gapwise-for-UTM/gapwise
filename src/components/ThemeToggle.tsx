@@ -1,13 +1,7 @@
 import { Moon, Sun } from "lucide-react";
 import type { Theme } from "@/hooks/use-preferences";
 
-export function ThemeToggle({
-  theme,
-  onToggle,
-}: {
-  theme: Theme;
-  onToggle: () => void;
-}) {
+export function ThemeToggle({ theme, onToggle }: { theme: Theme; onToggle: () => void }) {
   return (
     <button
       type="button"

@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, development]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.14
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun test
+      - run: bun run build
+      - run: bun scripts/generate-icons.ts
+      - name: Verify generated icons
+        run: git diff --exit-code -- public/favicon-16x16.png public/favicon-32x32.png public/apple-touch-icon.png public/icon-192.png public/icon-512.png
+      - run: bunx prettier --check .

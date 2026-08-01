@@ -1,12 +1,17 @@
 import type { User } from "@supabase/supabase-js";
-import { CloudOff, LogIn, LogOut, UserRound } from "lucide-react";
-import { useState } from "react";
+import { CloudOff, Github, LogOut, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
 import { isSupabaseConfigured, supabaseConfigurationNotice } from "@/lib/supabase";
-import { signInWithGoogle, signOut } from "./auth-service";
+import { consumeOAuthError, getAccountIdentity, signInWithGitHub, signOut } from "./auth-service";
 
 export function AccountStatus({ user, loading }: { user: User | null; loading: boolean }) {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const error = consumeOAuthError(window.location, window.history);
+    if (error) setMessage(error);
+  }, []);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -33,7 +38,7 @@ export function AccountStatus({ user, loading }: { user: User | null; loading: b
           </span>
           <div>
             <p className="text-sm font-semibold">
-              {loading ? "Checking account…" : user ? (user.email ?? "Signed in") : "Guest mode"}
+              {loading ? "Checking account…" : user ? getAccountIdentity(user) : "Guest mode"}
             </p>
             <p className="text-xs text-muted-foreground">
               {user
@@ -55,12 +60,12 @@ export function AccountStatus({ user, loading }: { user: User | null; loading: b
               </button>
               <button
                 type="button"
-                onClick={() => void run(signInWithGoogle)}
+                onClick={() => void run(signInWithGitHub)}
                 disabled={!isSupabaseConfigured || busy || loading}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
-                Sign in with Google
+                <Github className="h-3.5 w-3.5" aria-hidden="true" />
+                Sign in with GitHub
               </button>
             </>
           ) : (

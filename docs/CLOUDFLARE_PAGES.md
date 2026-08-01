@@ -41,7 +41,7 @@ These values are compiled into the public client bundle, so only the browser-saf
 publishable/anon key is allowed. Never configure a service-role key.
 
 After the first deploy, add the final Pages origin to Supabase's allowed redirect URLs
-and Google OAuth configuration as described in `docs/SUPABASE.md`.
+and GitHub OAuth configuration as described in `docs/SUPABASE.md`.
 
 ## Verification
 
@@ -54,4 +54,4 @@ bun run build
 ```
 
 Confirm `dist/index.html`, `dist/_redirects`, and `dist/_headers` exist. Test a deep-link
-refresh, guest import, map attribution, and—if configured—the Google sign-in round trip.
+refresh, guest import, map attribution, and—if configured—the GitHub sign-in round trip.

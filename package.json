@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "bun test",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "generate:icons": "bun scripts/generate-icons.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -87,5 +88,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.1.5"
+  },
+  "engines": {
+    "bun": "1.2.x"
   }
 }
