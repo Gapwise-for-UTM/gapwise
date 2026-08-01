@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
 // These deliberately simple canonical SVGs use only paths, circles and rounded
@@ -14,7 +15,7 @@ for (const source of ["favicon.svg", "app-icon.svg"]) {
 const outputArgument = process.argv.find((argument) => argument.startsWith("--output-dir="));
 const outputDirectory = outputArgument
   ? resolve(outputArgument.slice("--output-dir=".length))
-  : new URL("../public/", import.meta.url).pathname;
+  : fileURLToPath(new URL("../public/", import.meta.url));
 await mkdir(outputDirectory, { recursive: true });
 
 const crcTable = new Uint32Array(256).map((_, n) => {

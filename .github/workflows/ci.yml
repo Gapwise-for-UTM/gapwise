@@ -21,7 +21,6 @@ jobs:
       - run: bun run lint
       - run: bun test
       - run: bun run build
-      - run: bun scripts/generate-icons.ts
       - name: Verify generated icons
-        run: git diff --exit-code -- public/favicon-16x16.png public/favicon-32x32.png public/apple-touch-icon.png public/icon-192.png public/icon-512.png
+        run: bun test tests/icons.test.ts
       - run: bunx prettier --check .
