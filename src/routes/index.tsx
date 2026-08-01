@@ -56,7 +56,7 @@ const STEPS = [
 function Index() {
   const { theme, toggleTheme } = useTheme();
   const { dismissed, dismiss } = useIntroDismissed();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
 
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -87,9 +87,21 @@ function Index() {
   const [restoration, setRestoration] = useState<RestorationState>("waiting-for-auth");
   const [restorationMessage, setRestorationMessage] = useState<string | null>(null);
   const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
+  const latestMeetings = useRef<Meeting[] | null>(meetings);
+  const mounted = useRef(false);
   const requestVersion = useRef(0);
   const requestedUser = useRef<string | null>(null);
   const previousUser = useRef<string | null>(null);
+  const authenticatedUserId = user?.id ?? null;
+
+  latestMeetings.current = meetings;
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     setRemember(localRecord?.remember ?? false);
@@ -100,20 +112,47 @@ function Index() {
       setRestoration("waiting-for-auth");
       return;
     }
-    const userId = user?.id ?? null;
+    const userId = authenticatedUserId;
     if (!userId) {
       requestVersion.current += 1;
       requestedUser.current = null;
-      if (previousUser.current && restoredSource.current === "cloud") setMeetings(null);
+      let currentMeetings = latestMeetings.current;
+      if (previousUser.current && restoredSource.current === "cloud") {
+        currentMeetings = null;
+        latestMeetings.current = null;
+        setMeetings(null);
+      }
       previousUser.current = null;
-      const choice = chooseRestoration(null, localRecord?.record ?? null, null);
-      if (choice.meetings) setMeetings(choice.meetings);
+      const choice = chooseRestoration(
+        restoredSource.current === "memory" ? currentMeetings : null,
+        localRecord?.record ?? null,
+        null,
+      );
+      if (choice.meetings && choice.source !== "memory") {
+        latestMeetings.current = choice.meetings;
+        setMeetings(choice.meetings);
+      }
       restoredSource.current = choice.source;
-      setRestoration(choice.state);
+      setRestoration(authError ? "failed" : choice.state);
+      setRestorationMessage(
+        authError
+          ? "We couldn't restore your signed-in session. Cloud restore is unavailable."
+          : null,
+      );
       return;
     }
-    previousUser.current = userId;
-    if (meetings?.length && restoredSource.current !== "local") {
+
+    if (previousUser.current !== userId) {
+      requestVersion.current += 1;
+      requestedUser.current = null;
+      if (previousUser.current && restoredSource.current === "cloud") {
+        latestMeetings.current = null;
+        setMeetings(null);
+      }
+      previousUser.current = userId;
+    }
+
+    if (latestMeetings.current?.length && restoredSource.current === "memory") {
       setRestoration("restored-memory");
       return;
     }
@@ -122,28 +161,53 @@ function Index() {
     const version = ++requestVersion.current;
     setRestoration("checking-cloud");
     setRestorationMessage(null);
-    const timeout = new Promise<never>((_, reject) =>
-      window.setTimeout(() => reject(new Error("timeout")), 8000),
-    );
-    void Promise.race([loadScheduleRecord(), timeout])
+    let timeoutId: number | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = window.setTimeout(() => reject(new Error("timeout")), 8000);
+    });
+    const cloudRequest = Promise.resolve().then(() => loadScheduleRecord(userId));
+    void Promise.race([cloudRequest, timeout])
       .then((cloud) => {
-        if (requestVersion.current !== version || previousUser.current !== userId) return;
-        const choice = chooseRestoration(meetings, localRecord?.record ?? null, cloud);
-        if (choice.meetings && choice.source !== "memory") setMeetings(choice.meetings);
+        if (
+          !mounted.current ||
+          requestVersion.current !== version ||
+          previousUser.current !== userId
+        )
+          return;
+        const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
+        const choice = chooseRestoration(memory, localRecord?.record ?? null, cloud);
+        if (choice.meetings && choice.source !== "memory") {
+          latestMeetings.current = choice.meetings;
+          setMeetings(choice.meetings);
+        }
         restoredSource.current = choice.source;
         setRestoration(choice.state);
         if (choice.state === "cloud-version-available")
           setRestorationMessage("A cloud version is available; your local timetable was kept.");
       })
       .catch(() => {
-        if (requestVersion.current !== version || previousUser.current !== userId) return;
-        const choice = chooseRestoration(meetings, localRecord?.record ?? null, null);
-        if (choice.meetings && choice.source !== "memory") setMeetings(choice.meetings);
+        if (
+          !mounted.current ||
+          requestVersion.current !== version ||
+          previousUser.current !== userId
+        )
+          return;
+        const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
+        const choice = chooseRestoration(memory, localRecord?.record ?? null, null);
+        if (choice.meetings && choice.source !== "memory") {
+          latestMeetings.current = choice.meetings;
+          setMeetings(choice.meetings);
+        }
         restoredSource.current = choice.source;
         setRestoration("failed");
-        setRestorationMessage("Cloud restore is unavailable. You can keep working locally.");
+        setRestorationMessage(
+          "We couldn't restore your cloud timetable. Your local timetable is unchanged.",
+        );
+      })
+      .finally(() => {
+        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       });
-  }, [authLoading, user, localRecord, meetings]);
+  }, [authLoading, authError, authenticatedUserId, localRecord]);
 
   const terms = useMemo(() => {
     if (!meetings) return [] as Term[];
@@ -171,12 +235,18 @@ function Index() {
       const text = await file.text();
       const result = parseIcs(text);
       setMeetings(result.meetings);
+      latestMeetings.current = result.meetings;
+      restoredSource.current = "memory";
+      setRestoration("restored-memory");
+      setRestorationMessage(null);
       setWarnings(result.warnings);
       setIsDemo(false);
       setSourceFilename(file.name);
       saveRemembered(remember, remember ? result.meetings : null);
     } catch (err) {
       setMeetings(null);
+      latestMeetings.current = null;
+      restoredSource.current = "none";
       setWarnings([]);
       setError(
         err instanceof IcsParseError
@@ -192,6 +262,10 @@ function Index() {
     setError(null);
     setWarnings([]);
     setMeetings(DEMO_MEETINGS);
+    latestMeetings.current = DEMO_MEETINGS;
+    restoredSource.current = "memory";
+    setRestoration("restored-memory");
+    setRestorationMessage(null);
     setIsDemo(true);
     setSourceFilename(null);
     setTerm("Fall");
@@ -199,6 +273,10 @@ function Index() {
 
   function clearTimetable() {
     setMeetings(null);
+    latestMeetings.current = null;
+    restoredSource.current = "none";
+    setRestoration("no-cloud-data");
+    setRestorationMessage(null);
     setWarnings([]);
     setError(null);
     setIsDemo(false);
@@ -208,6 +286,7 @@ function Index() {
 
   function loadCloudTimetable(cloudMeetings: Meeting[]) {
     setMeetings(cloudMeetings);
+    latestMeetings.current = cloudMeetings;
     setWarnings([]);
     setError(null);
     setIsDemo(false);
@@ -246,7 +325,10 @@ function Index() {
                   ? null
                   : loadRememberedRecord<Meeting[]>().record?.data;
                 setMeetings(retainedLocal?.length ? retainedLocal : null);
+                latestMeetings.current = retainedLocal?.length ? retainedLocal : null;
                 restoredSource.current = retainedLocal?.length ? "local" : "none";
+                setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
+                setRestorationMessage(null);
               }}
             />
           </div>

@@ -51,9 +51,9 @@ export async function signOut(): Promise<void> {
 export async function getCurrentUser(): Promise<User | null> {
   const supabase = getSupabaseClient();
   if (!supabase) return null;
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return null;
-  return data.user;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  return data.session?.user ?? null;
 }
 
 export function subscribeToAuthChanges(callback: (user: User | null) => void) {

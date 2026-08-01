@@ -29,9 +29,11 @@ export async function saveSchedule(
 
 export type CloudScheduleRecord = { meetings: Meeting[]; updatedAt: string | null };
 
-export async function loadScheduleRecord(): Promise<CloudScheduleRecord | null> {
+export async function loadScheduleRecord(
+  authenticatedUserId?: string,
+): Promise<CloudScheduleRecord | null> {
   const supabase = requireSupabaseClient();
-  const userId = await currentUserId();
+  const userId = authenticatedUserId ?? (await currentUserId());
   const { data, error } = await supabase
     .from("user_schedules")
     .select("meetings, updated_at")

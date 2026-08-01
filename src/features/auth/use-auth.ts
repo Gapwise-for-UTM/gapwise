@@ -5,17 +5,28 @@ import { getCurrentUser, subscribeToAuthChanges } from "./auth-service";
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    void getCurrentUser().then((nextUser) => {
-      if (active) {
-        setUser(nextUser);
-        setLoading(false);
-      }
-    });
+    void getCurrentUser()
+      .then((nextUser) => {
+        if (active) {
+          setUser(nextUser);
+          setError(null);
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setUser(null);
+          setError("We couldn't restore your signed-in session.");
+          setLoading(false);
+        }
+      });
     const unsubscribe = subscribeToAuthChanges((nextUser) => {
       setUser(nextUser);
+      setError(null);
       setLoading(false);
     });
     return () => {
@@ -24,5 +35,5 @@ export function useAuth() {
     };
   }, []);
 
-  return { user, loading };
+  return { user, loading, error };
 }
