@@ -22,9 +22,9 @@ import { findGaps } from "@/lib/gaps";
 import { IcsParseError, parseIcs } from "@/lib/ics-parser";
 import type { Meeting, Term } from "@/lib/timetable-types";
 
-const TITLE = "Gapwise UTM — Find the useful gaps in your UTM timetable";
+const TITLE = "Gapwise UTM — Smarter Campus Gaps";
 const DESCRIPTION =
-  "Upload your ACORN .ics export to see your weekly UTM timetable, gaps, and day routes. Parsed in your browser; optional private cloud sync.";
+  "An independent student project for finding useful UTM timetable gaps and campus routes, with private browser parsing and optional cloud sync.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -152,12 +152,15 @@ function Index() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-          <div>
-            <p className="font-display text-lg font-semibold">Gapwise UTM</p>
-            <p className="text-xs text-muted-foreground">
-              Your calendar is parsed in your browser. Cloud sync is optional.
-            </p>
-          </div>
+          <a href="/" aria-label="Gapwise UTM home" className="flex min-w-0 items-center gap-3">
+            <img src="/favicon.svg" alt="" aria-hidden="true" className="h-10 w-10 shrink-0" />
+            <div className="min-w-0">
+              <p className="font-display text-lg font-semibold">Gapwise UTM</p>
+              <p className="text-xs text-muted-foreground">
+                Your calendar is parsed in your browser. Cloud sync is optional.
+              </p>
+            </div>
+          </a>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
       </header>

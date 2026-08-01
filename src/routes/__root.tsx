@@ -77,20 +77,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Gapwise UTM" },
+      { title: "Gapwise UTM — Smarter Campus Gaps" },
       {
         name: "description",
         content:
-          "Find the useful gaps between your UTM classes from your ACORN calendar export.",
+          "An independent student project for finding useful UTM timetable gaps and campus routes, with private browser parsing and optional cloud sync.",
       },
-      { property: "og:title", content: "Gapwise UTM" },
+      { property: "og:title", content: "Gapwise UTM — Smarter Campus Gaps" },
       {
         property: "og:description",
         content:
-          "Find the useful gaps between your UTM classes from your ACORN calendar export.",
+          "An independent student project for finding useful UTM timetable gaps and campus routes.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#203b62" },
     ],
     links: [
       {
@@ -103,7 +103,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
 

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Gapwise route G</title>
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#203b62"/>
+  <path d="M44 20a18 18 0 1 0 0 24V33H32" fill="none" stroke="#f7f4eb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="44" cy="20" r="4" fill="#67a9e4"/>
+  <circle cx="44" cy="44" r="4" fill="#67a9e4"/>
+</svg>
