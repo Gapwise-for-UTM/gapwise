@@ -1,0 +1,54 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "description": "Verified navigation points for supported UTM buildings; these are not building footprints.",
+    "source": "OpenStreetMap",
+    "sourceUrl": "https://www.openstreetmap.org/",
+    "lastVerified": "2026-08-01",
+    "verificationStatus": "verified"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "MN",
+      "geometry": { "type": "Point", "coordinates": [-79.6654141, 43.5513221] },
+      "properties": {
+        "code": "MN",
+        "name": "Maanjiwe nendamowinan",
+        "geometryRole": "navigation-point",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13738201127",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "DH",
+      "geometry": { "type": "Point", "coordinates": [-79.6659651, 43.5503162] },
+      "properties": {
+        "code": "DH",
+        "name": "Deerfield Hall",
+        "geometryRole": "navigation-point",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164836",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "IB",
+      "geometry": { "type": "Point", "coordinates": [-79.6636318, 43.5516425] },
+      "properties": {
+        "code": "IB",
+        "name": "Instructional Centre",
+        "geometryRole": "navigation-point",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/2383650599",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    }
+  ]
+}

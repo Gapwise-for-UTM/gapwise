@@ -1,10 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { CalendarRange, LayoutGrid, ShieldCheck, Trash2, Upload, X } from "lucide-react";
+import { CalendarRange, LayoutGrid, MapPinned, ShieldCheck, Trash2, Upload, X } from "lucide-react";
+import { DayRoute } from "@/components/DayRoute";
 import { GapPlan } from "@/components/GapPlan";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
+import { TodaySummary } from "@/components/TodaySummary";
 import { UploadPanel } from "@/components/UploadPanel";
+import { AccountStatus } from "@/features/auth/AccountStatus";
+import { useAuth } from "@/features/auth/use-auth";
+import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
+import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
 import {
   loadRemembered,
   saveRemembered,
@@ -18,7 +24,7 @@ import type { Meeting, Term } from "@/lib/timetable-types";
 
 const TITLE = "Gapwise UTM — Find the useful gaps in your UTM timetable";
 const DESCRIPTION =
-  "Upload your ACORN .ics export to see your weekly UTM timetable and every useful gap between classes. Parsed in your browser; no account required.";
+  "Upload your ACORN .ics export to see your weekly UTM timetable, gaps, and day routes. Parsed in your browser; optional private cloud sync.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -34,13 +40,17 @@ export const Route = createFileRoute("/")({
 
 const STEPS = [
   { title: "Export from ACORN", body: "Download your timetable as a .ics calendar file." },
-  { title: "Upload the .ics file", body: "It is parsed locally, in this browser tab only." },
-  { title: "Review your weekly gap plan", body: "See every gap, how long it is, and where you are." },
+  { title: "Upload the .ics file", body: "It is parsed locally in your browser." },
+  {
+    title: "Review your weekly gap plan",
+    body: "See every gap, how long it is, and where you are.",
+  },
 ];
 
 function Index() {
   const { theme, toggleTheme } = useTheme();
   const { dismissed, dismiss } = useIntroDismissed();
+  const { user, loading: authLoading } = useAuth();
 
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -48,8 +58,10 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
   const [term, setTerm] = useState<Term>("Fall");
-  const [view, setView] = useState<"timetable" | "gaps">("timetable");
+  const [view, setView] = useState<"timetable" | "gaps" | "route">("timetable");
   const [isDemo, setIsDemo] = useState(false);
+  const [sourceFilename, setSourceFilename] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
 
   useEffect(() => {
     const { remember: stored, data } = loadRemembered<Meeting[]>();
@@ -59,9 +71,7 @@ function Index() {
 
   const terms = useMemo(() => {
     if (!meetings) return [] as Term[];
-    return (["Fall", "Winter"] as Term[]).filter((t) =>
-      meetings.some((m) => m.term === t)
-    );
+    return (["Fall", "Winter"] as Term[]).filter((t) => meetings.some((m) => m.term === t));
   }, [meetings]);
 
   useEffect(() => {
@@ -70,7 +80,7 @@ function Index() {
 
   const termMeetings = useMemo(
     () => (meetings ?? []).filter((m) => m.term === term),
-    [meetings, term]
+    [meetings, term],
   );
   const gaps = useMemo(() => findGaps(meetings ?? [], term), [meetings, term]);
 
@@ -87,6 +97,7 @@ function Index() {
       setMeetings(result.meetings);
       setWarnings(result.warnings);
       setIsDemo(false);
+      setSourceFilename(file.name);
       saveRemembered(remember, remember ? result.meetings : null);
     } catch (err) {
       setMeetings(null);
@@ -94,7 +105,7 @@ function Index() {
       setError(
         err instanceof IcsParseError
           ? err.message
-          : "Something went wrong while reading that calendar. Try exporting it from ACORN again."
+          : "Something went wrong while reading that calendar. Try exporting it from ACORN again.",
       );
     } finally {
       setLoading(false);
@@ -106,6 +117,7 @@ function Index() {
     setWarnings([]);
     setMeetings(DEMO_MEETINGS);
     setIsDemo(true);
+    setSourceFilename(null);
     setTerm("Fall");
   }
 
@@ -114,7 +126,21 @@ function Index() {
     setWarnings([]);
     setError(null);
     setIsDemo(false);
+    setSourceFilename(null);
     saveRemembered(remember, null);
+  }
+
+  function loadCloudTimetable(cloudMeetings: Meeting[]) {
+    setMeetings(cloudMeetings);
+    setWarnings([]);
+    setError(null);
+    setIsDemo(false);
+    setSourceFilename(null);
+    const firstTerm = (["Fall", "Winter"] as Term[]).find((item) =>
+      cloudMeetings.some((meeting) => meeting.term === item),
+    );
+    if (firstTerm) setTerm(firstTerm);
+    saveRemembered(remember, remember ? cloudMeetings : null);
   }
 
   function handleRemember(value: boolean) {
@@ -128,13 +154,18 @@ function Index() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div>
             <p className="font-display text-lg font-semibold">Gapwise UTM</p>
-            <p className="text-xs text-muted-foreground">Your timetable stays on your device.</p>
+            <p className="text-xs text-muted-foreground">
+              Your calendar is parsed in your browser. Cloud sync is optional.
+            </p>
           </div>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mb-6">
+          <AccountStatus user={user} loading={authLoading} />
+        </div>
         {!meetings ? (
           <>
             <section className="max-w-2xl">
@@ -142,12 +173,12 @@ function Index() {
                 Turn your ACORN timetable into a smarter campus day.
               </h1>
               <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-                Upload your calendar export to find every useful gap between classes. No account
-                required, and your timetable never leaves your device.
+                Upload your calendar export to find useful gaps and plan routes between classes. No
+                account is required; private cloud sync is optional.
               </p>
               <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium">
                 <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
-                Parsed in your browser — nothing is uploaded
+                The original calendar file is parsed in your browser and is never uploaded
               </p>
             </section>
 
@@ -173,15 +204,24 @@ function Index() {
                 onRememberChange={handleRemember}
               />
             </div>
+            <div className="mt-6">
+              <CloudSyncControls
+                user={user}
+                meetings={meetings}
+                sourceFilename={sourceFilename}
+                onLoad={loadCloudTimetable}
+              />
+            </div>
           </>
         ) : (
           <>
             {!dismissed ? (
               <div className="surface mb-6 flex items-start justify-between gap-4 bg-secondary/50 p-4">
                 <p className="text-sm text-muted-foreground">
-                  Switch between <strong className="text-foreground">Weekly timetable</strong> and{" "}
-                  <strong className="text-foreground">Gap plan</strong> below. Gaps are grouped by
-                  weekday, and usable time already accounts for walking between buildings.
+                  Switch between <strong className="text-foreground">Weekly timetable</strong>,{" "}
+                  <strong className="text-foreground">Gap plan</strong>, and{" "}
+                  <strong className="text-foreground">Day route</strong>. Verified route data is
+                  used where available; estimates are labelled.
                 </p>
                 <button
                   type="button"
@@ -223,6 +263,8 @@ function Index() {
                 </ul>
               </div>
             ) : null}
+
+            <TodaySummary meetings={meetings} preferences={preferences} />
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {terms.length > 1 ? (
@@ -283,6 +325,20 @@ function Index() {
                   <CalendarRange className="h-4 w-4" aria-hidden="true" />
                   Gap plan
                 </button>
+                <button
+                  role="tab"
+                  type="button"
+                  aria-selected={view === "route"}
+                  onClick={() => setView("route")}
+                  className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                    view === "route"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  <MapPinned className="h-4 w-4" aria-hidden="true" />
+                  Day route
+                </button>
               </div>
             </div>
 
@@ -296,8 +352,17 @@ function Index() {
                 </div>
               ) : view === "timetable" ? (
                 <TimetableGrid meetings={termMeetings} />
+              ) : view === "gaps" ? (
+                <GapPlan gaps={gaps} preferences={preferences} />
               ) : (
-                <GapPlan gaps={gaps} />
+                <DayRoute
+                  meetings={meetings}
+                  term={term}
+                  onTermChange={setTerm}
+                  preferences={preferences}
+                  onPreferencesChange={setPreferences}
+                  user={user}
+                />
               )}
             </div>
 
@@ -311,6 +376,14 @@ function Index() {
                 onRememberChange={handleRemember}
               />
             </div>
+            <div className="mt-6">
+              <CloudSyncControls
+                user={user}
+                meetings={meetings}
+                sourceFilename={sourceFilename}
+                onLoad={loadCloudTimetable}
+              />
+            </div>
           </>
         )}
       </main>
@@ -319,11 +392,11 @@ function Index() {
         <div className="mx-auto max-w-6xl space-y-2 px-4 py-8 text-sm text-muted-foreground sm:px-6">
           <p className="inline-flex items-center gap-2">
             <Upload className="h-4 w-4" aria-hidden="true" />
-            Your timetable stays on your device.
+            Your calendar is parsed in your browser. Cloud sync is optional.
           </p>
           <p>
-            Gapwise UTM is an independent student project and is not affiliated with the
-            University of Toronto.
+            Gapwise UTM is an independent student project and is not affiliated with the University
+            of Toronto.
           </p>
         </div>
       </footer>

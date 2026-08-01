@@ -1,0 +1,54 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "description": "Entrance points present in OpenStreetMap. Accessibility is not assumed when wheelchair tags are absent.",
+    "source": "OpenStreetMap",
+    "sourceUrl": "https://www.openstreetmap.org/",
+    "lastVerified": "2026-08-01",
+    "verificationStatus": "verified"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "13738201127",
+      "geometry": { "type": "Point", "coordinates": [-79.6654141, 43.5513221] },
+      "properties": {
+        "buildingCode": "MN",
+        "entrance": "yes",
+        "accessible": null,
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13738201127",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "13568164836",
+      "geometry": { "type": "Point", "coordinates": [-79.6659651, 43.5503162] },
+      "properties": {
+        "buildingCode": "DH",
+        "entrance": "main",
+        "accessible": null,
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164836",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "2383650599",
+      "geometry": { "type": "Point", "coordinates": [-79.6636318, 43.5516425] },
+      "properties": {
+        "buildingCode": "IB",
+        "entrance": "main",
+        "accessible": null,
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/2383650599",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    }
+  ]
+}

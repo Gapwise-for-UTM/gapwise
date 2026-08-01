@@ -176,3 +176,26 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
 }
+
+.map-number-marker {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  border-radius: 9999px;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 2px 8px oklch(0.2 0.03 258 / 35%);
+  cursor: pointer;
+}
+
+.map-number-marker.is-selected {
+  width: 2.4rem;
+  height: 2.4rem;
+  background: var(--color-accent);
+  outline: 3px solid var(--color-background);
+}
