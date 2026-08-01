@@ -46,8 +46,9 @@ function parseSummary(summary: string): {
     return { courseCode: cleaned || "Unknown", activityType: "OTHER", sectionCode: "" };
   }
   const type = (match[2] ?? "").toUpperCase();
+  const code = (match[1] ?? "").toUpperCase();
   return {
-    courseCode: match[1].toUpperCase(),
+    courseCode: code,
     activityType: (["LEC", "TUT", "PRA"].includes(type) ? type : "OTHER") as ActivityType,
     sectionCode: match[3] ?? "",
   };
@@ -64,10 +65,10 @@ function parseLocation(raw: string | null): {
   }
   const parts = value.split(" ");
   if (parts.length === 1) {
-    return { buildingCode: parts[0], room: null, locationUnknown: false };
+    return { buildingCode: parts[0] ?? null, room: null, locationUnknown: false };
   }
   return {
-    buildingCode: parts[0],
+    buildingCode: parts[0] ?? null,
     room: parts.slice(1).join(" "),
     locationUnknown: false,
   };
@@ -161,7 +162,7 @@ export function parseIcs(text: string): ParsedTimetable {
     }
 
     const jsDay = new Date(start.year, start.month - 1, start.day).getDay();
-    const startWeekday = jsDay >= 1 && jsDay <= 5 ? JS_DAY[jsDay - 1] : null;
+    const startWeekday = (jsDay >= 1 && jsDay <= 5 ? JS_DAY[jsDay - 1] : null) ?? null;
     if (!startWeekday) {
       warnings.add(`${courseCode} ${activityType} falls on a weekend and was not placed on the grid.`);
     }
