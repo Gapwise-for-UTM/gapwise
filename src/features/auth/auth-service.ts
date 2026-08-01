@@ -15,12 +15,19 @@ export async function signInWithGitHub(): Promise<void> {
 export function getAccountIdentity(user: User): string {
   const metadata = user.user_metadata ?? {};
   return (
-    user.email ||
+    (typeof metadata["name"] === "string" ? metadata["name"] : "") ||
     (typeof metadata["user_name"] === "string" ? metadata["user_name"] : "") ||
     (typeof metadata["preferred_username"] === "string" ? metadata["preferred_username"] : "") ||
     (typeof metadata["full_name"] === "string" ? metadata["full_name"] : "") ||
+    user.email ||
     "Signed in"
   );
+}
+
+export async function deleteAccount(): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const { error } = await supabase.functions.invoke("delete-account", { body: {} });
+  if (error) throw new Error("We couldn't delete your account. Please try again.");
 }
 
 export function consumeOAuthError(
@@ -44,9 +51,9 @@ export async function signOut(): Promise<void> {
 export async function getCurrentUser(): Promise<User | null> {
   const supabase = getSupabaseClient();
   if (!supabase) return null;
-  const { data, error } = await supabase.auth.getUser();
-  if (error) return null;
-  return data.user;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  return data.session?.user ?? null;
 }
 
 export function subscribeToAuthChanges(callback: (user: User | null) => void) {

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarRange, LayoutGrid, MapPinned, ShieldCheck, Trash2, Upload, X } from "lucide-react";
-import { DayRoute } from "@/components/DayRoute";
 import { GapPlan } from "@/components/GapPlan";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
@@ -12,7 +11,7 @@ import { useAuth } from "@/features/auth/use-auth";
 import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
 import {
-  loadRemembered,
+  loadRememberedRecord,
   saveRemembered,
   useIntroDismissed,
   useTheme,
@@ -21,6 +20,13 @@ import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import { findGaps } from "@/lib/gaps";
 import { IcsParseError, parseIcs } from "@/lib/ics-parser";
 import type { Meeting, Term } from "@/lib/timetable-types";
+import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
+import { deserializeSchedule } from "@/features/sync/schedule-serialization";
+import { loadScheduleRecord } from "@/features/sync/sync-service";
+
+const DayRoute = lazy(() =>
+  import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
+);
 
 const TITLE = "Gapwise UTM — Smarter Campus Gaps";
 const DESCRIPTION =
@@ -50,7 +56,7 @@ const STEPS = [
 function Index() {
   const { theme, toggleTheme } = useTheme();
   const { dismissed, dismiss } = useIntroDismissed();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
 
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -62,12 +68,146 @@ function Index() {
   const [isDemo, setIsDemo] = useState(false);
   const [sourceFilename, setSourceFilename] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
+  const [localRecord] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const stored = loadRememberedRecord<unknown>();
+    if (!stored.record) return { remember: stored.remember, record: null };
+    try {
+      return {
+        remember: stored.remember,
+        record: {
+          data: deserializeSchedule(stored.record.data),
+          updatedAt: stored.record.updatedAt,
+        },
+      };
+    } catch {
+      return { remember: stored.remember, record: null };
+    }
+  });
+  const [restoration, setRestoration] = useState<RestorationState>("waiting-for-auth");
+  const [restorationMessage, setRestorationMessage] = useState<string | null>(null);
+  const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
+  const latestMeetings = useRef<Meeting[] | null>(meetings);
+  const mounted = useRef(false);
+  const requestVersion = useRef(0);
+  const requestedUser = useRef<string | null>(null);
+  const previousUser = useRef<string | null>(null);
+  const authenticatedUserId = user?.id ?? null;
+
+  latestMeetings.current = meetings;
 
   useEffect(() => {
-    const { remember: stored, data } = loadRemembered<Meeting[]>();
-    setRemember(stored);
-    if (data && data.length > 0) setMeetings(data);
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
   }, []);
+
+  useEffect(() => {
+    setRemember(localRecord?.remember ?? false);
+  }, [localRecord]);
+
+  useEffect(() => {
+    if (authLoading) {
+      setRestoration("waiting-for-auth");
+      return;
+    }
+    const userId = authenticatedUserId;
+    if (!userId) {
+      requestVersion.current += 1;
+      requestedUser.current = null;
+      let currentMeetings = latestMeetings.current;
+      if (previousUser.current && restoredSource.current === "cloud") {
+        currentMeetings = null;
+        latestMeetings.current = null;
+        setMeetings(null);
+      }
+      previousUser.current = null;
+      const choice = chooseRestoration(
+        restoredSource.current === "memory" ? currentMeetings : null,
+        localRecord?.record ?? null,
+        null,
+      );
+      if (choice.meetings && choice.source !== "memory") {
+        latestMeetings.current = choice.meetings;
+        setMeetings(choice.meetings);
+      }
+      restoredSource.current = choice.source;
+      setRestoration(authError ? "failed" : choice.state);
+      setRestorationMessage(
+        authError
+          ? "We couldn't restore your signed-in session. Cloud restore is unavailable."
+          : null,
+      );
+      return;
+    }
+
+    if (previousUser.current !== userId) {
+      requestVersion.current += 1;
+      requestedUser.current = null;
+      if (previousUser.current && restoredSource.current === "cloud") {
+        latestMeetings.current = null;
+        setMeetings(null);
+      }
+      previousUser.current = userId;
+    }
+
+    if (latestMeetings.current?.length && restoredSource.current === "memory") {
+      setRestoration("restored-memory");
+      return;
+    }
+    if (requestedUser.current === userId) return;
+    requestedUser.current = userId;
+    const version = ++requestVersion.current;
+    setRestoration("checking-cloud");
+    setRestorationMessage(null);
+    let timeoutId: number | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = window.setTimeout(() => reject(new Error("timeout")), 8000);
+    });
+    const cloudRequest = Promise.resolve().then(() => loadScheduleRecord(userId));
+    void Promise.race([cloudRequest, timeout])
+      .then((cloud) => {
+        if (
+          !mounted.current ||
+          requestVersion.current !== version ||
+          previousUser.current !== userId
+        )
+          return;
+        const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
+        const choice = chooseRestoration(memory, localRecord?.record ?? null, cloud);
+        if (choice.meetings && choice.source !== "memory") {
+          latestMeetings.current = choice.meetings;
+          setMeetings(choice.meetings);
+        }
+        restoredSource.current = choice.source;
+        setRestoration(choice.state);
+        if (choice.state === "cloud-version-available")
+          setRestorationMessage("A cloud version is available; your local timetable was kept.");
+      })
+      .catch(() => {
+        if (
+          !mounted.current ||
+          requestVersion.current !== version ||
+          previousUser.current !== userId
+        )
+          return;
+        const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
+        const choice = chooseRestoration(memory, localRecord?.record ?? null, null);
+        if (choice.meetings && choice.source !== "memory") {
+          latestMeetings.current = choice.meetings;
+          setMeetings(choice.meetings);
+        }
+        restoredSource.current = choice.source;
+        setRestoration("failed");
+        setRestorationMessage(
+          "We couldn't restore your cloud timetable. Your local timetable is unchanged.",
+        );
+      })
+      .finally(() => {
+        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+      });
+  }, [authLoading, authError, authenticatedUserId, localRecord]);
 
   const terms = useMemo(() => {
     if (!meetings) return [] as Term[];
@@ -95,12 +235,18 @@ function Index() {
       const text = await file.text();
       const result = parseIcs(text);
       setMeetings(result.meetings);
+      latestMeetings.current = result.meetings;
+      restoredSource.current = "memory";
+      setRestoration("restored-memory");
+      setRestorationMessage(null);
       setWarnings(result.warnings);
       setIsDemo(false);
       setSourceFilename(file.name);
       saveRemembered(remember, remember ? result.meetings : null);
     } catch (err) {
       setMeetings(null);
+      latestMeetings.current = null;
+      restoredSource.current = "none";
       setWarnings([]);
       setError(
         err instanceof IcsParseError
@@ -116,6 +262,10 @@ function Index() {
     setError(null);
     setWarnings([]);
     setMeetings(DEMO_MEETINGS);
+    latestMeetings.current = DEMO_MEETINGS;
+    restoredSource.current = "memory";
+    setRestoration("restored-memory");
+    setRestorationMessage(null);
     setIsDemo(true);
     setSourceFilename(null);
     setTerm("Fall");
@@ -123,6 +273,10 @@ function Index() {
 
   function clearTimetable() {
     setMeetings(null);
+    latestMeetings.current = null;
+    restoredSource.current = "none";
+    setRestoration("no-cloud-data");
+    setRestorationMessage(null);
     setWarnings([]);
     setError(null);
     setIsDemo(false);
@@ -132,6 +286,7 @@ function Index() {
 
   function loadCloudTimetable(cloudMeetings: Meeting[]) {
     setMeetings(cloudMeetings);
+    latestMeetings.current = cloudMeetings;
     setWarnings([]);
     setError(null);
     setIsDemo(false);
@@ -141,6 +296,8 @@ function Index() {
     );
     if (firstTerm) setTerm(firstTerm);
     saveRemembered(remember, remember ? cloudMeetings : null);
+    restoredSource.current = "cloud";
+    setRestoration("restored-cloud");
   }
 
   function handleRemember(value: boolean) {
@@ -151,25 +308,41 @@ function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <a href="/" aria-label="Gapwise UTM home" className="flex min-w-0 items-center gap-3">
-            <img src="/favicon.svg" alt="" aria-hidden="true" className="h-10 w-10 shrink-0" />
+            <img src="/logo-mark.svg" alt="" aria-hidden="true" className="h-8 w-8 shrink-0" />
             <div className="min-w-0">
               <p className="font-display text-lg font-semibold">Gapwise UTM</p>
-              <p className="text-xs text-muted-foreground">
-                Your calendar is parsed in your browser. Cloud sync is optional.
-              </p>
             </div>
           </a>
-          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <div className="flex items-center gap-2">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <AccountStatus
+              user={user}
+              loading={authLoading}
+              onAccountDeleted={(clearLocal) => {
+                const retainedLocal = clearLocal
+                  ? null
+                  : loadRememberedRecord<Meeting[]>().record?.data;
+                setMeetings(retainedLocal?.length ? retainedLocal : null);
+                latestMeetings.current = retainedLocal?.length ? retainedLocal : null;
+                restoredSource.current = retainedLocal?.length ? "local" : "none";
+                setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
+                setRestorationMessage(null);
+              }}
+            />
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
-        <div className="mb-6">
-          <AccountStatus user={user} loading={authLoading} />
-        </div>
-        {!meetings ? (
+      <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-9">
+        {(authLoading || restoration === "checking-cloud") && !meetings ? (
+          <div className="py-16" role="status" aria-live="polite">
+            <div className="h-4 w-36 animate-pulse rounded bg-muted" />
+            <div className="mt-4 h-24 max-w-xl animate-pulse rounded-xl bg-muted" />
+            <span className="sr-only">Checking for your timetable…</span>
+          </div>
+        ) : !meetings ? (
           <>
             <section className="max-w-2xl">
               <h1 className="text-3xl font-semibold leading-tight sm:text-5xl">
@@ -213,6 +386,7 @@ function Index() {
                 meetings={meetings}
                 sourceFilename={sourceFilename}
                 onLoad={loadCloudTimetable}
+                restorationState={restoration}
               />
             </div>
           </>
@@ -358,14 +532,25 @@ function Index() {
               ) : view === "gaps" ? (
                 <GapPlan gaps={gaps} preferences={preferences} />
               ) : (
-                <DayRoute
-                  meetings={meetings}
-                  term={term}
-                  onTermChange={setTerm}
-                  preferences={preferences}
-                  onPreferencesChange={setPreferences}
-                  user={user}
-                />
+                <Suspense
+                  fallback={
+                    <div
+                      className="surface h-96 animate-pulse p-6 text-sm text-muted-foreground"
+                      role="status"
+                    >
+                      Loading the route map…
+                    </div>
+                  }
+                >
+                  <DayRoute
+                    meetings={meetings}
+                    term={term}
+                    onTermChange={setTerm}
+                    preferences={preferences}
+                    onPreferencesChange={setPreferences}
+                    user={user}
+                  />
+                </Suspense>
               )}
             </div>
 
@@ -385,10 +570,27 @@ function Index() {
                 meetings={meetings}
                 sourceFilename={sourceFilename}
                 onLoad={loadCloudTimetable}
+                restorationState={restoration}
               />
             </div>
           </>
         )}
+        {restorationMessage ? (
+          <div
+            className="fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm shadow-sm"
+            role="status"
+          >
+            <span>{restorationMessage}</span>
+            <button
+              type="button"
+              className="font-semibold"
+              onClick={() => setRestorationMessage(null)}
+              aria-label="Dismiss message"
+            >
+              ×
+            </button>
+          </div>
+        ) : null}
       </main>
 
       <footer className="border-t border-border">

@@ -1,7 +1,19 @@
 # Vercel deployment
 
-Gapwise is a client-only Vite SPA. Connect the GitHub repository to Vercel; `vercel.json` selects Vite, installs with Bun, builds `dist`, provides the TanStack Router SPA fallback, security headers, and cache rules. Vercel Git integration handles previews and production; GitHub Actions does not deploy.
+Import the repository, use Bun, run `bun run build`, and publish `dist`. `vercel.json` preserves client-side deep links and security headers.
 
-Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in both Production and Preview when cloud features are wanted. They are browser-safe configuration; never add a database password, GitHub OAuth secret, or service-role key. Guest deployments need no variables. Follow [SUPABASE.md](SUPABASE.md) for preview redirect patterns and add the exact production origin once assigned.
+Set only these browser-safe variables:
 
-After deployment, verify `/`, a deep-link refresh, `/site.webmanifest`, `/favicon.svg`, `/icon-192.png`, and `/icon-512.png`. Confirm maps, Google fonts, Supabase OAuth/WebSockets, and MapLibre blob workers are permitted by CSP. Cloudflare files in `public/` remain supported independently.
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+Never configure `SUPABASE_SERVICE_ROLE_KEY` as a Vercel frontend or `VITE_` variable. Deploy the account-deletion Edge Function through Supabase, then set its `ALLOWED_ORIGINS` secret to the exact production origin. Add preview origins deliberately rather than using an unrestricted wildcard.
+
+Production verification:
+
+1. Open `/` and a deep link directly.
+2. Confirm guest import works with Supabase variables absent.
+3. Sign in through GitHub, explicitly sync, refresh, and confirm automatic restoration.
+4. Verify refresh made no write request.
+5. Open Day Route and confirm its code and MapLibre load only then.
+6. Delete a disposable account and verify the selected local-data behavior.

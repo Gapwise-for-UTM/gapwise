@@ -27,16 +27,26 @@ export async function saveSchedule(
   if (error) throw error;
 }
 
-export async function loadSchedule(): Promise<Meeting[] | null> {
+export type CloudScheduleRecord = { meetings: Meeting[]; updatedAt: string | null };
+
+export async function loadScheduleRecord(
+  authenticatedUserId?: string,
+): Promise<CloudScheduleRecord | null> {
   const supabase = requireSupabaseClient();
-  const userId = await currentUserId();
+  const userId = authenticatedUserId ?? (await currentUserId());
   const { data, error } = await supabase
     .from("user_schedules")
-    .select("meetings")
+    .select("meetings, updated_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
-  return data ? deserializeSchedule(data.meetings) : null;
+  return data
+    ? { meetings: deserializeSchedule(data.meetings), updatedAt: data.updated_at ?? null }
+    : null;
+}
+
+export async function loadSchedule(): Promise<Meeting[] | null> {
+  return (await loadScheduleRecord())?.meetings ?? null;
 }
 
 export async function deleteSchedule(): Promise<void> {
