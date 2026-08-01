@@ -1,0 +1,82 @@
+import type { Meeting } from "@/lib/timetable-types";
+import { requireSupabaseClient, type Json } from "@/lib/supabase";
+import { deserializeSchedule, serializeSchedule } from "./schedule-serialization";
+import { sanitizeUserPreferences, type UserPreferences } from "./preferences";
+
+async function currentUserId(): Promise<string> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error("Sign in before using cloud sync.");
+  return data.user.id;
+}
+
+export async function saveSchedule(
+  meetings: Meeting[],
+  sourceFilename: string | null = null,
+): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const userId = await currentUserId();
+  const { error } = await supabase.from("user_schedules").upsert({
+    user_id: userId,
+    meetings: serializeSchedule(meetings) as unknown as Json,
+    source_filename: sourceFilename,
+    schema_version: 1,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw error;
+}
+
+export async function loadSchedule(): Promise<Meeting[] | null> {
+  const supabase = requireSupabaseClient();
+  const userId = await currentUserId();
+  const { data, error } = await supabase
+    .from("user_schedules")
+    .select("meetings")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data ? deserializeSchedule(data.meetings) : null;
+}
+
+export async function deleteSchedule(): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const userId = await currentUserId();
+  const { error } = await supabase.from("user_schedules").delete().eq("user_id", userId);
+  if (error) throw error;
+}
+
+export async function savePreferences(preferences: UserPreferences): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const userId = await currentUserId();
+  const value = sanitizeUserPreferences(preferences);
+  const { error } = await supabase.from("user_preferences").upsert({
+    user_id: userId,
+    walking_speed_mps: value.walkingSpeedMps,
+    route_mode: value.mode,
+    transition_buffer_minutes: value.transitionBufferMinutes,
+    avoid_stairs: value.avoidStairs,
+    prefer_indoor: value.preferIndoor,
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw error;
+}
+
+export async function loadPreferences(): Promise<UserPreferences | null> {
+  const supabase = requireSupabaseClient();
+  const userId = await currentUserId();
+  const { data, error } = await supabase
+    .from("user_preferences")
+    .select("walking_speed_mps, route_mode, transition_buffer_minutes, avoid_stairs, prefer_indoor")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return sanitizeUserPreferences({
+    walkingSpeedMps: data.walking_speed_mps,
+    mode: data.route_mode as UserPreferences["mode"],
+    transitionBufferMinutes: data.transition_buffer_minutes,
+    avoidStairs: data.avoid_stairs,
+    preferIndoor: data.prefer_indoor,
+  });
+}

@@ -1,0 +1,54 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "description": "Verified graph-ready outdoor nodes. More OSM path intersections are needed before outdoor routing is enabled.",
+    "source": "OpenStreetMap",
+    "sourceUrl": "https://www.openstreetmap.org/",
+    "lastVerified": "2026-08-01",
+    "verificationStatus": "verified"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "entrance-mn-13738201127",
+      "geometry": { "type": "Point", "coordinates": [-79.6654141, 43.5513221] },
+      "properties": {
+        "kind": "building-entrance",
+        "buildingCode": "MN",
+        "accessible": null,
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13738201127",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "entrance-dh-13568164836",
+      "geometry": { "type": "Point", "coordinates": [-79.6659651, 43.5503162] },
+      "properties": {
+        "kind": "building-entrance",
+        "buildingCode": "DH",
+        "accessible": null,
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164836",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "entrance-ib-2383650599",
+      "geometry": { "type": "Point", "coordinates": [-79.6636318, 43.5516425] },
+      "properties": {
+        "kind": "building-entrance",
+        "buildingCode": "IB",
+        "accessible": null,
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/2383650599",
+        "lastVerified": "2026-08-01",
+        "verificationStatus": "verified"
+      }
+    }
+  ]
+}

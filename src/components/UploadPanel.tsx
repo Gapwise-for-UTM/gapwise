@@ -25,7 +25,8 @@ export function UploadPanel({
         Upload your ACORN calendar
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Your timetable stays on your device — parsing happens entirely in this browser tab.
+        Your calendar is parsed in your browser. Cloud sync is optional and never uploads the
+        original ACORN file.
       </p>
 
       <div
@@ -100,8 +101,8 @@ export function UploadPanel({
           className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
         />
         <label htmlFor="remember" className="text-sm text-muted-foreground">
-          Remember on this device — keeps the parsed timetable in this browser&apos;s local
-          storage only. Off by default.
+          Remember on this device — keeps the parsed timetable in this browser&apos;s local storage
+          only. Off by default.
         </label>
       </div>
 
