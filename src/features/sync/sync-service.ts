@@ -31,14 +31,13 @@ export type CloudScheduleRecord = { meetings: Meeting[]; updatedAt: string | nul
 
 export async function loadScheduleRecord(
   authenticatedUserId?: string,
+  signal?: AbortSignal,
 ): Promise<CloudScheduleRecord | null> {
   const supabase = requireSupabaseClient();
   const userId = authenticatedUserId ?? (await currentUserId());
-  const { data, error } = await supabase
-    .from("user_schedules")
-    .select("meetings, updated_at")
-    .eq("user_id", userId)
-    .maybeSingle();
+  let query = supabase.from("user_schedules").select("meetings, updated_at").eq("user_id", userId);
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
   return data
     ? { meetings: deserializeSchedule(data.meetings), updatedAt: data.updated_at ?? null }

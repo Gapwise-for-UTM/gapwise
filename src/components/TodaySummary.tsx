@@ -1,7 +1,7 @@
 import { AlertTriangle, CalendarClock, Navigation } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { CAMPUS_BUILDINGS, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
-import { planMeetingTransition } from "@/features/routing/transition";
+import { memo, useEffect, useMemo, useState } from "react";
+import { CAMPUS_BUILDINGS } from "@/data/utm/campus";
+import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
 import { formatDuration, formatTime, locationLabel, WEEKDAYS } from "@/lib/timetable-types";
@@ -31,12 +31,14 @@ function manualStartMeeting(buildingCode: string, weekday: Weekday, term: Term):
   };
 }
 
-export function TodaySummary({
+export const TodaySummary = memo(function TodaySummary({
   meetings,
   preferences,
+  planTransition,
 }: {
   meetings: Meeting[];
   preferences: UserPreferences;
+  planTransition: TransitionPlanner;
 }) {
   const [now, setNow] = useState(() => new Date());
   const [manualBuilding, setManualBuilding] = useState("MN");
@@ -64,7 +66,7 @@ export function TodaySummary({
       return { weekday, term, current, previous, next: null, route: null, departure: null };
     const start =
       useManualStart || !anchor ? manualStartMeeting(manualBuilding, weekday, term) : anchor;
-    const route = planMeetingTransition(start, next, UTM_ROUTING_GRAPH, preferences);
+    const route = planTransition(start, next, preferences);
     const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds;
     const departure =
       seconds === null
@@ -74,7 +76,7 @@ export function TodaySummary({
             next.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes,
           );
     return { weekday, term, current, previous, next, route, departure };
-  }, [manualBuilding, meetings, now, preferences, useManualStart]);
+  }, [manualBuilding, meetings, now, planTransition, preferences, useManualStart]);
 
   if (!summary) {
     return (
@@ -181,4 +183,4 @@ export function TodaySummary({
       </p>
     </section>
   );
-}
+});

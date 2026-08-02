@@ -66,6 +66,19 @@ export function AccountStatus({
     }
   }
 
+  async function leaveAccount() {
+    if (busy) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await signOut();
+    } catch {
+      setMessage("You're signed out on this device, but the server could not be reached.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <div className="flex items-center gap-2" aria-label="Account">
       {loading ? (
@@ -81,8 +94,13 @@ export function AccountStatus({
               <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
-              <DropdownMenuLabel>Account settings</DropdownMenuLabel>
-              <DropdownMenuItem onSelect={() => void signOut()}>
+              <DropdownMenuLabel>
+                Account settings
+                <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                  You’ll stay signed in on this device until you sign out.
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuItem disabled={busy} onSelect={() => void leaveAccount()}>
                 <LogOut aria-hidden="true" /> Sign out
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -146,7 +164,10 @@ export function AccountStatus({
         </button>
       )}
       {message ? (
-        <span role="status" className="sr-only">
+        <span
+          role="status"
+          className="fixed right-4 top-20 z-50 max-w-sm rounded-lg border border-border bg-card px-4 py-3 text-sm shadow-sm"
+        >
           {message}
         </span>
       ) : null}

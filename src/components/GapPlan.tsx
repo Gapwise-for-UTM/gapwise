@@ -1,10 +1,10 @@
 import { ArrowRight, Clock, MapPin } from "lucide-react";
-import { groupGapsByDay, calculateGapTiming } from "@/lib/gaps";
+import { memo, useMemo } from "react";
+import type { TransitionPlanner } from "@/features/routing/transition";
+import type { UserPreferences } from "@/features/sync/preferences";
+import { calculateGapTiming, groupGapsByDay } from "@/lib/gaps";
 import type { Gap, GapKind } from "@/lib/timetable-types";
 import { formatDuration, formatTime, locationLabel } from "@/lib/timetable-types";
-import { planMeetingTransition } from "@/features/routing/transition";
-import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
-import type { UserPreferences } from "@/features/sync/preferences";
 
 const KIND_STYLES: Record<GapKind, string> = {
   "Transition only": "bg-muted text-muted-foreground",
@@ -13,13 +13,27 @@ const KIND_STYLES: Record<GapKind, string> = {
   "Long campus gap": "bg-pra/15 text-pra",
 };
 
-function GapCard({ gap, preferences }: { gap: Gap; preferences: UserPreferences }) {
-  const route = planMeetingTransition(gap.previous, gap.next, UTM_ROUTING_GRAPH, preferences);
-  const timing = calculateGapTiming(
-    gap,
-    route.status === "routed" || route.status === "same-room" ? route.result : null,
-    preferences.transitionBufferMinutes,
-  );
+const GapCard = memo(function GapCard({
+  gap,
+  preferences,
+  planTransition,
+}: {
+  gap: Gap;
+  preferences: UserPreferences;
+  planTransition: TransitionPlanner;
+}) {
+  const { route, timing } = useMemo(() => {
+    const route = planTransition(gap.previous, gap.next, preferences);
+    return {
+      route,
+      timing: calculateGapTiming(
+        gap,
+        route.status === "routed" || route.status === "same-room" ? route.result : null,
+        preferences.transitionBufferMinutes,
+      ),
+    };
+  }, [gap, planTransition, preferences]);
+
   return (
     <article className="surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -100,10 +114,18 @@ function GapCard({ gap, preferences }: { gap: Gap; preferences: UserPreferences 
       </div>
     </article>
   );
-}
+});
 
-export function GapPlan({ gaps, preferences }: { gaps: Gap[]; preferences: UserPreferences }) {
-  const groups = groupGapsByDay(gaps);
+export const GapPlan = memo(function GapPlan({
+  gaps,
+  preferences,
+  planTransition,
+}: {
+  gaps: Gap[];
+  preferences: UserPreferences;
+  planTransition: TransitionPlanner;
+}) {
+  const groups = useMemo(() => groupGapsByDay(gaps), [gaps]);
 
   if (groups.length === 0) {
     return (
@@ -132,11 +154,16 @@ export function GapPlan({ gaps, preferences }: { gaps: Gap[]; preferences: UserP
           </h3>
           <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {group.gaps.map((gap) => (
-              <GapCard key={gap.id} gap={gap} preferences={preferences} />
+              <GapCard
+                key={gap.id}
+                gap={gap}
+                preferences={preferences}
+                planTransition={planTransition}
+              />
             ))}
           </div>
         </section>
       ))}
     </div>
   );
-}
+});

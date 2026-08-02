@@ -17,7 +17,7 @@ Gapwise exists because a free hour is only useful when travel time, buildings, a
 - Cloud sync is optional and stores only normalized meeting fields (course, section, time, building, and room).
 - **Saving is always explicit:** only pressing **Sync timetable** changes cloud data.
 - After sign-in or refresh, Gapwise checks for an existing cloud timetable automatically. Automatic loading is not automatic uploading.
-- Calculated gaps and routes remain browser-side. There is no analytics, advertising, or tracking.
+- Calculated gaps and routes remain browser-side. Vercel Web Analytics and Speed Insights collect operational page/performance metrics; timetable contents and auth tokens are not sent to them. There is no advertising.
 
 ## Key features
 
@@ -33,6 +33,8 @@ Campus route coverage is incomplete. “Verified” refers to reviewed campus ro
 ## Cloud sync and restoration
 
 When both remembered local and cloud copies exist, Gapwise uses the newest safely comparable timestamp. If timestamps cannot be compared, it keeps the local copy and notes that a cloud version is available. An already loaded timetable is never replaced automatically. Manual cloud loading remains available for recovery.
+
+GitHub sign-in is remembered in this browser using Supabase's persistent browser session until you sign out, the session expires, or browser storage is cleared. This is separate from **Remember on this device**, which controls only the parsed timetable. On a shared device, use **Sign out** from the account menu; it clears this browser's auth session without deleting your GitHub account or cloud data.
 
 ## Account and data deletion
 
