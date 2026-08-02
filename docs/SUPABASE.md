@@ -15,6 +15,14 @@ Apply `supabase/migrations/20260801000000_user_sync.sql`. Both user tables:
 
 There are no `USING (true)` policies, public user-data grants, or security-definer functions. The current schema has two user-owned tables: `user_schedules` and `user_preferences`.
 
+## Browser auth sessions
+
+The browser client uses Supabase's supported persistent-session configuration: `persistSession`, automatic token refresh, OAuth URL detection, and a `localStorage` adapter. A signed-in user therefore remains signed in across reloads and normal browser restarts. If browser privacy settings block storage, auth falls back to memory for the current page instead of crashing; that fallback is intentionally not durable.
+
+The app owns one page-lifetime `onAuthStateChange` subscription. Auth initialization does not make a second `getSession` request, cloud restoration is single-flight per user, and sign-out aborts/invalidates stale restoration work before clearing the local Supabase session. **Remember on this device** remains a separate opt-in timetable setting and does not control authentication.
+
+Use **Sign out** on shared devices. It clears the local browser auth session only; it does not delete the GitHub account, synced schedule, or preferences. Use **Delete account and cloud data** for permanent server-side deletion.
+
 ## Account deletion Edge Function
 
 `supabase/functions/delete-account/index.ts` accepts only authenticated `POST` requests. It verifies the bearer token with Supabase, derives the ID from that verified user, and ignores all browser-supplied identity. The Admin API runs only inside the function. Deleting `auth.users` cascades to every current user-owned row.

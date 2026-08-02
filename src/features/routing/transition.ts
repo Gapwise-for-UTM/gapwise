@@ -5,6 +5,12 @@ import { resolveMeetingLocation } from "./location-resolver";
 import { findRoute } from "./engine";
 import type { RoutePreferences, RoutingGraph, RoutingNode, TransitionRoute } from "./types";
 
+export type TransitionPlanner = (
+  from: Meeting,
+  to: Meeting,
+  preferences: RoutePreferences,
+) => TransitionRoute;
+
 export function haversineMeters(a: [number, number], b: [number, number]): number {
   const radians = (degrees: number) => (degrees * Math.PI) / 180;
   const earthRadius = 6_371_000;
@@ -176,4 +182,46 @@ export function planMeetingTransition(
     approximateDistanceMeters: distance,
     approximateSeconds: seconds,
   };
+}
+
+function meetingCacheKey(meeting: Meeting): string {
+  return [
+    meeting.id,
+    meeting.buildingCode ?? "",
+    meeting.room ?? "",
+    meeting.locationUnknown ? "unknown" : "known",
+  ].join("|");
+}
+
+function preferenceCacheKey(preferences: RoutePreferences): string {
+  return [preferences.mode, preferences.walkingSpeedMps, preferences.transitionBufferMinutes].join(
+    "|",
+  );
+}
+
+/** Keeps pure transition work stable while a timetable remains in memory. */
+export function createMemoizedTransitionPlanner(
+  graph: RoutingGraph,
+  calculate: typeof planMeetingTransition = planMeetingTransition,
+  maxEntries = 1_000,
+): TransitionPlanner {
+  const cache = new Map<string, TransitionRoute>();
+  return (from, to, preferences) => {
+    const key = `${meetingCacheKey(from)}>${meetingCacheKey(to)}@${preferenceCacheKey(preferences)}`;
+    const cached = cache.get(key);
+    if (cached) return cached;
+    const route = calculate(from, to, graph, preferences);
+    if (cache.size >= maxEntries) cache.clear();
+    cache.set(key, route);
+    return route;
+  };
+}
+
+/** Scopes cached transitions to one loaded timetable and bounds retained results. */
+export function createScheduleTransitionPlanner(
+  graph: RoutingGraph,
+  meetings: readonly Meeting[],
+): TransitionPlanner {
+  const maxEntries = Math.max(100, Math.min(2_000, meetings.length * 10));
+  return createMemoizedTransitionPlanner(graph, planMeetingTransition, maxEntries);
 }

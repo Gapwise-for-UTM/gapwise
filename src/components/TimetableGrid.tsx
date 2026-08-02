@@ -1,5 +1,7 @@
 import type { ActivityType, Meeting } from "@/lib/timetable-types";
 import { formatTime, locationLabel, WEEKDAYS } from "@/lib/timetable-types";
+import { buildTimetableModel } from "@/lib/timetable-layout";
+import { memo, useMemo } from "react";
 
 const TYPE_STYLES: Record<ActivityType, string> = {
   LEC: "border-l-lec bg-lec/10 text-lec",
@@ -38,29 +40,8 @@ function MeetingCard({ meeting, compact }: { meeting: Meeting; compact?: boolean
   );
 }
 
-/** Assigns overlapping meetings to side-by-side lanes so nothing visually collides. */
-function layout(day: Meeting[]) {
-  const sorted = [...day].sort((a, b) => a.startTime - b.startTime);
-  const lanes: Meeting[][] = [];
-  const placement = new Map<string, number>();
-  for (const meeting of sorted) {
-    let laneIndex = lanes.findIndex(
-      (lane) => (lane[lane.length - 1]?.endTime ?? 0) <= meeting.startTime,
-    );
-    if (laneIndex === -1) {
-      lanes.push([]);
-      laneIndex = lanes.length - 1;
-    }
-    lanes[laneIndex]!.push(meeting);
-    placement.set(meeting.id, laneIndex);
-  }
-  return { laneCount: Math.max(1, lanes.length), placement, sorted };
-}
-
-export function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
-  const startHour = Math.max(7, Math.min(...meetings.map((m) => Math.floor(m.startTime / 60))) - 1);
-  const endHour = Math.min(23, Math.max(...meetings.map((m) => Math.ceil(m.endTime / 60))) + 1);
-  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
+export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
+  const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
   const pxPerMinute = 1.1;
 
   return (
@@ -89,8 +70,7 @@ export function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
               ))}
             </div>
             {WEEKDAYS.map((day) => {
-              const dayMeetings = meetings.filter((m) => m.weekday === day);
-              const { laneCount, placement, sorted } = layout(dayMeetings);
+              const { laneCount, placement, sorted } = days.get(day)!;
               return (
                 <div key={day} className="relative border-l border-border">
                   {hours.map((hour) => (
@@ -127,9 +107,7 @@ export function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
       {/* Mobile day list */}
       <div className="space-y-4 md:hidden">
         {WEEKDAYS.map((day) => {
-          const dayMeetings = meetings
-            .filter((m) => m.weekday === day)
-            .sort((a, b) => a.startTime - b.startTime);
+          const dayMeetings = days.get(day)!.sorted;
           return (
             <section key={day} className="surface p-4" aria-labelledby={`day-${day}`}>
               <h3 id={`day-${day}`} className="text-sm font-semibold">
@@ -170,4 +148,4 @@ export function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
       </div>
     </div>
   );
-}
+});

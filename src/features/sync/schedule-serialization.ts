@@ -3,6 +3,7 @@ import { WEEKDAYS } from "@/lib/timetable-types";
 
 const ACTIVITY_TYPES: ActivityType[] = ["LEC", "TUT", "PRA", "OTHER"];
 const TERMS: Term[] = ["Fall", "Winter"];
+const deserializationCache = new WeakMap<object, Meeting[]>();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -82,15 +83,24 @@ export function serializeSchedule(meetings: Meeting[]): Meeting[] {
 }
 
 export function deserializeSchedule(value: unknown): Meeting[] {
+  if (Array.isArray(value)) {
+    const cached = deserializationCache.get(value);
+    if (cached) return cached;
+  }
   if (!Array.isArray(value)) throw new Error("Cloud timetable is not a meeting array.");
   const meetings = value.map(deserializeMeeting);
   if (meetings.some((meeting) => meeting === null)) {
     throw new Error("Cloud timetable contains an unsupported meeting record.");
   }
-  return (meetings as Meeting[]).sort(
+  const unique = [
+    ...new Map((meetings as Meeting[]).map((meeting) => [meeting.id, meeting])).values(),
+  ];
+  const normalized = unique.sort(
     (a, b) =>
       TERMS.indexOf(a.term) - TERMS.indexOf(b.term) ||
       WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday) ||
       a.startTime - b.startTime,
   );
+  deserializationCache.set(value, normalized);
+  return normalized;
 }

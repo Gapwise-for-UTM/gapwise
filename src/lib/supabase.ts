@@ -71,6 +71,8 @@ type StorageAdapter = {
   removeItem: (key: string) => void | Promise<void>;
 };
 
+type BrowserStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+
 const viteEnv = (
   import.meta as ImportMeta & {
     env?: Record<string, string | undefined>;
@@ -79,19 +81,59 @@ const viteEnv = (
 const url = viteEnv?.["VITE_SUPABASE_URL"]?.trim() ?? "";
 const publishableKey = viteEnv?.["VITE_SUPABASE_PUBLISHABLE_KEY"]?.trim() ?? "";
 
-const memorySession = new Map<string, string>();
-const memoryStorage: StorageAdapter = {
-  getItem: (key) => memorySession.get(key) ?? null,
-  setItem: (key, value) => {
-    memorySession.set(key, value);
-  },
-  removeItem: (key) => {
-    memorySession.delete(key);
-  },
-};
+/**
+ * Keeps Supabase on its supported storage interface while making browser privacy
+ * failures non-fatal. Successful writes use localStorage; memory is only a
+ * same-page fallback and never replaces durable browser persistence.
+ */
+export function createSafeAuthStorage(
+  persistentStorage: BrowserStorage | null,
+  memory = new Map<string, string>(),
+): StorageAdapter {
+  return {
+    getItem(key) {
+      if (persistentStorage) {
+        try {
+          const value = persistentStorage.getItem(key);
+          if (value === null) memory.delete(key);
+          else memory.set(key, value);
+          return value;
+        } catch {
+          // Fall through to the in-memory session when storage is blocked mid-session.
+        }
+      }
+      return memory.get(key) ?? null;
+    },
+    setItem(key, value) {
+      memory.set(key, value);
+      if (persistentStorage) {
+        try {
+          persistentStorage.setItem(key, value);
+        } catch {
+          // The active tab remains usable, but the session will be nonpersistent.
+        }
+      }
+    },
+    removeItem(key) {
+      memory.delete(key);
+      if (persistentStorage) {
+        try {
+          persistentStorage.removeItem(key);
+        } catch {
+          // Memory has still been cleared, so this page is signed out safely.
+        }
+      }
+    },
+  };
+}
 
-function sessionOnlyStorage(): StorageAdapter {
-  return typeof window === "undefined" ? memoryStorage : window.sessionStorage;
+function persistentBrowserStorage(): BrowserStorage | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
 }
 
 let client: SupabaseClient<Database> | null = null;
@@ -101,7 +143,7 @@ if (url && publishableKey) {
   try {
     client = createClient<Database>(url, publishableKey, {
       auth: {
-        storage: sessionOnlyStorage(),
+        storage: createSafeAuthStorage(persistentBrowserStorage()),
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,

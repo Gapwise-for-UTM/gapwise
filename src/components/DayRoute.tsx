@@ -10,8 +10,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusMap } from "./CampusMap";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
-import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
-import { planMeetingTransition } from "@/features/routing/transition";
+import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import { loadPreferences, savePreferences } from "@/features/sync/sync-service";
 import type { UserPreferences } from "@/features/sync/preferences";
@@ -40,6 +39,7 @@ export function DayRoute({
   preferences,
   onPreferencesChange,
   user,
+  planTransition,
 }: {
   meetings: Meeting[];
   term: Term;
@@ -47,6 +47,7 @@ export function DayRoute({
   preferences: UserPreferences;
   onPreferencesChange: (preferences: UserPreferences) => void;
   user: User | null;
+  planTransition: TransitionPlanner;
 }) {
   const availableTerms = useMemo(
     () =>
@@ -79,10 +80,10 @@ export function DayRoute({
           id: `${from.id}--${to.id}`,
           from,
           to,
-          route: planMeetingTransition(from, to, UTM_ROUTING_GRAPH, preferences),
+          route: planTransition(from, to, preferences),
         };
       }),
-    [dayMeetings, preferences],
+    [dayMeetings, planTransition, preferences],
   );
 
   useEffect(() => {

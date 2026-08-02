@@ -317,6 +317,53 @@ describe("route-level timetable restoration", () => {
     expect(pageText()).not.toContain("SIGNOUT101H5");
   });
 
+  test("ignores a cloud restore that resolves after sign-out", async () => {
+    const cloud = meeting({ id: "stale", courseCode: "STALE101H5" });
+    const query = deferred<CloudScheduleRecord | null>();
+    authSnapshot = { user: authenticatedUser, loading: false, error: null };
+    loadImplementation = async () => query.promise;
+
+    await mountRoute();
+    await waitFor(() => loadCalls.length === 1, "the cloud query to start");
+    await setAuth({ user: null, loading: false, error: null });
+    query.resolve({ meetings: [cloud], updatedAt: "2026-08-01T12:00:00.000Z" });
+    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the guest state");
+    await flush();
+
+    expect(pageText()).not.toContain("STALE101H5");
+    expect(loadCalls).toEqual([authenticatedUser.id]);
+  });
+
+  test("keeps the weekly grid mounted while switching schedule views", async () => {
+    authSnapshot = { user: null, loading: false, error: null };
+    await mountRoute();
+    await waitFor(() => pageText().includes("Try a demo"), "the demo button");
+    const buttons = () => Array.from(container!.querySelectorAll("button"));
+    const click = async (label: string) => {
+      const button = buttons().find((candidate) => candidate.textContent?.includes(label));
+      expect(button).toBeTruthy();
+      await act(async () =>
+        button?.dispatchEvent(new browserWindow.MouseEvent("click", { bubbles: true })),
+      );
+    };
+
+    await click("Try a demo");
+    await waitFor(() => pageText().includes("Demo timetable"), "the demo timetable");
+    const courseNode = Array.from(container!.querySelectorAll("span")).find(
+      (node) => node.textContent === "DEM101H5",
+    );
+    expect(courseNode).toBeTruthy();
+
+    await click("Gap plan");
+    expect(container!.contains(courseNode!)).toBeTrue();
+    await click("Weekly timetable");
+    expect(
+      Array.from(container!.querySelectorAll("span")).find(
+        (node) => node.textContent === "DEM101H5",
+      ),
+    ).toBe(courseNode);
+  });
+
   test("does not query or upload over an already loaded in-memory timetable", async () => {
     authSnapshot = { user: null, loading: false, error: null };
     await mountRoute();

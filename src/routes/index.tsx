@@ -9,6 +9,7 @@ import { UploadPanel } from "@/components/UploadPanel";
 import { AccountStatus } from "@/features/auth/AccountStatus";
 import { useAuth } from "@/features/auth/use-auth";
 import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
+import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
 import {
   loadRememberedRecord,
@@ -22,7 +23,8 @@ import { IcsParseError, parseIcs } from "@/lib/ics-parser";
 import type { Meeting, Term } from "@/lib/timetable-types";
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
 import { deserializeSchedule } from "@/features/sync/schedule-serialization";
-import { loadScheduleRecord } from "@/features/sync/sync-service";
+import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
+import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -65,6 +67,7 @@ function Index() {
   const [remember, setRemember] = useState(false);
   const [term, setTerm] = useState<Term>("Fall");
   const [view, setView] = useState<"timetable" | "gaps" | "route">("timetable");
+  const [openedViews, setOpenedViews] = useState({ gaps: false, route: false });
   const [isDemo, setIsDemo] = useState(false);
   const [sourceFilename, setSourceFilename] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
@@ -93,6 +96,10 @@ function Index() {
   const requestedUser = useRef<string | null>(null);
   const previousUser = useRef<string | null>(null);
   const authenticatedUserId = user?.id ?? null;
+  const planTransition = useMemo(
+    () => createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings ?? []),
+    [meetings],
+  );
 
   latestMeetings.current = meetings;
 
@@ -114,6 +121,7 @@ function Index() {
     }
     const userId = authenticatedUserId;
     if (!userId) {
+      cloudRestoration.cancel(previousUser.current);
       requestVersion.current += 1;
       requestedUser.current = null;
       let currentMeetings = latestMeetings.current;
@@ -143,6 +151,7 @@ function Index() {
     }
 
     if (previousUser.current !== userId) {
+      cloudRestoration.cancel(previousUser.current);
       requestVersion.current += 1;
       requestedUser.current = null;
       if (previousUser.current && restoredSource.current === "cloud") {
@@ -161,12 +170,8 @@ function Index() {
     const version = ++requestVersion.current;
     setRestoration("checking-cloud");
     setRestorationMessage(null);
-    let timeoutId: number | undefined;
-    const timeout = new Promise<never>((_, reject) => {
-      timeoutId = window.setTimeout(() => reject(new Error("timeout")), 8000);
-    });
-    const cloudRequest = Promise.resolve().then(() => loadScheduleRecord(userId));
-    void Promise.race([cloudRequest, timeout])
+    void cloudRestoration
+      .restore(userId)
       .then((cloud) => {
         if (
           !mounted.current ||
@@ -185,7 +190,8 @@ function Index() {
         if (choice.state === "cloud-version-available")
           setRestorationMessage("A cloud version is available; your local timetable was kept.");
       })
-      .catch(() => {
+      .catch((restoreError: unknown) => {
+        if (isRestorationAbort(restoreError)) return;
         if (
           !mounted.current ||
           requestVersion.current !== version ||
@@ -203,9 +209,6 @@ function Index() {
         setRestorationMessage(
           "We couldn't restore your cloud timetable. Your local timetable is unchanged.",
         );
-      })
-      .finally(() => {
-        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
       });
   }, [authLoading, authError, authenticatedUserId, localRecord]);
 
@@ -303,6 +306,13 @@ function Index() {
   function handleRemember(value: boolean) {
     setRemember(value);
     saveRemembered(value, value && !isDemo ? meetings : null);
+  }
+
+  function showView(nextView: "timetable" | "gaps" | "route") {
+    if (nextView !== "timetable") {
+      setOpenedViews((current) => (current[nextView] ? current : { ...current, [nextView]: true }));
+    }
+    setView(nextView);
   }
 
   return (
@@ -441,7 +451,11 @@ function Index() {
               </div>
             ) : null}
 
-            <TodaySummary meetings={meetings} preferences={preferences} />
+            <TodaySummary
+              meetings={meetings}
+              preferences={preferences}
+              planTransition={planTransition}
+            />
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {terms.length > 1 ? (
@@ -478,7 +492,7 @@ function Index() {
                   role="tab"
                   type="button"
                   aria-selected={view === "timetable"}
-                  onClick={() => setView("timetable")}
+                  onClick={() => showView("timetable")}
                   className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
                     view === "timetable"
                       ? "bg-primary text-primary-foreground"
@@ -492,7 +506,7 @@ function Index() {
                   role="tab"
                   type="button"
                   aria-selected={view === "gaps"}
-                  onClick={() => setView("gaps")}
+                  onClick={() => showView("gaps")}
                   className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
                     view === "gaps"
                       ? "bg-primary text-primary-foreground"
@@ -506,7 +520,7 @@ function Index() {
                   role="tab"
                   type="button"
                   aria-selected={view === "route"}
-                  onClick={() => setView("route")}
+                  onClick={() => showView("route")}
                   className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
                     view === "route"
                       ? "bg-primary text-primary-foreground"
@@ -527,30 +541,45 @@ function Index() {
                     This export doesn&apos;t contain any {term} term meetings.
                   </p>
                 </div>
-              ) : view === "timetable" ? (
-                <TimetableGrid meetings={termMeetings} />
-              ) : view === "gaps" ? (
-                <GapPlan gaps={gaps} preferences={preferences} />
               ) : (
-                <Suspense
-                  fallback={
-                    <div
-                      className="surface h-96 animate-pulse p-6 text-sm text-muted-foreground"
-                      role="status"
-                    >
-                      Loading the route map…
+                <>
+                  <div hidden={view !== "timetable"}>
+                    <TimetableGrid meetings={termMeetings} />
+                  </div>
+                  {openedViews.gaps ? (
+                    <div hidden={view !== "gaps"}>
+                      <GapPlan
+                        gaps={gaps}
+                        preferences={preferences}
+                        planTransition={planTransition}
+                      />
                     </div>
-                  }
-                >
-                  <DayRoute
-                    meetings={meetings}
-                    term={term}
-                    onTermChange={setTerm}
-                    preferences={preferences}
-                    onPreferencesChange={setPreferences}
-                    user={user}
-                  />
-                </Suspense>
+                  ) : null}
+                  {openedViews.route ? (
+                    <div hidden={view !== "route"}>
+                      <Suspense
+                        fallback={
+                          <div
+                            className="surface h-96 animate-pulse p-6 text-sm text-muted-foreground"
+                            role="status"
+                          >
+                            Loading the route map…
+                          </div>
+                        }
+                      >
+                        <DayRoute
+                          meetings={meetings}
+                          term={term}
+                          onTermChange={setTerm}
+                          preferences={preferences}
+                          onPreferencesChange={setPreferences}
+                          user={user}
+                          planTransition={planTransition}
+                        />
+                      </Suspense>
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
 

@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, requireSupabaseClient } from "@/lib/supabase";
+import { authStore } from "./auth-store";
 
 export async function signInWithGitHub(): Promise<void> {
   const supabase = requireSupabaseClient();
@@ -44,8 +45,16 @@ export function consumeOAuthError(
 
 export async function signOut(): Promise<void> {
   const supabase = requireSupabaseClient();
-  const { error } = await supabase.auth.signOut({ scope: "local" });
-  if (error) throw error;
+  authStore.forceSignedOut();
+  try {
+    const { error } = await supabase.auth.signOut({ scope: "local" });
+    if (error) throw error;
+  } catch (error) {
+    // Supabase clears the local session even when the server request fails.
+    // Keep application state signed out so stale callbacks cannot restore it.
+    authStore.forceSignedOut();
+    throw error;
+  }
 }
 
 export async function getCurrentUser(): Promise<User | null> {
@@ -57,10 +66,5 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export function subscribeToAuthChanges(callback: (user: User | null) => void) {
-  const supabase = getSupabaseClient();
-  if (!supabase) return () => undefined;
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-    callback(session?.user ?? null);
-  });
-  return () => data.subscription.unsubscribe();
+  return authStore.subscribe(() => callback(authStore.getSnapshot().user));
 }
