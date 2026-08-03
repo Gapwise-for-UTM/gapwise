@@ -11,6 +11,9 @@ import { resolveAcornLocation } from "@/features/routing/location-resolver";
 
 export class IcsParseError extends Error {}
 
+export const MAX_ICS_FILE_BYTES = 2 * 1024 * 1024;
+export const MAX_ICS_EVENTS = 2_000;
+
 const DAY_MAP: Record<string, Weekday> = {
   MO: "Monday",
   TU: "Tuesday",
@@ -95,6 +98,9 @@ function weekdaysFor(event: ICAL.Event, startWeekday: Weekday | null): Weekday[]
 }
 
 export function parseIcs(text: string): ParsedTimetable {
+  if (text.length > MAX_ICS_FILE_BYTES) {
+    throw new IcsParseError("That calendar is too large. Please choose an .ics file under 2 MB.");
+  }
   if (!/BEGIN:VCALENDAR/i.test(text)) {
     throw new IcsParseError(
       "That file doesn't look like a calendar export. Please upload the .ics file downloaded from ACORN.",
@@ -114,6 +120,11 @@ export function parseIcs(text: string): ParsedTimetable {
   if (vevents.length === 0) {
     throw new IcsParseError(
       "This calendar has no events in it. Export your timetable from ACORN again and try once more.",
+    );
+  }
+  if (vevents.length > MAX_ICS_EVENTS) {
+    throw new IcsParseError(
+      "That calendar contains too many events. Export only your current ACORN timetable and try again.",
     );
   }
 

@@ -100,5 +100,7 @@ describe("large timetable regressions", () => {
     expect(route).toContain('hidden={view !== "route"}');
     expect(map).toContain('void import("maplibre-gl")');
     expect(map).toContain('import "maplibre-gl/dist/maplibre-gl.css"');
+    expect(map).toContain("maplibre-gl-worker.mjs?worker&url");
+    expect(map).toContain("setWorkerUrl(mapLibreWorkerUrl)");
   });
 });

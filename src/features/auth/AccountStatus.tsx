@@ -80,7 +80,7 @@ export function AccountStatus({
   }
 
   return (
-    <div className="flex items-center gap-2" aria-label="Account">
+    <div className="flex items-center gap-2" role="group" aria-label="Account">
       {loading ? (
         <span className="text-sm text-muted-foreground" role="status">
           Checking account…

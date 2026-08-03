@@ -19,7 +19,7 @@ import {
 } from "@/hooks/use-preferences";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import { findGaps } from "@/lib/gaps";
-import { IcsParseError, parseIcs } from "@/lib/ics-parser";
+import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
 import type { Meeting, Term } from "@/lib/timetable-types";
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
 import { deserializeSchedule } from "@/features/sync/schedule-serialization";
@@ -231,6 +231,10 @@ function Index() {
     setError(null);
     if (!/\.ics$/i.test(file.name) && file.type !== "text/calendar") {
       setError("That file type isn't supported. Please choose a .ics calendar file.");
+      return;
+    }
+    if (file.size > MAX_ICS_FILE_BYTES) {
+      setError("That calendar is too large. Please choose an .ics file under 2 MB.");
       return;
     }
     setLoading(true);

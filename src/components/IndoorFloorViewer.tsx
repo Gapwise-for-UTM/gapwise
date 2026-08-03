@@ -4,7 +4,7 @@ import type { TransitionRoute } from "@/features/routing/types";
 import type { Meeting } from "@/lib/timetable-types";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 
-function routeSteps(route: TransitionRoute, from: Meeting, to: Meeting): string[] {
+function routeSteps(route: TransitionRoute, to: Meeting): string[] {
   if (route.status === "same-room") return ["Stay in the current room for your next class."];
   const result = route.result;
   if (!result || result.nodes.length === 0) {
@@ -62,7 +62,8 @@ export function IndoorFloorViewer({
       [...new Set(route.result?.nodes.map((node) => node.floor).filter(Boolean) ?? [])] as string[],
     [route],
   );
-  const [floor, setFloor] = useState(mappedFloors[0] ?? "");
+  const [selectedFloor, setSelectedFloor] = useState("");
+  const floor = mappedFloors.includes(selectedFloor) ? selectedFloor : (mappedFloors[0] ?? "");
   const buildingCode = to.buildingCode ?? from.buildingCode;
   const nodes = UTM_ROUTING_GRAPH.nodes.filter(
     (node) =>
@@ -76,7 +77,7 @@ export function IndoorFloorViewer({
   const edges = UTM_ROUTING_GRAPH.edges.filter(
     (edge) => edge.environment !== "outdoor" && nodeById.has(edge.from) && nodeById.has(edge.to),
   );
-  const steps = routeSteps(route, from, to);
+  const steps = routeSteps(route, to);
 
   return (
     <section className="surface p-4" aria-labelledby="indoor-viewer-title">
@@ -94,7 +95,7 @@ export function IndoorFloorViewer({
             Floor
             <select
               value={floor}
-              onChange={(event) => setFloor(event.target.value)}
+              onChange={(event) => setSelectedFloor(event.target.value)}
               className="ml-2 rounded-md border border-input bg-card px-2 py-1"
             >
               {mappedFloors.map((item) => (

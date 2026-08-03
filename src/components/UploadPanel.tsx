@@ -51,7 +51,7 @@ export function UploadPanel({
         </span>
         <span className="mt-4 block text-sm font-semibold">Drop your .ics file here</span>
         <span id="ics-file-help" className="mt-1 block text-xs text-muted-foreground">
-          or choose a file from your device
+          or choose a file from your device · 2 MB maximum
         </span>
       </button>
       <input
