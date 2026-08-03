@@ -13,6 +13,21 @@ export async function signInWithGitHub(): Promise<void> {
   if (error) throw error;
 }
 
+export async function requestEmailSignInLink(email: string): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) throw new Error("Enter an email address.");
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: normalizedEmail,
+    options: {
+      shouldCreateUser: true,
+      emailRedirectTo: window.location.origin,
+    },
+  });
+  if (error) throw error;
+}
+
 export function getAccountIdentity(user: User): string {
   const metadata = user.user_metadata ?? {};
   return (
@@ -50,8 +65,6 @@ export async function signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw error;
   } catch (error) {
-    // Supabase clears the local session even when the server request fails.
-    // Keep application state signed out so stale callbacks cannot restore it.
     authStore.forceSignedOut();
     throw error;
   }

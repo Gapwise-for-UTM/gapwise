@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, Github, LogOut, Trash2, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ChevronDown, Github, LogOut, Mail, Trash2, UserRound, X } from "lucide-react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,6 +25,7 @@ import {
   consumeOAuthError,
   deleteAccount,
   getAccountIdentity,
+  requestEmailSignInLink,
   signInWithGitHub,
   signOut,
 } from "./auth-service";
@@ -42,10 +43,13 @@ export function AccountStatus({
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [clearLocal, setClearLocal] = useState(false);
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     const error = consumeOAuthError(window.location, window.history);
-    if (error) setMessage("GitHub sign-in did not complete. Please try again.");
+    if (error) setMessage("Sign-in did not complete. Please try again.");
   }, []);
 
   async function removeAccount() {
@@ -79,8 +83,24 @@ export function AccountStatus({
     }
   }
 
+  async function sendEmailLink(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await requestEmailSignInLink(email);
+      setEmailSent(true);
+      setMessage("Check your email and open the secure sign-in link.");
+    } catch {
+      setMessage("We couldn't send a sign-in link right now. Please wait and try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <div className="flex items-center gap-2" role="group" aria-label="Account">
+    <div className="relative flex items-center gap-2" role="group" aria-label="Account">
       {loading ? (
         <span className="text-sm text-muted-foreground" role="status">
           Checking account…
@@ -152,21 +172,108 @@ export function AccountStatus({
           </AlertDialog>
         </>
       ) : (
-        <button
-          type="button"
-          onClick={() =>
-            void signInWithGitHub().catch(() => setMessage("Sign-in failed. Please try again."))
-          }
-          disabled={!isSupabaseConfigured}
-          className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-        >
-          <Github className="h-4 w-4" aria-hidden="true" /> Sign in
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => setSignInOpen((open) => !open)}
+            disabled={!isSupabaseConfigured}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            aria-expanded={signInOpen}
+          >
+            <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
+          </button>
+          {signInOpen ? (
+            <section className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-card p-4 shadow-lg">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-semibold">Sign in to sync</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Guest mode remains available without an account.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSignInOpen(false)}
+                  className="rounded-md p-2 hover:bg-secondary"
+                  aria-label="Close sign-in panel"
+                >
+                  <X className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  void signInWithGitHub().catch(() =>
+                    setMessage("GitHub sign-in failed. Please try again."),
+                  )
+                }
+                disabled={busy}
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+              >
+                <Github className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
+              </button>
+
+              <div className="my-3 flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" /> or{" "}
+                <span className="h-px flex-1 bg-border" />
+              </div>
+
+              {emailSent ? (
+                <div className="space-y-3" role="status">
+                  <div className="rounded-lg border border-border bg-secondary/50 p-4">
+                    <p className="font-medium">Check your email</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Open the secure sign-in link we sent to finish signing in.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setEmailSent(false)}
+                    className="min-h-11 w-full rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+                  >
+                    Use a different email or resend
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={sendEmailLink} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium" htmlFor="account-email">
+                      Email address
+                    </label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      We’ll email you a secure, single-use sign-in link.
+                    </p>
+                  </div>
+                  <input
+                    id="account-email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                    required
+                    disabled={busy}
+                    className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
+                  />
+                  <button
+                    type="submit"
+                    disabled={busy || !email.trim()}
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                  >
+                    <Mail className="h-4 w-4" aria-hidden="true" />
+                    {busy ? "Sending…" : "Email me a sign-in link"}
+                  </button>
+                </form>
+              )}
+            </section>
+          ) : null}
+        </>
       )}
       {message ? (
         <span
           role="status"
-          className="fixed right-4 top-20 z-50 max-w-sm rounded-lg border border-border bg-card px-4 py-3 text-sm shadow-sm"
+          className="fixed right-4 top-20 z-[60] max-w-sm rounded-lg border border-border bg-card px-4 py-3 text-sm shadow-sm"
         >
           {message}
         </span>
