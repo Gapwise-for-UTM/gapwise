@@ -13,7 +13,7 @@ export async function signInWithGitHub(): Promise<void> {
   if (error) throw error;
 }
 
-export async function requestEmailOtp(email: string): Promise<void> {
+export async function requestEmailSignInLink(email: string): Promise<void> {
   const supabase = requireSupabaseClient();
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) throw new Error("Enter an email address.");
@@ -22,24 +22,8 @@ export async function requestEmailOtp(email: string): Promise<void> {
     email: normalizedEmail,
     options: {
       shouldCreateUser: true,
+      emailRedirectTo: window.location.origin,
     },
-  });
-  if (error) throw error;
-}
-
-export async function verifyEmailOtp(email: string, token: string): Promise<void> {
-  const supabase = requireSupabaseClient();
-  const normalizedEmail = email.trim().toLowerCase();
-  const normalizedToken = token.replace(/\s+/g, "");
-
-  if (!/^\d{6}$/.test(normalizedToken)) {
-    throw new Error("Enter the six-digit code from your email.");
-  }
-
-  const { error } = await supabase.auth.verifyOtp({
-    email: normalizedEmail,
-    token: normalizedToken,
-    type: "email",
   });
   if (error) throw error;
 }
