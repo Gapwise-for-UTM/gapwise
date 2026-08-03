@@ -1,69 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
-
-export type Database = {
-  public: {
-    Tables: {
-      user_schedules: {
-        Row: {
-          user_id: string;
-          meetings: Json;
-          source_filename: string | null;
-          schema_version: number;
-          updated_at: string;
-        };
-        Insert: {
-          user_id: string;
-          meetings: Json;
-          source_filename?: string | null;
-          schema_version?: number;
-          updated_at?: string;
-        };
-        Update: {
-          meetings?: Json;
-          source_filename?: string | null;
-          schema_version?: number;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      user_preferences: {
-        Row: {
-          user_id: string;
-          walking_speed_mps: number;
-          route_mode: string;
-          transition_buffer_minutes: number;
-          avoid_stairs: boolean;
-          prefer_indoor: boolean;
-          updated_at: string;
-        };
-        Insert: {
-          user_id: string;
-          walking_speed_mps?: number;
-          route_mode?: string;
-          transition_buffer_minutes?: number;
-          avoid_stairs?: boolean;
-          prefer_indoor?: boolean;
-          updated_at?: string;
-        };
-        Update: {
-          walking_speed_mps?: number;
-          route_mode?: string;
-          transition_buffer_minutes?: number;
-          avoid_stairs?: boolean;
-          prefer_indoor?: boolean;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-    };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
-  };
-};
+export type { Database, Json } from "./database.types";
 
 type StorageAdapter = {
   getItem: (key: string) => string | null | Promise<string | null>;

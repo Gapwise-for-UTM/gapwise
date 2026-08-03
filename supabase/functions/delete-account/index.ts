@@ -1,14 +1,22 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 
-const configuredOrigins = (Deno.env.get("ALLOWED_ORIGINS") ?? "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
+const defaultOrigins = [
+  "https://campus-gap-finder.vercel.app",
+  "http://localhost:8080",
+  "http://127.0.0.1:8080",
+];
+const configuredOrigins = new Set([
+  ...defaultOrigins,
+  ...(Deno.env.get("ALLOWED_ORIGINS") ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+]);
 
 function cors(origin: string | null): HeadersInit {
-  const allowed = origin && configuredOrigins.includes(origin) ? origin : configuredOrigins[0];
+  const allowed = origin && configuredOrigins.has(origin) ? origin : defaultOrigins[0];
   return {
-    "Access-Control-Allow-Origin": allowed ?? "https://campus-gap-finder.vercel.app",
+    "Access-Control-Allow-Origin": allowed,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
@@ -19,7 +27,7 @@ Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
   const headers = { ...cors(origin), "Content-Type": "application/json" };
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-  if (request.method !== "POST" || (origin && !configuredOrigins.includes(origin)))
+  if (request.method !== "POST" || (origin && !configuredOrigins.has(origin)))
     return new Response(JSON.stringify({ error: "Request rejected" }), { status: 403, headers });
 
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
@@ -30,7 +38,15 @@ Deno.serve(async (request) => {
     });
 
   const url = Deno.env.get("SUPABASE_URL");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  let serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const secretKeys = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (secretKeys) {
+    try {
+      serviceKey = (JSON.parse(secretKeys) as Record<string, string>)["default"] ?? serviceKey;
+    } catch {
+      // Retain the legacy key fallback while existing projects migrate.
+    }
+  }
   if (!url || !serviceKey)
     return new Response(JSON.stringify({ error: "Deletion unavailable" }), {
       status: 503,
