@@ -77,13 +77,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Gapwise UTM — Smarter Campus Gaps" },
+      { title: "Gapwise for UTM — Smarter Campus Gaps" },
       {
         name: "description",
         content:
           "An independent student project for finding useful UTM timetable gaps and campus routes, with private browser parsing and optional cloud sync.",
       },
-      { property: "og:title", content: "Gapwise UTM — Smarter Campus Gaps" },
+      { property: "og:title", content: "Gapwise for UTM — Smarter Campus Gaps" },
       {
         property: "og:description",
         content:

@@ -60,7 +60,7 @@ describe("branding metadata", () => {
   test("declares valid manifest and existing logo assets", async () => {
     const manifest = JSON.parse(await readFile("public/site.webmanifest", "utf8"));
     expect(manifest).toMatchObject({
-      name: "Gapwise UTM",
+      name: "Gapwise for UTM",
       short_name: "Gapwise",
       display: "standalone",
       start_url: "/",
@@ -78,7 +78,7 @@ describe("branding metadata", () => {
     ]) {
       await expect(readFile(`public/${path}`)).resolves.toBeTruthy();
     }
-    expect(html).toContain("Gapwise UTM — Smarter Campus Gaps");
+    expect(html).toContain("Gapwise for UTM — Smarter Campus Gaps");
     expect(html).toContain('rel="icon" href="/logo-mark.svg"');
     expect(html).toContain('rel="manifest" href="/site.webmanifest"');
   });

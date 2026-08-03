@@ -30,7 +30,7 @@ const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
 );
 
-const TITLE = "Gapwise UTM — Smarter Campus Gaps";
+const TITLE = "Gapwise for UTM — Smarter Campus Gaps";
 const DESCRIPTION =
   "An independent student project for finding useful UTM timetable gaps and campus routes, with private browser parsing and optional cloud sync.";
 
@@ -323,10 +323,10 @@ function Index() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <a href="/" aria-label="Gapwise UTM home" className="flex min-w-0 items-center gap-3">
+          <a href="/" aria-label="Gapwise for UTM home" className="flex min-w-0 items-center gap-3">
             <img src="/logo-mark.svg" alt="" aria-hidden="true" className="h-8 w-8 shrink-0" />
             <div className="min-w-0">
-              <p className="font-display text-lg font-semibold">Gapwise UTM</p>
+              <p className="font-display text-lg font-semibold">Gapwise for UTM</p>
             </div>
           </a>
           <div className="flex items-center gap-2">
@@ -656,8 +656,8 @@ function Index() {
             Your calendar is parsed in your browser. Cloud sync is optional.
           </p>
           <p>
-            Gapwise UTM is an independent student project and is not affiliated with the University
-            of Toronto.
+            Gapwise for UTM is an independent student project and is not affiliated with the
+            University of Toronto.
           </p>
         </div>
       </footer>

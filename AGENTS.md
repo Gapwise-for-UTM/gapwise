@@ -28,7 +28,7 @@ When Codex creates a Git commit in this repository:
 
 ## Project
 
-This repository contains Gapwise UTM, a privacy-first web application for University of Toronto Mississauga students.
+This repository contains Gapwise for UTM, a privacy-first web application for University of Toronto Mississauga students.
 
 The app:
 
