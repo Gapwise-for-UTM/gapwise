@@ -25,13 +25,10 @@ import {
   consumeOAuthError,
   deleteAccount,
   getAccountIdentity,
-  requestEmailOtp,
+  requestEmailSignInLink,
   signInWithGitHub,
   signOut,
-  verifyEmailOtp,
 } from "./auth-service";
-
-type EmailStep = "email" | "code";
 
 export function AccountStatus({
   user,
@@ -47,9 +44,8 @@ export function AccountStatus({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [clearLocal, setClearLocal] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
-  const [emailStep, setEmailStep] = useState<EmailStep>("email");
   const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     const error = consumeOAuthError(window.location, window.history);
@@ -87,35 +83,17 @@ export function AccountStatus({
     }
   }
 
-  async function sendEmailCode(event: FormEvent<HTMLFormElement>) {
+  async function sendEmailLink(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
     setBusy(true);
     setMessage(null);
     try {
-      await requestEmailOtp(email);
-      setEmailStep("code");
-      setMessage("Check your email for a six-digit sign-in code.");
+      await requestEmailSignInLink(email);
+      setEmailSent(true);
+      setMessage("Check your email and open the secure sign-in link.");
     } catch {
-      setMessage("We couldn't send a code right now. Please wait and try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function confirmEmailCode(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      await verifyEmailOtp(email, code);
-      setSignInOpen(false);
-      setEmailStep("email");
-      setCode("");
-      setMessage("Signed in successfully.");
-    } catch {
-      setMessage("That code is invalid or expired. Request a new code and try again.");
+      setMessage("We couldn't send a sign-in link right now. Please wait and try again.");
     } finally {
       setBusy(false);
     }
@@ -241,11 +219,33 @@ export function AccountStatus({
                 <span className="h-px flex-1 bg-border" />
               </div>
 
-              {emailStep === "email" ? (
-                <form onSubmit={sendEmailCode} className="space-y-3">
-                  <label className="block text-sm font-medium" htmlFor="account-email">
-                    Email address
-                  </label>
+              {emailSent ? (
+                <div className="space-y-3" role="status">
+                  <div className="rounded-lg border border-border bg-secondary/50 p-4">
+                    <p className="font-medium">Check your email</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Open the secure sign-in link we sent to finish signing in.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setEmailSent(false)}
+                    className="min-h-11 w-full rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+                  >
+                    Use a different email or resend
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={sendEmailLink} className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium" htmlFor="account-email">
+                      Email address
+                    </label>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      We’ll email you a secure, single-use sign-in link.
+                    </p>
+                  </div>
                   <input
                     id="account-email"
                     type="email"
@@ -262,47 +262,7 @@ export function AccountStatus({
                     className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
                   >
                     <Mail className="h-4 w-4" aria-hidden="true" />
-                    {busy ? "Sending…" : "Email me a code"}
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={confirmEmailCode} className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Enter the six-digit code sent to your email.
-                  </p>
-                  <label className="block text-sm font-medium" htmlFor="account-code">
-                    Sign-in code
-                  </label>
-                  <input
-                    id="account-code"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]{6}"
-                    maxLength={6}
-                    value={code}
-                    onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
-                    autoComplete="one-time-code"
-                    required
-                    disabled={busy}
-                    className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-center font-mono text-lg tracking-[0.35em]"
-                  />
-                  <button
-                    type="submit"
-                    disabled={busy || code.length !== 6}
-                    className="min-h-11 w-full rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                  >
-                    {busy ? "Checking…" : "Verify and sign in"}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => {
-                      setEmailStep("email");
-                      setCode("");
-                    }}
-                    className="min-h-11 w-full rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
-                  >
-                    Use a different email or resend
+                    {busy ? "Sending…" : "Email me a sign-in link"}
                   </button>
                 </form>
               )}
