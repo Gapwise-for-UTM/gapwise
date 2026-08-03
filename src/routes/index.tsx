@@ -364,8 +364,7 @@ function Index() {
                 </p>
 
                 <h1 className="mt-8 font-display text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
-                  Find the gaps in your{" "}
-                  <span className="text-hero-accent">UTM timetable.</span>
+                  Find the gaps in your <span className="text-hero-accent">UTM timetable.</span>
                 </h1>
 
                 <p className="mt-5 max-w-md text-base text-hero-foreground/75 sm:text-lg">
@@ -421,7 +420,6 @@ function Index() {
               />
             </div>
           </>
-
         ) : (
           <>
             {!dismissed ? (
@@ -508,28 +506,31 @@ function Index() {
               <div
                 role="tablist"
                 aria-label="View mode"
-                className="inline-flex rounded-lg border border-border bg-card p-1"
+                className="grid w-full grid-cols-3 rounded-lg border border-border bg-card p-1 sm:inline-flex sm:w-auto"
               >
                 <button
                   role="tab"
                   type="button"
+                  aria-label="Weekly timetable"
                   aria-selected={view === "timetable"}
                   onClick={() => showView("timetable")}
-                  className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors sm:gap-2 sm:px-4 ${
                     view === "timetable"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-secondary"
                   }`}
                 >
                   <LayoutGrid className="h-4 w-4" aria-hidden="true" />
-                  Weekly timetable
+                  <span>
+                    <span className="hidden sm:inline">Weekly </span>timetable
+                  </span>
                 </button>
                 <button
                   role="tab"
                   type="button"
                   aria-selected={view === "gaps"}
                   onClick={() => showView("gaps")}
-                  className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors sm:gap-2 sm:px-4 ${
                     view === "gaps"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-secondary"
@@ -543,7 +544,7 @@ function Index() {
                   type="button"
                   aria-selected={view === "route"}
                   onClick={() => showView("route")}
-                  className={`inline-flex items-center gap-2 rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors sm:gap-2 sm:px-4 ${
                     view === "route"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-secondary"

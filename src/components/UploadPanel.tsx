@@ -23,46 +23,51 @@ export function UploadPanel({
   const hero = variant === "hero";
 
   const dropzone = (
-    <div
-      onDragOver={(e) => {
-        e.preventDefault();
-        setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragging(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) onFile(file);
-      }}
-      onClick={() => inputRef.current?.click()}
-      className={`rounded-2xl border-2 border-dashed p-8 text-center transition-all sm:p-10 ${
-        dragging
-          ? "border-accent bg-secondary"
-          : "border-input bg-muted/50 hover:border-accent hover:bg-card"
-      } ${hero ? "cursor-pointer" : ""}`}
-    >
-      <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-        <FileUp className="h-7 w-7 text-accent" aria-hidden="true" />
-      </span>
-      <label htmlFor="ics-file" className="mt-4 block text-sm font-semibold">
-        Drop your .ics file here
-      </label>
+    <>
+      <button
+        type="button"
+        aria-describedby="ics-file-help"
+        disabled={loading}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!loading) setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file && !loading) onFile(file);
+        }}
+        className={`w-full cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 sm:p-10 ${
+          dragging
+            ? "border-accent bg-secondary"
+            : "border-input bg-muted/50 hover:border-accent hover:bg-card"
+        }`}
+      >
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+          <FileUp className="h-7 w-7 text-accent" aria-hidden="true" />
+        </span>
+        <span className="mt-4 block text-sm font-semibold">Drop your .ics file here</span>
+        <span id="ics-file-help" className="mt-1 block text-xs text-muted-foreground">
+          or choose a file from your device
+        </span>
+      </button>
       <input
         ref={inputRef}
         id="ics-file"
         name="ics-file"
         type="file"
         accept=".ics,text/calendar"
-        className="sr-only"
+        hidden
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) onFile(file);
           e.target.value = "";
         }}
       />
-      <p className="mt-1 text-xs text-muted-foreground">or choose a file from your device</p>
-    </div>
+    </>
   );
 
   const controls = (

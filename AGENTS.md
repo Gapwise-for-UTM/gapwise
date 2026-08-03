@@ -9,6 +9,21 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
+## Codex commit attribution
+
+When Codex creates a Git commit in this repository:
+
+- Keep the repository's currently configured human Git author as the primary author.
+- Add Codex as a co-author by appending this exact trailer to the commit message:
+
+  Co-authored-by: Codex <noreply@openai.com>
+
+- Place one blank line between the commit body and the co-author trailer.
+- Do not replace the human author with Codex.
+- Do not invent a different Codex name or email.
+- Include this trailer on every commit substantially authored by Codex unless the user explicitly asks not to.
+- Preserve any other legitimate co-author trailers already required for the commit.
+
 # AGENTS.md
 
 ## Project
