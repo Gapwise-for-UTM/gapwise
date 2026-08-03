@@ -71,7 +71,7 @@ export function consumeOAuthError(
   if (!error) return null;
   for (const key of ["error", "error_code", "error_description"]) url.searchParams.delete(key);
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
-  return `Sign-in failed: ${error.replace(/\+/g, " ")}`;
+  return `GitHub sign-in failed: ${error.replace(/\+/g, " ")}`;
 }
 
 export async function signOut(): Promise<void> {
