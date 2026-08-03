@@ -354,41 +354,62 @@ function Index() {
           </div>
         ) : !meetings ? (
           <>
-            <section className="max-w-2xl">
-              <h1 className="text-3xl font-semibold leading-tight sm:text-5xl">
-                Turn your ACORN timetable into a smarter campus day.
-              </h1>
-              <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-                Upload your calendar export to find useful gaps and plan routes between classes. No
-                account is required; private cloud sync is optional.
-              </p>
-              <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-3 py-1.5 text-xs font-medium">
-                <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
-                The original calendar file is parsed in your browser and is never uploaded
-              </p>
-            </section>
-
-            <ol className="mt-10 grid gap-4 sm:grid-cols-3">
-              {STEPS.map((step, i) => (
-                <li key={step.title} className="surface p-5">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                    {i + 1}
+            <div className="grid grid-cols-1 overflow-hidden rounded-3xl border border-border bg-card shadow-xl lg:grid-cols-2">
+              <section className="bg-hero p-8 text-hero-foreground sm:p-12 lg:p-14">
+                <p className="inline-flex w-fit items-center gap-2 rounded-full border border-hero-accent/30 bg-hero-muted px-3 py-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5 text-hero-accent" aria-hidden="true" />
+                  <span className="text-[0.68rem] font-semibold uppercase tracking-wider">
+                    Your timetable stays on your device
                   </span>
-                  <h2 className="mt-3 text-base font-semibold">{step.title}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
-                </li>
-              ))}
-            </ol>
+                </p>
 
-            <div className="mt-10">
-              <UploadPanel
-                onFile={handleFile}
-                onDemo={loadDemo}
-                loading={loading}
-                error={error}
-                remember={remember}
-                onRememberChange={handleRemember}
-              />
+                <h1 className="mt-8 font-display text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
+                  Find the gaps in your{" "}
+                  <span className="text-hero-accent">UTM timetable.</span>
+                </h1>
+
+                <p className="mt-5 max-w-md text-base text-hero-foreground/75 sm:text-lg">
+                  Upload your ACORN calendar export to see useful gaps, plan study time, and route
+                  between classes across campus.
+                </p>
+
+                <ol className="mt-10 space-y-7">
+                  {STEPS.map((step, i) => (
+                    <li key={step.title} className="flex gap-4">
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                          i === 0
+                            ? "bg-hero-accent text-hero"
+                            : "border border-hero-accent/50 bg-hero-muted text-hero-foreground"
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <h2 className="font-display text-base font-semibold">{step.title}</h2>
+                        <p className="mt-0.5 text-sm text-hero-foreground/60">{step.body}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-14">
+                <div className="mx-auto w-full max-w-md">
+                  <UploadPanel
+                    variant="hero"
+                    onFile={handleFile}
+                    onDemo={loadDemo}
+                    loading={loading}
+                    error={error}
+                    remember={remember}
+                    onRememberChange={handleRemember}
+                  />
+                  <p className="mt-10 border-t border-border pt-6 text-center text-[0.65rem] uppercase tracking-widest leading-relaxed text-muted-foreground">
+                    Independent student project · Not affiliated with the University of Toronto
+                  </p>
+                </div>
+              </div>
             </div>
             <div className="mt-6">
               <CloudSyncControls
@@ -400,6 +421,7 @@ function Index() {
               />
             </div>
           </>
+
         ) : (
           <>
             {!dismissed ? (
