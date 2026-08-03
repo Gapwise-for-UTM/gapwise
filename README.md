@@ -2,7 +2,7 @@
   <img src="public/logo-mark.svg" width="112" alt="Gapwise route-shaped G logo">
 </p>
 <h1 align="center">Gapwise UTM</h1>
-<p align="center">A private timetable gap and campus route planner for University of Toronto Mississauga students.</p>
+<p align="center">A privacy-first timetable gap and campus route planner for University of Toronto Mississauga students.</p>
 <p align="center"><a href="https://campus-gap-finder.vercel.app"><strong>Open Gapwise</strong></a> · React 19 · TypeScript · MapLibre</p>
 
 ## What Gapwise does
@@ -92,3 +92,7 @@ Indoor coverage is limited to contributed buildings and cannot guarantee that ev
 ## Independent project
 
 Gapwise UTM is an independent student project. It is not affiliated with, endorsed by, or an official service of the University of Toronto.
+
+## License
+
+Original project code and documentation are available under the [MIT License](LICENSE). Third-party software, fonts, services, and OpenStreetMap-derived data remain subject to their own terms; see [Third-party notices](THIRD_PARTY_NOTICES.md).
