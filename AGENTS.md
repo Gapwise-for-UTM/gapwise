@@ -84,10 +84,9 @@ Always verify access with:
 gh auth status
 ```
 
-## Agent attribution and co-authorship
+## Commit quality
 
-Agents may add a `Co-authored-by` trailer to commits when the agent made a
-substantive contribution to the committed code, tests, documentation, or
-technical design.
-
-Use a valid Git trailer at the end of the commit message:
+Use a concise, meaningful commit subject that describes the outcome. Prefer an
+imperative Conventional Commit subject such as `fix: restore map worker loading`
+or `docs: clarify production verification`. Do not use vague subjects such as
+`Changes`. Keep each commit focused and leave published history intact.

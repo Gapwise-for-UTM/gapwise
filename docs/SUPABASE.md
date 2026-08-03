@@ -6,12 +6,15 @@ Gapwise uses GitHub OAuth, PostgREST with Row Level Security, and one narrowly s
 
 Expose only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. A publishable key identifies the project but cannot bypass RLS. Never expose a secret/service-role key in frontend source, Vite variables, CI output, documentation, or browser requests.
 
-Apply `supabase/migrations/20260801000000_user_sync.sql`. Both user tables:
+Apply the files in `supabase/migrations` in filename order. The repository's
+initial migration version matches the connected project's migration history, and
+the follow-up privilege migration removes Supabase default grants the browser
+does not need. Both user tables:
 
 - reference `auth.users(id)` with `ON DELETE CASCADE`;
 - enable RLS;
 - restrict select, insert, update, and delete to `auth.uid() = user_id` (including `WITH CHECK` for writes);
-- revoke access from `anon` and grant only the required operations to `authenticated`.
+- revoke access from `anon` and grant only select, insert, update, and delete to `authenticated`.
 
 There are no `USING (true)` policies, public user-data grants, or security-definer functions. The current schema has two user-owned tables: `user_schedules` and `user_preferences`.
 
@@ -29,11 +32,13 @@ Use **Sign out** on shared devices. It clears the local browser auth session onl
 
 Deletion order is authentication user first with database cascades in the same database operation. A failure returns a generic error and the UI does not claim success. If infrastructure interrupts the request, retrying is safe: no cross-user identifier is accepted, and already-cascaded rows cannot become orphans.
 
-Configure server-side secrets (names only; never commit values):
+The canonical production and local origins are source-controlled. Add any other
+exact trusted origins through the optional server-side secret (names only; never
+commit values):
 
 ```sh
 supabase secrets set ALLOWED_ORIGINS=https://campus-gap-finder.vercel.app,http://localhost:8080
-# SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are supplied by hosted Edge Functions.
+# SUPABASE_URL and administrative keys are supplied by hosted Edge Functions.
 supabase functions deploy delete-account
 ```
 
