@@ -67,6 +67,7 @@ describe("branding metadata", () => {
     });
     const html = await readFile("index.html", "utf8");
     for (const path of [
+      "logo-mark.svg",
       "favicon.svg",
       "favicon-16x16.png",
       "favicon-32x32.png",
@@ -78,6 +79,7 @@ describe("branding metadata", () => {
       await expect(readFile(`public/${path}`)).resolves.toBeTruthy();
     }
     expect(html).toContain("Gapwise UTM — Smarter Campus Gaps");
+    expect(html).toContain('rel="icon" href="/logo-mark.svg"');
     expect(html).toContain('rel="manifest" href="/site.webmanifest"');
   });
 });
