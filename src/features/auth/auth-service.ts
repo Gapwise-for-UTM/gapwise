@@ -13,6 +13,37 @@ export async function signInWithGitHub(): Promise<void> {
   if (error) throw error;
 }
 
+export async function requestEmailOtp(email: string): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) throw new Error("Enter an email address.");
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: normalizedEmail,
+    options: {
+      shouldCreateUser: true,
+    },
+  });
+  if (error) throw error;
+}
+
+export async function verifyEmailOtp(email: string, token: string): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedToken = token.replace(/\s+/g, "");
+
+  if (!/^\d{6}$/.test(normalizedToken)) {
+    throw new Error("Enter the six-digit code from your email.");
+  }
+
+  const { error } = await supabase.auth.verifyOtp({
+    email: normalizedEmail,
+    token: normalizedToken,
+    type: "email",
+  });
+  if (error) throw error;
+}
+
 export function getAccountIdentity(user: User): string {
   const metadata = user.user_metadata ?? {};
   return (
@@ -40,7 +71,7 @@ export function consumeOAuthError(
   if (!error) return null;
   for (const key of ["error", "error_code", "error_description"]) url.searchParams.delete(key);
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
-  return `GitHub sign-in failed: ${error.replace(/\+/g, " ")}`;
+  return `Sign-in failed: ${error.replace(/\+/g, " ")}`;
 }
 
 export async function signOut(): Promise<void> {
@@ -50,8 +81,6 @@ export async function signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw error;
   } catch (error) {
-    // Supabase clears the local session even when the server request fails.
-    // Keep application state signed out so stale callbacks cannot restore it.
     authStore.forceSignedOut();
     throw error;
   }
