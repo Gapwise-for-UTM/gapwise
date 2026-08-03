@@ -1,0 +1,58 @@
+name: Feature request
+description: Propose a focused improvement for Gapwise for UTM
+title: "feat: "
+labels:
+  - Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the student problem before proposing a solution. Public GitHub issues are for community input; accepted implementation work is tracked in Linear by the maintainer.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Student problem
+      description: What is difficult, missing, confusing, slow, or unreliable today?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe the result rather than prescribing an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Possible approach
+      description: Optional implementation or design ideas.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Timetable import and display
+        - Gap planning
+        - Campus routing and map
+        - Authentication and cloud sync
+        - Accessibility
+        - Performance and reliability
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: How would we know it works?
+      description: Suggest observable acceptance criteria.
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Project constraints
+      options:
+        - label: This can preserve local-first guest mode and the free Vercel/Supabase operating model.
+          required: true
+        - label: This does not require unofficial ACORN automation, credentials, restricted UTM materials, or official university branding.
+          required: true
