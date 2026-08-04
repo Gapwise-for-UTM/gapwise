@@ -6,6 +6,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
 import { TodaySummary } from "@/components/TodaySummary";
 import { UploadPanel } from "@/components/UploadPanel";
+import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
+
 import { AccountStatus } from "@/features/auth/AccountStatus";
 import { useAuth } from "@/features/auth/use-auth";
 import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
@@ -314,14 +316,26 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border">
+      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-          <a href="/" aria-label="Gapwise for UTM home" className="flex min-w-0 items-center gap-3">
-            <img src="/logo-mark.svg" alt="" aria-hidden="true" className="h-8 w-8 shrink-0" />
+          <a
+            href="/"
+            aria-label="Gapwise for UTM home"
+            className="group flex min-w-0 items-center gap-3"
+          >
+            <img
+              src="/logo-mark.svg"
+              alt=""
+              aria-hidden="true"
+              className="h-8 w-8 shrink-0 transition-transform duration-300 group-hover:scale-105"
+            />
             <div className="min-w-0">
-              <p className="font-display text-lg font-semibold">Gapwise for UTM</p>
+              <p className="truncate font-display text-lg font-semibold tracking-tight">
+                Gapwise <span className="text-accent">for UTM</span>
+              </p>
             </div>
           </a>
+
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <AccountStatus
@@ -351,46 +365,32 @@ function Index() {
           </div>
         ) : !meetings ? (
           <>
-            <div className="grid grid-cols-1 overflow-hidden rounded-3xl border border-border bg-card shadow-xl lg:grid-cols-2">
-              <section className="bg-hero p-8 text-hero-foreground sm:p-12 lg:p-14">
-                <p className="inline-flex w-fit items-center gap-2 rounded-full border border-hero-accent/30 bg-hero-muted px-3 py-1.5">
+            <div className="rise-in grid grid-cols-1 overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-lift)] lg:grid-cols-[1.05fr_1fr]">
+              <section className="hero-surface relative flex flex-col p-7 text-hero-foreground sm:p-11 lg:p-12">
+                <p className="inline-flex w-fit items-center gap-2 rounded-full border border-hero-accent/30 bg-hero-muted/70 px-3 py-1.5 backdrop-blur">
                   <ShieldCheck className="h-3.5 w-3.5 text-hero-accent" aria-hidden="true" />
-                  <span className="text-[0.68rem] font-semibold uppercase tracking-wider">
-                    Your timetable stays on your device
-                  </span>
+                  <span className="eyebrow">Your timetable stays on your device</span>
                 </p>
 
-                <h1 className="mt-8 font-display text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl">
-                  Find the gaps in your <span className="text-hero-accent">UTM timetable.</span>
+                <h1 className="mt-7 max-w-[19ch] text-balance font-display text-[2.15rem] font-bold leading-[1.05] tracking-tight sm:text-[3.15rem]">
+                  Find the gaps in your{" "}
+                  <span className="text-hero-accent">UTM timetable.</span>
                 </h1>
 
-                <p className="mt-5 max-w-md text-base text-hero-foreground/75 sm:text-lg">
+                <p className="mt-4 max-w-md text-base leading-relaxed text-hero-foreground/75 sm:text-lg">
                   Upload your ACORN calendar export to see useful gaps, plan study time, and route
                   between classes across campus.
                 </p>
 
-                <ol className="mt-10 space-y-7">
-                  {STEPS.map((step, i) => (
-                    <li key={step.title} className="flex gap-4">
-                      <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                          i === 0
-                            ? "bg-hero-accent text-hero"
-                            : "border border-hero-accent/50 bg-hero-muted text-hero-foreground"
-                        }`}
-                      >
-                        {i + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <h2 className="font-display text-base font-semibold">{step.title}</h2>
-                        <p className="mt-0.5 text-sm text-hero-foreground/60">{step.body}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
+                <div className="mt-8 lg:mt-auto lg:pt-10">
+                  <UtmMonumentViewer className="border-hero-accent/25 bg-hero-muted/40 bg-none" />
+                  <p className="mt-3 text-xs text-hero-foreground/55">
+                    Drag to rotate the UTM entrance monument · scroll or pinch to zoom
+                  </p>
+                </div>
               </section>
 
-              <div className="flex flex-col justify-center p-8 sm:p-12 lg:p-14">
+              <div className="flex flex-col justify-center p-7 sm:p-11 lg:p-12">
                 <div className="mx-auto w-full max-w-md">
                   <UploadPanel
                     variant="hero"
@@ -401,12 +401,27 @@ function Index() {
                     remember={remember}
                     onRememberChange={handleRemember}
                   />
-                  <p className="mt-10 border-t border-border pt-6 text-center text-[0.65rem] uppercase tracking-widest leading-relaxed text-muted-foreground">
+                  <p className="mt-9 border-t border-border pt-6 text-center text-[0.65rem] uppercase leading-relaxed tracking-widest text-muted-foreground">
                     Independent student project · Not affiliated with the University of Toronto
                   </p>
                 </div>
               </div>
             </div>
+
+            <ol className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {STEPS.map((step, i) => (
+                <li key={step.title} className="surface surface-interactive p-5">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary font-display text-sm font-bold text-accent">
+                    {i + 1}
+                  </span>
+                  <h2 className="mt-4 font-display text-base font-semibold tracking-tight">
+                    {step.title}
+                  </h2>
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+                </li>
+              ))}
+            </ol>
+
             <div className="mt-6">
               <CloudSyncControls
                 user={user}
@@ -437,9 +452,12 @@ function Index() {
               </div>
             ) : null}
 
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold sm:text-3xl">
+            <div className="rise-in grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
+              <div className="min-w-0">
+                <p className="eyebrow text-muted-foreground">
+                  {isDemo ? "Sample data" : "Campus day plan"}
+                </p>
+                <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight sm:text-3xl">
                   {isDemo ? "Demo timetable" : "Your timetable"}
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -449,12 +467,14 @@ function Index() {
               <button
                 type="button"
                 onClick={clearTimetable}
-                className="inline-flex items-center gap-2 rounded-lg border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors hover:bg-secondary"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:border-destructive/50 hover:bg-secondary hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
-                Remove timetable
+                <span className="hidden sm:inline">Remove timetable</span>
+                <span className="sm:hidden">Remove</span>
               </button>
             </div>
+
 
             {warnings.length > 0 ? (
               <div className="surface mt-6 border-accent/40 p-4">
@@ -478,7 +498,7 @@ function Index() {
                 <div
                   role="tablist"
                   aria-label="Term"
-                  className="inline-flex rounded-lg border border-border bg-card p-1"
+                  className="inline-flex rounded-2xl border border-border bg-card p-1 shadow-[var(--shadow-soft)]"
                 >
                   {terms.map((t) => (
                     <button
@@ -487,7 +507,7 @@ function Index() {
                       type="button"
                       aria-selected={term === t}
                       onClick={() => setTerm(t)}
-                      className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-colors ${
+                      className={`rounded-xl px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${
                         term === t
                           ? "bg-primary text-primary-foreground"
                           : "text-muted-foreground hover:bg-secondary"
@@ -502,7 +522,7 @@ function Index() {
               <div
                 role="tablist"
                 aria-label="View mode"
-                className="grid w-full grid-cols-3 rounded-lg border border-border bg-card p-1 sm:inline-flex sm:w-auto"
+                className="grid w-full grid-cols-3 rounded-2xl border border-border bg-card p-1 shadow-[var(--shadow-soft)] sm:inline-flex sm:w-auto"
               >
                 <button
                   role="tab"
@@ -510,7 +530,7 @@ function Index() {
                   aria-label="Weekly timetable"
                   aria-selected={view === "timetable"}
                   onClick={() => showView("timetable")}
-                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors sm:gap-2 sm:px-4 ${
+                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-sm font-semibold transition-all duration-200 sm:gap-2 sm:px-4 ${
                     view === "timetable"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-secondary"
@@ -526,7 +546,7 @@ function Index() {
                   type="button"
                   aria-selected={view === "gaps"}
                   onClick={() => showView("gaps")}
-                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors sm:gap-2 sm:px-4 ${
+                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-sm font-semibold transition-all duration-200 sm:gap-2 sm:px-4 ${
                     view === "gaps"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-secondary"
@@ -540,7 +560,7 @@ function Index() {
                   type="button"
                   aria-selected={view === "route"}
                   onClick={() => showView("route")}
-                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-semibold transition-colors sm:gap-2 sm:px-4 ${
+                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-sm font-semibold transition-all duration-200 sm:gap-2 sm:px-4 ${
                     view === "route"
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-secondary"
@@ -554,12 +574,19 @@ function Index() {
 
             <div className="mt-6">
               {termMeetings.length === 0 ? (
-                <div className="surface p-8 text-center">
-                  <h2 className="text-lg font-semibold">Nothing scheduled in {term}</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    This export doesn&apos;t contain any {term} term meetings.
+                <div className="surface flex flex-col items-center p-10 text-center sm:p-14">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
+                    <CalendarRange className="h-6 w-6 text-accent" aria-hidden="true" />
+                  </span>
+                  <h2 className="mt-5 font-display text-lg font-semibold tracking-tight">
+                    Nothing scheduled in {term}
+                  </h2>
+                  <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+                    This export doesn&apos;t contain any {term} term meetings. Try another term tab
+                    or upload a different ACORN export.
                   </p>
                 </div>
+
               ) : (
                 <>
                   <div hidden={view !== "timetable"}>
@@ -640,18 +667,22 @@ function Index() {
         ) : null}
       </main>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto max-w-6xl space-y-2 px-4 py-8 text-sm text-muted-foreground sm:px-6">
-          <p className="inline-flex items-center gap-2">
-            <Upload className="h-4 w-4" aria-hidden="true" />
-            Your calendar is parsed in your browser. Cloud sync is optional.
-          </p>
-          <p>
-            Gapwise for UTM is an independent student project and is not affiliated with the
-            University of Toronto.
-          </p>
+      <footer className="mt-4 border-t border-border bg-card/40">
+        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-sm text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
+          <div className="min-w-0 space-y-2">
+            <p className="inline-flex items-center gap-2 font-medium text-foreground">
+              <Upload className="h-4 w-4 text-accent" aria-hidden="true" />
+              Your calendar is parsed in your browser. Cloud sync is optional.
+            </p>
+            <p className="max-w-xl leading-relaxed">
+              Gapwise for UTM is an independent student project and is not affiliated with the
+              University of Toronto.
+            </p>
+          </div>
+          <p className="eyebrow self-end text-muted-foreground">Built for UTM students</p>
         </div>
       </footer>
+
     </div>
   );
 }
