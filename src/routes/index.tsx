@@ -383,7 +383,7 @@ function Index() {
                 </p>
 
                 <div className="mt-8 lg:mt-auto lg:pt-10">
-                  <UtmMonumentViewer className="border-hero-accent/20 bg-hero-muted/25" />
+                  <UtmMonumentViewer className="border-hero-accent/25 bg-hero-muted/40 bg-none" />
                   <p className="mt-3 text-xs text-hero-foreground/55">
                     Drag to rotate the UTM entrance monument · scroll or pinch to zoom
                   </p>
