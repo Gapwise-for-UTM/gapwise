@@ -372,9 +372,9 @@ function Index() {
                   <span className="eyebrow">Your timetable stays on your device</span>
                 </p>
 
-                <h1 className="mt-7 font-display text-[2.15rem] font-bold leading-[1.05] tracking-tight sm:text-5xl">
+                <h1 className="mt-7 max-w-[19ch] text-balance font-display text-[2.15rem] font-bold leading-[1.05] tracking-tight sm:text-[3.15rem]">
                   Find the gaps in your{" "}
-                  <span className="text-hero-accent">UTM&nbsp;timetable.</span>
+                  <span className="text-hero-accent">UTM timetable.</span>
                 </h1>
 
                 <p className="mt-4 max-w-md text-base leading-relaxed text-hero-foreground/75 sm:text-lg">

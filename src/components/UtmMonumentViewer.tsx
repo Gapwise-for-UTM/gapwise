@@ -52,8 +52,8 @@ export function UtmMonumentViewer({
       | null;
 
     if (!viewer) return;
-    viewer.cameraOrbit = "-32deg 70deg 12m";
-    viewer.cameraTarget = "0m 2.45m 0m";
+    viewer.cameraOrbit = "-32deg 72deg 105%";
+    viewer.cameraTarget = "auto auto auto";
     viewer.jumpCameraToGoal?.();
   }
 
@@ -88,13 +88,9 @@ export function UtmMonumentViewer({
           auto-rotate={!reducedMotion}
           auto-rotate-delay="2200"
           rotation-per-second="7deg"
-          camera-orbit="-32deg 70deg 12m"
-          camera-target="0m 2.45m 0m"
-          min-camera-orbit="auto 52deg 8.5m"
-          max-camera-orbit="auto 84deg 17m"
-          field-of-view="31deg"
-          min-field-of-view="25deg"
-          max-field-of-view="42deg"
+          camera-orbit="-32deg 72deg 105%"
+          min-camera-orbit="auto 45deg 75%"
+          max-camera-orbit="auto 88deg 160%"
           shadow-intensity="1.15"
           shadow-softness="0.8"
           exposure="1.05"
