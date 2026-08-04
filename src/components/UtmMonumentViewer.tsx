@@ -15,18 +15,12 @@ export function UtmMonumentViewer({
   decorative = false,
 }: UtmMonumentViewerProps) {
   const [viewerLoaded, setViewerLoaded] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
   const viewerId = useMemo(
     () => `utm-monument-${Math.random().toString(36).slice(2)}`,
     [],
   );
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updateMotionPreference = () => setReducedMotion(media.matches);
-    updateMotionPreference();
-    media.addEventListener("change", updateMotionPreference);
-
     let mounted = true;
     void import("@google/model-viewer")
       .then(() => {
@@ -38,7 +32,6 @@ export function UtmMonumentViewer({
 
     return () => {
       mounted = false;
-      media.removeEventListener("change", updateMotionPreference);
     };
   }, []);
 
@@ -52,10 +45,11 @@ export function UtmMonumentViewer({
       | null;
 
     if (!viewer) return;
-    viewer.cameraOrbit = "-32deg 72deg 105%";
-    viewer.cameraTarget = "auto auto auto";
+    viewer.cameraOrbit = "0deg 72deg 13m";
+    viewer.cameraTarget = "0m 2.8m 0m";
     viewer.jumpCameraToGoal?.();
   }
+
 
   return (
     <figure
