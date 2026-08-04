@@ -7,6 +7,11 @@ type DayLayout = {
   sorted: Meeting[];
 };
 
+/** Hides optional detail when a short or narrow card cannot display four readable lines. */
+export function isCompactMeetingCard(meeting: Meeting, laneCount: number): boolean {
+  return laneCount > 1 || meeting.endTime - meeting.startTime <= 60;
+}
+
 /** Assigns overlapping meetings to side-by-side lanes so nothing visually collides. */
 function layout(day: Meeting[]): DayLayout {
   const sorted = [...day].sort((a, b) => a.startTime - b.startTime);

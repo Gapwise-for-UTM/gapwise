@@ -38,13 +38,15 @@ function routeFeatureCollection(data: MapData) {
   return {
     type: "FeatureCollection" as const,
     features: data.segments
-      .filter((segment) => segment.route.displayCoordinates.length >= 2)
+      .filter(
+        (segment) =>
+          segment.route.status === "routed" && segment.route.displayCoordinates.length >= 2,
+      )
       .map((segment) => ({
         type: "Feature" as const,
         properties: {
           id: segment.id,
           selected: segment.id === data.selectedSegmentId,
-          approximate: segment.route.status === "approximate",
         },
         geometry: {
           type: "LineString" as const,
@@ -59,20 +61,7 @@ function addRouteLayers(map: MapLibreMap) {
     id: "day-routes-solid",
     type: "line",
     source: "day-routes",
-    filter: ["==", ["get", "approximate"], false],
     paint: { "line-color": "#3568a8", "line-width": 4, "line-opacity": 0.8 },
-  });
-  map.addLayer({
-    id: "day-routes-approximate",
-    type: "line",
-    source: "day-routes",
-    filter: ["==", ["get", "approximate"], true],
-    paint: {
-      "line-color": "#596575",
-      "line-width": 3,
-      "line-dasharray": [2, 2],
-      "line-opacity": 0.85,
-    },
   });
   map.addLayer({
     id: "day-routes-selected",
@@ -121,7 +110,6 @@ function syncMapData(
       if (typeof id === "string") data.onSelectSegment(id);
     };
     map.on("click", "day-routes-solid", selectFeature);
-    map.on("click", "day-routes-approximate", selectFeature);
   }
 }
 

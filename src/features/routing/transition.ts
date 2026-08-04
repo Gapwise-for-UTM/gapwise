@@ -171,14 +171,14 @@ export function planMeetingTransition(
     distance / preferences.walkingSpeedMps + ROUTING_DEFAULTS.buildingEntryExitSeconds * 2;
   return {
     status: "approximate",
-    message: "Approximate connection — verified walking path unavailable.",
+    message: "Approximate travel estimate — verified walking path unavailable.",
     accuracy: "Approximate building-to-building estimate",
     result: null,
-    displayCoordinates: [fromBuilding.navigationPoint, toBuilding.navigationPoint],
+    displayCoordinates: [],
     warnings: [
       `Indoor room routing not yet mapped for ${origin.buildingCode}.`,
       `Indoor room routing not yet mapped for ${destination.buildingCode}.`,
-      "The dashed line is a visual estimate, not an optimal walking route.",
+      "Distance and time use a straight-line estimate; no path is drawn until a walking route is verified.",
     ],
     approximateDistanceMeters: distance,
     approximateSeconds: seconds,

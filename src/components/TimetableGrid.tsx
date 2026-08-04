@@ -1,19 +1,26 @@
 import type { ActivityType, Meeting } from "@/lib/timetable-types";
 import { formatTime, locationLabel, WEEKDAYS } from "@/lib/timetable-types";
-import { buildTimetableModel } from "@/lib/timetable-layout";
+import { buildTimetableModel, isCompactMeetingCard } from "@/lib/timetable-layout";
 import { memo, useMemo } from "react";
 
 const TYPE_STYLES: Record<ActivityType, string> = {
-  LEC: "border-l-lec bg-lec/10 text-lec",
-  TUT: "border-l-tut bg-tut/10 text-tut",
-  PRA: "border-l-pra bg-pra/10 text-pra",
-  OTHER: "border-l-muted-foreground bg-muted text-muted-foreground",
+  LEC: "border-l-lec text-lec",
+  TUT: "border-l-tut text-tut",
+  PRA: "border-l-pra text-pra",
+  OTHER: "border-l-muted-foreground text-muted-foreground",
+};
+
+const TYPE_BADGE_STYLES: Record<ActivityType, string> = {
+  LEC: "bg-lec/10 text-lec",
+  TUT: "bg-tut/10 text-tut",
+  PRA: "bg-pra/10 text-pra",
+  OTHER: "bg-muted text-muted-foreground",
 };
 
 export function ActivityBadge({ type }: { type: ActivityType }) {
   return (
     <span
-      className={`rounded px-1.5 py-0.5 text-[0.7rem] font-bold tracking-wide ${TYPE_STYLES[type]} border-l-0`}
+      className={`rounded px-1.5 py-0.5 text-[0.7rem] font-bold tracking-wide ${TYPE_BADGE_STYLES[type]}`}
     >
       {type}
     </span>
@@ -93,7 +100,10 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
                           width: `${(1 / laneCount) * 100}%`,
                         }}
                       >
-                        <MeetingCard meeting={meeting} compact={laneCount > 1} />
+                        <MeetingCard
+                          meeting={meeting}
+                          compact={isCompactMeetingCard(meeting, laneCount)}
+                        />
                       </div>
                     );
                   })}
