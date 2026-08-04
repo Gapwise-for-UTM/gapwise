@@ -132,4 +132,17 @@ describe("meeting transition routing", () => {
     expect(result.status).toBe("unavailable");
     expect(result.message).toContain("No verified accessible route");
   });
+
+  test("does not invent a route for a recognized but unrouted building", () => {
+    const result = planMeetingTransition(
+      meeting({ buildingCode: "DV", room: "2072" }),
+      meeting({ id: "next", buildingCode: "MN", room: "1270" }),
+      UTM_ROUTING_GRAPH,
+      DEFAULT_ROUTE_PREFERENCES,
+    );
+
+    expect(result.status).toBe("unavailable");
+    expect(result.warnings.join(" ")).toContain("verified routing data is unavailable");
+    expect(result.displayCoordinates).toEqual([]);
+  });
 });

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "campus-survey.schema.json",
+  "title": "Gapwise UTM campus field survey",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "survey", "buildings", "nodes", "edges"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "survey": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "source", "sourceUrl", "notes"],
+      "properties": {
+        "date": { "type": "string", "format": "date" },
+        "source": { "type": "string", "minLength": 1 },
+        "sourceUrl": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "buildings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "floors"],
+        "properties": {
+          "code": { "type": "string", "pattern": "^[A-Z]{2,4}$" },
+          "floors": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/node" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/edge" }
+    }
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._:-]*$"
+    },
+    "accessibility": {
+      "enum": ["accessible", "not_accessible", "unknown"]
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "building", "floor", "kind", "labelOrRoom", "accessibility"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "building": {
+          "oneOf": [{ "type": "string", "pattern": "^[A-Z]{2,4}$" }, { "type": "null" }]
+        },
+        "floor": {
+          "oneOf": [{ "type": "string", "minLength": 1 }, { "type": "null" }]
+        },
+        "kind": {
+          "enum": [
+            "entrance",
+            "hallway",
+            "junction",
+            "room",
+            "stairs",
+            "elevator",
+            "door",
+            "outdoor_path"
+          ]
+        },
+        "labelOrRoom": { "type": "string", "minLength": 1 },
+        "accessibility": { "$ref": "#/$defs/accessibility" },
+        "longitude": { "type": "number", "minimum": -180, "maximum": 180 },
+        "latitude": { "type": "number", "minimum": -90, "maximum": 90 },
+        "indoorX": { "type": "number" },
+        "indoorY": { "type": "number" },
+        "photoReference": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "connectedFrom",
+        "connectedTo",
+        "distanceMeters",
+        "environment",
+        "stairs",
+        "accessibility",
+        "bidirectional"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "connectedFrom": { "$ref": "#/$defs/id" },
+        "connectedTo": { "$ref": "#/$defs/id" },
+        "distanceMeters": { "type": "number", "exclusiveMinimum": 0, "maximum": 5000 },
+        "environment": { "enum": ["indoor", "outdoor", "covered"] },
+        "stairs": { "type": "boolean" },
+        "accessibility": { "$ref": "#/$defs/accessibility" },
+        "bidirectional": { "type": "boolean" },
+        "photoReference": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    }
+  }
+}

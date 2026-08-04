@@ -1,0 +1,13 @@
+{
+  "$schema": "./campus-survey.schema.json",
+  "schemaVersion": 1,
+  "survey": {
+    "date": "2026-08-04",
+    "source": "UTM campus field survey",
+    "sourceUrl": "",
+    "notes": "Replace this note with the survey scope, weather, closures, and measurement method."
+  },
+  "buildings": [],
+  "nodes": [],
+  "edges": []
+}

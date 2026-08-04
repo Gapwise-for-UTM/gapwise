@@ -123,9 +123,15 @@ export function IndoorFloorViewer({
                 y1={start.indoorY}
                 x2={end.indoorX}
                 y2={end.indoorY}
-                stroke={edge.accessible ? "#3568a8" : "#b2573d"}
+                stroke={
+                  edge.accessibility === "accessible"
+                    ? "#3568a8"
+                    : edge.accessibility === "not_accessible"
+                      ? "#b2573d"
+                      : "#697386"
+                }
                 strokeWidth={routeEdgeIds.has(edge.id) ? 10 : 5}
-                strokeDasharray={edge.accessible ? undefined : "12 8"}
+                strokeDasharray={edge.accessibility === "accessible" ? undefined : "12 8"}
               />
             );
           })}

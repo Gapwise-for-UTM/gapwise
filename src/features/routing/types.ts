@@ -1,4 +1,5 @@
 export type VerificationStatus = "verified" | "inferred" | "unknown";
+export type AccessibilityStatus = "accessible" | "not_accessible" | "unknown";
 
 export type SourceMetadata = {
   source: string;
@@ -20,12 +21,15 @@ export type RoutingNode = {
     | "door";
   buildingCode: string | null;
   floor: string | null;
+  accessibility: AccessibilityStatus;
   longitude?: number;
   latitude?: number;
   indoorX?: number;
   indoorY?: number;
   room?: string;
   label?: string;
+  photoReference?: string;
+  notes?: string;
   metadata?: SourceMetadata;
 };
 
@@ -35,10 +39,12 @@ export type RoutingEdge = {
   to: string;
   distanceMeters: number;
   environment: "indoor" | "outdoor" | "covered";
-  accessible: boolean;
   stairs: boolean;
   bidirectional: boolean;
+  accessibility: AccessibilityStatus;
   estimatedDelaySeconds?: number;
+  photoReference?: string;
+  notes?: string;
   metadata?: SourceMetadata;
 };
 

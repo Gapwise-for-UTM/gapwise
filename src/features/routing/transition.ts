@@ -63,13 +63,13 @@ export function planMeetingTransition(
 ): TransitionRoute {
   const origin = resolveMeetingLocation(from);
   const destination = resolveMeetingLocation(to);
+  const locationWarnings = [origin.warning, destination.warning].filter(
+    (warning): warning is string => Boolean(warning),
+  );
   if (origin.status !== "known" || destination.status !== "known") {
-    const warnings = [origin.warning, destination.warning].filter((warning): warning is string =>
-      Boolean(warning),
-    );
     return locationUnavailable(
       "A physical route cannot be generated for an online, TBA, or unknown location.",
-      warnings,
+      locationWarnings,
     );
   }
   if (!origin.buildingCode || !destination.buildingCode) {
@@ -157,6 +157,7 @@ export function planMeetingTransition(
   if (!fromBuilding || !toBuilding) {
     return locationUnavailable(
       "Verified map coordinates are unavailable for one or both buildings.",
+      locationWarnings,
     );
   }
   if (preferences.mode === "step-free") {
