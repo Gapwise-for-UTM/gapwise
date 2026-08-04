@@ -40,15 +40,17 @@ export function UploadPanel({
           const file = e.dataTransfer.files?.[0];
           if (file && !loading) onFile(file);
         }}
-        className={`w-full cursor-pointer rounded-2xl border-2 border-dashed p-8 text-center transition-all disabled:cursor-not-allowed disabled:opacity-60 sm:p-10 ${
+        className={`group w-full cursor-pointer rounded-3xl border-2 border-dashed p-8 text-center transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 sm:p-10 ${
           dragging
-            ? "border-accent bg-secondary"
-            : "border-input bg-muted/50 hover:border-accent hover:bg-card"
+            ? "scale-[1.01] border-accent bg-secondary shadow-[var(--shadow-lift)]"
+            : "border-input bg-muted/40 hover:border-accent hover:bg-card hover:shadow-[var(--shadow-soft)]"
         }`}
+
       >
-        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary transition-transform duration-300 group-hover:-translate-y-0.5">
           <FileUp className="h-7 w-7 text-accent" aria-hidden="true" />
         </span>
+
         <span className="mt-4 block text-sm font-semibold">Drop your .ics file here</span>
         <span id="ics-file-help" className="mt-1 block text-xs text-muted-foreground">
           or choose a file from your device · 2 MB maximum
@@ -76,7 +78,7 @@ export function UploadPanel({
         type="button"
         onClick={() => inputRef.current?.click()}
         disabled={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/10 transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-soft)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] disabled:translate-y-0 disabled:opacity-60"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -89,7 +91,8 @@ export function UploadPanel({
         type="button"
         onClick={onDemo}
         disabled={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-input bg-card px-5 py-3.5 text-sm font-semibold transition-colors hover:border-accent hover:text-accent disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-input bg-card px-5 py-3.5 text-sm font-semibold transition-colors duration-200 hover:border-accent hover:bg-secondary/60 hover:text-accent disabled:opacity-60"
+
       >
         <Sparkles className="h-4 w-4" aria-hidden="true" />
         Try a demo
