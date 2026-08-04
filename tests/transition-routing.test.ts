@@ -110,7 +110,7 @@ describe("meeting transition routing", () => {
     expect(result.message).toContain("Indoor room routing not yet mapped");
   });
 
-  test("uses a labelled dashed estimate when outdoor paths are missing", () => {
+  test("labels an estimate without drawing an unverified path", () => {
     const result = planMeetingTransition(
       meeting(),
       meeting({ id: "next", buildingCode: "IB", room: "340" }),
@@ -118,8 +118,9 @@ describe("meeting transition routing", () => {
       DEFAULT_ROUTE_PREFERENCES,
     );
     expect(result.status).toBe("approximate");
-    expect(result.message).toBe("Approximate connection — verified walking path unavailable.");
-    expect(result.displayCoordinates).toHaveLength(2);
+    expect(result.message).toBe("Approximate travel estimate — verified walking path unavailable.");
+    expect(result.displayCoordinates).toEqual([]);
+    expect(result.warnings.join(" ")).toContain("no path is drawn");
   });
 
   test("never silently falls back in step-free mode", () => {
@@ -131,5 +132,18 @@ describe("meeting transition routing", () => {
     );
     expect(result.status).toBe("unavailable");
     expect(result.message).toContain("No verified accessible route");
+  });
+
+  test("does not invent a route for a recognized but unrouted building", () => {
+    const result = planMeetingTransition(
+      meeting({ buildingCode: "DV", room: "2072" }),
+      meeting({ id: "next", buildingCode: "MN", room: "1270" }),
+      UTM_ROUTING_GRAPH,
+      DEFAULT_ROUTE_PREFERENCES,
+    );
+
+    expect(result.status).toBe("unavailable");
+    expect(result.warnings.join(" ")).toContain("verified routing data is unavailable");
+    expect(result.displayCoordinates).toEqual([]);
   });
 });

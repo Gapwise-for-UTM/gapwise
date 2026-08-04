@@ -1,12 +1,12 @@
 # Supabase setup and security
 
-Gapwise uses GitHub OAuth, PostgREST with Row Level Security, and one narrowly scoped Edge Function. Guest mode does not require Supabase.
+Gapwise supports GitHub OAuth and passwordless email magic links through Supabase Auth, PostgREST with Row Level Security, and one narrowly scoped Edge Function. Guest mode does not require Supabase.
 
 ## Browser configuration
 
 Expose only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. A publishable key identifies the project but cannot bypass RLS. Never expose a secret/service-role key in frontend source, Vite variables, CI output, documentation, or browser requests.
 
-Apply the files in `supabase/migrations` in filename order. The repository's
+Apply the files in `supabase/migrations` in filename order for a new environment. The repository's
 initial migration version matches the connected project's migration history, and
 the follow-up privilege migration removes Supabase default grants the browser
 does not need. Both user tables:
@@ -18,13 +18,24 @@ does not need. Both user tables:
 
 There are no `USING (true)` policies, public user-data grants, or security-definer functions. The current schema has two user-owned tables: `user_schedules` and `user_preferences`.
 
+### Safe `source_filename` removal order
+
+The `20260804040016_remove_schedule_source_filename.sql` migration permanently removes a legacy metadata column. For an existing deployment, use this order:
+
+1. Deploy the frontend version that no longer sends `source_filename`.
+2. Verify guest import, explicit cloud sync, and cloud restoration against the existing schema.
+3. Only then run `supabase db push` to apply the column-removal migration.
+4. Verify sync/restoration again and regenerate linked database types if the project schema differs.
+
+Do not apply the migration before the compatible frontend is serving users. The migration does not alter RLS policies, ownership checks, cascading account deletion, or table grants. This repository change does not apply the migration to the hosted database.
+
 ## Browser auth sessions
 
 The browser client uses Supabase's supported persistent-session configuration: `persistSession`, automatic token refresh, OAuth URL detection, and a `localStorage` adapter. A signed-in user therefore remains signed in across reloads and normal browser restarts. If browser privacy settings block storage, auth falls back to memory for the current page instead of crashing; that fallback is intentionally not durable.
 
 The app owns one page-lifetime `onAuthStateChange` subscription. Auth initialization does not make a second `getSession` request, cloud restoration is single-flight per user, and sign-out aborts/invalidates stale restoration work before clearing the local Supabase session. **Remember on this device** remains a separate opt-in timetable setting and does not control authentication.
 
-Use **Sign out** on shared devices. It clears the local browser auth session only; it does not delete the GitHub account, synced schedule, or preferences. Use **Delete account and cloud data** for permanent server-side deletion.
+Use **Sign out** on shared devices. It clears the local browser auth session only; it does not delete the GitHub/email identity, synced schedule, or preferences. Use **Delete account and cloud data** for permanent server-side deletion.
 
 ## Account deletion Edge Function
 
@@ -56,8 +67,8 @@ Confirm a request without a bearer token is rejected, an origin outside `ALLOWED
 
 ## Manual production checklist
 
-- Enable GitHub and disable unused phone authentication.
-- Disable password sign-up where practical; do not add email/password just to clear the leaked-password warning.
+- Enable GitHub and email magic-link authentication; disable unused phone and password authentication.
+- Configure the email template and exact redirect allowlist for passwordless links. Do not add an email/password flow merely to clear the leaked-password warning.
 - Set the exact production Site URL and localhost development redirect.
 - Keep Vercel redirects narrow; avoid broad production wildcards.
 - Verify only the publishable key is configured in Vercel.
@@ -68,4 +79,4 @@ Confirm a request without a bearer token is rejected, an origin outside `ALLOWED
 
 ## Free-plan limitations
 
-Supabase's leaked-password protection may be unavailable or disabled depending on plan and Auth configuration. Gapwise uses GitHub OAuth and does not add a password flow to silence that advisory. Dashboard advisories and provider settings require manual review; repository code cannot prove the deployed dashboard state.
+Supabase's leaked-password protection may be unavailable or disabled depending on plan and Auth configuration. Gapwise uses GitHub OAuth and single-use email magic links; it does not add a password flow to silence that advisory. Dashboard advisories and provider settings require manual review; repository code cannot prove the deployed dashboard state.

@@ -28,7 +28,7 @@ function traversalCost(
   preferences: RoutePreferences,
 ): number {
   const { edge } = traversal;
-  if (preferences.mode === "step-free" && (edge.stairs || !edge.accessible)) {
+  if (preferences.mode === "step-free" && (edge.stairs || edge.accessibility !== "accessible")) {
     return Number.POSITIVE_INFINITY;
   }
 
@@ -145,7 +145,7 @@ export function findRoute(
     .reduce((total, node, index) => total + floorDelta(routeNodes[index]!, node), 0);
   const warnings: string[] = [];
   if (routeEdges.some((edge) => edge.stairs)) warnings.push("Route includes stairs.");
-  if (routeEdges.some((edge) => !edge.accessible)) {
+  if (routeEdges.some((edge) => edge.accessibility !== "accessible")) {
     warnings.push("Accessibility has not been verified for every part of this route.");
   }
 

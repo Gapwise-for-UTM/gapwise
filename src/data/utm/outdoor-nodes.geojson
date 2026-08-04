@@ -15,7 +15,7 @@
       "properties": {
         "kind": "building-entrance",
         "buildingCode": "MN",
-        "accessible": null,
+        "accessibility": "unknown",
         "source": "OpenStreetMap",
         "sourceUrl": "https://www.openstreetmap.org/node/13738201127",
         "lastVerified": "2026-08-01",
@@ -29,7 +29,7 @@
       "properties": {
         "kind": "building-entrance",
         "buildingCode": "DH",
-        "accessible": null,
+        "accessibility": "unknown",
         "source": "OpenStreetMap",
         "sourceUrl": "https://www.openstreetmap.org/node/13568164836",
         "lastVerified": "2026-08-01",
@@ -43,7 +43,7 @@
       "properties": {
         "kind": "building-entrance",
         "buildingCode": "IB",
-        "accessible": null,
+        "accessibility": "unknown",
         "source": "OpenStreetMap",
         "sourceUrl": "https://www.openstreetmap.org/node/2383650599",
         "lastVerified": "2026-08-01",

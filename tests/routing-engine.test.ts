@@ -45,12 +45,12 @@ describe("deterministic graph routing", () => {
         edge("stairs", "room-1", "stairs-2", 8, {
           environment: "indoor",
           stairs: true,
-          accessible: false,
+          accessibility: "not_accessible",
         }),
         edge("stairs-room", "stairs-2", "room-2", 4, {
           environment: "indoor",
           stairs: true,
-          accessible: false,
+          accessibility: "not_accessible",
         }),
         edge("elevator", "room-1", "elevator-2", 18, { environment: "indoor" }),
         edge("elevator-room", "elevator-2", "room-2", 8, { environment: "indoor" }),
@@ -67,7 +67,12 @@ describe("deterministic graph routing", () => {
   test("reports no route when step-free data has only stairs", () => {
     const graph: RoutingGraph = {
       nodes: [node("a"), node("b")],
-      edges: [edge("stairs", "a", "b", 10, { stairs: true, accessible: false })],
+      edges: [
+        edge("stairs", "a", "b", 10, {
+          stairs: true,
+          accessibility: "not_accessible",
+        }),
+      ],
     };
     expect(
       findRoute(graph, "a", "b", { ...DEFAULT_ROUTE_PREFERENCES, mode: "step-free" }),
@@ -84,7 +89,7 @@ describe("deterministic graph routing", () => {
         edge("stairs", "a", "b", 13.5, {
           environment: "indoor",
           stairs: true,
-          accessible: false,
+          accessibility: "not_accessible",
           estimatedDelaySeconds: 5,
         }),
       ],

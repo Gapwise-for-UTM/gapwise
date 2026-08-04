@@ -1,8 +1,26 @@
 export type ActivityType = "LEC" | "TUT" | "PRA" | "OTHER";
-export type Term = "Fall" | "Winter";
+export type Term = "Fall" | "Winter" | "Summer";
 export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
 
+export const TERMS: Term[] = ["Fall", "Winter", "Summer"];
 export const WEEKDAYS: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+
+/** U of T terms follow calendar months: Winter Jan-Apr, Summer May-Aug, Fall Sep-Dec. */
+export function termForMonth(month: number): Term {
+  if (!Number.isInteger(month) || month < 1 || month > 12) {
+    throw new RangeError(`Invalid calendar month: ${month}`);
+  }
+  if (month <= 4) return "Winter";
+  if (month <= 8) return "Summer";
+  return "Fall";
+}
+
+export type MeetingDateRange = {
+  /** First date explicitly supplied by DTSTART, in YYYY-MM-DD form. */
+  startDate: string;
+  /** Last date supplied by a finite RRULE/RDATE, or null when the series is open-ended. */
+  endDate: string | null;
+};
 
 export interface Meeting {
   id: string;
@@ -18,6 +36,9 @@ export interface Meeting {
   room: string | null;
   term: Term;
   locationUnknown: boolean;
+  dateRange?: MeetingDateRange;
+  /** Dates explicitly omitted by EXDATE, in YYYY-MM-DD form. */
+  excludedDates?: string[];
 }
 
 export type GapKind = "Transition only" | "Short break" | "Useful study gap" | "Long campus gap";

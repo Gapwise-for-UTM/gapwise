@@ -1,9 +1,19 @@
 import type { ActivityType, Meeting, Term, Weekday } from "@/lib/timetable-types";
-import { WEEKDAYS } from "@/lib/timetable-types";
+import { TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
 const ACTIVITY_TYPES: ActivityType[] = ["LEC", "TUT", "PRA", "OTHER"];
-const TERMS: Term[] = ["Fall", "Winter"];
 const deserializationCache = new WeakMap<object, Meeting[]>();
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isCalendarDate(value: unknown): value is string {
+  if (typeof value !== "string" || !DATE_PATTERN.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year!, month! - 1, day));
+  return (
+    date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day
+  );
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -23,6 +33,8 @@ function deserializeMeeting(value: unknown): Meeting | null {
   const room = value["room"];
   const term = value["term"] as Term;
   const locationUnknown = value["locationUnknown"];
+  const dateRange = value["dateRange"];
+  const excludedDates = value["excludedDates"];
   if (
     typeof id !== "string" ||
     typeof courseCode !== "string" ||
@@ -40,6 +52,21 @@ function deserializeMeeting(value: unknown): Meeting | null {
     return null;
   }
   if (
+    dateRange !== undefined &&
+    (!isRecord(dateRange) ||
+      !isCalendarDate(dateRange["startDate"]) ||
+      (dateRange["endDate"] !== null && !isCalendarDate(dateRange["endDate"])) ||
+      (typeof dateRange["endDate"] === "string" && dateRange["endDate"] < dateRange["startDate"]))
+  ) {
+    return null;
+  }
+  if (
+    excludedDates !== undefined &&
+    (!Array.isArray(excludedDates) || !excludedDates.every(isCalendarDate))
+  ) {
+    return null;
+  }
+  if (
     !Number.isInteger(startTime) ||
     !Number.isInteger(endTime) ||
     startTime < 0 ||
@@ -48,7 +75,7 @@ function deserializeMeeting(value: unknown): Meeting | null {
   ) {
     return null;
   }
-  return {
+  const meeting: Meeting = {
     id,
     courseCode,
     activityType,
@@ -62,24 +89,39 @@ function deserializeMeeting(value: unknown): Meeting | null {
     term,
     locationUnknown,
   };
+  if (dateRange !== undefined) {
+    meeting.dateRange = {
+      startDate: dateRange["startDate"] as string,
+      endDate: dateRange["endDate"] as string | null,
+    };
+  }
+  if (excludedDates !== undefined) {
+    meeting.excludedDates = [...new Set(excludedDates as string[])].sort();
+  }
+  return meeting;
 }
 
 /** Produces a JSON-safe whitelist of normalized meetings; raw ICS content is never accepted. */
 export function serializeSchedule(meetings: Meeting[]): Meeting[] {
-  return meetings.map((meeting) => ({
-    id: meeting.id,
-    courseCode: meeting.courseCode,
-    activityType: meeting.activityType,
-    sectionCode: meeting.sectionCode,
-    courseName: meeting.courseName,
-    startTime: meeting.startTime,
-    endTime: meeting.endTime,
-    weekday: meeting.weekday,
-    buildingCode: meeting.buildingCode,
-    room: meeting.room,
-    term: meeting.term,
-    locationUnknown: meeting.locationUnknown,
-  }));
+  return meetings.map((meeting) => {
+    const serialized: Meeting = {
+      id: meeting.id,
+      courseCode: meeting.courseCode,
+      activityType: meeting.activityType,
+      sectionCode: meeting.sectionCode,
+      courseName: meeting.courseName,
+      startTime: meeting.startTime,
+      endTime: meeting.endTime,
+      weekday: meeting.weekday,
+      buildingCode: meeting.buildingCode,
+      room: meeting.room,
+      term: meeting.term,
+      locationUnknown: meeting.locationUnknown,
+    };
+    if (meeting.dateRange) serialized.dateRange = { ...meeting.dateRange };
+    if (meeting.excludedDates) serialized.excludedDates = [...meeting.excludedDates];
+    return serialized;
+  });
 }
 
 export function deserializeSchedule(value: unknown): Meeting[] {

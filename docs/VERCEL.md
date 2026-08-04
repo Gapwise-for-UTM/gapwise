@@ -19,7 +19,7 @@ Production verification:
 
 1. Open `/` and a deep link directly.
 2. Confirm guest import works with Supabase variables absent.
-3. Sign in through GitHub, explicitly sync, refresh, and confirm automatic restoration.
+3. Sign in through GitHub or an email magic link, explicitly sync, refresh, and confirm automatic restoration.
 4. Verify refresh made no write request.
 5. Open Day Route and confirm its code, worker, MapLibre tiles, and markers load only then.
 6. Delete a disposable account and verify the selected local-data behavior.

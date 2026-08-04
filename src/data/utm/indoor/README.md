@@ -21,8 +21,9 @@ personal or security-sensitive information.
 4. Add hallway intersections, room doors, exterior doors, stairs, and elevators to
    `nodes.json`. Room nodes need a `room` identifier; vertical nodes need a floor.
 5. Add corridor and floor-transition edges to `edges.json`. Set `stairs: true` only
-   for stairs. Set `accessible: true` only after door widths, entrance access, and the
-   complete edge have been verified. Elevator edges should include an explicit wait
+   for stairs. Set `accessibility: "accessible"` only after door widths, entrance
+   access, and the complete edge have been verified; otherwise use `"unknown"` or
+   `"not_accessible"`. Elevator edges should include an explicit wait
    estimate only when a local measurement supports it; otherwise the centralized
    routing default applies.
 6. Connect an indoor entrance node to the matching geographic entrance ID. Test a

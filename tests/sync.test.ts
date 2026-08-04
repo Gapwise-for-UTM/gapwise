@@ -12,7 +12,12 @@ describe("guest-safe cloud services", () => {
   });
 
   test("serializes and deserializes only normalized schedule fields", () => {
-    const original = [meeting()];
+    const original = [
+      meeting({
+        dateRange: { startDate: "2026-09-07", endDate: "2026-12-07" },
+        excludedDates: ["2026-10-12"],
+      }),
+    ];
     const serialized = serializeSchedule(original);
     expect(serialized).toEqual(original);
     expect(deserializeSchedule(JSON.parse(JSON.stringify(serialized)))).toEqual(original);
@@ -20,6 +25,15 @@ describe("guest-safe cloud services", () => {
 
   test("rejects invalid cloud schedule records", () => {
     expect(() => deserializeSchedule([{ rawIcs: "BEGIN:VCALENDAR" }])).toThrow();
+    expect(() =>
+      deserializeSchedule([
+        meeting({ dateRange: { startDate: "2026-09-07", endDate: "2026-02-01" } }),
+      ]),
+    ).toThrow();
+  });
+
+  test("continues to load schedules saved before recurrence metadata was added", () => {
+    expect(deserializeSchedule([meeting()])).toEqual([meeting()]);
   });
 
   test("uses safe user preference defaults", () => {

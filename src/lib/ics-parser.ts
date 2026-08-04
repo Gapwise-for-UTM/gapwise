@@ -3,8 +3,8 @@ import {
   type ActivityType,
   type Meeting,
   type ParsedTimetable,
-  type Term,
   type Weekday,
+  termForMonth,
   WEEKDAYS,
 } from "./timetable-types";
 import { resolveAcornLocation } from "@/features/routing/location-resolver";
@@ -56,24 +56,67 @@ function parseLocation(raw: string | null): {
   buildingCode: string | null;
   room: string | null;
   locationUnknown: boolean;
+  warning: string | null;
 } {
   const value = unescapeText(raw ?? "")
     .replace(/\s+/g, " ")
     .trim();
   const resolved = resolveAcornLocation(value);
-  if (resolved.status !== "known") {
-    return { buildingCode: null, room: null, locationUnknown: true };
+  if (!resolved.buildingCode) {
+    return {
+      buildingCode: null,
+      room: null,
+      locationUnknown: true,
+      warning: resolved.warning,
+    };
   }
   return {
     buildingCode: resolved.buildingCode,
     room: resolved.room,
     locationUnknown: false,
+    warning: resolved.warning,
   };
 }
 
-function termFor(month: number): Term {
-  // month is 1-12
-  return month >= 8 ? "Fall" : "Winter";
+function calendarDate(value: { year: number; month: number; day: number }): string {
+  return `${String(value.year).padStart(4, "0")}-${String(value.month).padStart(2, "0")}-${String(value.day).padStart(2, "0")}`;
+}
+
+function calendarDates(properties: ICAL.Property[]): string[] {
+  return properties
+    .flatMap((property) => property.getValues())
+    .filter(
+      (value): value is ICAL.Time =>
+        value instanceof ICAL.Time &&
+        Number.isInteger(value.year) &&
+        Number.isInteger(value.month) &&
+        Number.isInteger(value.day),
+    )
+    .map(calendarDate);
+}
+
+function recurrenceMetadata(vevent: ICAL.Component, start: ICAL.Time) {
+  const rules = vevent
+    .getAllProperties("rrule")
+    .map((property) => property.getFirstValue())
+    .filter((value): value is ICAL.Recur => value instanceof ICAL.Recur);
+  const recurrenceDates = calendarDates(vevent.getAllProperties("rdate"));
+  let endDate: string | null;
+  if (rules.length === 0 && recurrenceDates.length === 0) {
+    endDate = calendarDate(start);
+  } else if (rules.some((rule) => rule.until === null)) {
+    endDate = null;
+  } else {
+    const suppliedEnds = [
+      ...rules.map((rule) => calendarDate(rule.until!)),
+      ...recurrenceDates,
+    ].sort();
+    endDate = suppliedEnds.at(-1) ?? null;
+  }
+  return {
+    dateRange: { startDate: calendarDate(start), endDate },
+    excludedDates: [...new Set(calendarDates(vevent.getAllProperties("exdate")))].sort(),
+  };
 }
 
 function weekdaysFor(event: ICAL.Event, startWeekday: Weekday | null): Weekday[] {
@@ -160,8 +203,8 @@ export function parseIcs(text: string): ParsedTimetable {
     const courseName = description.split("\n")[0]?.trim() || courseCode;
 
     const location = parseLocation(vevent.getFirstPropertyValue("location") as string | null);
-    if (location.locationUnknown) {
-      warnings.add(`${courseCode} ${activityType} has no assigned room (TBA or online).`);
+    if (location.warning) {
+      warnings.add(`${courseCode} ${activityType}: ${location.warning}`);
     }
 
     const startMinutes = start.hour * 60 + start.minute;
@@ -190,11 +233,12 @@ export function parseIcs(text: string): ParsedTimetable {
       }
     }
 
-    const term = termFor(start.month);
+    const term = termForMonth(start.month);
+    const recurrence = recurrenceMetadata(vevent, start);
 
     for (const weekday of days) {
       const meeting: Meeting = {
-        id: `${term}-${courseCode}-${activityType}-${sectionCode}-${weekday}-${startMinutes}`,
+        id: `${term}-${courseCode}-${activityType}-${sectionCode}-${weekday}-${startMinutes}-${recurrence.dateRange.startDate}`,
         courseCode,
         activityType,
         sectionCode,
@@ -206,6 +250,8 @@ export function parseIcs(text: string): ParsedTimetable {
         room: location.room,
         term,
         locationUnknown: location.locationUnknown,
+        dateRange: recurrence.dateRange,
+        ...(recurrence.excludedDates.length > 0 ? { excludedDates: recurrence.excludedDates } : {}),
       };
       byKey.set(meeting.id, meeting);
     }

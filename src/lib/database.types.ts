@@ -41,21 +41,18 @@ export type Database = {
         Row: {
           meetings: Json;
           schema_version: number;
-          source_filename: string | null;
           updated_at: string;
           user_id: string;
         };
         Insert: {
           meetings: Json;
           schema_version?: number;
-          source_filename?: string | null;
           updated_at?: string;
           user_id: string;
         };
         Update: {
           meetings?: Json;
           schema_version?: number;
-          source_filename?: string | null;
           updated_at?: string;
           user_id?: string;
         };

@@ -11,16 +11,12 @@ async function currentUserId(): Promise<string> {
   return data.user.id;
 }
 
-export async function saveSchedule(
-  meetings: Meeting[],
-  sourceFilename: string | null = null,
-): Promise<void> {
+export async function saveSchedule(meetings: Meeting[]): Promise<void> {
   const supabase = requireSupabaseClient();
   const userId = await currentUserId();
   const { error } = await supabase.from("user_schedules").upsert({
     user_id: userId,
     meetings: serializeSchedule(meetings) as unknown as Json,
-    source_filename: sourceFilename,
     schema_version: 1,
     updated_at: new Date().toISOString(),
   });

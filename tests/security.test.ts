@@ -11,6 +11,19 @@ describe("supply-chain configuration", () => {
       expect(action).toMatch(/@[a-f0-9]{40}$/);
     }
   });
+
+  test("does not load fonts from Google", async () => {
+    const sources = await Promise.all(
+      [
+        "index.html",
+        "src/routes/__root.tsx",
+        "src/styles.css",
+        "public/_headers",
+        "vercel.json",
+      ].map((path) => readFile(path, "utf8")),
+    );
+    expect(sources.join("\n")).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
+  });
 });
 
 describe("account deletion and RLS security", () => {
@@ -43,5 +56,18 @@ describe("account deletion and RLS security", () => {
     expect(sql).toContain("revoke all on table public.user_preferences from anon, authenticated");
     expect(sql).not.toMatch(/grant\s+all/i);
     expect(sql.match(/grant select, insert, update, delete/g)).toHaveLength(2);
+  });
+
+  test("removes source filenames without changing RLS policies", async () => {
+    const migration = await readFile(
+      "supabase/migrations/20260804040016_remove_schedule_source_filename.sql",
+      "utf8",
+    );
+    const syncService = await readFile("src/features/sync/sync-service.ts", "utf8");
+    const databaseTypes = await readFile("src/lib/database.types.ts", "utf8");
+    expect(migration).toMatch(/drop column if exists source_filename/i);
+    expect(migration).not.toMatch(/policy|row level security/i);
+    expect(syncService).not.toContain("source_filename");
+    expect(databaseTypes).not.toContain("source_filename");
   });
 });

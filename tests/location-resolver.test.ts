@@ -8,7 +8,8 @@ describe("ACORN location resolution", () => {
     expect(result.buildingCode).toBe("MN");
     expect(result.room).toBe("1270");
     expect(result.status).toBe("known");
-    expect(result.buildingVerification).toBe("verified");
+    expect(result.buildingRecognition).toBe("recognized");
+    expect(result.routingDataStatus).toBe("verified");
   });
 
   test("handles blank locations", () => {
@@ -26,6 +27,54 @@ describe("ACORN location resolution", () => {
   test("resolves supported building names", () => {
     expect(resolveAcornLocation("DH 2010").buildingName).toBe("Deerfield Hall");
     expect(resolveAcornLocation("IB 340").buildingName).toBe("Instructional Centre");
+  });
+
+  test.each([
+    ["MN 1100", "MN"],
+    ["DH 2010", "DH"],
+    ["IB 340", "IB"],
+    ["DV 2072", "DV"],
+    ["CC 1080", "CCT"],
+    ["CCT 1080", "CCT"],
+    ["CC/CCT 1080", "CCT"],
+    ["HM 100", "HM"],
+    ["KN 137", "KN"],
+    ["RA 200", "RAWC"],
+    ["RAWC 200", "RAWC"],
+    ["RA/RAWC 200", "RAWC"],
+    ["XR 100", "XR"],
+    ["HB 100", "HB"],
+    ["AX 100", "AX"],
+    ["DW 100", "DW"],
+  ])("recognizes UTM location %s as %s", (location, code) => {
+    const result = resolveAcornLocation(location);
+    expect(result.buildingCode).toBe(code);
+    expect(result.buildingRecognition).toBe("recognized");
+  });
+
+  test("resolves long-form aliases without treating the building name as a room", () => {
+    expect(resolveAcornLocation("Instructional Centre 340")).toMatchObject({
+      buildingCode: "IB",
+      room: "340",
+      buildingRecognition: "recognized",
+    });
+    expect(resolveAcornLocation("Davis Building 2072")).toMatchObject({
+      buildingCode: "DV",
+      room: "2072",
+      buildingRecognition: "recognized",
+    });
+  });
+
+  test("separates recognition from verified routing coverage", () => {
+    const recognizedOnly = resolveAcornLocation("DV 2072");
+    expect(recognizedOnly.status).toBe("known");
+    expect(recognizedOnly.buildingRecognition).toBe("recognized");
+    expect(recognizedOnly.routingDataStatus).toBe("unverified");
+    expect(recognizedOnly.warning).toContain("verified routing data is unavailable");
+
+    const unknown = resolveAcornLocation("XY 2010");
+    expect(unknown.status).toBe("unknown");
+    expect(unknown.buildingRecognition).toBe("unrecognized");
   });
 
   test("marks a configured floor rule as inferred, never verified", () => {

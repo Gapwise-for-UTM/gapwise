@@ -63,13 +63,13 @@ export function planMeetingTransition(
 ): TransitionRoute {
   const origin = resolveMeetingLocation(from);
   const destination = resolveMeetingLocation(to);
+  const locationWarnings = [origin.warning, destination.warning].filter(
+    (warning): warning is string => Boolean(warning),
+  );
   if (origin.status !== "known" || destination.status !== "known") {
-    const warnings = [origin.warning, destination.warning].filter((warning): warning is string =>
-      Boolean(warning),
-    );
     return locationUnavailable(
       "A physical route cannot be generated for an online, TBA, or unknown location.",
-      warnings,
+      locationWarnings,
     );
   }
   if (!origin.buildingCode || !destination.buildingCode) {
@@ -157,6 +157,7 @@ export function planMeetingTransition(
   if (!fromBuilding || !toBuilding) {
     return locationUnavailable(
       "Verified map coordinates are unavailable for one or both buildings.",
+      locationWarnings,
     );
   }
   if (preferences.mode === "step-free") {
@@ -170,14 +171,14 @@ export function planMeetingTransition(
     distance / preferences.walkingSpeedMps + ROUTING_DEFAULTS.buildingEntryExitSeconds * 2;
   return {
     status: "approximate",
-    message: "Approximate connection — verified walking path unavailable.",
+    message: "Approximate travel estimate — verified walking path unavailable.",
     accuracy: "Approximate building-to-building estimate",
     result: null,
-    displayCoordinates: [fromBuilding.navigationPoint, toBuilding.navigationPoint],
+    displayCoordinates: [],
     warnings: [
       `Indoor room routing not yet mapped for ${origin.buildingCode}.`,
       `Indoor room routing not yet mapped for ${destination.buildingCode}.`,
-      "The dashed line is a visual estimate, not an optimal walking route.",
+      "Distance and time use a straight-line estimate; no path is drawn until a walking route is verified.",
     ],
     approximateDistanceMeters: distance,
     approximateSeconds: seconds,

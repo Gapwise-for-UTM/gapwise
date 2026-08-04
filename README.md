@@ -22,11 +22,11 @@ Gapwise exists because a free hour is only useful when travel time, buildings, a
 ## Key features
 
 - Desktop weekly grid and comfortable mobile day list
-- Fall and Winter views with gap duration and leave-by guidance
+- Fall, Winter, and Summer views with gap duration and leave-by guidance
 - Free OpenFreeMap/OpenStreetMap basemap with textual routes
 - Route confidence labelled **verified**, **approximate**, or **unavailable**
 - Light and dark themes, keyboard navigation, reduced-motion support, and map alternatives
-- Optional private sync through GitHub OAuth and Supabase RLS
+- Optional private sync through GitHub OAuth or email magic links and Supabase RLS
 
 Campus route coverage is incomplete. “Verified” refers to reviewed campus routing data; “approximate” is a clearly labelled estimate; “unavailable” means Gapwise will not invent a route. Basemap geometry is not evidence that an indoor path has been verified.
 
@@ -34,7 +34,7 @@ Campus route coverage is incomplete. “Verified” refers to reviewed campus ro
 
 When both remembered local and cloud copies exist, Gapwise uses the newest safely comparable timestamp. If timestamps cannot be compared, it keeps the local copy and notes that a cloud version is available. An already loaded timetable is never replaced automatically. Manual cloud loading remains available for recovery.
 
-GitHub sign-in is remembered in this browser using Supabase's persistent browser session until you sign out, the session expires, or browser storage is cleared. This is separate from **Remember on this device**, which controls only the parsed timetable. On a shared device, use **Sign out** from the account menu; it clears this browser's auth session without deleting your GitHub account or cloud data.
+GitHub or passwordless email sign-in is remembered in this browser using Supabase's persistent browser session until you sign out, the session expires, or browser storage is cleared. This is separate from **Remember on this device**, which controls only the parsed timetable. On a shared device, use **Sign out** from the account menu; it clears this browser's auth session without deleting your provider account or cloud data.
 
 ## Account and data deletion
 
@@ -61,8 +61,10 @@ Never put the service-role key in a `VITE_` variable. Without these values, gues
 ```sh
 bun run lint
 bun test
+bun run typecheck
 bun run build
-bunx prettier --check .
+bun run format:check
+bun audit
 bun run generate:icons
 ```
 
@@ -79,7 +81,7 @@ SVG files are canonical brand sources; the icon generator creates deterministic 
 
 ## Contributing campus route data
 
-Follow [`src/data/utm/indoor/README.md`](src/data/utm/indoor/README.md). Contributions must describe their source and confidence; do not promote estimates to verified routes without review.
+Follow [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md) and the canonical survey schema. Contributions must describe their source and confidence; do not promote estimates to verified routes without review.
 
 ## Deployment
 

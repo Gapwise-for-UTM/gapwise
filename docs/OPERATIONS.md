@@ -6,7 +6,8 @@ Gapwise is a client-only React/Vite application. The browser parses an ACORN
 calendar, calculates timetable gaps, and runs the deterministic UTM route graph.
 The original file, calculated gaps, and calculated routes do not leave the
 browser. Optional cloud features use the Supabase browser client for GitHub OAuth
-and explicit synchronization of normalized meetings and route preferences.
+or passwordless email magic links and explicit synchronization of normalized meetings
+and route preferences.
 
 Production is built from GitHub `main` by Vercel and served from
 `https://campus-gap-finder.vercel.app`. Pushing the connected branch also syncs
@@ -55,7 +56,9 @@ expectation even though the current output is static.
 ## Database and Edge Functions
 
 Apply migrations in filename order. Never edit an already-applied migration to
-change production; add a new migration instead.
+change production; add a new migration instead. For the legacy `source_filename`
+removal, deploy and verify the compatible frontend first, then apply the migration;
+see `docs/SUPABASE.md` for the exact order.
 
 ```sh
 supabase db push
@@ -78,8 +81,9 @@ bun run format
 bun run lint
 bun test
 bun run build
-bunx tsc --noEmit
-bunx prettier --check .
+bun run typecheck
+bun run format:check
+bun audit
 ```
 
 Then serve the production output and check desktop and narrow mobile widths:
@@ -91,7 +95,7 @@ Then serve the production output and check desktop and narrow mobile widths:
    written fallback directions load without console errors.
 5. Block the map provider and verify a visible error plus **Retry map** replaces
    the silent rectangle.
-6. With a disposable account, verify GitHub sign-in, explicit sync, read-only
+6. With disposable accounts, verify GitHub and email magic-link sign-in, explicit sync, read-only
    restoration after refresh, sign-out, and account deletion.
 7. Confirm production response headers, the canonical domain, GitHub commit SHA,
    and successful Vercel deployment.
@@ -104,9 +108,10 @@ Then serve the production output and check desktop and narrow mobile widths:
   tile requests begin.
 - **Map error state:** check the worker, style, TileJSON, sprite, glyph, and `.pbf`
   responses. The route timeline remains the accessible fallback.
-- **GitHub sign-in returns an error:** compare the browser origin with Supabase's
-  Site URL and redirect allowlist. Never loosen the allowlist to an unrestricted
-  wildcard.
+- **Sign-in returns an error:** compare the browser origin with Supabase's Site URL
+  and redirect allowlist. For GitHub, also verify the provider callback; for email,
+  verify the magic-link template and delivery settings. Never loosen the allowlist to
+  an unrestricted wildcard.
 - **Cloud controls are disabled:** verify both public Vite variables exist for the
   current environment. Guest parsing and routing should still work.
 - **Direct route is a 404:** confirm the Vercel rewrite and `public/_redirects`

@@ -15,7 +15,7 @@ import type { TransitionRoute } from "@/features/routing/types";
 import { loadPreferences, savePreferences } from "@/features/sync/sync-service";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import { formatDuration, formatTime, locationLabel, WEEKDAYS } from "@/lib/timetable-types";
+import { formatDuration, formatTime, locationLabel, TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
 type DaySegment = {
   id: string;
@@ -50,10 +50,7 @@ export function DayRoute({
   planTransition: TransitionPlanner;
 }) {
   const availableTerms = useMemo(
-    () =>
-      (["Fall", "Winter"] as Term[]).filter((item) =>
-        meetings.some((meeting) => meeting.term === item),
-      ),
+    () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
     [meetings],
   );
   const initialDay =

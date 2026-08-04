@@ -20,7 +20,7 @@ import {
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import { findGaps } from "@/lib/gaps";
 import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
-import type { Meeting, Term } from "@/lib/timetable-types";
+import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
 import { deserializeSchedule } from "@/features/sync/schedule-serialization";
 import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
@@ -69,7 +69,6 @@ function Index() {
   const [view, setView] = useState<"timetable" | "gaps" | "route">("timetable");
   const [openedViews, setOpenedViews] = useState({ gaps: false, route: false });
   const [isDemo, setIsDemo] = useState(false);
-  const [sourceFilename, setSourceFilename] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
   const [localRecord] = useState(() => {
     if (typeof window === "undefined") return null;
@@ -214,7 +213,7 @@ function Index() {
 
   const terms = useMemo(() => {
     if (!meetings) return [] as Term[];
-    return (["Fall", "Winter"] as Term[]).filter((t) => meetings.some((m) => m.term === t));
+    return TERMS.filter((t) => meetings.some((m) => m.term === t));
   }, [meetings]);
 
   useEffect(() => {
@@ -248,7 +247,6 @@ function Index() {
       setRestorationMessage(null);
       setWarnings(result.warnings);
       setIsDemo(false);
-      setSourceFilename(file.name);
       saveRemembered(remember, remember ? result.meetings : null);
     } catch (err) {
       setMeetings(null);
@@ -274,7 +272,6 @@ function Index() {
     setRestoration("restored-memory");
     setRestorationMessage(null);
     setIsDemo(true);
-    setSourceFilename(null);
     setTerm("Fall");
   }
 
@@ -287,7 +284,6 @@ function Index() {
     setWarnings([]);
     setError(null);
     setIsDemo(false);
-    setSourceFilename(null);
     saveRemembered(remember, null);
   }
 
@@ -297,10 +293,7 @@ function Index() {
     setWarnings([]);
     setError(null);
     setIsDemo(false);
-    setSourceFilename(null);
-    const firstTerm = (["Fall", "Winter"] as Term[]).find((item) =>
-      cloudMeetings.some((meeting) => meeting.term === item),
-    );
+    const firstTerm = TERMS.find((item) => cloudMeetings.some((meeting) => meeting.term === item));
     if (firstTerm) setTerm(firstTerm);
     saveRemembered(remember, remember ? cloudMeetings : null);
     restoredSource.current = "cloud";
@@ -418,7 +411,6 @@ function Index() {
               <CloudSyncControls
                 user={user}
                 meetings={meetings}
-                sourceFilename={sourceFilename}
                 onLoad={loadCloudTimetable}
                 restorationState={restoration}
               />
@@ -624,7 +616,6 @@ function Index() {
               <CloudSyncControls
                 user={user}
                 meetings={meetings}
-                sourceFilename={sourceFilename}
                 onLoad={loadCloudTimetable}
                 restorationState={restoration}
               />

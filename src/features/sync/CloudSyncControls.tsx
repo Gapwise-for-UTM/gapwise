@@ -9,13 +9,11 @@ import type { RestorationState } from "./restoration";
 export function CloudSyncControls({
   user,
   meetings,
-  sourceFilename,
   onLoad,
   restorationState,
 }: {
   user: User | null;
   meetings: Meeting[] | null;
-  sourceFilename: string | null;
   onLoad: (meetings: Meeting[]) => void;
   restorationState: RestorationState;
 }) {
@@ -59,7 +57,7 @@ export function CloudSyncControls({
             disabled={!enabled || !meetings?.length || busy}
             onClick={() =>
               void run(async () => {
-                await saveSchedule(meetings!, sourceFilename);
+                await saveSchedule(meetings!);
                 return "Normalized timetable synced.";
               })
             }

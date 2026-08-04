@@ -24,8 +24,8 @@ set `BUN_VERSION` to the version used locally.
 ```
 
 `public/_headers` supplies a restrictive Content Security Policy and other security
-headers while allowing the isolated OpenFreeMap tile origin, Google-hosted fonts, and
-optional Supabase project connections.
+headers while allowing the isolated OpenFreeMap tile origin and optional Supabase
+project connections. Fonts use the local system stack and require no external origin.
 
 ## Optional environment variables
 
@@ -40,18 +40,20 @@ VITE_SUPABASE_PUBLISHABLE_KEY
 These values are compiled into the public client bundle, so only the browser-safe
 publishable/anon key is allowed. Never configure a service-role key.
 
-After the first deploy, add the final Pages origin to Supabase's allowed redirect URLs
-and GitHub OAuth configuration as described in `docs/SUPABASE.md`.
+After the first deploy, add the final Pages origin to Supabase's allowed redirect URLs,
+GitHub OAuth configuration, and email magic-link redirect configuration as described in
+`docs/SUPABASE.md`.
 
 ## Verification
 
 Run locally before deploying:
 
 ```sh
-bun install
+bun install --frozen-lockfile
 bun test
+bun run typecheck
 bun run build
 ```
 
 Confirm `dist/index.html`, `dist/_redirects`, and `dist/_headers` exist. Test a deep-link
-refresh, guest import, map attribution, and—if configured—the GitHub sign-in round trip.
+refresh, guest import, map attribution, and—if configured—the GitHub and email magic-link sign-in round trips.

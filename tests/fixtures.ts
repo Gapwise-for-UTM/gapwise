@@ -25,6 +25,7 @@ export function node(id: string, overrides: Partial<RoutingNode> = {}): RoutingN
     kind: "path-intersection",
     buildingCode: null,
     floor: null,
+    accessibility: "unknown",
     ...overrides,
   };
 }
@@ -42,7 +43,7 @@ export function edge(
     to,
     distanceMeters,
     environment: "outdoor",
-    accessible: true,
+    accessibility: "accessible",
     stairs: false,
     bidirectional: true,
     ...overrides,
