@@ -4,10 +4,16 @@ import { CAMPUS_BUILDINGS } from "@/data/utm/campus";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import { formatDuration, formatTime, locationLabel, WEEKDAYS } from "@/lib/timetable-types";
+import {
+  formatDuration,
+  formatTime,
+  locationLabel,
+  termForMonth,
+  WEEKDAYS,
+} from "@/lib/timetable-types";
 
 function currentTerm(date: Date): Term {
-  return date.getMonth() + 1 >= 8 ? "Fall" : "Winter";
+  return termForMonth(date.getMonth() + 1);
 }
 
 function minutesNow(date: Date) {

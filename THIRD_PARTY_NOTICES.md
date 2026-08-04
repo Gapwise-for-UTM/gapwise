@@ -16,10 +16,7 @@ The dependency manifest and lockfile identify the versions used by this project.
 
 ## Fonts
 
-DM Sans and Space Grotesk are loaded from Google Fonts. Both families are distributed under the SIL Open Font License 1.1. The fonts are not relicensed under this project's MIT License.
-
-- https://github.com/googlefonts/dm-fonts
-- https://github.com/floriankarsten/space-grotesk
+The application uses the visitor's system UI font stack and does not request external font files.
 
 ## Maps and geographic data
 
