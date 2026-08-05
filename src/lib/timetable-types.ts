@@ -2,13 +2,7 @@ export type ActivityType = "LEC" | "TUT" | "PRA" | "OTHER";
 export type Term = "Fall" | "Winter";
 export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
 
-export const WEEKDAYS: Weekday[] = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-];
+export const WEEKDAYS: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 export interface Meeting {
   id: string;
@@ -26,12 +20,6 @@ export interface Meeting {
   locationUnknown: boolean;
 }
 
-export type GapKind =
-  | "Transition only"
-  | "Short break"
-  | "Useful study gap"
-  | "Long campus gap";
-
 export interface Gap {
   id: string;
   term: Term;
@@ -39,8 +27,6 @@ export interface Gap {
   startTime: number;
   endTime: number;
   durationMinutes: number;
-  usableMinutes: number;
-  kind: GapKind;
   previous: Meeting;
   next: Meeting;
 }
