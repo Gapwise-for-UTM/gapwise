@@ -101,14 +101,11 @@ export function UtmMonumentViewer({
           environment-image="neutral"
           interaction-prompt="none"
           touch-action="pan-y"
-          onLoad={() => setModelReady(true)}
           style={{
             width: "100%",
             height: "100%",
             background: "transparent",
             display: "block",
-            opacity: modelReady ? 1 : 0,
-            transition: "opacity 400ms ease",
           }}
         >
           <div slot="poster" className="h-full w-full">
