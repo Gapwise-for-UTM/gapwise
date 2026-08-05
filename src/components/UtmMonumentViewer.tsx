@@ -77,7 +77,7 @@ export function UtmMonumentViewer({
           tone-mapping="aces"
           shadow-intensity="1.15"
           shadow-softness="0.7"
-          exposure="0.58"
+          exposure="0.38"
           environment-image="neutral"
           interaction-prompt="none"
           touch-action="pan-y"
