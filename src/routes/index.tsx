@@ -626,16 +626,6 @@ function Index() {
               )}
             </div>
 
-            <div className="mt-10">
-              <UploadPanel
-                onFile={handleFile}
-                onDemo={loadDemo}
-                loading={loading}
-                error={error}
-                remember={remember}
-                onRememberChange={handleRemember}
-              />
-            </div>
             <div className="mt-6">
               <CloudSyncControls
                 user={user}
