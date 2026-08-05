@@ -211,8 +211,8 @@ export const TodaySummary = memo(function TodaySummary({
 
       {summary.next ? (
         <p className="mt-3 text-xs text-muted-foreground">
-          Uses your current or previous class unless you choose another building. Live geolocation is not
-          used.
+          Uses your current or previous class unless you choose another building. Live geolocation
+          is not used.
         </p>
       ) : null}
     </section>
