@@ -15,6 +15,7 @@ export function UtmMonumentViewer({
   decorative = false,
 }: UtmMonumentViewerProps) {
   const [viewerLoaded, setViewerLoaded] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
   const viewerId = useMemo(
     () => `utm-monument-${Math.random().toString(36).slice(2)}`,
     [],
@@ -35,21 +36,30 @@ export function UtmMonumentViewer({
     };
   }, []);
 
+  const initialOrbit = "90deg 70deg 150%";
+
   function resetCamera() {
     const viewer = document.getElementById(viewerId) as
       | (HTMLElement & {
           cameraOrbit?: string;
-          cameraTarget?: string;
           jumpCameraToGoal?: () => void;
         })
       | null;
 
     if (!viewer) return;
-    viewer.cameraOrbit = "0deg 72deg 13m";
-    viewer.cameraTarget = "0m 2.8m 0m";
+    viewer.cameraOrbit = initialOrbit;
     viewer.jumpCameraToGoal?.();
   }
 
+  const skeleton = (
+    <div className="flex h-full w-full items-center justify-center bg-foreground/[0.06]">
+      <span
+        className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary"
+        role="status"
+        aria-label="Loading monument model"
+      />
+    </div>
+  );
 
   return (
     <figure
@@ -74,40 +84,41 @@ export function UtmMonumentViewer({
         <ModelViewer
           id={viewerId}
           src="/models/utm-entrance-monument.glb"
-          poster="/models/utm-entrance-monument-poster.png"
           alt="A detailed three-dimensional reconstruction of the University of Toronto Mississauga entrance monument"
-          loading="lazy"
+          loading="eager"
           reveal="auto"
           camera-controls
-          camera-orbit="0deg 72deg 13m"
-          camera-target="0m 2.8m 0m"
-          min-camera-orbit="-42deg 57deg 9m"
-          max-camera-orbit="42deg 84deg 17m"
+          camera-orbit={initialOrbit}
+          min-camera-orbit="auto 50deg 105%"
+          max-camera-orbit="auto 88deg 220%"
           field-of-view="31deg"
           min-field-of-view="25deg"
           max-field-of-view="42deg"
-          shadow-intensity="0.95"
-          shadow-softness="0.85"
-          exposure="0.82"
+          tone-mapping="neutral"
+          shadow-intensity="0.5"
+          shadow-softness="1"
+          exposure="0.52"
           environment-image="neutral"
           interaction-prompt="none"
           touch-action="pan-y"
-
+          onLoad={() => setModelReady(true)}
           style={{
             width: "100%",
             height: "100%",
             background: "transparent",
             display: "block",
+            opacity: modelReady ? 1 : 0,
+            transition: "opacity 400ms ease",
           }}
-        />
+        >
+          <div slot="poster" className="h-full w-full">
+            {skeleton}
+          </div>
+        </ModelViewer>
       ) : (
-        <img
-          src="/models/utm-entrance-monument-poster.png"
-          alt={decorative ? "" : "UTM entrance monument"}
-          className="h-full w-full object-contain p-4 sm:p-6"
-          loading="lazy"
-        />
+        skeleton
       )}
+
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background/55 to-transparent" />
 
