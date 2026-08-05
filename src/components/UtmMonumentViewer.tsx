@@ -15,7 +15,7 @@ export function UtmMonumentViewer({
   decorative = false,
 }: UtmMonumentViewerProps) {
   const [viewerLoaded, setViewerLoaded] = useState(false);
-  const [modelReady, setModelReady] = useState(false);
+  
   const viewerId = useMemo(
     () => `utm-monument-${Math.random().toString(36).slice(2)}`,
     [],
