@@ -63,7 +63,7 @@ export function UtmMonumentViewer({
 
       {viewerLoaded ? (
         <ModelViewer
-          src="/models/utm-entrance-monument.glb"
+          src="/models/utm-entrance-monument.glb?v=gray-limestone-2"
           alt="A detailed three-dimensional reconstruction of the University of Toronto Mississauga entrance monument"
           loading="eager"
           reveal="auto"
@@ -74,10 +74,10 @@ export function UtmMonumentViewer({
           field-of-view="31deg"
           min-field-of-view="25deg"
           max-field-of-view="42deg"
-          tone-mapping="neutral"
+          tone-mapping="aces"
           shadow-intensity="1.15"
           shadow-softness="0.7"
-          exposure="0.72"
+          exposure="0.58"
           environment-image="neutral"
           interaction-prompt="none"
           touch-action="pan-y"
