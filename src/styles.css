@@ -97,10 +97,10 @@
   --border: oklch(0.895 0.014 250);
   --input: oklch(0.87 0.016 250);
   --ring: oklch(0.55 0.095 250);
-  --hero: oklch(0.22 0.06 268);
-  --hero-foreground: oklch(0.955 0.008 250);
-  --hero-muted: oklch(0.34 0.055 258);
-  --hero-accent: oklch(0.63 0.095 250);
+  --hero: oklch(0.94 0.022 250);
+  --hero-foreground: oklch(0.24 0.055 265);
+  --hero-muted: oklch(0.87 0.035 250);
+  --hero-accent: oklch(0.5 0.115 250);
   --lec: oklch(0.45 0.11 255);
   --tut: oklch(0.52 0.09 195);
   --pra: oklch(0.5 0.1 300);

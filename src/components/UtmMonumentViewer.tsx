@@ -30,7 +30,7 @@ export function UtmMonumentViewer({
     };
   }, []);
 
-  const initialOrbit = "0deg 70deg 135%";
+  const initialOrbit = "0deg 70deg 120%";
 
   const skeleton = (
     <div className="flex h-full w-full items-center justify-center bg-foreground/[0.06]">
