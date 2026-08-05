@@ -86,7 +86,7 @@ export const TodaySummary = memo(function TodaySummary({
 
   if (!summary) {
     return (
-      <section className="surface mb-6 p-4">
+      <section className="surface mb-6 mt-6 p-4 sm:p-5">
         <h2 className="flex items-center gap-2 text-base font-semibold">
           <CalendarClock className="h-4 w-4 text-accent" aria-hidden="true" />
           Today
@@ -103,8 +103,8 @@ export const TodaySummary = memo(function TodaySummary({
   const recent = summary.current ?? summary.previous;
 
   return (
-    <section className="surface mb-6 p-4" aria-labelledby="today-title">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <section className="surface mb-6 mt-6 p-4 sm:p-5" aria-labelledby="today-title">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-8">
         <div>
           <h2 id="today-title" className="flex items-center gap-2 text-base font-semibold">
             <CalendarClock className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -116,13 +116,13 @@ export const TodaySummary = memo(function TodaySummary({
               : "No previous class today; choose a campus starting building."}
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-xs font-medium">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end lg:w-auto">
+          <label className="block w-full text-xs font-medium sm:w-auto">
             Manual starting building
             <select
               value={manualBuilding}
               onChange={(event) => setManualBuilding(event.target.value)}
-              className="mt-1 block rounded-md border border-input bg-card px-2 py-1.5"
+              className="mt-1 block w-full rounded-md border border-input bg-card px-3 py-2 sm:min-w-64"
             >
               {CAMPUS_BUILDINGS.map((building) => (
                 <option key={building.code} value={building.code}>
@@ -134,7 +134,7 @@ export const TodaySummary = memo(function TodaySummary({
           <button
             type="button"
             onClick={() => setUseManualStart((value) => !value)}
-            className={`rounded-md border px-2 py-1.5 text-xs font-semibold ${
+            className={`w-full rounded-md border px-3 py-2 text-xs font-semibold sm:w-auto ${
               useManualStart ? "border-accent bg-accent/10" : "border-input"
             }`}
           >
@@ -182,7 +182,9 @@ export const TodaySummary = memo(function TodaySummary({
           ) : null}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-muted-foreground">No later class is scheduled today.</p>
+        <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
+          No later class is scheduled today.
+        </p>
       )}
       <p className="mt-3 text-xs text-muted-foreground">
         Uses your previous class or selected building as the start. Live geolocation is not used.
