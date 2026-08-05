@@ -1,9 +1,4 @@
-import {
-  BookOpen,
-  CalendarDays,
-  Clock3,
-  MapPin,
-} from "lucide-react";
+import { BookOpen, CalendarDays, Clock3, MapPin } from "lucide-react";
 import { memo, useCallback, useMemo, useState } from "react";
 import {
   Dialog,
@@ -125,9 +120,7 @@ function MeetingDetailsDialog({
                 <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                 Location
               </dt>
-              <dd className="mt-1 text-sm font-medium text-foreground">
-                {locationLabel(meeting)}
-              </dd>
+              <dd className="mt-1 text-sm font-medium text-foreground">{locationLabel(meeting)}</dd>
             </div>
             <div className="rounded-lg border border-border bg-background/40 p-3 sm:col-span-2">
               <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -142,8 +135,8 @@ function MeetingDetailsDialog({
           </dl>
 
           <p className="text-xs leading-relaxed text-muted-foreground">
-            This information comes from the ACORN calendar file you imported. Opening a class card does
-            not contact ACORN or upload anything new.
+            This information comes from the ACORN calendar file you imported. Opening a class card
+            does not contact ACORN or upload anything new.
           </p>
         </DialogContent>
       ) : null}
