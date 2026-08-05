@@ -1,4 +1,5 @@
 import ICAL from "ical.js";
+import { resolveCourseTitle } from "@/data/utm/course-titles";
 import {
   type ActivityType,
   type Meeting,
@@ -200,7 +201,8 @@ export function parseIcs(text: string): ParsedTimetable {
     }
 
     const description = unescapeText(event.description ?? "");
-    const courseName = description.split("\n")[0]?.trim() || courseCode;
+    const exportedCourseName = description.split("\n")[0]?.trim() || courseCode;
+    const courseName = resolveCourseTitle(courseCode, exportedCourseName);
 
     const location = parseLocation(vevent.getFirstPropertyValue("location") as string | null);
     if (location.warning) {
