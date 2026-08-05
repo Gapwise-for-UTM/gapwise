@@ -63,7 +63,7 @@ export function UtmMonumentViewer({
 
       {viewerLoaded ? (
         <ModelViewer
-          src="/models/utm-entrance-monument.glb?v=weathered-stone-uv-2"
+          src="/models/utm-entrance-monument.glb?v=plaque-lettering-5"
           alt="A detailed three-dimensional reconstruction of the University of Toronto Mississauga entrance monument"
           loading="eager"
           reveal="auto"

@@ -373,6 +373,455 @@ def process_meshes(stone_material) -> tuple[int, int]:
     return processed_objects, processed_faces
 
 
+
+PLAQUE_TEXT = "UNIVERSITY OF TORONTO MISSISSAUGA"
+PLAQUE_LETTER_MATERIAL = "UTM Plaque Lettering"
+
+PLAQUE_IDENTIFIERS = {
+    "plaque",
+    "letter",
+    "lettering",
+    "sign",
+    "inscription",
+    "university of toronto",
+    "mississauga",
+}
+
+
+def bounds_from_points(points):
+    if not points:
+        raise RuntimeError("Cannot calculate bounds from an empty point list")
+
+    minimum = Vector(
+        (
+            min(point.x for point in points),
+            min(point.y for point in points),
+            min(point.z for point in points),
+        )
+    )
+
+    maximum = Vector(
+        (
+            max(point.x for point in points),
+            max(point.y for point in points),
+            max(point.z for point in points),
+        )
+    )
+
+    return minimum, maximum
+
+
+def world_bounds(obj):
+    return bounds_from_points(
+        [
+            obj.matrix_world @ Vector(corner)
+            for corner in obj.bound_box
+        ]
+    )
+
+
+def material_is_plaque(material) -> bool:
+    if material is None:
+        return False
+
+    description = material_description(material)
+
+    return any(
+        identifier in description
+        for identifier in PLAQUE_IDENTIFIERS
+    )
+
+
+def scene_mesh_bounds():
+    objects = [
+        obj
+        for obj in bpy.context.scene.objects
+        if obj.type == "MESH"
+    ]
+
+    if not objects:
+        raise RuntimeError("Scene contains no mesh objects")
+
+    points = []
+
+    for obj in objects:
+        points.extend(
+            obj.matrix_world @ Vector(corner)
+            for corner in obj.bound_box
+        )
+
+    return bounds_from_points(points)
+
+
+def plaque_face_regions():
+    regions = []
+
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH":
+            continue
+
+        plaque_slots = {
+            index
+            for index, slot in enumerate(obj.material_slots)
+            if material_is_plaque(slot.material)
+        }
+
+        if not plaque_slots:
+            continue
+
+        points = []
+
+        for polygon in obj.data.polygons:
+            if polygon.material_index not in plaque_slots:
+                continue
+
+            points.extend(
+                obj.matrix_world @ obj.data.vertices[index].co
+                for index in polygon.vertices
+            )
+
+        if points:
+            minimum, maximum = bounds_from_points(points)
+            width = maximum.x - minimum.x
+
+            regions.append(
+                (
+                    width,
+                    minimum,
+                    maximum,
+                    f"{obj.name} plaque-material faces",
+                )
+            )
+
+    return regions
+
+
+def geometric_plaque_regions():
+    scene_minimum, scene_maximum = scene_mesh_bounds()
+    scene_dimensions = scene_maximum - scene_minimum
+    scene_center_x = (scene_minimum.x + scene_maximum.x) * 0.5
+
+    scene_width = max(scene_dimensions.x, 1e-6)
+    scene_height = max(scene_dimensions.z, 1e-6)
+    scene_depth = max(scene_dimensions.y, 1e-6)
+
+    regions = []
+
+    for obj in bpy.context.scene.objects:
+        if obj.type != "MESH":
+            continue
+
+        minimum, maximum = world_bounds(obj)
+        dimensions = maximum - minimum
+        center = (minimum + maximum) * 0.5
+
+        width_ratio = dimensions.x / scene_width
+        height_ratio = dimensions.z / scene_height
+        depth_ratio = dimensions.y / scene_depth
+
+        vertical_position = (
+            center.z - scene_minimum.z
+        ) / scene_height
+
+        aspect_ratio = dimensions.x / max(
+            dimensions.z,
+            1e-6,
+        )
+
+        if width_ratio < 0.34:
+            continue
+
+        if height_ratio > 0.18:
+            continue
+
+        if vertical_position > 0.50:
+            continue
+
+        if aspect_ratio < 5.0:
+            continue
+
+        centering = abs(
+            center.x - scene_center_x
+        ) / scene_width
+
+        preferred_height = abs(
+            vertical_position - 0.27
+        )
+
+        description = (
+            obj.name
+            + " "
+            + " ".join(
+                material_description(slot.material)
+                for slot in obj.material_slots
+                if slot.material is not None
+            )
+        ).lower()
+
+        explicit_bonus = (
+            100.0
+            if any(
+                identifier in description
+                for identifier in PLAQUE_IDENTIFIERS
+            )
+            else 0.0
+        )
+
+        score = (
+            explicit_bonus
+            + width_ratio * 12.0
+            + min(aspect_ratio, 20.0) * 0.35
+            - height_ratio * 6.0
+            - depth_ratio * 1.5
+            - preferred_height * 7.0
+            - centering * 6.0
+        )
+
+        regions.append(
+            (
+                score,
+                minimum,
+                maximum,
+                f"{obj.name} geometric candidate",
+            )
+        )
+
+    return regions
+
+
+def find_plaque_bounds():
+    material_regions = plaque_face_regions()
+
+    if material_regions:
+        _, minimum, maximum, label = max(
+            material_regions,
+            key=lambda region: region[0],
+        )
+
+        print(f"Plaque selected from material: {label}")
+        return minimum, maximum
+
+    geometric_regions = geometric_plaque_regions()
+
+    if not geometric_regions:
+        raise RuntimeError(
+            "Could not locate the monument plaque automatically"
+        )
+
+    _, minimum, maximum, label = max(
+        geometric_regions,
+        key=lambda region: region[0],
+    )
+
+    print(f"Plaque selected geometrically: {label}")
+    return minimum, maximum
+
+
+def plaque_font():
+    candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerifCondensed.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/usr/share/fonts/truetype/liberation2/LiberationSerif-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf",
+    ]
+
+    for candidate in candidates:
+        font_path = Path(candidate)
+
+        if font_path.is_file():
+            print(f"Using plaque font: {font_path}")
+            return bpy.data.fonts.load(str(font_path))
+
+    print("No external serif font found; using Blender's built-in font")
+    return None
+
+
+def create_plaque_letter_material():
+    existing = bpy.data.materials.get(
+        PLAQUE_LETTER_MATERIAL
+    )
+
+    if existing is not None:
+        bpy.data.materials.remove(existing)
+
+    material = bpy.data.materials.new(
+        PLAQUE_LETTER_MATERIAL
+    )
+
+    material.use_nodes = True
+    material.diffuse_color = (
+        0.008,
+        0.018,
+        0.075,
+        1.0,
+    )
+
+    material.metallic = 0.0
+    material.roughness = 0.58
+
+    principled = material.node_tree.nodes.get(
+        "Principled BSDF"
+    )
+
+    if principled is not None:
+        principled.inputs["Base Color"].default_value = (
+            0.008,
+            0.018,
+            0.075,
+            1.0,
+        )
+
+        principled.inputs["Metallic"].default_value = 0.0
+        principled.inputs["Roughness"].default_value = 0.58
+
+    return material
+
+
+def add_plaque_lettering():
+    plaque_minimum, plaque_maximum = find_plaque_bounds()
+
+    plaque_dimensions = plaque_maximum - plaque_minimum
+    plaque_center = (
+        plaque_minimum + plaque_maximum
+    ) * 0.5
+
+    plaque_width = plaque_dimensions.x
+    plaque_height = plaque_dimensions.z
+    plaque_depth = max(plaque_dimensions.y, 1e-6)
+
+    if plaque_width <= 0 or plaque_height <= 0:
+        raise RuntimeError(
+            "Detected plaque has invalid dimensions"
+        )
+
+    curve = bpy.data.curves.new(
+        "UTM Plaque Lettering Curve",
+        type="FONT",
+    )
+
+    curve.body = PLAQUE_TEXT
+    curve.align_x = "CENTER"
+    curve.align_y = "CENTER"
+    curve.fill_mode = "BOTH"
+    curve.size = 1.0
+    curve.space_character = 1.025
+    curve.resolution_u = 8
+    curve.extrude = 0.018
+    curve.bevel_depth = 0.0018
+    curve.bevel_resolution = 2
+
+    selected_font = plaque_font()
+
+    if selected_font is not None:
+        curve.font = selected_font
+
+    lettering = bpy.data.objects.new(
+        "UTM Plaque Lettering Front",
+        curve,
+    )
+
+    bpy.context.collection.objects.link(lettering)
+
+    lettering.data.materials.append(
+        create_plaque_letter_material()
+    )
+
+    # Blender's imported monument faces forward along -Y.
+    # A +90 degree X rotation places the lettering vertically,
+    # facing the same direction as the model-viewer's initial view.
+    lettering.rotation_euler = (
+        math.radians(90.0),
+        0.0,
+        0.0,
+    )
+
+    surface_gap = max(
+        plaque_depth * 0.018,
+        plaque_width * 0.00055,
+    )
+
+    lettering.location = (
+        plaque_center.x,
+        plaque_minimum.y - surface_gap,
+        plaque_center.z,
+    )
+
+    bpy.context.view_layer.update()
+
+    text_minimum, text_maximum = world_bounds(lettering)
+    text_dimensions = text_maximum - text_minimum
+
+    target_width = plaque_width * 0.84
+    target_height = plaque_height * 0.39
+
+    scale = min(
+        target_width / max(text_dimensions.x, 1e-6),
+        target_height / max(text_dimensions.z, 1e-6),
+    )
+
+    lettering.scale = (
+        scale,
+        scale,
+        scale,
+    )
+
+    bpy.context.view_layer.update()
+
+    text_minimum, text_maximum = world_bounds(lettering)
+    text_center = (
+        text_minimum + text_maximum
+    ) * 0.5
+
+    lettering.location.x += (
+        plaque_center.x - text_center.x
+    )
+
+    lettering.location.z += (
+        plaque_center.z - text_center.z
+    )
+
+    lettering.location.y = (
+        plaque_minimum.y - surface_gap
+    )
+
+    lettering["plaqueText"] = PLAQUE_TEXT
+    lettering["generatedBy"] = (
+        "scripts/apply-realistic-stone.py"
+    )
+
+    bpy.context.view_layer.update()
+
+    activate_only(lettering)
+    bpy.ops.object.convert(target="MESH")
+
+    lettering = bpy.context.active_object
+    lettering.name = "UTM Plaque Lettering Front"
+    lettering.data.name = "UTM Plaque Lettering Mesh"
+
+    activate_only(lettering)
+    bpy.ops.object.transform_apply(
+        location=False,
+        rotation=False,
+        scale=True,
+    )
+
+    final_minimum, final_maximum = world_bounds(lettering)
+    final_dimensions = final_maximum - final_minimum
+
+    print()
+    print(f'Added plaque lettering: "{PLAQUE_TEXT}"')
+    print(
+        "Lettering dimensions: "
+        f"{final_dimensions.x:.4f} × "
+        f"{final_dimensions.z:.4f}"
+    )
+    print(
+        "Plaque dimensions: "
+        f"{plaque_width:.4f} × "
+        f"{plaque_height:.4f}"
+    )
+
+
 def export_glb() -> None:
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
 
@@ -410,6 +859,8 @@ def main() -> None:
     object_count, face_count = process_meshes(
         stone_material
     )
+
+    add_plaque_lettering()
 
     export_glb()
 
