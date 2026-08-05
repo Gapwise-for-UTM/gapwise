@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "survey:import": "bun scripts/import-campus-survey.ts",
     "survey:dry-run": "bun scripts/import-campus-survey.ts --dry-run",
-    "generate:icons": "bun scripts/generate-icons.ts"
+    "generate:icons": "bun scripts/generate-icons.ts",
+    "model:stone": "bash scripts/apply-realistic-stone.sh"
   },
   "dependencies": {
     "@google/model-viewer": "^4.3.1",
