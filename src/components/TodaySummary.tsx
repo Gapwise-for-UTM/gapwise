@@ -104,7 +104,11 @@ export const TodaySummary = memo(function TodaySummary({
 
   return (
     <section className="surface mb-6 mt-6 p-4 sm:p-5" aria-labelledby="today-title">
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-8">
+      <div
+        className={`grid gap-5 ${
+          summary.next ? "lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end lg:gap-8" : ""
+        }`}
+      >
         <div>
           <h2 id="today-title" className="flex items-center gap-2 text-base font-semibold">
             <CalendarClock className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -116,31 +120,49 @@ export const TodaySummary = memo(function TodaySummary({
               : "No previous class today; choose a campus starting building."}
           </p>
         </div>
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end lg:w-auto">
-          <label className="block w-full text-xs font-medium sm:w-auto">
-            Manual starting building
-            <select
-              value={manualBuilding}
-              onChange={(event) => setManualBuilding(event.target.value)}
-              className="mt-1 block w-full rounded-md border border-input bg-card px-3 py-2 sm:min-w-64"
-            >
-              {CAMPUS_BUILDINGS.map((building) => (
-                <option key={building.code} value={building.code}>
-                  {building.code} · {building.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            onClick={() => setUseManualStart((value) => !value)}
-            className={`w-full rounded-md border px-3 py-2 text-xs font-semibold sm:w-auto ${
-              useManualStart ? "border-accent bg-accent/10" : "border-input"
-            }`}
-          >
-            {useManualStart ? "Using manual start" : "Use manual start"}
-          </button>
-        </div>
+
+        {summary.next ? (
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end lg:w-auto">
+            <label className="block w-full text-xs font-medium sm:w-auto">
+              Starting point for route to next class
+              <select
+                value={manualBuilding}
+                onChange={(event) => setManualBuilding(event.target.value)}
+                className="mt-1 block w-full rounded-md border border-input bg-card px-3 py-2 sm:min-w-64"
+              >
+                {CAMPUS_BUILDINGS.map((building) => (
+                  <option key={building.code} value={building.code}>
+                    {building.code} · {building.name}
+                  </option>
+                ))}
+              </select>
+              <span className="mt-1 block max-w-72 text-[0.7rem] font-normal leading-relaxed text-muted-foreground">
+                {recent
+                  ? "Use this when you are starting somewhere other than your current or previous class."
+                  : "No earlier class is available, so the selected building is used automatically."}
+              </span>
+            </label>
+
+            {recent ? (
+              <button
+                type="button"
+                aria-pressed={useManualStart}
+                onClick={() => setUseManualStart((value) => !value)}
+                className={`w-full rounded-md border px-3 py-2 text-xs font-semibold transition-colors sm:w-auto ${
+                  useManualStart
+                    ? "border-accent bg-accent/10 text-foreground"
+                    : "border-input hover:border-accent/60 hover:bg-secondary/50"
+                }`}
+              >
+                {useManualStart ? "Using selected building" : "Use selected building"}
+              </button>
+            ) : (
+              <span className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-semibold text-foreground">
+                Using selected building
+              </span>
+            )}
+          </div>
+        ) : null}
       </div>
 
       {summary.next ? (
@@ -186,9 +208,13 @@ export const TodaySummary = memo(function TodaySummary({
           No later class is scheduled today.
         </p>
       )}
-      <p className="mt-3 text-xs text-muted-foreground">
-        Uses your previous class or selected building as the start. Live geolocation is not used.
-      </p>
+
+      {summary.next ? (
+        <p className="mt-3 text-xs text-muted-foreground">
+          Uses your current or previous class unless you choose another building. Live geolocation
+          is not used.
+        </p>
+      ) : null}
     </section>
   );
 });
