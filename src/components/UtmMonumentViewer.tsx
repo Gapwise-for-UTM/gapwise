@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ElementType } from "react";
-import { Box, RotateCcw } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 
 const ModelViewer = "model-viewer" as ElementType;
 
@@ -36,7 +36,7 @@ export function UtmMonumentViewer({
     };
   }, []);
 
-  const initialOrbit = "90deg 70deg 150%";
+  const initialOrbit = "0deg 70deg 150%";
 
   function resetCamera() {
     const viewer = document.getElementById(viewerId) as
@@ -95,9 +95,9 @@ export function UtmMonumentViewer({
           min-field-of-view="25deg"
           max-field-of-view="42deg"
           tone-mapping="neutral"
-          shadow-intensity="0.5"
-          shadow-softness="1"
-          exposure="0.52"
+          shadow-intensity="0.8"
+          shadow-softness="0.9"
+          exposure="0.9"
           environment-image="neutral"
           interaction-prompt="none"
           touch-action="pan-y"
@@ -120,22 +120,15 @@ export function UtmMonumentViewer({
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background/55 to-transparent" />
 
       {!decorative && (
-        <>
-          <figcaption className="pointer-events-none absolute bottom-3 left-3 flex items-center gap-2 rounded-full border border-border/70 bg-background/75 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur-md">
-            <Box className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-            UTM entrance monument
-          </figcaption>
-
-          <button
-            type="button"
-            onClick={resetCamera}
-            className="absolute bottom-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/75 text-muted-foreground shadow-sm backdrop-blur-md transition hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Reset monument view"
-            title="Reset view"
-          >
-            <RotateCcw className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </>
+        <button
+          type="button"
+          onClick={resetCamera}
+          className="absolute bottom-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/75 text-muted-foreground shadow-sm backdrop-blur-md transition hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Reset monument view"
+          title="Reset view"
+        >
+          <RotateCcw className="h-4 w-4" aria-hidden="true" />
+        </button>
       )}
     </figure>
   );
