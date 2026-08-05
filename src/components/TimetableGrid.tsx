@@ -66,7 +66,7 @@ function MeetingCard({
       aria-haspopup="dialog"
       aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
       title={`${meeting.courseCode} · ${meeting.courseName}`}
-      className={`group h-full w-full touch-manipulation overflow-hidden rounded-md border border-border border-l-4 bg-card px-2 py-1.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out hover:border-accent/60 hover:bg-secondary/45 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99] ${TYPE_STYLES[meeting.activityType]}`}
+      className={`group flex h-full w-full touch-manipulation flex-col items-stretch justify-start overflow-hidden rounded-md border border-border border-l-4 bg-card px-2 py-1.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out hover:border-accent/60 hover:bg-secondary/45 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99] ${TYPE_STYLES[meeting.activityType]}`}
     >
       <div className="flex min-w-0 items-center gap-1.5">
         <span className="truncate text-xs font-bold text-foreground">{meeting.courseCode}</span>
