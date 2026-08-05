@@ -1,4 +1,4 @@
-import { type Gap, type GapKind, type Meeting, type Term, WEEKDAYS } from "./timetable-types";
+import { type Gap, type Meeting, type Term, WEEKDAYS } from "./timetable-types";
 import type { RouteResult } from "@/features/routing/types";
 
 export const USABLE_BUFFER_MINUTES = 15;
@@ -23,7 +23,7 @@ export function calculateLeaveBy(
 
 export function calculateGapTiming(
   gap: Pick<Gap, "durationMinutes" | "endTime">,
-  route: RouteResult | null,
+  route: Pick<RouteResult, "estimatedSeconds"> | null,
   transitionBufferMinutes: number,
 ): GapTiming {
   if (!route) {
@@ -54,13 +54,6 @@ export function calculateGapTiming(
   };
 }
 
-export function classifyGap(minutes: number): GapKind {
-  if (minutes < 30) return "Transition only";
-  if (minutes < 60) return "Short break";
-  if (minutes < 120) return "Useful study gap";
-  return "Long campus gap";
-}
-
 export function findGaps(meetings: Meeting[], term: Term): Gap[] {
   const gaps: Gap[] = [];
   for (const weekday of WEEKDAYS) {
@@ -82,8 +75,6 @@ export function findGaps(meetings: Meeting[], term: Term): Gap[] {
         startTime: previous.endTime,
         endTime: next.startTime,
         durationMinutes,
-        usableMinutes: Math.max(0, durationMinutes - USABLE_BUFFER_MINUTES),
-        kind: classifyGap(durationMinutes),
         previous,
         next,
       });
