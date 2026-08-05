@@ -41,8 +41,6 @@ export interface Meeting {
   excludedDates?: string[];
 }
 
-export type GapKind = "Transition only" | "Short break" | "Useful study gap" | "Long campus gap";
-
 export interface Gap {
   id: string;
   term: Term;
@@ -50,8 +48,6 @@ export interface Gap {
   startTime: number;
   endTime: number;
   durationMinutes: number;
-  usableMinutes: number;
-  kind: GapKind;
   previous: Meeting;
   next: Meeting;
 }
