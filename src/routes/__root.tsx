@@ -80,14 +80,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Gapwise UTM" },
       {
         name: "description",
-        content:
-          "Find the useful gaps between your UTM classes from your ACORN calendar export.",
+        content: "Find the useful gaps between your UTM classes from your ACORN calendar export.",
       },
       { property: "og:title", content: "Gapwise UTM" },
       {
         property: "og:description",
-        content:
-          "Find the useful gaps between your UTM classes from your ACORN calendar export.",
+        content: "Find the useful gaps between your UTM classes from your ACORN calendar export.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

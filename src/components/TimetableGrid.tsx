@@ -30,9 +30,7 @@ function MeetingCard({ meeting, compact }: { meeting: Meeting; compact?: boolean
       <p className="truncate text-[0.7rem] text-muted-foreground">
         {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
       </p>
-      <p className="truncate text-[0.7rem] font-medium text-foreground">
-        {locationLabel(meeting)}
-      </p>
+      <p className="truncate text-[0.7rem] font-medium text-foreground">{locationLabel(meeting)}</p>
       {!compact ? (
         <p className="truncate text-[0.7rem] text-muted-foreground">{meeting.courseName}</p>
       ) : null}
@@ -47,7 +45,7 @@ function layout(day: Meeting[]) {
   const placement = new Map<string, number>();
   for (const meeting of sorted) {
     let laneIndex = lanes.findIndex(
-      (lane) => (lane[lane.length - 1]?.endTime ?? 0) <= meeting.startTime
+      (lane) => (lane[lane.length - 1]?.endTime ?? 0) <= meeting.startTime,
     );
     if (laneIndex === -1) {
       lanes.push([]);
@@ -60,14 +58,8 @@ function layout(day: Meeting[]) {
 }
 
 export function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
-  const startHour = Math.max(
-    7,
-    Math.min(...meetings.map((m) => Math.floor(m.startTime / 60))) - 1
-  );
-  const endHour = Math.min(
-    23,
-    Math.max(...meetings.map((m) => Math.ceil(m.endTime / 60))) + 1
-  );
+  const startHour = Math.max(7, Math.min(...meetings.map((m) => Math.floor(m.startTime / 60))) - 1);
+  const endHour = Math.min(23, Math.max(...meetings.map((m) => Math.ceil(m.endTime / 60))) + 1);
   const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
   const pxPerMinute = 1.1;
 
