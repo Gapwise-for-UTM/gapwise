@@ -185,6 +185,8 @@ describe("route-level timetable restoration", () => {
     await waitFor(() => pageText().includes("CLOUD101H5"), "the cloud timetable to render");
 
     expect(pageText()).toContain("Your timetable");
+    expect(pageText()).not.toContain("Upload your ACORN calendar");
+    expect(pageText()).not.toContain("Drop your .ics file here");
     expect(pageText()).not.toContain("Turn your ACORN timetable into a smarter campus day.");
     expect(loadCalls).toEqual([authenticatedUser.id]);
     expect(saveCalls).toHaveLength(0);
