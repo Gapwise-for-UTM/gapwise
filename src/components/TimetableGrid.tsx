@@ -1,5 +1,5 @@
 import { BookOpen, CalendarDays, Clock3, MapPin } from "lucide-react";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,6 +33,21 @@ export function ActivityBadge({ type }: { type: ActivityType }) {
       {type}
     </span>
   );
+}
+
+function useCurrentTime() {
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const update = () => setNow(new Date());
+
+    update();
+    const timer = window.setInterval(update, 30_000);
+
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return now;
 }
 
 function MeetingCard({
@@ -147,7 +162,21 @@ function MeetingDetailsDialog({
 export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
   const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const now = useCurrentTime();
   const pxPerMinute = 1.1;
+
+  const currentDay = now ? (WEEKDAYS[now.getDay() - 1] ?? null) : null;
+  const currentMinute = now ? now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60 : null;
+  const gridStartMinute = startHour * 60;
+  const gridEndMinute = (startHour + hours.length) * 60;
+  const showCurrentTime =
+    currentDay !== null &&
+    currentMinute !== null &&
+    hours.length > 0 &&
+    currentMinute >= gridStartMinute &&
+    currentMinute < gridEndMinute;
+  const currentTop = showCurrentTime ? (currentMinute - gridStartMinute) * pxPerMinute : 0;
+  const currentTimeLabel = currentMinute === null ? "" : formatTime(Math.floor(currentMinute));
 
   const selectMeeting = useCallback((meeting: Meeting) => setSelectedMeeting(meeting), []);
   const closeMeeting = useCallback(() => setSelectedMeeting(null), []);
@@ -166,7 +195,7 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
             ))}
           </div>
           <div className="grid grid-cols-[4rem_repeat(5,1fr)]">
-            <div>
+            <div className="relative">
               {hours.map((hour) => (
                 <div
                   key={hour}
@@ -176,6 +205,16 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
                   {formatTime(hour * 60)}
                 </div>
               ))}
+
+              {showCurrentTime ? (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-1 z-30 -translate-y-1/2 rounded-full bg-accent px-1.5 py-0.5 text-[0.625rem] font-bold tabular-nums text-accent-foreground shadow-sm"
+                  style={{ top: currentTop }}
+                >
+                  {currentTimeLabel}
+                </span>
+              ) : null}
             </div>
             {WEEKDAYS.map((day) => {
               const { laneCount, placement, sorted } = days.get(day)!;
@@ -188,6 +227,18 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
                       className="border-b border-border"
                     />
                   ))}
+
+                  {showCurrentTime && day === currentDay ? (
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-x-0 z-20 flex -translate-y-1/2 items-center"
+                      style={{ top: currentTop }}
+                    >
+                      <span className="h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-accent shadow-sm ring-2 ring-background" />
+                      <span className="-ml-1 h-0.5 flex-1 bg-accent shadow-sm" />
+                    </div>
+                  ) : null}
+
                   {sorted.map((meeting) => {
                     const lane = placement.get(meeting.id) ?? 0;
                     return (
