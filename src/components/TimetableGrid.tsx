@@ -1,7 +1,20 @@
+import {
+  BookOpen,
+  CalendarDays,
+  Clock3,
+  MapPin,
+} from "lucide-react";
+import { memo, useCallback, useMemo, useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { ActivityType, Meeting } from "@/lib/timetable-types";
 import { formatTime, locationLabel, WEEKDAYS } from "@/lib/timetable-types";
 import { buildTimetableModel, isCompactMeetingCard } from "@/lib/timetable-layout";
-import { memo, useMemo } from "react";
 
 const TYPE_STYLES: Record<ActivityType, string> = {
   LEC: "border-l-lec text-lec",
@@ -27,13 +40,26 @@ export function ActivityBadge({ type }: { type: ActivityType }) {
   );
 }
 
-function MeetingCard({ meeting, compact }: { meeting: Meeting; compact?: boolean }) {
+function MeetingCard({
+  meeting,
+  compact,
+  onSelect,
+}: {
+  meeting: Meeting;
+  compact?: boolean;
+  onSelect: (meeting: Meeting) => void;
+}) {
   return (
-    <div
-      className={`h-full overflow-hidden rounded-md border border-border border-l-4 bg-card px-2 py-1.5 ${TYPE_STYLES[meeting.activityType]}`}
+    <button
+      type="button"
+      onClick={() => onSelect(meeting)}
+      aria-haspopup="dialog"
+      aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
+      title={`${meeting.courseCode} · ${meeting.courseName}`}
+      className={`group h-full w-full touch-manipulation overflow-hidden rounded-md border border-border border-l-4 bg-card px-2 py-1.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out hover:border-accent/60 hover:bg-secondary/45 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99] ${TYPE_STYLES[meeting.activityType]}`}
     >
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs font-bold text-foreground">{meeting.courseCode}</span>
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate text-xs font-bold text-foreground">{meeting.courseCode}</span>
         <ActivityBadge type={meeting.activityType} />
       </div>
       <p className="truncate text-[0.7rem] text-muted-foreground">
@@ -41,15 +67,97 @@ function MeetingCard({ meeting, compact }: { meeting: Meeting; compact?: boolean
       </p>
       <p className="truncate text-[0.7rem] font-medium text-foreground">{locationLabel(meeting)}</p>
       {!compact ? (
-        <p className="truncate text-[0.7rem] text-muted-foreground">{meeting.courseName}</p>
+        <p className="mt-0.5 line-clamp-2 text-[0.7rem] leading-tight text-muted-foreground">
+          {meeting.courseName}
+        </p>
       ) : null}
-    </div>
+    </button>
+  );
+}
+
+function MeetingDetailsDialog({
+  meeting,
+  onClose,
+}: {
+  meeting: Meeting | null;
+  onClose: () => void;
+}) {
+  return (
+    <Dialog open={meeting !== null} onOpenChange={(open) => !open && onClose()}>
+      {meeting ? (
+        <DialogContent className="max-h-[85vh] overflow-y-auto border-border bg-card sm:max-w-md">
+          <DialogHeader className="pr-8">
+            <div className="flex flex-wrap items-center gap-2">
+              <DialogTitle>{meeting.courseCode}</DialogTitle>
+              <ActivityBadge type={meeting.activityType} />
+              {meeting.sectionCode ? (
+                <span className="text-xs font-medium text-muted-foreground">
+                  {meeting.sectionCode}
+                </span>
+              ) : null}
+            </div>
+            <DialogDescription className="text-left text-sm leading-relaxed">
+              {meeting.courseName || "Course name unavailable"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-border bg-background/40 p-3">
+              <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+                Day and term
+              </dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {meeting.weekday} · {meeting.term}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background/40 p-3">
+              <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                Time
+              </dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background/40 p-3 sm:col-span-2">
+              <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                Location
+              </dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {locationLabel(meeting)}
+              </dd>
+            </div>
+            <div className="rounded-lg border border-border bg-background/40 p-3 sm:col-span-2">
+              <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                Component
+              </dt>
+              <dd className="mt-1 text-sm font-medium text-foreground">
+                {meeting.activityType}
+                {meeting.sectionCode ? ` · ${meeting.sectionCode}` : ""}
+              </dd>
+            </div>
+          </dl>
+
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            This information comes from the ACORN calendar file you imported. Opening a class card does
+            not contact ACORN or upload anything new.
+          </p>
+        </DialogContent>
+      ) : null}
+    </Dialog>
   );
 }
 
 export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
   const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
+  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const pxPerMinute = 1.1;
+
+  const selectMeeting = useCallback((meeting: Meeting) => setSelectedMeeting(meeting), []);
+  const closeMeeting = useCallback(() => setSelectedMeeting(null), []);
 
   return (
     <div>
@@ -103,6 +211,7 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
                         <MeetingCard
                           meeting={meeting}
                           compact={isCompactMeetingCard(meeting, laneCount)}
+                          onSelect={selectMeeting}
                         />
                       </div>
                     );
@@ -129,8 +238,12 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
                 <ul className="mt-3 space-y-2">
                   {dayMeetings.map((meeting) => (
                     <li key={meeting.id}>
-                      <div
-                        className={`rounded-lg border border-border border-l-4 bg-card p-3 ${TYPE_STYLES[meeting.activityType]}`}
+                      <button
+                        type="button"
+                        onClick={() => selectMeeting(meeting)}
+                        aria-haspopup="dialog"
+                        aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
+                        className={`w-full touch-manipulation rounded-lg border border-border border-l-4 bg-card p-3 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 hover:border-accent/60 hover:bg-secondary/45 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99] ${TYPE_STYLES[meeting.activityType]}`}
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-bold text-foreground">
@@ -144,10 +257,10 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
                         <p className="mt-1 text-sm text-foreground">
                           {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
                           {locationLabel(meeting)} · {meeting.courseName}
                         </p>
-                      </div>
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -156,6 +269,8 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
           );
         })}
       </div>
+
+      <MeetingDetailsDialog meeting={selectedMeeting} onClose={closeMeeting} />
     </div>
   );
 });
