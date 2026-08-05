@@ -451,7 +451,7 @@ function Index() {
               </div>
             ) : null}
 
-            <div className="rise-in grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
+            <div className="rise-in flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6">
               <div className="min-w-0">
                 <p className="eyebrow text-muted-foreground">
                   {isDemo ? "Sample data" : "Campus day plan"}
@@ -466,7 +466,7 @@ function Index() {
               <button
                 type="button"
                 onClick={clearTimetable}
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:border-destructive/50 hover:bg-secondary hover:text-destructive"
+                className="inline-flex shrink-0 self-start items-center gap-2 rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:border-destructive/50 hover:bg-secondary hover:text-destructive sm:self-auto"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                 <span className="hidden sm:inline">Remove timetable</span>
