@@ -45,7 +45,6 @@ export function UploadPanel({
             ? "scale-[1.01] border-accent bg-secondary shadow-[var(--shadow-lift)]"
             : "border-input bg-muted/40 hover:border-accent hover:bg-card hover:shadow-[var(--shadow-soft)]"
         }`}
-
       >
         <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary transition-transform duration-300 group-hover:-translate-y-0.5">
           <FileUp className="h-7 w-7 text-accent" aria-hidden="true" />
@@ -92,7 +91,6 @@ export function UploadPanel({
         onClick={onDemo}
         disabled={loading}
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-input bg-card px-5 py-3.5 text-sm font-semibold transition-colors duration-200 hover:border-accent hover:bg-secondary/60 hover:text-accent disabled:opacity-60"
-
       >
         <Sparkles className="h-4 w-4" aria-hidden="true" />
         Try a demo

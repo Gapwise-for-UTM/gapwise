@@ -373,8 +373,7 @@ function Index() {
                 </p>
 
                 <h1 className="mt-7 max-w-[19ch] text-balance font-display text-[2.15rem] font-bold leading-[1.05] tracking-tight sm:text-[3.15rem]">
-                  Find the gaps in your{" "}
-                  <span className="text-hero-accent">UTM timetable.</span>
+                  Find the gaps in your <span className="text-hero-accent">UTM timetable.</span>
                 </h1>
 
                 <p className="mt-4 max-w-md text-base leading-relaxed text-hero-foreground/75 sm:text-lg">
@@ -474,7 +473,6 @@ function Index() {
                 <span className="sm:hidden">Remove</span>
               </button>
             </div>
-
 
             {warnings.length > 0 ? (
               <div className="surface mt-6 border-accent/40 p-4">
@@ -586,7 +584,6 @@ function Index() {
                     or upload a different ACORN export.
                   </p>
                 </div>
-
               ) : (
                 <>
                   <div hidden={view !== "timetable"}>
@@ -682,7 +679,6 @@ function Index() {
           <p className="eyebrow self-end text-muted-foreground">Built for UTM students</p>
         </div>
       </footer>
-
     </div>
   );
 }

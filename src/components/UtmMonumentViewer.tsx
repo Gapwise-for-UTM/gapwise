@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState, type ElementType } from "react";
-import { RotateCcw } from "lucide-react";
+import { useEffect, useState, type ElementType } from "react";
 
 const ModelViewer = "model-viewer" as ElementType;
 
@@ -15,11 +14,6 @@ export function UtmMonumentViewer({
   decorative = false,
 }: UtmMonumentViewerProps) {
   const [viewerLoaded, setViewerLoaded] = useState(false);
-  
-  const viewerId = useMemo(
-    () => `utm-monument-${Math.random().toString(36).slice(2)}`,
-    [],
-  );
 
   useEffect(() => {
     let mounted = true;
@@ -36,20 +30,7 @@ export function UtmMonumentViewer({
     };
   }, []);
 
-  const initialOrbit = "0deg 70deg 150%";
-
-  function resetCamera() {
-    const viewer = document.getElementById(viewerId) as
-      | (HTMLElement & {
-          cameraOrbit?: string;
-          jumpCameraToGoal?: () => void;
-        })
-      | null;
-
-    if (!viewer) return;
-    viewer.cameraOrbit = initialOrbit;
-    viewer.jumpCameraToGoal?.();
-  }
+  const initialOrbit = "0deg 70deg 135%";
 
   const skeleton = (
     <div className="flex h-full w-full items-center justify-center bg-foreground/[0.06]">
@@ -82,7 +63,6 @@ export function UtmMonumentViewer({
 
       {viewerLoaded ? (
         <ModelViewer
-          id={viewerId}
           src="/models/utm-entrance-monument.glb"
           alt="A detailed three-dimensional reconstruction of the University of Toronto Mississauga entrance monument"
           loading="eager"
@@ -95,9 +75,9 @@ export function UtmMonumentViewer({
           min-field-of-view="25deg"
           max-field-of-view="42deg"
           tone-mapping="neutral"
-          shadow-intensity="0.8"
-          shadow-softness="0.9"
-          exposure="0.9"
+          shadow-intensity="1.1"
+          shadow-softness="0.75"
+          exposure="0.62"
           environment-image="neutral"
           interaction-prompt="none"
           touch-action="pan-y"
@@ -116,20 +96,7 @@ export function UtmMonumentViewer({
         skeleton
       )}
 
-
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background/55 to-transparent" />
-
-      {!decorative && (
-        <button
-          type="button"
-          onClick={resetCamera}
-          className="absolute bottom-3 right-3 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/75 text-muted-foreground shadow-sm backdrop-blur-md transition hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Reset monument view"
-          title="Reset view"
-        >
-          <RotateCcw className="h-4 w-4" aria-hidden="true" />
-        </button>
-      )}
     </figure>
   );
 }
