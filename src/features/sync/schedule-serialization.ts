@@ -1,3 +1,4 @@
+import { resolveCourseTitle } from "@/data/utm/course-titles";
 import type { ActivityType, Meeting, Term, Weekday } from "@/lib/timetable-types";
 import { TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
@@ -80,7 +81,7 @@ function deserializeMeeting(value: unknown): Meeting | null {
     courseCode,
     activityType,
     sectionCode,
-    courseName,
+    courseName: resolveCourseTitle(courseCode, courseName),
     startTime,
     endTime,
     weekday,
@@ -109,7 +110,7 @@ export function serializeSchedule(meetings: Meeting[]): Meeting[] {
       courseCode: meeting.courseCode,
       activityType: meeting.activityType,
       sectionCode: meeting.sectionCode,
-      courseName: meeting.courseName,
+      courseName: resolveCourseTitle(meeting.courseCode, meeting.courseName),
       startTime: meeting.startTime,
       endTime: meeting.endTime,
       weekday: meeting.weekday,
