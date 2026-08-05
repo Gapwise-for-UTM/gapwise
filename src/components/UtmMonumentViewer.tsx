@@ -79,18 +79,20 @@ export function UtmMonumentViewer({
           loading="lazy"
           reveal="auto"
           camera-controls
-          auto-rotate={!reducedMotion}
-          auto-rotate-delay="2200"
-          rotation-per-second="7deg"
-          camera-orbit="-32deg 72deg 105%"
-          min-camera-orbit="auto 45deg 75%"
-          max-camera-orbit="auto 88deg 160%"
-          shadow-intensity="1.15"
-          shadow-softness="0.8"
-          exposure="1.05"
+          camera-orbit="0deg 72deg 13m"
+          camera-target="0m 2.8m 0m"
+          min-camera-orbit="-42deg 57deg 9m"
+          max-camera-orbit="42deg 84deg 17m"
+          field-of-view="31deg"
+          min-field-of-view="25deg"
+          max-field-of-view="42deg"
+          shadow-intensity="0.95"
+          shadow-softness="0.85"
+          exposure="0.82"
           environment-image="neutral"
           interaction-prompt="none"
           touch-action="pan-y"
+
           style={{
             width: "100%",
             height: "100%",
