@@ -39,12 +39,31 @@ function useCurrentTime() {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    const update = () => setNow(new Date());
+    let timer: number | undefined;
 
-    update();
-    const timer = window.setInterval(update, 30_000);
+    const scheduleUpdate = () => {
+      const current = new Date();
+      setNow(current);
 
-    return () => window.clearInterval(timer);
+      const delayUntilNextSecond = 1_000 - current.getMilliseconds();
+      timer = window.setTimeout(scheduleUpdate, delayUntilNextSecond);
+    };
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        setNow(new Date());
+      }
+    };
+
+    scheduleUpdate();
+    window.addEventListener("focus", refreshWhenVisible);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer);
+      window.removeEventListener("focus", refreshWhenVisible);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, []);
 
   return now;
