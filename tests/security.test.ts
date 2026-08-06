@@ -34,6 +34,15 @@ describe("account deletion and RLS security", () => {
     expect(source).not.toMatch(/body.*user_?id/i);
     expect(source).not.toContain("VITE_SUPABASE_SERVICE_ROLE_KEY");
   });
+
+  test("allows the active production origin without reflecting rejected origins", async () => {
+    const source = await readFile("supabase/functions/delete-account/index.ts", "utf8");
+    expect(source).toContain('"https://gapwise-utm.vercel.app"');
+    expect(source).toContain("const originAllowed = !origin || configuredOrigins.has(origin)");
+    expect(source).toContain("if (!originAllowed)");
+    expect(source).not.toContain("defaultOrigins[0]");
+  });
+
   test("all user tables use RLS, ownership checks, and cascading deletion", async () => {
     const sql = await readFile("supabase/migrations/20260801171701_user_sync.sql", "utf8");
     for (const table of ["user_schedules", "user_preferences"]) {
