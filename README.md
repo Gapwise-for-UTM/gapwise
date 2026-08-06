@@ -3,7 +3,7 @@
 </p>
 <h1 align="center">Gapwise for UTM</h1>
 <p align="center">A privacy-first timetable gap and campus route planner for University of Toronto Mississauga students.</p>
-<p align="center"><a href="https://campus-gap-finder.vercel.app"><strong>Open Gapwise</strong></a> · React 19 · TypeScript · MapLibre</p>
+<p align="center"><a href="https://gapwise-utm.vercel.app"><strong>Open Gapwise</strong></a> · React 19 · TypeScript · MapLibre</p>
 
 ## What Gapwise does
 
