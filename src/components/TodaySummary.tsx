@@ -1,4 +1,4 @@
-import { CalendarClock, Navigation } from "lucide-react";
+import { ArrowRight, CalendarClock, Navigation, Sparkles } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
 import type { GapPreferences } from "@/features/gaps/types";
@@ -62,12 +62,16 @@ export const TodaySummary = memo(function TodaySummary({
   preferences,
   gapPreferences,
   planTransition,
+  onOpenGapPlan,
+  onOpenDayRoute,
 }: {
   meetings: Meeting[];
   selectedTerm: Term;
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   planTransition: TransitionPlanner;
+  onOpenGapPlan: () => void;
+  onOpenDayRoute: () => void;
 }) {
   const [now, setNow] = useState(() => new Date());
 
@@ -175,8 +179,10 @@ export const TodaySummary = memo(function TodaySummary({
         : null;
       break;
     case "gap":
-      title = `${formatCompactDuration(summary.assessment.primary.activityMinutes)} free`;
-      detail = `Next: ${summary.gap.next.courseCode} · ${locationLabel(
+      title = summary.assessment.primary.title;
+      detail = `${formatCompactDuration(
+        summary.assessment.primary.activityMinutes,
+      )} usable · Next: ${summary.gap.next.courseCode} · ${locationLabel(
         summary.gap.next,
       )} at ${formatTime(summary.gap.next.startTime)}`;
       secondary = `${routeCopy(summary.route)} · leave by ${formatTime(
@@ -197,6 +203,10 @@ export const TodaySummary = memo(function TodaySummary({
       break;
   }
 
+  const canPlanGap = summary.kind === "gap";
+  const canOpenRoute =
+    summary.kind === "gap" || summary.kind === "before-first" || summary.kind === "in-class";
+
   return (
     <section className="surface mb-6 mt-6 p-4 sm:p-5" aria-labelledby="today-title">
       <h2 id="today-title" className="flex items-center gap-2 text-base font-semibold">
@@ -210,6 +220,35 @@ export const TodaySummary = memo(function TodaySummary({
           <Navigation className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
           {secondary}
         </p>
+      ) : null}
+      {canPlanGap || canOpenRoute ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {canPlanGap ? (
+            <button
+              type="button"
+              onClick={onOpenGapPlan}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Plan this gap
+            </button>
+          ) : null}
+          {canOpenRoute ? (
+            <button
+              type="button"
+              onClick={onOpenDayRoute}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
+                canPlanGap
+                  ? "border border-input bg-card hover:border-accent/60 hover:bg-secondary/60"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              }`}
+            >
+              <Navigation className="h-4 w-4" aria-hidden="true" />
+              View day route
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </section>
   );

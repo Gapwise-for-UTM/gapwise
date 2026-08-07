@@ -370,48 +370,54 @@ function SegmentDetails({
           {route.status === "approximate" ? "Estimate" : route.status.replace("-", " ")}
         </span>
       </div>
-      <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-        <Metric
-          icon={Clock3}
-          label="Estimated walk"
-          value={seconds === null ? "Unavailable" : secondsLabel(seconds)}
-        />
-        <Metric
-          icon={Footprints}
-          label="Distance"
-          value={
-            distance === null
-              ? "Unavailable"
-              : `${route.status === "approximate" ? "~" : ""}${distanceLabel(distance)}`
-          }
-        />
-        <Metric
-          icon={LocateFixed}
-          label="Leave by"
-          value={departure === null ? "Unavailable" : formatTime(departure)}
-        />
-        <Metric
-          icon={RouteIcon}
-          label="Outdoor"
-          value={
-            route.result
-              ? distanceLabel(route.result.outdoorDistanceMeters)
-              : route.status === "approximate" && distance !== null
-                ? `~${distanceLabel(distance)}`
-                : "Unknown"
-          }
-        />
-        <Metric
-          icon={RouteIcon}
-          label="Indoor"
-          value={route.result ? distanceLabel(route.result.indoorDistanceMeters) : "Not mapped"}
-        />
-        <Metric
-          icon={RouteIcon}
-          label="Floor changes"
-          value={route.result ? String(route.result.floorChanges) : "Unknown"}
-        />
-      </dl>
+      {route.status === "same-room" ? (
+        <div className="mt-4 rounded-xl border border-lec/25 bg-lec/8 p-3.5">
+          <p className="text-sm font-semibold text-lec">No walk needed</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Your next class is in the same room.
+          </p>
+        </div>
+      ) : route.status === "unavailable" ||
+        seconds === null ||
+        distance === null ||
+        departure === null ? (
+        <div className="mt-4 flex gap-3 rounded-xl border border-accent/25 bg-accent/8 p-3.5">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold">Exact route unavailable</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{route.message}</p>
+          </div>
+        </div>
+      ) : (
+        <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+          <Metric icon={Clock3} label="Estimated walk" value={secondsLabel(seconds)} />
+          <Metric
+            icon={Footprints}
+            label="Distance"
+            value={`${route.status === "approximate" ? "~" : ""}${distanceLabel(distance)}`}
+          />
+          <Metric icon={LocateFixed} label="Leave by" value={formatTime(departure)} />
+          <Metric
+            icon={RouteIcon}
+            label="Outdoor"
+            value={
+              route.result
+                ? distanceLabel(route.result.outdoorDistanceMeters)
+                : `~${distanceLabel(distance)}`
+            }
+          />
+          <Metric
+            icon={RouteIcon}
+            label="Indoor"
+            value={route.result ? distanceLabel(route.result.indoorDistanceMeters) : "Not mapped"}
+          />
+          <Metric
+            icon={RouteIcon}
+            label="Floor changes"
+            value={route.result ? String(route.result.floorChanges) : "Unknown"}
+          />
+        </dl>
+      )}
       {route.warnings.length > 0 ? (
         <ul className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
           {route.warnings.map((warning) => (

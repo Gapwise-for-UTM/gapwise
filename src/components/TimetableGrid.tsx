@@ -21,7 +21,14 @@ import {
   termForMonth,
   WEEKDAYS,
 } from "@/lib/timetable-types";
-import { buildTimetableModel, isCompactMeetingCard } from "@/lib/timetable-layout";
+import {
+  buildTimetableModel,
+  buildTimetableScale,
+  isCompactMeetingCard,
+} from "@/lib/timetable-layout";
+
+const FULL_HOUR_HEIGHT = 66;
+const COMPACT_HOUR_HEIGHT = 26;
 
 const ACTIVITY_LABELS: Record<ActivityType, string> = {
   LEC: "Lecture",
@@ -265,8 +272,12 @@ export const TimetableGrid = memo(function TimetableGrid({
 }) {
   const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [compactHours, setCompactHours] = useState(true);
   const now = useCurrentTime();
-  const pxPerMinute = 1.1;
+  const scale = useMemo(
+    () => buildTimetableScale(hours, meetings, compactHours, FULL_HOUR_HEIGHT, COMPACT_HOUR_HEIGHT),
+    [compactHours, hours, meetings],
+  );
 
   const currentDay = now ? (WEEKDAYS[now.getDay() - 1] ?? null) : null;
   const currentMinute = now ? now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60 : null;
@@ -287,7 +298,7 @@ export const TimetableGrid = memo(function TimetableGrid({
     hours.length > 0 &&
     currentMinute >= gridStartMinute &&
     currentMinute < gridEndMinute;
-  const currentTop = showCurrentTime ? (currentMinute - gridStartMinute) * pxPerMinute : 0;
+  const currentTop = showCurrentTime ? scale.minuteToTop(currentMinute) : 0;
   const currentTimeLabel = currentMinute === null ? "" : formatTime(Math.floor(currentMinute));
 
   const selectMeeting = useCallback((meeting: Meeting) => setSelectedMeeting(meeting), []);
@@ -312,7 +323,19 @@ export const TimetableGrid = memo(function TimetableGrid({
             <p className="text-xs text-muted-foreground">Select a class to view its details</p>
           </div>
         </div>
-        <CalendarLegend activityTypes={visibleActivityTypes} />
+        <div className="flex flex-wrap items-center gap-3">
+          <CalendarLegend activityTypes={visibleActivityTypes} />
+          {scale.compactableHours.size > 0 ? (
+            <button
+              type="button"
+              aria-pressed={compactHours}
+              onClick={() => setCompactHours((current) => !current)}
+              className="hidden rounded-full border border-input px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:border-accent/60 hover:text-foreground md:inline-flex"
+            >
+              {compactHours ? "Full spacing" : "Compact empty time"}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       {/* Desktop grid */}
@@ -349,7 +372,7 @@ export const TimetableGrid = memo(function TimetableGrid({
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  style={{ height: 60 * pxPerMinute }}
+                  style={{ height: scale.hourHeights.get(hour) }}
                   className="relative border-b border-border"
                 >
                   <span className="calendar-time-label absolute right-2 top-1 z-10 rounded-sm px-0.5 text-[0.67rem] font-medium tabular-nums text-muted-foreground">
@@ -380,8 +403,12 @@ export const TimetableGrid = memo(function TimetableGrid({
                   {hours.map((hour) => (
                     <div
                       key={hour}
-                      style={{ height: 60 * pxPerMinute }}
-                      className="calendar-hour-cell border-b border-border"
+                      style={{ height: scale.hourHeights.get(hour) }}
+                      className={
+                        compactHours && scale.compactableHours.has(hour)
+                          ? "border-b border-border bg-secondary/20"
+                          : "calendar-hour-cell border-b border-border"
+                      }
                     />
                   ))}
 
@@ -403,8 +430,10 @@ export const TimetableGrid = memo(function TimetableGrid({
                         key={meeting.id}
                         className="absolute z-10 px-1 py-0.5"
                         style={{
-                          top: (meeting.startTime - startHour * 60) * pxPerMinute,
-                          height: (meeting.endTime - meeting.startTime) * pxPerMinute,
+                          top: scale.minuteToTop(meeting.startTime),
+                          height:
+                            scale.minuteToTop(meeting.endTime) -
+                            scale.minuteToTop(meeting.startTime),
                           left: `${(lane / laneCount) * 100}%`,
                           width: `${(1 / laneCount) * 100}%`,
                         }}

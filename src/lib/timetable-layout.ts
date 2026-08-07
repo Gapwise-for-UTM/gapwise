@@ -58,3 +58,60 @@ export function buildTimetableModel(meetings: Meeting[]) {
   );
   return { startHour, hours, days };
 }
+
+/** Compresses only multi-hour stretches that contain no classes anywhere in the week. */
+export function buildTimetableScale(
+  hours: number[],
+  meetings: Meeting[],
+  compact: boolean,
+  fullHourHeight = 66,
+  compactHourHeight = 26,
+) {
+  const occupiedHours = new Set<number>();
+  for (const hour of hours) {
+    const hourStart = hour * 60;
+    if (
+      meetings.some((meeting) => meeting.startTime < hourStart + 60 && meeting.endTime > hourStart)
+    ) {
+      occupiedHours.add(hour);
+    }
+  }
+
+  const compactableHours = new Set<number>();
+  let emptyRun: number[] = [];
+  const finishRun = () => {
+    if (emptyRun.length >= 2) emptyRun.forEach((hour) => compactableHours.add(hour));
+    emptyRun = [];
+  };
+
+  for (const hour of hours) {
+    if (occupiedHours.has(hour)) finishRun();
+    else emptyRun.push(hour);
+  }
+  finishRun();
+
+  const hourHeights = new Map<number, number>();
+  for (const hour of hours) {
+    hourHeights.set(
+      hour,
+      compact && compactableHours.has(hour) ? compactHourHeight : fullHourHeight,
+    );
+  }
+
+  const minuteToTop = (minute: number) => {
+    let top = 0;
+    for (const hour of hours) {
+      const hourStart = hour * 60;
+      const height = hourHeights.get(hour) ?? fullHourHeight;
+      if (minute >= hourStart + 60) {
+        top += height;
+        continue;
+      }
+      if (minute > hourStart) top += ((minute - hourStart) / 60) * height;
+      break;
+    }
+    return top;
+  };
+
+  return { compactableHours, hourHeights, minuteToTop };
+}

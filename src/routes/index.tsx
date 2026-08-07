@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarRange, LayoutGrid, MapPinned, ShieldCheck, Trash2, Upload, X } from "lucide-react";
 import { GapPlan } from "@/components/GapPlan";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -104,6 +104,7 @@ function Index() {
   const requestVersion = useRef(0);
   const requestedUser = useRef<string | null>(null);
   const previousUser = useRef<string | null>(null);
+  const replacementInputRef = useRef<HTMLInputElement>(null);
   const authenticatedUserId = user?.id ?? null;
   const planTransition = useMemo(
     () => createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings ?? []),
@@ -241,15 +242,21 @@ function Index() {
   const gaps = useMemo(() => findGaps(meetings ?? [], term), [meetings, term]);
 
   async function handleFile(file: File) {
+    const previousMeetings = latestMeetings.current;
     setError(null);
     if (!/\.ics$/i.test(file.name) && file.type !== "text/calendar") {
-      setError("That file type isn't supported. Please choose a .ics calendar file.");
+      const message = "That file type isn't supported. Please choose a .ics calendar file.";
+      if (previousMeetings?.length) setRestorationMessage(`Update failed · ${message}`);
+      else setError(message);
       return;
     }
     if (file.size > MAX_ICS_FILE_BYTES) {
-      setError("That calendar is too large. Please choose an .ics file under 2 MB.");
+      const message = "That calendar is too large. Please choose an .ics file under 2 MB.";
+      if (previousMeetings?.length) setRestorationMessage(`Update failed · ${message}`);
+      else setError(message);
       return;
     }
+    setRestorationMessage(null);
     setLoading(true);
     try {
       const text = await file.text();
@@ -258,20 +265,43 @@ function Index() {
       latestMeetings.current = result.meetings;
       restoredSource.current = "memory";
       setRestoration("restored-memory");
-      setRestorationMessage(null);
+      if (previousMeetings?.length) {
+        const previousById = new Map(previousMeetings.map((meeting) => [meeting.id, meeting]));
+        const nextIds = new Set(result.meetings.map((meeting) => meeting.id));
+        const added = result.meetings.filter((meeting) => !previousById.has(meeting.id)).length;
+        const removed = previousMeetings.filter((meeting) => !nextIds.has(meeting.id)).length;
+        const changed = result.meetings.filter((meeting) => {
+          const previous = previousById.get(meeting.id);
+          return previous && JSON.stringify(previous) !== JSON.stringify(meeting);
+        }).length;
+        const changes = [
+          added ? `${added} added` : null,
+          removed ? `${removed} removed` : null,
+          changed ? `${changed} updated` : null,
+        ].filter(Boolean);
+        setRestorationMessage(
+          `Timetable updated · ${changes.length ? changes.join(" · ") : "no meeting changes"}`,
+        );
+      } else {
+        setRestorationMessage(null);
+      }
       setWarnings(result.warnings);
       setIsDemo(false);
       saveRemembered(remember, remember ? result.meetings : null);
     } catch (err) {
-      setMeetings(null);
-      latestMeetings.current = null;
-      restoredSource.current = "none";
-      setWarnings([]);
-      setError(
+      const message =
         err instanceof IcsParseError
           ? err.message
-          : "Something went wrong while reading that calendar. Try exporting it from ACORN again.",
-      );
+          : "Something went wrong while reading that calendar. Try exporting it from ACORN again.";
+      if (previousMeetings?.length) {
+        setRestorationMessage(`Update failed · ${message}`);
+      } else {
+        setMeetings(null);
+        latestMeetings.current = null;
+        restoredSource.current = "none";
+        setWarnings([]);
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -322,12 +352,15 @@ function Index() {
     saveGapPreferences(sanitized);
   }
 
-  function showView(nextView: "timetable" | "gaps" | "route") {
+  const showView = useCallback((nextView: "timetable" | "gaps" | "route") => {
     if (nextView !== "timetable") {
       setOpenedViews((current) => (current[nextView] ? current : { ...current, [nextView]: true }));
     }
     setView(nextView);
-  }
+  }, []);
+
+  const openGapPlan = useCallback(() => showView("gaps"), [showView]);
+  const openDayRoute = useCallback(() => showView("route"), [showView]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -478,15 +511,40 @@ function Index() {
                   {termMeetings.length} meetings in {term} · {gaps.length} gaps detected
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={clearTimetable}
-                className="inline-flex shrink-0 self-start items-center gap-2 rounded-xl border border-input bg-card px-4 py-2 text-sm font-semibold transition-colors duration-200 hover:border-destructive/50 hover:bg-secondary hover:text-destructive sm:self-auto"
-              >
-                <Trash2 className="h-4 w-4" aria-hidden="true" />
-                <span className="hidden sm:inline">Remove timetable</span>
-                <span className="sm:hidden">Remove</span>
-              </button>
+              <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto">
+                <input
+                  ref={replacementInputRef}
+                  type="file"
+                  accept=".ics,text/calendar"
+                  hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void handleFile(file);
+                    event.target.value = "";
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => replacementInputRef.current?.click()}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                >
+                  <Upload className="h-4 w-4" aria-hidden="true" />
+                  {loading ? "Updating…" : "Update timetable"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Remove this timetable from this browser?"))
+                      clearTimetable();
+                  }}
+                  aria-label="Remove timetable"
+                  title="Remove timetable"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-input bg-card text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
             </div>
 
             {warnings.length > 0 ? (
@@ -506,6 +564,8 @@ function Index() {
               preferences={preferences}
               gapPreferences={gapPreferences}
               planTransition={planTransition}
+              onOpenGapPlan={openGapPlan}
+              onOpenDayRoute={openDayRoute}
             />
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
