@@ -319,7 +319,7 @@ export const TimetableGrid = memo(function TimetableGrid({
       <div className="hidden md:block">
         <div className="surface overflow-hidden bg-card">
           <div className="grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border bg-secondary/70 shadow-[0_1px_0_color-mix(in_oklab,var(--color-border)_65%,transparent)]">
-            <div className="flex items-center px-2.5 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            <div className="flex items-center px-2.5 py-3 text-xs font-semibold text-muted-foreground">
               Time
             </div>
             {WEEKDAYS.map((day) => {
@@ -352,7 +352,7 @@ export const TimetableGrid = memo(function TimetableGrid({
                   style={{ height: 60 * pxPerMinute }}
                   className="relative border-b border-border"
                 >
-                  <span className="calendar-time-label absolute right-2 top-0 z-10 -translate-y-1/2 rounded-sm px-0.5 text-[0.67rem] font-medium tabular-nums text-muted-foreground">
+                  <span className="calendar-time-label absolute right-2 top-1 z-10 rounded-sm px-0.5 text-[0.67rem] font-medium tabular-nums text-muted-foreground">
                     {formatTime(hour * 60)}
                   </span>
                 </div>
