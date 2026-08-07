@@ -23,27 +23,38 @@ import {
 } from "@/lib/timetable-types";
 import { buildTimetableModel, isCompactMeetingCard } from "@/lib/timetable-layout";
 
-const TYPE_STYLES: Record<ActivityType, string> = {
-  LEC: "border-l-lec text-lec",
-  TUT: "border-l-tut text-tut",
-  PRA: "border-l-pra text-pra",
-  OTHER: "border-l-muted-foreground text-muted-foreground",
-};
-
-const TYPE_BADGE_STYLES: Record<ActivityType, string> = {
-  LEC: "bg-lec/10 text-lec",
-  TUT: "bg-tut/10 text-tut",
-  PRA: "bg-pra/10 text-pra",
-  OTHER: "bg-muted text-muted-foreground",
+const ACTIVITY_LABELS: Record<ActivityType, string> = {
+  LEC: "Lecture",
+  TUT: "Tutorial",
+  PRA: "Practical",
+  OTHER: "Other",
 };
 
 export function ActivityBadge({ type }: { type: ActivityType }) {
   return (
     <span
-      className={`rounded px-1.5 py-0.5 text-[0.7rem] font-bold tracking-wide ${TYPE_BADGE_STYLES[type]}`}
+      data-activity={type}
+      className="activity-badge rounded-md px-1.5 py-0.5 text-[0.68rem] font-bold tracking-[0.08em]"
     >
       {type}
     </span>
+  );
+}
+
+function CalendarLegend({ activityTypes }: { activityTypes: ActivityType[] }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" aria-label="Class components">
+      {activityTypes.map((type) => (
+        <span key={type} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span
+            data-activity={type}
+            className="activity-dot h-2 w-2 rounded-full"
+            aria-hidden="true"
+          />
+          {ACTIVITY_LABELS[type]}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -97,18 +108,29 @@ function MeetingCard({
       aria-haspopup="dialog"
       aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
       title={`${meeting.courseCode} · ${meeting.courseName}`}
-      className={`group flex h-full w-full touch-manipulation flex-col items-stretch justify-start overflow-hidden rounded-md border border-border border-l-4 bg-card px-2 py-1.5 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out hover:border-accent/60 hover:bg-secondary/45 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99] ${TYPE_STYLES[meeting.activityType]}`}
+      data-activity={meeting.activityType}
+      className={`meeting-card group flex h-full w-full touch-manipulation flex-col items-stretch justify-start overflow-hidden rounded-lg px-2.5 text-left focus-visible:outline-none active:translate-y-0 active:scale-[0.99] ${
+        compact ? "py-1.5" : "py-2"
+      }`}
     >
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className="truncate text-xs font-bold text-foreground">{meeting.courseCode}</span>
+        <span className="truncate text-xs font-extrabold tracking-[-0.01em] text-foreground">
+          {meeting.courseCode}
+        </span>
         <ActivityBadge type={meeting.activityType} />
       </div>
-      <p className="truncate text-[0.7rem] text-muted-foreground">
+      <p
+        className={`truncate text-[0.7rem] font-medium tabular-nums text-muted-foreground ${
+          compact ? "" : "mt-0.5"
+        }`}
+      >
         {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
       </p>
-      <p className="truncate text-[0.7rem] font-medium text-foreground">{locationLabel(meeting)}</p>
+      <p className="truncate text-[0.7rem] font-semibold text-foreground">
+        {locationLabel(meeting)}
+      </p>
       {!compact ? (
-        <p className="mt-0.5 line-clamp-2 text-[0.7rem] leading-tight text-muted-foreground">
+        <p className="mt-0.5 line-clamp-2 text-[0.7rem] leading-[1.25] text-muted-foreground">
           {meeting.courseName}
         </p>
       ) : null}
@@ -270,27 +292,65 @@ export const TimetableGrid = memo(function TimetableGrid({
 
   const selectMeeting = useCallback((meeting: Meeting) => setSelectedMeeting(meeting), []);
   const closeMeeting = useCallback(() => setSelectedMeeting(null), []);
+  const visibleActivityTypes = useMemo(
+    () =>
+      (["LEC", "TUT", "PRA", "OTHER"] as const).filter((type) =>
+        meetings.some((meeting) => meeting.activityType === type),
+      ),
+    [meetings],
+  );
 
   return (
     <div>
+      <div className="mb-3 flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-accent">
+            <CalendarDays className="h-4 w-4" aria-hidden="true" />
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-foreground">Week at a glance</p>
+            <p className="text-xs text-muted-foreground">Select a class to view its details</p>
+          </div>
+        </div>
+        <CalendarLegend activityTypes={visibleActivityTypes} />
+      </div>
+
       {/* Desktop grid */}
       <div className="hidden md:block">
-        <div className="surface overflow-hidden">
-          <div className="grid grid-cols-[4rem_repeat(5,1fr)] border-b border-border bg-secondary/60">
-            <div className="p-2 text-xs font-semibold text-muted-foreground">Time</div>
-            {WEEKDAYS.map((day) => (
-              <div key={day} className="p-2 text-xs font-semibold">
-                {day}
-              </div>
-            ))}
+        <div className="surface overflow-hidden bg-card">
+          <div className="grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border bg-secondary/70 shadow-[0_1px_0_color-mix(in_oklab,var(--color-border)_65%,transparent)]">
+            <div className="flex items-center px-2.5 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Time
+            </div>
+            {WEEKDAYS.map((day) => {
+              const meetingCount = days.get(day)!.sorted.length;
+              const isToday = termIsCurrent && day === currentDay;
+              return (
+                <div
+                  key={day}
+                  className={`flex min-w-0 items-center justify-between gap-1 border-l border-border px-2.5 py-3 ${isToday ? "bg-accent/10" : ""}`}
+                >
+                  <span className="truncate text-xs font-bold text-foreground">{day}</span>
+                  <span
+                    className={`shrink-0 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold ${
+                      isToday
+                        ? "bg-accent text-accent-foreground"
+                        : "bg-background/65 text-muted-foreground"
+                    }`}
+                  >
+                    {isToday ? "Today" : meetingCount}
+                  </span>
+                </div>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-[4rem_repeat(5,1fr)]">
-            <div className="relative">
+          <div className="grid grid-cols-[4.5rem_repeat(5,1fr)]">
+            <div className="relative bg-secondary/20">
               {hours.map((hour) => (
                 <div
                   key={hour}
                   style={{ height: 60 * pxPerMinute }}
-                  className="border-b border-border pr-2 text-right text-[0.7rem] text-muted-foreground"
+                  className="calendar-time-cell border-b border-border pr-2.5 text-right text-[0.67rem] font-medium tabular-nums text-muted-foreground"
                 >
                   {formatTime(hour * 60)}
                 </div>
@@ -309,12 +369,17 @@ export const TimetableGrid = memo(function TimetableGrid({
             {WEEKDAYS.map((day) => {
               const { laneCount, placement, sorted } = days.get(day)!;
               return (
-                <div key={day} className="relative border-l border-border">
+                <div
+                  key={day}
+                  className={`relative border-l border-border ${
+                    termIsCurrent && day === currentDay ? "bg-accent/[0.035]" : ""
+                  }`}
+                >
                   {hours.map((hour) => (
                     <div
                       key={hour}
                       style={{ height: 60 * pxPerMinute }}
-                      className="border-b border-border"
+                      className="calendar-hour-cell border-b border-border"
                     />
                   ))}
 
@@ -334,7 +399,7 @@ export const TimetableGrid = memo(function TimetableGrid({
                     return (
                       <div
                         key={meeting.id}
-                        className="absolute px-1"
+                        className="absolute z-10 px-1 py-0.5"
                         style={{
                           top: (meeting.startTime - startHour * 60) * pxPerMinute,
                           height: (meeting.endTime - meeting.startTime) * pxPerMinute,
@@ -362,14 +427,23 @@ export const TimetableGrid = memo(function TimetableGrid({
         {WEEKDAYS.map((day) => {
           const dayMeetings = days.get(day)!.sorted;
           return (
-            <section key={day} className="surface p-4" aria-labelledby={`day-${day}`}>
-              <h3 id={`day-${day}`} className="text-sm font-semibold">
-                {day}
-              </h3>
+            <section
+              key={day}
+              className="surface overflow-hidden p-0"
+              aria-labelledby={`day-${day}`}
+            >
+              <div className="flex items-center justify-between border-b border-border bg-secondary/55 px-4 py-3">
+                <h3 id={`day-${day}`} className="text-sm font-bold">
+                  {day}
+                </h3>
+                <span className="rounded-full bg-background/70 px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">
+                  {dayMeetings.length} {dayMeetings.length === 1 ? "class" : "classes"}
+                </span>
+              </div>
               {dayMeetings.length === 0 ? (
-                <p className="mt-2 text-sm text-muted-foreground">No classes scheduled.</p>
+                <p className="px-4 py-4 text-sm text-muted-foreground">No classes scheduled.</p>
               ) : (
-                <ul className="mt-3 space-y-2">
+                <ul className="space-y-2.5 p-3">
                   {dayMeetings.map((meeting) => (
                     <li key={meeting.id}>
                       <button
@@ -377,10 +451,11 @@ export const TimetableGrid = memo(function TimetableGrid({
                         onClick={() => selectMeeting(meeting)}
                         aria-haspopup="dialog"
                         aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
-                        className={`w-full touch-manipulation rounded-lg border border-border border-l-4 bg-card p-3 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 hover:border-accent/60 hover:bg-secondary/45 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99] ${TYPE_STYLES[meeting.activityType]}`}
+                        data-activity={meeting.activityType}
+                        className="meeting-card w-full touch-manipulation rounded-xl p-3.5 text-left focus-visible:outline-none active:translate-y-0 active:scale-[0.99]"
                       >
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-bold text-foreground">
+                          <span className="text-sm font-extrabold tracking-[-0.01em] text-foreground">
                             {meeting.courseCode}
                           </span>
                           <ActivityBadge type={meeting.activityType} />
@@ -388,7 +463,7 @@ export const TimetableGrid = memo(function TimetableGrid({
                             {meeting.sectionCode}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-foreground">
+                        <p className="mt-1.5 text-sm font-medium tabular-nums text-foreground">
                           {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
                         </p>
                         <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
