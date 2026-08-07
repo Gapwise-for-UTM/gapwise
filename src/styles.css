@@ -104,6 +104,14 @@
   --lec: oklch(0.45 0.11 255);
   --tut: oklch(0.52 0.09 195);
   --pra: oklch(0.5 0.1 300);
+  --meeting-card-tint: 17%;
+  --meeting-card-tint-end: 5%;
+  --meeting-card-hover-tint: 24%;
+  --meeting-card-hover-tint-end: 9%;
+  --meeting-card-border-strength: 46%;
+  --meeting-card-hover-border-strength: 70%;
+  --meeting-badge-tint: 20%;
+  --meeting-badge-ring-strength: 20%;
   --chart-1: oklch(0.45 0.11 255);
   --chart-2: oklch(0.52 0.09 195);
   --chart-3: oklch(0.5 0.1 300);
@@ -149,6 +157,14 @@
   --lec: oklch(0.68 0.12 255);
   --tut: oklch(0.72 0.1 195);
   --pra: oklch(0.7 0.11 300);
+  --meeting-card-tint: 11%;
+  --meeting-card-tint-end: 0%;
+  --meeting-card-hover-tint: 17%;
+  --meeting-card-hover-tint-end: 4%;
+  --meeting-card-border-strength: 35%;
+  --meeting-card-hover-border-strength: 64%;
+  --meeting-badge-tint: 14%;
+  --meeting-badge-ring-strength: 13%;
   --chart-1: oklch(0.68 0.12 255);
   --chart-2: oklch(0.72 0.1 195);
   --chart-3: oklch(0.7 0.11 300);
@@ -278,12 +294,17 @@
   }
 
   .meeting-card {
-    border: 1px solid color-mix(in oklab, var(--meeting-accent) 35%, var(--color-border));
+    border: 1px solid
+      color-mix(
+        in oklab,
+        var(--meeting-accent) var(--meeting-card-border-strength),
+        var(--color-border)
+      );
     border-left: 4px solid var(--meeting-accent);
     background: linear-gradient(
       135deg,
-      color-mix(in oklab, var(--meeting-accent) 11%, var(--color-card)) 0%,
-      var(--color-card) 64%
+      color-mix(in oklab, var(--meeting-accent) var(--meeting-card-tint), var(--color-card)) 0%,
+      color-mix(in oklab, var(--meeting-accent) var(--meeting-card-tint-end), var(--color-card)) 72%
     );
     box-shadow:
       inset 0 1px 0 color-mix(in oklab, white 38%, transparent),
@@ -296,12 +317,22 @@
   }
 
   .meeting-card:hover {
-    border-color: color-mix(in oklab, var(--meeting-accent) 64%, var(--color-border));
+    border-color: color-mix(
+      in oklab,
+      var(--meeting-accent) var(--meeting-card-hover-border-strength),
+      var(--color-border)
+    );
     border-left-color: var(--meeting-accent);
     background: linear-gradient(
       135deg,
-      color-mix(in oklab, var(--meeting-accent) 17%, var(--color-card)) 0%,
-      color-mix(in oklab, var(--meeting-accent) 4%, var(--color-card)) 72%
+      color-mix(in oklab, var(--meeting-accent) var(--meeting-card-hover-tint), var(--color-card))
+        0%,
+      color-mix(
+          in oklab,
+          var(--meeting-accent) var(--meeting-card-hover-tint-end),
+          var(--color-card)
+        )
+        72%
     );
     box-shadow:
       inset 0 1px 0 color-mix(in oklab, white 42%, transparent),
@@ -318,9 +349,10 @@
   }
 
   .activity-badge {
-    background: color-mix(in oklab, var(--meeting-accent) 14%, transparent);
+    background: color-mix(in oklab, var(--meeting-accent) var(--meeting-badge-tint), transparent);
     color: var(--meeting-accent);
-    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--meeting-accent) 13%, transparent);
+    box-shadow: inset 0 0 0 1px
+      color-mix(in oklab, var(--meeting-accent) var(--meeting-badge-ring-strength), transparent);
   }
 
   .activity-dot {
@@ -338,8 +370,8 @@
     );
   }
 
-  .calendar-time-cell {
-    transform: translateY(-0.45rem);
+  .calendar-time-label {
+    background: color-mix(in oklab, var(--color-secondary) 20%, var(--color-card));
   }
 }
 

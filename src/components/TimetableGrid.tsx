@@ -350,9 +350,11 @@ export const TimetableGrid = memo(function TimetableGrid({
                 <div
                   key={hour}
                   style={{ height: 60 * pxPerMinute }}
-                  className="calendar-time-cell border-b border-border pr-2.5 text-right text-[0.67rem] font-medium tabular-nums text-muted-foreground"
+                  className="relative border-b border-border"
                 >
-                  {formatTime(hour * 60)}
+                  <span className="calendar-time-label absolute right-2 top-0 z-10 -translate-y-1/2 rounded-sm px-0.5 text-[0.67rem] font-medium tabular-nums text-muted-foreground">
+                    {formatTime(hour * 60)}
+                  </span>
                 </div>
               ))}
 
