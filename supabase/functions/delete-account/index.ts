@@ -16,9 +16,7 @@ const configuredOrigins = new Set([
 
 function cors(origin: string | null): HeadersInit {
   return {
-    ...(origin && configuredOrigins.has(origin)
-      ? { "Access-Control-Allow-Origin": origin }
-      : {}),
+    ...(origin && configuredOrigins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
