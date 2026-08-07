@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 
 const defaultOrigins = [
+  "https://gapwise-utm.vercel.app",
   "https://campus-gap-finder.vercel.app",
   "http://localhost:8080",
   "http://127.0.0.1:8080",
@@ -14,9 +15,8 @@ const configuredOrigins = new Set([
 ]);
 
 function cors(origin: string | null): HeadersInit {
-  const allowed = origin && configuredOrigins.has(origin) ? origin : defaultOrigins[0];
   return {
-    "Access-Control-Allow-Origin": allowed,
+    ...(origin && configuredOrigins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
@@ -25,9 +25,19 @@ function cors(origin: string | null): HeadersInit {
 
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
+  const originAllowed = !origin || configuredOrigins.has(origin);
   const headers = { ...cors(origin), "Content-Type": "application/json" };
-  if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-  if (request.method !== "POST" || (origin && !configuredOrigins.has(origin)))
+
+  if (request.method === "OPTIONS") {
+    if (!originAllowed)
+      return new Response(JSON.stringify({ error: "Request rejected" }), {
+        status: 403,
+        headers,
+      });
+    return new Response(null, { status: 204, headers });
+  }
+
+  if (request.method !== "POST" || !originAllowed)
     return new Response(JSON.stringify({ error: "Request rejected" }), { status: 403, headers });
 
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
