@@ -6,31 +6,25 @@ import {
   Coffee,
   Home,
   MapPin,
-  ShieldCheck,
   SlidersHorizontal,
   Sparkles,
   Utensils,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
-import { assessGap } from "@/features/gaps/assess-gap";
-import {
-  DEFAULT_GAP_PREFERENCES,
-  loadGapPreferences,
-  sanitizeGapPreferences,
-  saveGapPreferences,
-} from "@/features/gaps/preferences";
-import type {
-  GapAction,
-  GapAssessment,
-  GapPreferences,
-  GapTimelineKind,
-} from "@/features/gaps/types";
+import { memo, useMemo, useState } from "react";
+import { planGapAssessment } from "@/features/gaps/assess-gap";
+import { DEFAULT_GAP_PREFERENCES, sanitizeGapPreferences } from "@/features/gaps/preferences";
+import type { GapAction, GapPreferences, GapRecommendation } from "@/features/gaps/types";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { groupGapsByDay } from "@/lib/gaps";
 import type { Gap } from "@/lib/timetable-types";
-import { formatDuration, formatTime, locationLabel } from "@/lib/timetable-types";
+import {
+  formatCompactDuration,
+  formatDuration,
+  formatTime,
+  locationLabel,
+} from "@/lib/timetable-types";
 
 const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: string }> = {
   "tight-transition": {
@@ -78,20 +72,6 @@ const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: s
     icon: AlertTriangle,
     style: "bg-accent/15 text-accent",
   },
-};
-
-const CONFIDENCE_STYLES = {
-  high: "border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  medium: "border-amber-500/25 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  low: "border-destructive/25 bg-destructive/10 text-destructive",
-} as const;
-
-const TIMELINE_STYLES: Record<GapTimelineKind, string> = {
-  setup: "bg-muted-foreground/35",
-  activity: "bg-accent",
-  travel: "bg-primary/75",
-  buffer: "bg-pra/70",
-  flex: "bg-secondary",
 };
 
 function minutesToTimeInput(minutes: number) {
@@ -331,38 +311,21 @@ const GapSettings = memo(function GapSettings({
   );
 });
 
-function Timeline({ assessment }: { assessment: GapAssessment }) {
-  const total = assessment.primary.timeline.reduce((sum, segment) => sum + segment.minutes, 0);
-  if (total <= 0) return null;
-
-  return (
-    <div className="mt-4">
-      <div
-        className="flex h-3 overflow-hidden rounded-full bg-secondary"
-        aria-label="Recommended gap timeline"
-      >
-        {assessment.primary.timeline.map((segment, index) => (
-          <span
-            key={`${segment.label}-${index}`}
-            className={`${TIMELINE_STYLES[segment.kind]} min-w-[3px]`}
-            style={{ width: `${(segment.minutes / total) * 100}%` }}
-            title={`${segment.label}: ${formatDuration(segment.minutes)}`}
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[0.68rem] text-muted-foreground">
-        {assessment.primary.timeline.map((segment, index) => (
-          <span
-            key={`${segment.kind}-${segment.label}-${index}`}
-            className="inline-flex items-center gap-1.5"
-          >
-            <span className={`h-2 w-2 rounded-full ${TIMELINE_STYLES[segment.kind]}`} />
-            {segment.label} · {formatDuration(segment.minutes)}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
+function actionChipLabel(recommendation: GapRecommendation) {
+  switch (recommendation.action) {
+    case "meal-window":
+      return "Eat";
+    case "leave-campus-candidate":
+      return "Leave campus";
+    case "quick-reset":
+      return "Take a break";
+    case "tight-transition":
+      return "Head to class";
+    case "location-dependent":
+      return "Stay flexible";
+    default:
+      return "Study";
+  }
 }
 
 const GapCard = memo(function GapCard({
@@ -376,167 +339,146 @@ const GapCard = memo(function GapCard({
   gapPreferences: GapPreferences;
   planTransition: TransitionPlanner;
 }) {
-  const { route, assessment } = useMemo(() => {
-    const route = planTransition(gap.previous, gap.next, preferences);
-    return {
-      route,
-      assessment: assessGap({
-        gap,
-        route,
-        routePreferences: preferences,
-        gapPreferences,
-      }),
-    };
-  }, [gap, gapPreferences, planTransition, preferences]);
-
-  const meta = ACTION_META[assessment.primary.action];
+  const { route, assessment } = useMemo(
+    () => planGapAssessment(gap, preferences, gapPreferences, planTransition),
+    [gap, gapPreferences, planTransition, preferences],
+  );
+  const [selectedRecommendationId, setSelectedRecommendationId] = useState(assessment.primary.id);
+  const recommendations = useMemo(() => {
+    const uniqueLabels = new Set<string>();
+    return [assessment.primary, ...assessment.alternatives].filter((recommendation) => {
+      const label = actionChipLabel(recommendation);
+      if (uniqueLabels.has(label)) return false;
+      uniqueLabels.add(label);
+      return true;
+    });
+  }, [assessment]);
+  const selected =
+    recommendations.find((item) => item.id === selectedRecommendationId) ?? assessment.primary;
+  const meta = ACTION_META[selected.action];
   const ActionIcon = meta.icon;
+  const travelCopy =
+    assessment.travelMinutes === null
+      ? "Travel time unavailable"
+      : assessment.routeStatus === "same-room"
+        ? "Same room"
+        : `~${assessment.travelMinutes} min walk`;
+  const routeNote =
+    assessment.routeStatus === "approximate"
+      ? "Route estimate"
+      : assessment.routeStatus === "unavailable"
+        ? "Timing includes a conservative transition allowance"
+        : route.warnings.some((warning) => /indoor room routing/i.test(warning))
+          ? "Indoor path not mapped yet"
+          : null;
 
   return (
-    <article className="surface overflow-hidden p-0">
-      <div className="border-b border-border bg-secondary/25 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="flex items-center gap-2 text-sm font-semibold">
-            <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
-            {formatTime(gap.startTime)} – {formatTime(gap.endTime)}
-          </p>
-          <span
-            className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${CONFIDENCE_STYLES[assessment.confidenceLabel]}`}
-            title={`${Math.round(assessment.confidence * 100)}% recommendation confidence`}
-          >
-            {assessment.confidenceLabel} confidence
-          </span>
-        </div>
-
-        <div className="mt-4 flex items-start gap-3">
-          <span
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${meta.style}`}
-          >
-            <ActionIcon className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[0.68rem] font-semibold uppercase tracking-wider text-muted-foreground">
-              Best use · {meta.label}
-            </p>
-            <h4 className="mt-1 font-display text-lg font-semibold leading-tight tracking-tight">
-              {assessment.primary.title}
-            </h4>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-              {assessment.primary.summary}
-            </p>
-          </div>
-        </div>
-
-        <Timeline assessment={assessment} />
+    <article className="surface p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 text-sm font-semibold">
+          <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
+          {formatTime(gap.startTime)} – {formatTime(gap.endTime)}
+        </p>
+        <span className="text-sm font-semibold text-muted-foreground">
+          {formatCompactDuration(gap.durationMinutes)}
+        </span>
       </div>
 
-      <div className="p-4">
-        <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Total gap</dt>
-            <dd className="mt-0.5 font-semibold">{formatDuration(gap.durationMinutes)}</dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Activity time</dt>
-            <dd className="mt-0.5 font-semibold">
-              {formatDuration(assessment.primary.activityMinutes)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Travel</dt>
-            <dd className="mt-0.5 font-semibold">
-              {assessment.travelMinutes === null
-                ? "Unknown"
-                : formatDuration(assessment.travelMinutes)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Leave by</dt>
-            <dd className="mt-0.5 font-semibold">{formatTime(assessment.leaveByMinutes)}</dd>
-          </div>
-        </dl>
-
-        <div className="mt-4 rounded-xl border border-border bg-secondary/30 p-3">
-          <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            <ShieldCheck className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            Why this recommendation
+      <div className="mt-3 flex items-start gap-2.5">
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.style}`}
+        >
+          <ActionIcon className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <h4 className="font-display text-base font-semibold leading-tight">{selected.title}</h4>
+          <p className="mt-0.5 text-sm font-medium text-foreground">
+            {formatCompactDuration(selected.activityMinutes)} usable
           </p>
-          <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-muted-foreground">
-            {assessment.primary.reasons.slice(0, 3).map((reason) => (
-              <li key={reason} className="flex gap-2">
-                <span className="mt-[0.45rem] h-1 w-1 shrink-0 rounded-full bg-accent" />
-                <span>{reason}</span>
-              </li>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selected.summary}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-lg border border-border bg-secondary/25 px-3 py-2.5 text-sm">
+        <p className="flex min-w-0 items-center gap-2">
+          <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span className="truncate">{locationLabel(gap.previous)}</span>
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span className="truncate">{locationLabel(gap.next)}</span>
+        </p>
+        <p className="mt-1 pl-6 text-xs text-muted-foreground">
+          {travelCopy} · leave by {formatTime(assessment.leaveByMinutes)}
+        </p>
+        {routeNote ? (
+          <p className="mt-0.5 pl-6 text-xs text-muted-foreground">{routeNote}</p>
+        ) : null}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {recommendations.map((recommendation) => {
+          const selectedOption = selected.id === recommendation.id;
+          return (
+            <button
+              key={recommendation.id}
+              type="button"
+              aria-pressed={selectedOption}
+              onClick={() => setSelectedRecommendationId(recommendation.id)}
+              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                selectedOption
+                  ? "border-accent bg-accent/10 text-foreground"
+                  : "border-input text-muted-foreground hover:border-accent/60 hover:text-foreground"
+              }`}
+            >
+              {actionChipLabel(recommendation)}
+            </button>
+          );
+        })}
+      </div>
+
+      <details className="group mt-3 text-xs">
+        <summary className="ml-auto w-fit cursor-pointer rounded-full border border-input px-3 py-1 font-semibold text-muted-foreground hover:border-accent/60 hover:text-foreground">
+          Details
+        </summary>
+        <div className="mt-3 rounded-lg border border-border bg-background/45 p-3 text-muted-foreground">
+          <dl className="grid grid-cols-2 gap-x-5 gap-y-2">
+            <div>
+              <dt>Raw gap</dt>
+              <dd className="font-semibold text-foreground">
+                {formatDuration(gap.durationMinutes)}
+              </dd>
+            </div>
+            <div>
+              <dt>Travel</dt>
+              <dd className="font-semibold text-foreground">
+                {assessment.travelMinutes === null
+                  ? "Unavailable"
+                  : formatDuration(assessment.travelMinutes)}
+              </dd>
+            </div>
+            <div>
+              <dt>Transition buffer</dt>
+              <dd className="font-semibold text-foreground">
+                {formatDuration(assessment.bufferMinutes)}
+              </dd>
+            </div>
+            <div>
+              <dt>Setup + pack-up</dt>
+              <dd className="font-semibold text-foreground">
+                {formatDuration(gapPreferences.setupMinutes + gapPreferences.packUpMinutes)}
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-3 border-t border-border pt-3">{route.accuracy}</p>
+          <ul className="mt-2 list-disc space-y-1 pl-4">
+            {selected.reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+            {assessment.warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
             ))}
           </ul>
         </div>
-
-        {assessment.alternatives.length > 0 ? (
-          <div className="mt-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Other sensible options
-            </p>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {assessment.alternatives.map((alternative) => {
-                const alternativeMeta = ACTION_META[alternative.action];
-                return (
-                  <div key={alternative.id} className="rounded-xl border border-border p-3">
-                    <p className="text-xs font-semibold text-foreground">{alternative.title}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      {alternative.summary}
-                    </p>
-                    <span
-                      className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[0.65rem] font-semibold ${alternativeMeta.style}`}
-                    >
-                      {alternativeMeta.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-
-        {assessment.warnings.length > 0 ? (
-          <details className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
-            <summary className="cursor-pointer text-xs font-semibold text-amber-800 dark:text-amber-300">
-              {assessment.warnings.length} uncertainty note
-              {assessment.warnings.length === 1 ? "" : "s"}
-            </summary>
-            <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted-foreground">
-              {assessment.warnings.map((warning) => (
-                <li key={warning}>{warning}</li>
-              ))}
-            </ul>
-          </details>
-        ) : null}
-
-        <div className="mt-4 space-y-2 border-t border-border pt-4 text-sm">
-          <p className="flex items-start gap-2">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span>
-              <span className="text-muted-foreground">After </span>
-              {gap.previous.courseCode} {gap.previous.activityType} · {locationLabel(gap.previous)}
-            </span>
-          </p>
-          <p className="flex items-start gap-2">
-            <ArrowRight
-              className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <span>
-              <span className="text-muted-foreground">Before </span>
-              {gap.next.courseCode} {gap.next.activityType} · {locationLabel(gap.next)}
-            </span>
-          </p>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {route.accuracy}
-            {assessment.arrivalMinutes === null
-              ? " · Arrival time cannot be verified."
-              : ` · Estimated arrival ${formatTime(assessment.arrivalMinutes)}.`}
-          </p>
-        </div>
-      </div>
+      </details>
     </article>
   );
 });
@@ -544,24 +486,17 @@ const GapCard = memo(function GapCard({
 export const GapPlan = memo(function GapPlan({
   gaps,
   preferences,
+  gapPreferences,
+  onGapPreferencesChange,
   planTransition,
 }: {
   gaps: Gap[];
   preferences: UserPreferences;
+  gapPreferences: GapPreferences;
+  onGapPreferencesChange: (next: GapPreferences) => void;
   planTransition: TransitionPlanner;
 }) {
   const groups = useMemo(() => groupGapsByDay(gaps), [gaps]);
-  const [gapPreferences, setGapPreferences] = useState<GapPreferences>(DEFAULT_GAP_PREFERENCES);
-
-  useEffect(() => {
-    setGapPreferences(loadGapPreferences());
-  }, []);
-
-  function updateGapPreferences(next: GapPreferences) {
-    const sanitized = sanitizeGapPreferences(next);
-    setGapPreferences(sanitized);
-    saveGapPreferences(sanitized);
-  }
 
   if (groups.length === 0) {
     return (
@@ -576,18 +511,7 @@ export const GapPlan = memo(function GapPlan({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-accent/20 bg-accent/5 p-4">
-        <p className="flex items-center gap-2 text-sm font-semibold">
-          <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
-          Intelligent gap planning
-        </p>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          Recommendations use real or estimated travel, transition risk, setup time, meal timing,
-          location certainty, and your commute preferences—not just the raw gap length.
-        </p>
-      </div>
-
-      <GapSettings value={gapPreferences} onChange={updateGapPreferences} />
+      <GapSettings value={gapPreferences} onChange={onGapPreferencesChange} />
 
       {groups.map((group) => (
         <section key={group.weekday} aria-labelledby={`gaps-${group.weekday}`}>

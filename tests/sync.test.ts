@@ -16,6 +16,8 @@ describe("guest-safe cloud services", () => {
       meeting({
         dateRange: { startDate: "2026-09-07", endDate: "2026-12-07" },
         excludedDates: ["2026-10-12"],
+        recurrenceIntervalWeeks: 1,
+        locationType: "physical",
       }),
     ];
     const serialized = serializeSchedule(original);

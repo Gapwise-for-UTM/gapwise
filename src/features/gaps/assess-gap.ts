@@ -1,10 +1,14 @@
 import { calculateGapTiming } from "@/lib/gaps";
-import { formatDuration } from "@/lib/timetable-types";
+import { formatDuration, meetingLocationType } from "@/lib/timetable-types";
+import type { TransitionPlanner } from "@/features/routing/transition";
+import type { UserPreferences } from "@/features/sync/preferences";
+import type { Gap } from "@/lib/timetable-types";
 import type {
   GapAction,
   GapAssessment,
   GapAssessmentInput,
   GapConfidence,
+  GapPreferences,
   GapRecommendation,
   GapTag,
   GapTimelineSegment,
@@ -156,13 +160,27 @@ function standardTimeline(
   return segments;
 }
 
+export type GapDurationCategory = "very-short" | "short" | "medium" | "long";
+
+export function gapDurationCategory(usableMinutes: number): GapDurationCategory {
+  if (usableMinutes < 25) return "very-short";
+  if (usableMinutes < 60) return "short";
+  if (usableMinutes < 120) return "medium";
+  return "long";
+}
+
 function productivityAction(activityMinutes: number): GapAction {
   if (activityMinutes < 10) return "tight-transition";
-  if (activityMinutes < 25) return "quick-reset";
-  if (activityMinutes < 50) return "focus-sprint";
-  if (activityMinutes < 90) return "study-block";
-  if (activityMinutes < 150) return "deep-work-block";
-  return "flexible-long-gap";
+  switch (gapDurationCategory(activityMinutes)) {
+    case "very-short":
+      return "quick-reset";
+    case "short":
+      return "focus-sprint";
+    case "medium":
+      return "study-block";
+    case "long":
+      return "deep-work-block";
+  }
 }
 
 function productivityScore(action: GapAction) {
@@ -184,8 +202,7 @@ function productivityScore(action: GapAction) {
   }
 }
 
-function productivityCopy(action: GapAction, activityMinutes: number) {
-  const duration = formatDuration(activityMinutes);
+function productivityCopy(action: GapAction) {
   switch (action) {
     case "tight-transition":
       return {
@@ -195,35 +212,33 @@ function productivityCopy(action: GapAction, activityMinutes: number) {
       };
     case "quick-reset":
       return {
-        title: `${duration} quick reset`,
-        summary: "Use this for water, the washroom, messages, or a brief mental reset.",
+        title: "Quick reset",
+        summary: "Enough time for water, the washroom, messages, or reviewing a few notes nearby.",
         label: "Quick reset",
       };
     case "focus-sprint":
       return {
-        title: `${duration} focus sprint`,
-        summary: "A good window for reviewing notes or completing one small, clearly scoped task.",
+        title: "Focus sprint",
+        summary: "Good for reviewing notes or finishing one clearly scoped task.",
         label: "Focus sprint",
       };
     case "study-block":
       return {
-        title: `${duration} focused study block`,
-        summary:
-          "Enough protected time for one meaningful study session without rushing the transition.",
+        title: "Focused study",
+        summary: "Enough for one meaningful study session without rushing the transition.",
         label: "Focused study",
       };
     case "deep-work-block":
       return {
-        title: `${duration} deep-work block`,
-        summary:
-          "Long enough for substantial assignment work, difficult problems, or concentrated reading.",
+        title: "Deep work",
+        summary: "Enough for substantial assignment work, lunch, or a longer break.",
         label: "Deep work",
       };
     case "flexible-long-gap":
       return {
-        title: `${duration} flexible campus block`,
-        summary: "Enough time to combine deep work, food, rest, or another substantial activity.",
-        label: "Flexible time",
+        title: "Long break",
+        summary: "Enough for deep work, lunch, or leaving campus for a while.",
+        label: "Long break",
       };
     default:
       return {
@@ -244,7 +259,7 @@ function makeProductivityCandidate(
   baseTags: GapTag[],
 ): GapRecommendation {
   const action = productivityAction(activityMinutes);
-  const copy = productivityCopy(action, activityMinutes);
+  const copy = productivityCopy(action);
   const protectedMinutes = (travelMinutes ?? 0) + bufferMinutes;
   const reasons = [
     protectedMinutes > 0
@@ -288,25 +303,29 @@ function makeLocationDependentCandidate(
   baseTags: GapTag[],
 ): GapRecommendation {
   const unknownCourses = [input.gap.previous, input.gap.next]
-    .filter((meeting) => meeting.locationUnknown)
+    .filter((meeting) => meetingLocationType(meeting) !== "physical")
     .map((meeting) => meeting.courseCode);
+  const hasOnlineMeeting = [input.gap.previous, input.gap.next].some(
+    (meeting) => meetingLocationType(meeting) === "online",
+  );
 
   return {
     id: "location-dependent",
     action: "location-dependent",
-    title: "Location-dependent gap",
-    summary:
-      "The available time changes materially depending on where the online, TBA, or unknown class is attended.",
+    title: "Stay flexible",
+    summary: hasOnlineMeeting
+      ? "An online class has no campus routing point, so this plan keeps extra transition time."
+      : "A class location is still TBA, so this plan keeps extra transition time.",
     score: SCORE.locationDependent,
     activityMinutes,
     reasons: [
-      `${unique(unknownCourses).join(" and ") || "A class"} does not have a dependable physical location.`,
+      `${unique(unknownCourses).join(" and ") || "A class"} does not have a confirmed campus routing point.`,
       `The app is reserving ${formatDuration(bufferMinutes)} rather than inventing a route.`,
-      "Treat the shown activity time as an upper-bound estimate until the location is known.",
+      "Treat the shown activity time as conservative until the location is confirmed.",
     ],
     tags: unique([...baseTags, "location-unknown", "route-unavailable"]),
     timeline: standardTimeline(
-      "Conditional free time",
+      "Free time",
       activityMinutes,
       setupMinutes,
       packUpMinutes,
@@ -339,10 +358,7 @@ function makeMealCandidate(
   }
 
   const spareMinutes = Math.max(0, activityMinutes - preferences.mealDurationMinutes);
-  const title =
-    spareMinutes >= 20
-      ? `Meal window + ${formatDuration(spareMinutes)} spare`
-      : `${formatDuration(activityMinutes)} meal window`;
+  const title = spareMinutes >= 20 ? "Lunch fits comfortably" : "Time to eat";
   const midpoint = (input.gap.startTime + input.gap.endTime) / 2;
   const lunchMidpoint = (preferences.lunchWindowStart + preferences.lunchWindowEnd) / 2;
   const midpointBonus = Math.max(0, 5 - Math.abs(midpoint - lunchMidpoint) / 30);
@@ -351,8 +367,11 @@ function makeMealCandidate(
     id: "meal-window",
     action: "meal-window",
     title,
-    summary:
-      "This gap overlaps your lunch window and leaves enough protected time to eat without rushing.",
+    summary: `${formatDuration(preferences.mealDurationMinutes)} protected for eating${
+      spareMinutes >= 20
+        ? `, with ${formatDuration(spareMinutes)} left for studying or resting`
+        : ""
+    }.`,
     score: SCORE.mealWindow + midpointBonus,
     activityMinutes,
     reasons: [
@@ -404,8 +423,8 @@ function makeHomeCandidate(
   return {
     id: "leave-campus",
     action: "leave-campus-candidate",
-    title: `${formatDuration(homeMinutes)} at home`,
-    summary: "The round trip still leaves enough worthwhile time away from campus.",
+    title: "Leave campus for a while",
+    summary: `${formatDuration(homeMinutes)} away from campus after the round trip and return buffer.`,
     score: SCORE.leaveCampus + Math.min(4, homeMinutes / 120),
     activityMinutes: homeMinutes,
     reasons: [
@@ -430,8 +449,8 @@ function makeResetAlternative(
   return {
     id: "reset-alternative",
     action: "quick-reset",
-    title: "Low-effort reset",
-    summary: "Use the window for food, water, a short walk, or doing nothing on purpose.",
+    title: "Take a real break",
+    summary: `${formatDuration(activityMinutes)} for food, a short walk, or doing nothing on purpose.`,
     score: SCORE.resetAlternative,
     activityMinutes,
     reasons: [
@@ -524,7 +543,7 @@ export function assessGap(input: GapAssessmentInput): GapAssessment {
     ...input.route.warnings,
     ...(locationUnknown
       ? [
-          "One or both class locations are online, TBA, or unknown, so the recommendation is conservative.",
+          "One or both classes lack a confirmed campus routing point, so the timing stays conservative.",
         ]
       : []),
     ...(input.route.status === "approximate"
@@ -545,5 +564,19 @@ export function assessGap(input: GapAssessmentInput): GapAssessment {
     routeStatus: input.route.status,
     routeAccuracy: input.route.accuracy,
     warnings,
+  };
+}
+
+/** Shared entry point used by Today and Gap Plan so transition math cannot drift. */
+export function planGapAssessment(
+  gap: Gap,
+  routePreferences: UserPreferences,
+  gapPreferences: GapPreferences,
+  planTransition: TransitionPlanner,
+) {
+  const route = planTransition(gap.previous, gap.next, routePreferences);
+  return {
+    route,
+    assessment: assessGap({ gap, route, routePreferences, gapPreferences }),
   };
 }

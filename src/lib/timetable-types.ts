@@ -1,6 +1,7 @@
 export type ActivityType = "LEC" | "TUT" | "PRA" | "OTHER";
 export type Term = "Fall" | "Winter" | "Summer";
 export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+export type MeetingLocationType = "physical" | "tba" | "online" | "unknown";
 
 export const TERMS: Term[] = ["Fall", "Winter", "Summer"];
 export const WEEKDAYS: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
@@ -36,9 +37,13 @@ export interface Meeting {
   room: string | null;
   term: Term;
   locationUnknown: boolean;
+  /** Explicit source-backed location kind. Older saved schedules may omit this field. */
+  locationType?: MeetingLocationType;
   dateRange?: MeetingDateRange;
   /** Dates explicitly omitted by EXDATE, in YYYY-MM-DD form. */
   excludedDates?: string[];
+  /** Weekly RRULE interval. Older saved schedules are treated as weekly when ranges repeat. */
+  recurrenceIntervalWeeks?: number;
 }
 
 export interface Gap {
@@ -74,8 +79,25 @@ export function formatDuration(minutes: number): string {
   return `${h} hr ${m} min`;
 }
 
+export function formatCompactDuration(minutes: number): string {
+  if (minutes <= 0) return "0m";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}m`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}m`;
+}
+
+export function meetingLocationType(meeting: Meeting): MeetingLocationType {
+  if (meeting.locationType) return meeting.locationType;
+  if (!meeting.locationUnknown && (meeting.buildingCode || meeting.room)) return "physical";
+  return "unknown";
+}
+
 export function locationLabel(m: Meeting): string {
-  if (m.locationUnknown) return "Location TBA / online";
+  const type = meetingLocationType(m);
+  if (type === "online") return "Online";
+  if (type === "tba" || type === "unknown") return "Location TBA";
   if (m.buildingCode && m.room) return `${m.buildingCode} ${m.room}`;
-  return m.buildingCode ?? m.room ?? "Location TBA / online";
+  return m.buildingCode ?? m.room ?? "Location TBA";
 }

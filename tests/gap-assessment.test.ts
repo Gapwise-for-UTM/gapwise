@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { assessGap } from "@/features/gaps/assess-gap";
+import { assessGap, gapDurationCategory, planGapAssessment } from "@/features/gaps/assess-gap";
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import type { TransitionRoute } from "@/features/routing/types";
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
@@ -89,6 +89,17 @@ const unavailableRoute: TransitionRoute = {
 };
 
 describe("intelligent gap assessment", () => {
+  test.each([
+    [24, "very-short"],
+    [25, "short"],
+    [59, "short"],
+    [60, "medium"],
+    [119, "medium"],
+    [120, "long"],
+  ] as const)("classifies %d usable minutes as %s", (minutes, category) => {
+    expect(gapDurationCategory(minutes)).toBe(category);
+  });
+
   test("uses approximate route time instead of the generic fallback", () => {
     const assessment = assessGap({
       gap: gap({ durationMinutes: 60, endTime: 720 }),
@@ -155,5 +166,23 @@ describe("intelligent gap assessment", () => {
 
     expect(assessment.primary.action).toBe("leave-campus-candidate");
     expect(assessment.primary.activityMinutes).toBe(255);
+  });
+
+  test("shares one transition result between Today and Gap Plan consumers", () => {
+    let calls = 0;
+    const planner = () => {
+      calls += 1;
+      return approximateRoute;
+    };
+    const result = planGapAssessment(
+      gap(),
+      DEFAULT_USER_PREFERENCES,
+      DEFAULT_GAP_PREFERENCES,
+      planner,
+    );
+
+    expect(calls).toBe(1);
+    expect(result.route).toBe(approximateRoute);
+    expect(result.assessment.travelMinutes).toBe(10);
   });
 });

@@ -3,6 +3,7 @@ import { resolveCourseTitle } from "@/data/utm/course-titles";
 import {
   type ActivityType,
   type Meeting,
+  type MeetingLocationType,
   type ParsedTimetable,
   type Weekday,
   termForMonth,
@@ -57,6 +58,7 @@ function parseLocation(raw: string | null): {
   buildingCode: string | null;
   room: string | null;
   locationUnknown: boolean;
+  locationType: MeetingLocationType;
   warning: string | null;
 } {
   const value = unescapeText(raw ?? "")
@@ -68,13 +70,15 @@ function parseLocation(raw: string | null): {
       buildingCode: null,
       room: null,
       locationUnknown: true,
+      locationType: resolved.status === "known" ? "physical" : resolved.status,
       warning: resolved.warning,
     };
   }
   return {
     buildingCode: resolved.buildingCode,
     room: resolved.room,
-    locationUnknown: false,
+    locationUnknown: resolved.status !== "known",
+    locationType: resolved.status === "known" ? "physical" : resolved.status,
     warning: resolved.warning,
   };
 }
@@ -117,6 +121,7 @@ function recurrenceMetadata(vevent: ICAL.Component, start: ICAL.Time) {
   return {
     dateRange: { startDate: calendarDate(start), endDate },
     excludedDates: [...new Set(calendarDates(vevent.getAllProperties("exdate")))].sort(),
+    recurrenceIntervalWeeks: rules.find((rule) => rule.freq === "WEEKLY")?.interval ?? undefined,
   };
 }
 
@@ -252,8 +257,12 @@ export function parseIcs(text: string): ParsedTimetable {
         room: location.room,
         term,
         locationUnknown: location.locationUnknown,
+        locationType: location.locationType,
         dateRange: recurrence.dateRange,
         ...(recurrence.excludedDates.length > 0 ? { excludedDates: recurrence.excludedDates } : {}),
+        ...(recurrence.recurrenceIntervalWeeks
+          ? { recurrenceIntervalWeeks: recurrence.recurrenceIntervalWeeks }
+          : {}),
       };
       byKey.set(meeting.id, meeting);
     }

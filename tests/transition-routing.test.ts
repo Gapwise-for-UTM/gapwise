@@ -146,4 +146,22 @@ describe("meeting transition routing", () => {
     expect(result.warnings.join(" ")).toContain("verified routing data is unavailable");
     expect(result.displayCoordinates).toEqual([]);
   });
+
+  test("does not fabricate walking time for a TBA location", () => {
+    const result = planMeetingTransition(
+      meeting({
+        buildingCode: null,
+        room: null,
+        locationUnknown: true,
+        locationType: "tba",
+      }),
+      meeting({ id: "next" }),
+      UTM_ROUTING_GRAPH,
+      DEFAULT_ROUTE_PREFERENCES,
+    );
+
+    expect(result.status).toBe("unavailable");
+    expect(result.approximateSeconds).toBeNull();
+    expect(result.result).toBeNull();
+  });
 });

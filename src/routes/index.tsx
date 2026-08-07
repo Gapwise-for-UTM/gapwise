@@ -12,6 +12,12 @@ import { AccountStatus } from "@/features/auth/AccountStatus";
 import { useAuth } from "@/features/auth/use-auth";
 import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
 import { createScheduleTransitionPlanner } from "@/features/routing/transition";
+import {
+  loadGapPreferences,
+  sanitizeGapPreferences,
+  saveGapPreferences,
+} from "@/features/gaps/preferences";
+import type { GapPreferences } from "@/features/gaps/types";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
 import {
   loadRememberedRecord,
@@ -20,6 +26,7 @@ import {
   useTheme,
 } from "@/hooks/use-preferences";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
+import { chooseDefaultTerm } from "@/lib/calendar-awareness";
 import { findGaps } from "@/lib/gaps";
 import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
 import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
@@ -72,6 +79,7 @@ function Index() {
   const [openedViews, setOpenedViews] = useState({ gaps: false, route: false });
   const [isDemo, setIsDemo] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
+  const [gapPreferences, setGapPreferences] = useState<GapPreferences>(loadGapPreferences);
   const [localRecord] = useState(() => {
     if (typeof window === "undefined") return null;
     const stored = loadRememberedRecord<unknown>();
@@ -222,6 +230,10 @@ function Index() {
     if (terms.length > 0 && !terms.includes(term)) setTerm(terms[0]!);
   }, [terms, term]);
 
+  useEffect(() => {
+    if (meetings?.length) setTerm(chooseDefaultTerm(meetings, new Date()));
+  }, [meetings]);
+
   const termMeetings = useMemo(
     () => (meetings ?? []).filter((m) => m.term === term),
     [meetings, term],
@@ -274,7 +286,6 @@ function Index() {
     setRestoration("restored-memory");
     setRestorationMessage(null);
     setIsDemo(true);
-    setTerm("Fall");
   }
 
   function clearTimetable() {
@@ -295,8 +306,6 @@ function Index() {
     setWarnings([]);
     setError(null);
     setIsDemo(false);
-    const firstTerm = TERMS.find((item) => cloudMeetings.some((meeting) => meeting.term === item));
-    if (firstTerm) setTerm(firstTerm);
     saveRemembered(remember, remember ? cloudMeetings : null);
     restoredSource.current = "cloud";
     setRestoration("restored-cloud");
@@ -305,6 +314,12 @@ function Index() {
   function handleRemember(value: boolean) {
     setRemember(value);
     saveRemembered(value, value && !isDemo ? meetings : null);
+  }
+
+  function updateGapPreferences(next: GapPreferences) {
+    const sanitized = sanitizeGapPreferences(next);
+    setGapPreferences(sanitized);
+    saveGapPreferences(sanitized);
   }
 
   function showView(nextView: "timetable" | "gaps" | "route") {
@@ -487,7 +502,9 @@ function Index() {
 
             <TodaySummary
               meetings={meetings}
+              selectedTerm={term}
               preferences={preferences}
+              gapPreferences={gapPreferences}
               planTransition={planTransition}
             />
 
@@ -587,13 +604,18 @@ function Index() {
               ) : (
                 <>
                   <div hidden={view !== "timetable"}>
-                    <TimetableGrid meetings={termMeetings} />
+                    <TimetableGrid
+                      meetings={termMeetings}
+                      onRouteToMeeting={() => showView("route")}
+                    />
                   </div>
                   {openedViews.gaps ? (
                     <div hidden={view !== "gaps"}>
                       <GapPlan
                         gaps={gaps}
                         preferences={preferences}
+                        gapPreferences={gapPreferences}
+                        onGapPreferencesChange={updateGapPreferences}
                         planTransition={planTransition}
                       />
                     </div>

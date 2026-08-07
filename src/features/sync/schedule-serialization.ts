@@ -1,8 +1,15 @@
 import { resolveCourseTitle } from "@/data/utm/course-titles";
-import type { ActivityType, Meeting, Term, Weekday } from "@/lib/timetable-types";
+import type {
+  ActivityType,
+  Meeting,
+  MeetingLocationType,
+  Term,
+  Weekday,
+} from "@/lib/timetable-types";
 import { TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
 const ACTIVITY_TYPES: ActivityType[] = ["LEC", "TUT", "PRA", "OTHER"];
+const LOCATION_TYPES: MeetingLocationType[] = ["physical", "tba", "online", "unknown"];
 const deserializationCache = new WeakMap<object, Meeting[]>();
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -34,8 +41,10 @@ function deserializeMeeting(value: unknown): Meeting | null {
   const room = value["room"];
   const term = value["term"] as Term;
   const locationUnknown = value["locationUnknown"];
+  const locationType = value["locationType"] as MeetingLocationType | undefined;
   const dateRange = value["dateRange"];
   const excludedDates = value["excludedDates"];
+  const recurrenceIntervalWeeks = value["recurrenceIntervalWeeks"];
   if (
     typeof id !== "string" ||
     typeof courseCode !== "string" ||
@@ -48,7 +57,12 @@ function deserializeMeeting(value: unknown): Meeting | null {
     !TERMS.includes(term) ||
     (buildingCode !== null && typeof buildingCode !== "string") ||
     (room !== null && typeof room !== "string") ||
-    typeof locationUnknown !== "boolean"
+    typeof locationUnknown !== "boolean" ||
+    (locationType !== undefined && !LOCATION_TYPES.includes(locationType)) ||
+    (recurrenceIntervalWeeks !== undefined &&
+      (!Number.isInteger(recurrenceIntervalWeeks) ||
+        (recurrenceIntervalWeeks as number) < 1 ||
+        (recurrenceIntervalWeeks as number) > 52))
   ) {
     return null;
   }
@@ -90,6 +104,7 @@ function deserializeMeeting(value: unknown): Meeting | null {
     term,
     locationUnknown,
   };
+  if (locationType !== undefined) meeting.locationType = locationType;
   if (dateRange !== undefined) {
     meeting.dateRange = {
       startDate: dateRange["startDate"] as string,
@@ -98,6 +113,9 @@ function deserializeMeeting(value: unknown): Meeting | null {
   }
   if (excludedDates !== undefined) {
     meeting.excludedDates = [...new Set(excludedDates as string[])].sort();
+  }
+  if (recurrenceIntervalWeeks !== undefined) {
+    meeting.recurrenceIntervalWeeks = recurrenceIntervalWeeks as number;
   }
   return meeting;
 }
@@ -119,8 +137,12 @@ export function serializeSchedule(meetings: Meeting[]): Meeting[] {
       term: meeting.term,
       locationUnknown: meeting.locationUnknown,
     };
+    if (meeting.locationType) serialized.locationType = meeting.locationType;
     if (meeting.dateRange) serialized.dateRange = { ...meeting.dateRange };
     if (meeting.excludedDates) serialized.excludedDates = [...meeting.excludedDates];
+    if (meeting.recurrenceIntervalWeeks) {
+      serialized.recurrenceIntervalWeeks = meeting.recurrenceIntervalWeeks;
+    }
     return serialized;
   });
 }

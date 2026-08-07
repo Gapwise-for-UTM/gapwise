@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IcsParseError, MAX_ICS_EVENTS, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
+import { locationLabel } from "@/lib/timetable-types";
 
 function event(
   uid: string,
@@ -85,6 +86,19 @@ describe("untrusted ICS parsing", () => {
     );
 
     expect(result.meetings[0]?.dateRange?.endDate).toBeNull();
+  });
+
+  test.each([
+    ["", "unknown", "Location TBA"],
+    ["ZZ TBA", "tba", "Location TBA"],
+    ["Online synchronous", "online", "Online"],
+  ] as const)("preserves the source-backed location state for %s", (location, type, label) => {
+    const meeting = parseIcs(calendar([event(type, "CSC108H5 LEC 0101", { location })]))
+      .meetings[0]!;
+
+    expect(meeting.locationType).toBe(type);
+    expect(meeting.locationUnknown).toBe(true);
+    expect(locationLabel(meeting)).toBe(label);
   });
 
   test("deduplicates repeated course meetings", () => {

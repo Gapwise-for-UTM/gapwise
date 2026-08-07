@@ -177,7 +177,11 @@ export function resolveMeetingLocation(meeting: {
   buildingCode: string | null;
   room: string | null;
   locationUnknown: boolean;
+  locationType?: "physical" | "tba" | "online" | "unknown";
 }): LocationResolution {
+  if (meeting.locationType === "online") return resolveAcornLocation("Online");
+  if (meeting.locationType === "tba") return resolveAcornLocation("TBA");
+  if (meeting.locationType === "unknown") return resolveAcornLocation("");
   if (meeting.locationUnknown && !meeting.buildingCode && !meeting.room) {
     return resolveAcornLocation("");
   }

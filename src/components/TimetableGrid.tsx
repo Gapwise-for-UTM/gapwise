@@ -1,4 +1,4 @@
-import { BookOpen, CalendarDays, Clock3, MapPin } from "lucide-react";
+import { BookOpen, CalendarDays, Clock3, MapPin, Navigation } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dialog,
@@ -7,8 +7,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  firstOccurrenceForMeeting,
+  lastOccurrenceForMeeting,
+  nextOccurrenceForMeeting,
+  termStatus,
+} from "@/lib/calendar-awareness";
 import type { ActivityType, Meeting } from "@/lib/timetable-types";
-import { formatTime, locationLabel, WEEKDAYS } from "@/lib/timetable-types";
+import {
+  formatTime,
+  locationLabel,
+  meetingLocationType,
+  termForMonth,
+  WEEKDAYS,
+} from "@/lib/timetable-types";
 import { buildTimetableModel, isCompactMeetingCard } from "@/lib/timetable-layout";
 
 const TYPE_STYLES: Record<ActivityType, string> = {
@@ -107,10 +119,27 @@ function MeetingCard({
 function MeetingDetailsDialog({
   meeting,
   onClose,
+  onRoute,
 }: {
   meeting: Meeting | null;
   onClose: () => void;
+  onRoute: ((meeting: Meeting) => void) | undefined;
 }) {
+  const first = meeting ? firstOccurrenceForMeeting(meeting) : null;
+  const last = meeting ? lastOccurrenceForMeeting(meeting) : null;
+  const next = meeting ? nextOccurrenceForMeeting(meeting, new Date()) : null;
+  const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric" });
+  const dateRange = first
+    ? last
+      ? `${dateFormat.format(first)} – ${dateFormat.format(last)}`
+      : `From ${dateFormat.format(first)}`
+    : "Dates unavailable";
+  const canRoute =
+    meeting !== null &&
+    meetingLocationType(meeting) === "physical" &&
+    Boolean(meeting.buildingCode) &&
+    Boolean(onRoute);
+
   return (
     <Dialog open={meeting !== null} onOpenChange={(open) => !open && onClose()}>
       {meeting ? (
@@ -137,7 +166,7 @@ function MeetingDetailsDialog({
                 Day and term
               </dt>
               <dd className="mt-1 text-sm font-medium text-foreground">
-                {meeting.weekday} · {meeting.term}
+                {meeting.weekday} · {meeting.term} · {dateRange}
               </dd>
             </div>
             <div className="rounded-lg border border-border bg-background/40 p-3">
@@ -168,6 +197,33 @@ function MeetingDetailsDialog({
             </div>
           </dl>
 
+          <div className="rounded-lg border border-border bg-background/40 p-3 text-sm">
+            <p className="font-medium text-foreground">Next occurrence</p>
+            <p className="mt-1 text-muted-foreground">
+              {next
+                ? `${new Intl.DateTimeFormat("en-CA", {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  }).format(next)} at ${formatTime(meeting.startTime)}`
+                : "No later occurrence in this timetable"}
+            </p>
+          </div>
+
+          {canRoute ? (
+            <button
+              type="button"
+              onClick={() => {
+                onRoute?.(meeting);
+                onClose();
+              }}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Navigation className="h-4 w-4" aria-hidden="true" />
+              Route to this class
+            </button>
+          ) : null}
+
           <p className="text-xs leading-relaxed text-muted-foreground">
             This information comes from the ACORN calendar file you imported. Opening a class card
             does not contact ACORN or upload anything new.
@@ -178,7 +234,13 @@ function MeetingDetailsDialog({
   );
 }
 
-export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meetings: Meeting[] }) {
+export const TimetableGrid = memo(function TimetableGrid({
+  meetings,
+  onRouteToMeeting,
+}: {
+  meetings: Meeting[];
+  onRouteToMeeting?: (meeting: Meeting) => void;
+}) {
   const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const now = useCurrentTime();
@@ -186,11 +248,20 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
 
   const currentDay = now ? (WEEKDAYS[now.getDay() - 1] ?? null) : null;
   const currentMinute = now ? now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60 : null;
+  const selectedTerm = meetings[0]?.term ?? null;
+  const selectedTermStatus =
+    now && selectedTerm ? termStatus(meetings, selectedTerm, now) : "unknown";
+  const termIsCurrent =
+    now !== null &&
+    selectedTerm !== null &&
+    (selectedTermStatus === "active" ||
+      (selectedTermStatus === "unknown" && termForMonth(now.getMonth() + 1) === selectedTerm));
   const gridStartMinute = startHour * 60;
   const gridEndMinute = (startHour + hours.length) * 60;
   const showCurrentTime =
     currentDay !== null &&
     currentMinute !== null &&
+    termIsCurrent &&
     hours.length > 0 &&
     currentMinute >= gridStartMinute &&
     currentMinute < gridEndMinute;
@@ -333,7 +404,11 @@ export const TimetableGrid = memo(function TimetableGrid({ meetings }: { meeting
         })}
       </div>
 
-      <MeetingDetailsDialog meeting={selectedMeeting} onClose={closeMeeting} />
+      <MeetingDetailsDialog
+        meeting={selectedMeeting}
+        onClose={closeMeeting}
+        onRoute={onRouteToMeeting}
+      />
     </div>
   );
 });
