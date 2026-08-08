@@ -159,7 +159,7 @@ export default function PersonalItemForm({
                 type="time"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="mt-1 rounded-md border px-3 py-2"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
               />
             </label>
             <label className="flex flex-col">
@@ -168,7 +168,7 @@ export default function PersonalItemForm({
                 type="time"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="mt-1 rounded-md border px-3 py-2"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
               />
             </label>
           </div>
