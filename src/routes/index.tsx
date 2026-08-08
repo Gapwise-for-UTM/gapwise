@@ -757,6 +757,49 @@ function Index() {
                         setShowAddPersonal(true);
                       }}
                       onDeletePersonal={(id) => deletePersonal(id)}
+                      onCreatePersonal={({ weekday, startTime, endTime }) => {
+                        const id = `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+                        const item: import("@/lib/personal-types").PersonalItem = {
+                          id,
+                          title: "New",
+                          category: "Personal",
+                          term: term,
+                          weekday: weekday as import("@/lib/timetable-types").Weekday,
+                          startTime,
+                          endTime,
+                          locationBuildingCode: null,
+                          locationRoom: null,
+                          locationText: null,
+                          notes: null,
+                          flexibility: { kind: "fixed" },
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                        };
+                        addOrUpdatePersonal(item);
+                      }}
+                      onMovePersonal={(id, weekday, startTime, endTime) => {
+                        const it = personalItems.find((p) => p.id === id);
+                        if (!it) return;
+                        const updated = {
+                          ...it,
+                          weekday: weekday as import("@/lib/timetable-types").Weekday,
+                          startTime,
+                          endTime,
+                          updatedAt: new Date().toISOString(),
+                        };
+                        addOrUpdatePersonal(updated);
+                      }}
+                      onResizePersonal={(id, startTime, endTime) => {
+                        const it = personalItems.find((p) => p.id === id);
+                        if (!it) return;
+                        const updated = {
+                          ...it,
+                          startTime,
+                          endTime,
+                          updatedAt: new Date().toISOString(),
+                        };
+                        addOrUpdatePersonal(updated);
+                      }}
                     />
                     <PersonalItemForm
                       open={showAddPersonal}

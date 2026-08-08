@@ -23,8 +23,8 @@ export default function PersonalItemForm({
 }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<PersonalCategory>("Personal");
-  const [term, setTerm] = useState(TERMS[0]);
-  const [weekday, setWeekday] = useState(WEEKDAYS[0]);
+  const [term, setTerm] = useState<Term>(TERMS[0] as Term);
+  const [weekday, setWeekday] = useState<Weekday>(WEEKDAYS[0] as Weekday);
   const [start, setStart] = useState("12:00");
   const [end, setEnd] = useState("13:00");
 
@@ -39,8 +39,8 @@ export default function PersonalItemForm({
     } else {
       setTitle("");
       setCategory("Personal");
-      setTerm(TERMS[0]);
-      setWeekday(WEEKDAYS[0]);
+      setTerm(TERMS[0] as Term);
+      setWeekday(WEEKDAYS[0] as Weekday);
       setStart("12:00");
       setEnd("13:00");
     }

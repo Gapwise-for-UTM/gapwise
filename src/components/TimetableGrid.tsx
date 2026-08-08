@@ -297,14 +297,28 @@ export const TimetableGrid = memo(function TimetableGrid({
   onRouteToMeeting,
   onEditPersonal,
   onDeletePersonal,
+  onCreatePersonal,
+  onMovePersonal,
+  onResizePersonal,
 }: {
   meetings: Meeting[];
   onRouteToMeeting?: (meeting: Meeting) => void;
   onEditPersonal?: (meetingId: string) => void;
   onDeletePersonal?: (meetingId: string) => void;
+  onCreatePersonal?: (payload: { weekday: string; startTime: number; endTime: number }) => void;
+  onMovePersonal?: (id: string, weekday: string, startTime: number, endTime: number) => void;
+  onResizePersonal?: (id: string, startTime: number, endTime: number) => void;
 }) {
   const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [dragState, setDragState] = useState<null | {
+    type: "create" | "move" | "resize";
+    meetingId?: string;
+    weekday: string;
+    start: number;
+    end: number;
+    resizing?: "start" | "end";
+  }>(null);
   const [compactHours, setCompactHours] = useState(true);
   const now = useCurrentTime();
   const scale = useMemo(
@@ -429,9 +443,74 @@ export const TimetableGrid = memo(function TimetableGrid({
               return (
                 <div
                   key={day}
+                  data-weekday={day}
                   className={`relative border-l border-border ${
                     termIsCurrent && day === currentDay ? "bg-accent/[0.035]" : ""
                   }`}
+                  onPointerDown={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.closest(".meeting-card")) return;
+                    const col = e.currentTarget as HTMLElement;
+                    col.setPointerCapture(e.pointerId);
+                    const rect = col.getBoundingClientRect();
+                    const offsetY = e.clientY - rect.top;
+                    let acc = 0;
+                    let minute = gridStartMinute;
+                    for (const hour of hours) {
+                      const h = scale.hourHeights.get(hour) ?? FULL_HOUR_HEIGHT;
+                      if (offsetY >= acc + h) {
+                        acc += h;
+                        minute = (hour + 1) * 60;
+                        continue;
+                      }
+                      const within = offsetY - acc;
+                      const fraction = Math.max(0, Math.min(1, within / h));
+                      minute = hour * 60 + Math.round(fraction * 60);
+                      break;
+                    }
+                    const snap = (m: number) => Math.round(m / 15) * 15;
+                    const start = Math.max(gridStartMinute, Math.min(gridEndMinute, snap(minute)));
+                    setDragState({ type: "create", weekday: day, start, end: start + 60 });
+                    document.body.classList.add("user-select-none");
+                  }}
+                  onPointerMove={(e) => {
+                    if (!dragState) return;
+                    const col = e.currentTarget as HTMLElement;
+                    const rect = col.getBoundingClientRect();
+                    const offsetY = e.clientY - rect.top;
+                    let acc = 0;
+                    let minute = gridStartMinute;
+                    for (const hour of hours) {
+                      const h = scale.hourHeights.get(hour) ?? FULL_HOUR_HEIGHT;
+                      if (offsetY >= acc + h) {
+                        acc += h;
+                        minute = (hour + 1) * 60;
+                        continue;
+                      }
+                      const within = offsetY - acc;
+                      const fraction = Math.max(0, Math.min(1, within / h));
+                      minute = hour * 60 + Math.round(fraction * 60);
+                      break;
+                    }
+                    const snap = (m: number) => Math.round(m / 15) * 15;
+                    const cur = Math.max(gridStartMinute, Math.min(gridEndMinute, snap(minute)));
+                    if (dragState.type === "create") {
+                      setDragState({ ...dragState, end: Math.max(dragState.start + 15, cur) });
+                    }
+                  }}
+                  onPointerUp={(e) => {
+                    const col = e.currentTarget as HTMLElement;
+                    col.releasePointerCapture?.(e.pointerId);
+                    if (dragState?.type === "create") {
+                      onCreatePersonal?.({
+                        weekday: dragState.weekday,
+                        startTime: dragState.start,
+                        endTime: dragState.end,
+                      });
+                    }
+                    setDragState(null);
+                    document.body.classList.remove("user-select-none");
+                  }}
                 >
                   {hours.map((hour) => (
                     <div
@@ -458,9 +537,11 @@ export const TimetableGrid = memo(function TimetableGrid({
 
                   {sorted.map((meeting) => {
                     const lane = placement.get(meeting.id) ?? 0;
+                    const isPersonal = meeting.sectionCode === "PERSONAL";
                     return (
                       <div
                         key={meeting.id}
+                        data-meeting-id={meeting.id}
                         className="absolute z-10 px-1 py-0.5"
                         style={{
                           top: scale.minuteToTop(meeting.startTime),
@@ -470,7 +551,94 @@ export const TimetableGrid = memo(function TimetableGrid({
                           left: `${(lane / laneCount) * 100}%`,
                           width: `${(1 / laneCount) * 100}%`,
                         }}
+                        onPointerDown={(e) => {
+                          if (!isPersonal) return;
+                          e.stopPropagation();
+                          const col = (e.currentTarget as HTMLElement).closest(
+                            "[data-weekday]",
+                          ) as HTMLElement | null;
+                          const weekday = col?.getAttribute("data-weekday") ?? meeting.weekday;
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const offsetY = e.clientY - rect.top;
+                          const topMinute = Math.max(
+                            gridStartMinute,
+                            Math.min(gridEndMinute, Math.round(meeting.startTime)),
+                          );
+                          // Start move state preserving duration
+                          const duration = meeting.endTime - meeting.startTime;
+                          (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+                          setDragState({
+                            type: "move",
+                            meetingId: meeting.id,
+                            weekday: weekday,
+                            start: meeting.startTime,
+                            end: meeting.endTime,
+                          });
+                          document.body.classList.add("user-select-none");
+                        }}
+                        onPointerMove={(e) => {
+                          if (
+                            !dragState ||
+                            dragState.type !== "move" ||
+                            dragState.meetingId !== meeting.id
+                          )
+                            return;
+                          // compute tentative new start
+                          const col = (e.currentTarget as HTMLElement).closest(
+                            "[data-weekday]",
+                          ) as HTMLElement | null;
+                          const rectCol = col?.getBoundingClientRect();
+                          const rect = col
+                            ? rectCol
+                            : (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const offsetY = e.clientY - (rect?.top ?? 0);
+                          let acc = 0;
+                          let minute = gridStartMinute;
+                          for (const hour of hours) {
+                            const h = scale.hourHeights.get(hour) ?? FULL_HOUR_HEIGHT;
+                            if (offsetY >= acc + h) {
+                              acc += h;
+                              minute = (hour + 1) * 60;
+                              continue;
+                            }
+                            const within = offsetY - acc;
+                            const fraction = Math.max(0, Math.min(1, within / h));
+                            minute = hour * 60 + Math.round(fraction * 60);
+                            break;
+                          }
+                          const snap = (m: number) => Math.round(m / 15) * 15;
+                          const cur = Math.max(
+                            gridStartMinute,
+                            Math.min(gridEndMinute, snap(minute)),
+                          );
+                          const duration = meeting.endTime - meeting.startTime;
+                          const newStart = cur;
+                          const newEnd = Math.min(gridEndMinute, newStart + duration);
+                          setDragState({
+                            ...dragState,
+                            weekday: col?.getAttribute("data-weekday") ?? meeting.weekday,
+                            start: newStart,
+                            end: newEnd,
+                          });
+                        }}
+                        onPointerUp={(e) => {
+                          if (!dragState) return;
+                          if (dragState.type === "move" && dragState.meetingId === meeting.id) {
+                            onMovePersonal?.(
+                              meeting.id,
+                              dragState.weekday,
+                              dragState.start,
+                              dragState.end,
+                            );
+                          }
+                          setDragState(null);
+                          document.body.classList.remove("user-select-none");
+                        }}
                       >
+                        {/* resize handles for personal items */}
+                        {isPersonal ? (
+                          <div className="absolute left-0 right-0 top-0 h-1 cursor-ns-resize opacity-0 hover:opacity-100" />
+                        ) : null}
                         <MeetingCard
                           meeting={meeting}
                           compact={isCompactMeetingCard(meeting, laneCount)}
@@ -479,6 +647,30 @@ export const TimetableGrid = memo(function TimetableGrid({
                       </div>
                     );
                   })}
+                  {dragState && dragState.weekday === day ? (
+                    <div
+                      aria-hidden="true"
+                      className="absolute z-20 px-1 py-0.5"
+                      style={{
+                        top: scale.minuteToTop(dragState.start),
+                        height: Math.max(
+                          12,
+                          scale.minuteToTop(dragState.end) - scale.minuteToTop(dragState.start),
+                        ),
+                        left: 0,
+                        right: 0,
+                      }}
+                    >
+                      <div className="meeting-card pointer-events-none opacity-80">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-extrabold">New</span>
+                          <span className="text-xs tabular-nums">
+                            {formatTime(dragState.start)} – {formatTime(dragState.end)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               );
             })}
