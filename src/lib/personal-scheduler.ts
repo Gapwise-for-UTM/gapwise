@@ -11,7 +11,9 @@ export function createDraft(weekday: string, start: number, end: number) {
   return { weekday, startTime: Math.min(s, e), endTime: Math.max(s, e) };
 }
 
-type MovableItem = Pick<Meeting, "id" | "weekday" | "startTime" | "endTime"> | Pick<PersonalItem, "id" | "weekday" | "startTime" | "endTime">;
+type MovableItem =
+  | Pick<Meeting, "id" | "weekday" | "startTime" | "endTime">
+  | Pick<PersonalItem, "id" | "weekday" | "startTime" | "endTime">;
 
 type FixedMovableItem = Extract<MovableItem, { startTime: number; endTime: number }>;
 

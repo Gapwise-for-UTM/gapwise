@@ -51,8 +51,38 @@ test("adding a personal fixed item splits a gap", () => {
 
 test("deleting a personal item removes it from the personal item list", () => {
   const personalItems = [
-    { id: "p1", title: "Study", category: "Study", term: "Fall", weekday: "Monday", startTime: 540, endTime: 600, locationBuildingCode: null, locationRoom: null, locationText: null, notes: null, flexibility: { kind: "fixed" }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-    { id: "p2", title: "Workout", category: "Exercise", term: "Fall", weekday: "Monday", startTime: 660, endTime: 720, locationBuildingCode: null, locationRoom: null, locationText: null, notes: null, flexibility: { kind: "fixed" }, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+    {
+      id: "p1",
+      title: "Study",
+      category: "Study",
+      term: "Fall",
+      weekday: "Monday",
+      startTime: 540,
+      endTime: 600,
+      locationBuildingCode: null,
+      locationRoom: null,
+      locationText: null,
+      notes: null,
+      flexibility: { kind: "fixed" },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "p2",
+      title: "Workout",
+      category: "Exercise",
+      term: "Fall",
+      weekday: "Monday",
+      startTime: 660,
+      endTime: 720,
+      locationBuildingCode: null,
+      locationRoom: null,
+      locationText: null,
+      notes: null,
+      flexibility: { kind: "fixed" },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
   ];
 
   const next = personalItems.filter((item) => item.id !== "p1");
