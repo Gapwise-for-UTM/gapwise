@@ -1,7 +1,8 @@
-import { ArrowRight, CalendarClock, Navigation, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarClock, Navigation, Sparkles, type LucideIcon } from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
 import type { GapPreferences } from "@/features/gaps/types";
+import { getLocationPresentation } from "@/features/routing/location-presentation";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
@@ -14,13 +15,7 @@ import {
 } from "@/lib/calendar-awareness";
 import { calculateLeaveBy } from "@/lib/gaps";
 import type { Gap, Meeting, Term } from "@/lib/timetable-types";
-import {
-  formatCompactDuration,
-  formatTime,
-  locationLabel,
-  termForMonth,
-  WEEKDAYS,
-} from "@/lib/timetable-types";
+import { formatCompactDuration, formatTime, termForMonth, WEEKDAYS } from "@/lib/timetable-types";
 
 function minutesNow(date: Date) {
   return date.getHours() * 60 + date.getMinutes();
@@ -35,13 +30,14 @@ function formatOccurrenceDate(date: Date) {
 }
 
 function occurrenceLead(date: Date, meeting: Meeting, now: Date) {
+  const location = getLocationPresentation({ meeting }).label;
   const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   if (calendarDateKey(date) === calendarDateKey(tomorrow)) {
-    return `Tomorrow starts at ${formatTime(meeting.startTime)} in ${locationLabel(meeting)}`;
+    return `Tomorrow starts at ${formatTime(meeting.startTime)} in ${location}`;
   }
   return `Next class: ${meeting.courseCode} · ${formatOccurrenceDate(date)} · ${formatTime(
     meeting.startTime,
-  )} · ${locationLabel(meeting)}`;
+  )} · ${location}`;
 }
 
 function routeMinutes(route: TransitionRoute) {
@@ -49,11 +45,11 @@ function routeMinutes(route: TransitionRoute) {
   return seconds === null ? null : Math.ceil(seconds / 60);
 }
 
-function routeCopy(route: TransitionRoute) {
+function routeCopy(from: Meeting, to: Meeting, route: TransitionRoute) {
+  const presentation = getLocationPresentation({ from, to, route });
   const minutes = routeMinutes(route);
-  if (minutes === null) return "Travel time unavailable";
-  if (route.status === "same-room") return "Same room";
-  return `~${minutes} min walk${route.status === "approximate" ? " · route estimate" : ""}`;
+  if (minutes === null || route.status === "same-room") return presentation.label;
+  return `~${minutes} min walk${route.status === "approximate" ? ` · ${presentation.label}` : ""}`;
 }
 
 export const TodaySummary = memo(function TodaySummary({
@@ -139,6 +135,7 @@ export const TodaySummary = memo(function TodaySummary({
   let title: string;
   let detail: string | null = null;
   let secondary: string | null = null;
+  let SecondaryIcon: LucideIcon = Navigation;
   let heading = `Today · ${WEEKDAYS[now.getDay() - 1] ?? "Weekend"}`;
 
   switch (summary.kind) {
@@ -147,7 +144,7 @@ export const TodaySummary = memo(function TodaySummary({
       title = `First class: ${summary.first.meeting.courseCode}`;
       detail = `${formatOccurrenceDate(summary.first.date)} · ${formatTime(
         summary.first.meeting.startTime,
-      )} · ${locationLabel(summary.first.meeting)}`;
+      )} · ${getLocationPresentation({ meeting: summary.first.meeting }).label}`;
       break;
     case "ended":
       heading = `${selectedTerm} classes have finished`;
@@ -166,29 +163,43 @@ export const TodaySummary = memo(function TodaySummary({
     case "before-first": {
       const startsIn = Math.max(0, summary.next.startTime - minutesNow(now));
       title = `Next: ${summary.next.courseCode} at ${formatTime(summary.next.startTime)}`;
-      detail = `${locationLabel(summary.next)} · starts in ${formatCompactDuration(startsIn)}`;
+      detail = `${getLocationPresentation({ meeting: summary.next }).label} · starts in ${formatCompactDuration(startsIn)}`;
       break;
     }
-    case "in-class":
+    case "in-class": {
       title = `Now: ${summary.current.courseCode}`;
-      detail = `${locationLabel(summary.current)} · until ${formatTime(summary.current.endTime)}`;
-      secondary = summary.next
-        ? `Next: ${summary.next.courseCode} at ${formatTime(summary.next.startTime)} · ${routeCopy(
-            summary.route,
-          )}${summary.leaveBy === null ? "" : ` · leave by ${formatTime(summary.leaveBy)}`}`
-        : null;
+      detail = `${getLocationPresentation({ meeting: summary.current }).label} · until ${formatTime(summary.current.endTime)}`;
+      if (summary.next) {
+        const presentation = getLocationPresentation({
+          from: summary.current,
+          to: summary.next,
+          route: summary.route,
+        });
+        SecondaryIcon = presentation.icon;
+        secondary = `Next: ${summary.next.courseCode} at ${formatTime(summary.next.startTime)} · ${routeCopy(
+          summary.current,
+          summary.next,
+          summary.route,
+        )}${summary.leaveBy === null ? "" : ` · leave by ${formatTime(summary.leaveBy)}`}`;
+      }
       break;
-    case "gap":
+    }
+    case "gap": {
       title = summary.assessment.primary.title;
       detail = `${formatCompactDuration(
         summary.assessment.primary.activityMinutes,
-      )} usable · Next: ${summary.gap.next.courseCode} · ${locationLabel(
-        summary.gap.next,
-      )} at ${formatTime(summary.gap.next.startTime)}`;
-      secondary = `${routeCopy(summary.route)} · leave by ${formatTime(
+      )} usable · Next: ${summary.gap.next.courseCode} · ${getLocationPresentation({ meeting: summary.gap.next }).label} at ${formatTime(summary.gap.next.startTime)}`;
+      const presentation = getLocationPresentation({
+        from: summary.gap.previous,
+        to: summary.gap.next,
+        route: summary.route,
+      });
+      SecondaryIcon = presentation.icon;
+      secondary = `${routeCopy(summary.gap.previous, summary.gap.next, summary.route)} · leave by ${formatTime(
         summary.assessment.leaveByMinutes,
       )}`;
       break;
+    }
     case "done":
       title = "Done for today";
       detail = summary.next
@@ -217,7 +228,7 @@ export const TodaySummary = memo(function TodaySummary({
       {detail ? <p className="mt-1 text-sm text-muted-foreground">{detail}</p> : null}
       {secondary ? (
         <p className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-sm text-muted-foreground">
-          <Navigation className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+          <SecondaryIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
           {secondary}
         </p>
       ) : null}

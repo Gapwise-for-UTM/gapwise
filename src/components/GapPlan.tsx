@@ -5,7 +5,6 @@ import {
   Clock,
   Coffee,
   Home,
-  MapPin,
   SlidersHorizontal,
   Sparkles,
   Utensils,
@@ -15,16 +14,12 @@ import { memo, useMemo, useState } from "react";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
 import { DEFAULT_GAP_PREFERENCES, sanitizeGapPreferences } from "@/features/gaps/preferences";
 import type { GapAction, GapPreferences, GapRecommendation } from "@/features/gaps/types";
+import { getLocationPresentation } from "@/features/routing/location-presentation";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { groupGapsByDay } from "@/lib/gaps";
 import type { Gap } from "@/lib/timetable-types";
-import {
-  formatCompactDuration,
-  formatDuration,
-  formatTime,
-  locationLabel,
-} from "@/lib/timetable-types";
+import { formatCompactDuration, formatDuration, formatTime } from "@/lib/timetable-types";
 
 const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: string }> = {
   "tight-transition": {
@@ -357,20 +352,28 @@ const GapCard = memo(function GapCard({
     recommendations.find((item) => item.id === selectedRecommendationId) ?? assessment.primary;
   const meta = ACTION_META[selected.action];
   const ActionIcon = meta.icon;
+  const routePresentation = getLocationPresentation({
+    from: gap.previous,
+    to: gap.next,
+    route,
+  });
+  const previousLocation = getLocationPresentation({ meeting: gap.previous });
+  const nextLocation = getLocationPresentation({ meeting: gap.next });
+  const RouteStatusIcon = routePresentation.icon;
   const travelCopy =
     assessment.travelMinutes === null
-      ? "Travel time unavailable"
+      ? routePresentation.label
       : assessment.routeStatus === "same-room"
-        ? "Same room"
+        ? routePresentation.label
         : `~${assessment.travelMinutes} min walk`;
-  const routeNote =
-    assessment.routeStatus === "approximate"
-      ? "Route estimate"
-      : assessment.routeStatus === "unavailable"
-        ? "Timing includes a conservative transition allowance"
-        : route.warnings.some((warning) => /indoor room routing/i.test(warning))
-          ? "Indoor path not mapped yet"
-          : null;
+  const routeNote = routePresentation.status === "known" ? null : routePresentation.detail;
+  const detailMessages = [
+    ...new Set(
+      [...selected.reasons, ...assessment.warnings].map((message) =>
+        message === route.accuracy ? routePresentation.detail : message,
+      ),
+    ),
+  ];
 
   return (
     <article className="surface p-4 sm:p-5">
@@ -401,10 +404,10 @@ const GapCard = memo(function GapCard({
 
       <div className="mt-3 rounded-lg border border-border bg-secondary/25 px-3 py-2.5 text-sm">
         <p className="flex min-w-0 items-center gap-2">
-          <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate">{locationLabel(gap.previous)}</span>
+          <RouteStatusIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+          <span className="truncate">{previousLocation.label}</span>
           <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate">{locationLabel(gap.next)}</span>
+          <span className="truncate">{nextLocation.label}</span>
         </p>
         <p className="mt-1 pl-6 text-xs text-muted-foreground">
           {travelCopy} · leave by {formatTime(assessment.leaveByMinutes)}
@@ -451,7 +454,7 @@ const GapCard = memo(function GapCard({
               <dt>Travel</dt>
               <dd className="font-semibold text-foreground">
                 {assessment.travelMinutes === null
-                  ? "Unavailable"
+                  ? routePresentation.label
                   : formatDuration(assessment.travelMinutes)}
               </dd>
             </div>
@@ -468,13 +471,10 @@ const GapCard = memo(function GapCard({
               </dd>
             </div>
           </dl>
-          <p className="mt-3 border-t border-border pt-3">{route.accuracy}</p>
+          <p className="mt-3 border-t border-border pt-3">{routePresentation.detail}</p>
           <ul className="mt-2 list-disc space-y-1 pl-4">
-            {selected.reasons.map((reason) => (
-              <li key={reason}>{reason}</li>
-            ))}
-            {assessment.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
+            {detailMessages.map((message) => (
+              <li key={message}>{message}</li>
             ))}
           </ul>
         </div>

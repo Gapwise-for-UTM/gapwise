@@ -77,12 +77,12 @@ export function resolveAcornLocation(
       buildingCode: null,
       buildingName: null,
       room: null,
-      status: "unknown",
+      status: "tba",
       buildingRecognition: "unrecognized",
       routingDataStatus: "unverified",
       floor: null,
       floorVerification: "unknown",
-      warning: "No location was provided.",
+      warning: "The physical location is still TBA.",
     };
   }
   if (/\bonline\b|\bremote\b|\bvirtual\b/i.test(value)) {
@@ -132,7 +132,7 @@ export function resolveAcornLocation(
   }
 
   const parsedCode = recognized?.building.code ?? match![1]!.toUpperCase();
-  const room = recognized?.room ?? match![2]?.trim() ?? null;
+  const room = recognized?.room ?? match?.[2]?.trim() ?? null;
   const building = recognized?.building ?? null;
   let floor: string | null = null;
   let floorVerification: VerificationStatus = "unknown";
@@ -181,7 +181,15 @@ export function resolveMeetingLocation(meeting: {
 }): LocationResolution {
   if (meeting.locationType === "online") return resolveAcornLocation("Online");
   if (meeting.locationType === "tba") return resolveAcornLocation("TBA");
-  if (meeting.locationType === "unknown") return resolveAcornLocation("");
+  if (meeting.locationType === "unknown") {
+    const suppliedLocation = [meeting.buildingCode, meeting.room].filter(Boolean).join(" ");
+    if (suppliedLocation) return resolveAcornLocation(suppliedLocation);
+    return {
+      ...resolveAcornLocation(""),
+      status: "unknown",
+      warning: "No location was provided.",
+    };
+  }
   if (meeting.locationUnknown && !meeting.buildingCode && !meeting.room) {
     return resolveAcornLocation("");
   }

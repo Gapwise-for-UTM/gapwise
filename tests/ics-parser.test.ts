@@ -89,7 +89,7 @@ describe("untrusted ICS parsing", () => {
   });
 
   test.each([
-    ["", "unknown", "Location TBA"],
+    ["", "tba", "Location TBA"],
     ["ZZ TBA", "tba", "Location TBA"],
     ["Online synchronous", "online", "Online"],
   ] as const)("preserves the source-backed location state for %s", (location, type, label) => {

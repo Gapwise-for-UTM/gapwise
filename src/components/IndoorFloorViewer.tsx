@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
+import { getLocationPresentation } from "@/features/routing/location-presentation";
 import { resolveMeetingLocation } from "@/features/routing/location-resolver";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { Meeting } from "@/lib/timetable-types";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 
-function routeSteps(route: TransitionRoute, to: Meeting): string[] {
-  if (route.status === "same-room") return ["Stay in the current room for your next class."];
+function routeSteps(route: TransitionRoute, from: Meeting, to: Meeting): string[] {
+  const presentation = getLocationPresentation({ from, to, route });
+  if (presentation.status !== "known" || route.status === "same-room") {
+    return [presentation.detail];
+  }
   const result = route.result;
   if (!result || result.nodes.length === 0) {
     const destination = resolveMeetingLocation(to);
@@ -15,9 +19,7 @@ function routeSteps(route: TransitionRoute, to: Meeting): string[] {
         `Room numbering suggests floor ${destination.floor}, but that floor has not been independently verified.`,
       );
     }
-    steps.push(
-      `Indoor hallway directions are not yet mapped for ${to.buildingCode ?? "this building"}.`,
-    );
+    steps.push(presentation.detail);
     return steps;
   }
 
@@ -64,7 +66,12 @@ export function IndoorFloorViewer({
   );
   const [selectedFloor, setSelectedFloor] = useState("");
   const floor = mappedFloors.includes(selectedFloor) ? selectedFloor : (mappedFloors[0] ?? "");
+  const presentation = getLocationPresentation({ from, to, route });
+  const StatusIcon = presentation.icon;
   const buildingCode = to.buildingCode ?? from.buildingCode;
+  const detailLocation = ["tba", "unknown", "online"].includes(presentation.status)
+    ? presentation.label
+    : (buildingCode ?? presentation.label);
   const nodes = UTM_ROUTING_GRAPH.nodes.filter(
     (node) =>
       node.buildingCode === buildingCode &&
@@ -77,14 +84,15 @@ export function IndoorFloorViewer({
   const edges = UTM_ROUTING_GRAPH.edges.filter(
     (edge) => edge.environment !== "outdoor" && nodeById.has(edge.from) && nodeById.has(edge.to),
   );
-  const steps = routeSteps(route, to);
+  const steps = routeSteps(route, from, to);
 
   return (
     <section className="surface p-4" aria-labelledby="indoor-viewer-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 id="indoor-viewer-title" className="text-base font-semibold">
-            Indoor detail · {to.buildingCode ?? from.buildingCode ?? "Unknown building"}
+          <h3 id="indoor-viewer-title" className="flex items-center gap-2 text-base font-semibold">
+            <StatusIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Indoor detail · {detailLocation}
           </h3>
           <p className="text-xs text-muted-foreground">
             Indoor coordinates use a separate local floor layer, never geographic map coordinates.
@@ -146,7 +154,7 @@ export function IndoorFloorViewer({
         </svg>
       ) : (
         <p className="mt-4 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
-          Indoor room routing not yet mapped for this building. No hallway geometry is drawn.
+          {presentation.detail}
         </p>
       )}
 

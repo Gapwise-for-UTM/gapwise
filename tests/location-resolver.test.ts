@@ -12,12 +12,20 @@ describe("ACORN location resolution", () => {
     expect(result.routingDataStatus).toBe("verified");
   });
 
-  test("handles blank locations", () => {
-    expect(resolveAcornLocation(" ").status).toBe("unknown");
+  test("handles a recognized building with no assigned room", () => {
+    expect(resolveAcornLocation("MN")).toMatchObject({
+      buildingCode: "MN",
+      room: null,
+      status: "known",
+    });
   });
 
-  test("handles TBA locations", () => {
-    expect(resolveAcornLocation("ZZ TBA").status).toBe("tba");
+  test.each(["", " ", "ZZ TBA"])("normalizes unassigned location %j as TBA", (location) => {
+    expect(resolveAcornLocation(location)).toMatchObject({
+      buildingCode: null,
+      room: null,
+      status: "tba",
+    });
   });
 
   test("handles online locations", () => {

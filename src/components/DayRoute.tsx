@@ -1,21 +1,15 @@
 import type { User } from "@supabase/supabase-js";
-import {
-  AlertTriangle,
-  ArrowRight,
-  Clock3,
-  Footprints,
-  LocateFixed,
-  Route as RouteIcon,
-} from "lucide-react";
+import { AlertTriangle, Clock3, Footprints, LocateFixed, Route as RouteIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusMap } from "./CampusMap";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
+import { getLocationPresentation } from "@/features/routing/location-presentation";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import { loadPreferences, savePreferences } from "@/features/sync/sync-service";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import { formatDuration, formatTime, locationLabel, TERMS, WEEKDAYS } from "@/lib/timetable-types";
+import { formatDuration, formatTime, TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
 type DaySegment = {
   id: string;
@@ -253,6 +247,15 @@ export function DayRoute({
               {dayMeetings.map((meeting, index) => {
                 const segment = segments[index];
                 const selected = selectedMeetingId === meeting.id;
+                const meetingPresentation = getLocationPresentation({ meeting });
+                const segmentPresentation = segment
+                  ? getLocationPresentation({
+                      from: segment.from,
+                      to: segment.to,
+                      route: segment.route,
+                    })
+                  : null;
+                const SegmentStatusIcon = segmentPresentation?.icon;
                 return (
                   <li key={meeting.id}>
                     <button
@@ -272,7 +275,7 @@ export function DayRoute({
                           </span>
                           <span className="block text-xs text-muted-foreground">
                             {formatTime(meeting.startTime)}–{formatTime(meeting.endTime)} ·{" "}
-                            {locationLabel(meeting)}
+                            {meetingPresentation.label}
                           </span>
                         </span>
                       </span>
@@ -288,11 +291,13 @@ export function DayRoute({
                         }`}
                       >
                         <span className="flex items-center gap-2 font-semibold">
-                          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                          {SegmentStatusIcon ? (
+                            <SegmentStatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                          ) : null}
                           Transition to {segment.to.courseCode}
                         </span>
                         <span className="mt-1 block text-muted-foreground">
-                          {segment.route.message}
+                          {segmentPresentation?.label}
                         </span>
                       </button>
                     ) : null}
@@ -342,6 +347,15 @@ function SegmentDetails({
   preferences: UserPreferences;
 }) {
   const route = segment.route;
+  const presentation = getLocationPresentation({
+    from: segment.from,
+    to: segment.to,
+    route,
+  });
+  const fromLocation = getLocationPresentation({ meeting: segment.from });
+  const toLocation = getLocationPresentation({ meeting: segment.to });
+  const StatusIcon = presentation.icon;
+  const routeWarnings = route.warnings.filter((warning) => warning !== presentation.detail);
   const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds;
   const distance = route.result?.totalDistanceMeters ?? route.approximateDistanceMeters;
   const departure =
@@ -356,9 +370,9 @@ function SegmentDetails({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id="segment-details-title" className="text-base font-semibold">
-            {locationLabel(segment.from)} → {locationLabel(segment.to)}
+            {fromLocation.label} → {toLocation.label}
           </h3>
-          <p className="mt-1 text-xs text-muted-foreground">{route.accuracy}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{presentation.detail}</p>
         </div>
         <span
           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
@@ -367,7 +381,7 @@ function SegmentDetails({
               : "bg-muted text-muted-foreground"
           }`}
         >
-          {route.status === "approximate" ? "Estimate" : route.status.replace("-", " ")}
+          {presentation.label}
         </span>
       </div>
       {route.status === "same-room" ? (
@@ -382,10 +396,12 @@ function SegmentDetails({
         distance === null ||
         departure === null ? (
         <div className="mt-4 flex gap-3 rounded-xl border border-accent/25 bg-accent/8 p-3.5">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+          <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
           <div>
-            <p className="text-sm font-semibold">Exact route unavailable</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{route.message}</p>
+            <p className="text-sm font-semibold">{presentation.label}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {presentation.detail}
+            </p>
           </div>
         </div>
       ) : (
@@ -418,9 +434,9 @@ function SegmentDetails({
           />
         </dl>
       )}
-      {route.warnings.length > 0 ? (
+      {routeWarnings.length > 0 ? (
         <ul className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
-          {route.warnings.map((warning) => (
+          {routeWarnings.map((warning) => (
             <li key={warning} className="flex items-start gap-2">
               <AlertTriangle
                 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
