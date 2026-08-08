@@ -438,3 +438,38 @@
   background: var(--color-accent);
   outline: 3px solid var(--color-background);
 }
+
+/* Theme MapLibre attribution control for dark map styling */
+.dark .maplibregl-ctrl-attrib-button {
+  background-color: rgba(22, 28, 42, 0.85);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20'%3E%3Cpath fill='%23fff' d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.dark .maplibregl-ctrl-attrib-button:hover,
+.dark .maplibregl-ctrl-attrib-button:focus-visible {
+  background-color: rgba(28, 36, 54, 0.95);
+}
+
+.dark .maplibregl-ctrl-attrib-inner {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.25);
+  padding: 0.875rem 1rem;
+  max-width: 22rem;
+}
+
+.dark .maplibregl-ctrl-attrib-inner a {
+  color: var(--primary);
+}
+
+.dark .maplibregl-ctrl-attrib-inner a:hover,
+.dark .maplibregl-ctrl-attrib-inner a:focus-visible {
+  text-decoration: underline;
+}
+
+.dark .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
+  background-color: rgba(255, 255, 255, 0.08);
+}
