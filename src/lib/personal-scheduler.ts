@@ -11,8 +11,12 @@ export function createDraft(weekday: string, start: number, end: number) {
   return { weekday, startTime: Math.min(s, e), endTime: Math.max(s, e) };
 }
 
-export function moveItem(item: PersonalItem, weekday: string, start: number) {
-  const duration = (item.endTime ?? 0) - (item.startTime ?? 0);
+type MovableItem = Pick<Meeting, "id" | "weekday" | "startTime" | "endTime"> | Pick<PersonalItem, "id" | "weekday" | "startTime" | "endTime">;
+
+type FixedMovableItem = Extract<MovableItem, { startTime: number; endTime: number }>;
+
+export function moveItem<T extends FixedMovableItem>(item: T, weekday: string, start: number) {
+  const duration = item.endTime - item.startTime;
   const s = snapToIncrement(start);
   return {
     ...item,
@@ -22,7 +26,7 @@ export function moveItem(item: PersonalItem, weekday: string, start: number) {
   };
 }
 
-export function resizeItem(item: PersonalItem, newStart: number, newEnd: number) {
+export function resizeItem<T extends FixedMovableItem>(item: T, newStart: number, newEnd: number) {
   const s = snapToIncrement(newStart);
   const e = snapToIncrement(newEnd);
   const minDur = 15;

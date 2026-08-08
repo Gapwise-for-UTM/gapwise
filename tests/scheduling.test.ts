@@ -70,6 +70,29 @@ test("resizeItem enforces minimum duration and snaps", () => {
   expect(resized.endTime - resized.startTime).toBeGreaterThanOrEqual(15);
 });
 
+test("moveItem snaps to 15-minute increments and preserves duration", () => {
+  const item: PersonalItem = {
+    id: "p3",
+    title: "Study",
+    category: "Study",
+    term: "Fall",
+    weekday: "Monday",
+    startTime: 9 * 60,
+    endTime: 10 * 60,
+    locationBuildingCode: null,
+    locationRoom: null,
+    locationText: null,
+    notes: null,
+    flexibility: { kind: "fixed" },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  const moved = moveItem(item, "Wednesday", 13 * 60 + 7);
+  expect(moved.weekday).toBe("Wednesday");
+  expect(moved.startTime % 15).toBe(0);
+  expect(moved.endTime - moved.startTime).toBe(item.endTime! - item.startTime!);
+});
+
 test("detectConflicts finds overlapping meetings", () => {
   const meetings: Meeting[] = [
     {
