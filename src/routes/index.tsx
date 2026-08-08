@@ -107,6 +107,9 @@ function Index() {
     () => loadPersonalItems(),
   );
   const [showAddPersonal, setShowAddPersonal] = useState(false);
+  const [isOnline, setIsOnline] = useState(
+    typeof window !== "undefined" && "onLine" in navigator ? navigator.onLine : true,
+  );
   const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
   const latestMeetings = useRef<Meeting[] | null>(meetings);
   const mounted = useRef(false);
@@ -126,6 +129,18 @@ function Index() {
     mounted.current = true;
     return () => {
       mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const setOnline = () => setIsOnline(true);
+    const setOffline = () => setIsOnline(false);
+    window.addEventListener("online", setOnline);
+    window.addEventListener("offline", setOffline);
+    return () => {
+      window.removeEventListener("online", setOnline);
+      window.removeEventListener("offline", setOffline);
     };
   }, []);
 
@@ -516,6 +531,16 @@ function Index() {
 
               <div className="flex flex-col justify-center p-7 sm:p-11 lg:p-12">
                 <div className="mx-auto w-full max-w-md">
+                  {!isOnline ? (
+                    <div className="mb-6 rounded-3xl border border-border bg-card/80 p-6 text-left text-foreground shadow-[var(--shadow-soft)]">
+                      <p className="font-semibold">You’re offline</p>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                        Gapwise can still parse ACORN .ics files locally and display any timetable
+                        you have already loaded. Some map tiles may not be available until your
+                        device reconnects.
+                      </p>
+                    </div>
+                  ) : null}
                   <UploadPanel
                     variant="hero"
                     onFile={handleFile}
