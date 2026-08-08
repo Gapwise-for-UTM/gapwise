@@ -156,19 +156,18 @@ function routeFeatureCollection(data: MapData) {
 
 function addRouteLayers(map: MapLibreMap) {
   map.addLayer({
+    id: "day-routes-casing",
+    type: "line",
+    source: "day-routes",
+    layout: { "line-cap": "round", "line-join": "round" },
+    paint: { "line-color": "#0b1f33", "line-width": 7, "line-opacity": 0.72 },
+  });
+  map.addLayer({
     id: "day-routes-solid",
     type: "line",
     source: "day-routes",
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#3568a8", "line-width": 4, "line-opacity": 0.88 },
-  });
-  map.addLayer({
-    id: "day-routes-selected",
-    type: "line",
-    source: "day-routes",
-    filter: ["==", ["get", "selected"], true],
-    layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#d85f35", "line-width": 6, "line-opacity": 0.98 },
+    paint: { "line-color": "#66b3ff", "line-width": 4, "line-opacity": 1 },
   });
 }
 
@@ -497,7 +496,14 @@ export function CampusMap({
       syncMapData(map, maplibregl, latestData.current, markersRef.current);
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
     }
-  }, [displaySegments, meetings, onSelectMeeting, onSelectSegment, selectedMeetingId, selectedSegmentId]);
+  }, [
+    displaySegments,
+    meetings,
+    onSelectMeeting,
+    onSelectSegment,
+    selectedMeetingId,
+    selectedSegmentId,
+  ]);
 
   return (
     <div className="relative h-[25rem] w-full overflow-hidden rounded-xl border border-border bg-muted">
