@@ -54,7 +54,7 @@ export default function PersonalItemForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md personal-item-form">
         <DialogHeader>
           <DialogTitle>{initial ? "Edit personal item" : "Add personal item"}</DialogTitle>
         </DialogHeader>
@@ -64,7 +64,7 @@ export default function PersonalItemForm({
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 rounded-md border px-3 py-2"
+              className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </label>
           <label className="flex flex-col">
@@ -72,7 +72,7 @@ export default function PersonalItemForm({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as PersonalCategory)}
-              className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
+              className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground appearance-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               {[
                 "Study",
@@ -99,7 +99,7 @@ export default function PersonalItemForm({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="mt-1 rounded-md border px-3 py-2"
+              className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             />
           </label>
 
@@ -111,7 +111,7 @@ export default function PersonalItemForm({
                 onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                   setWeekday(e.target.value as Weekday)
                 }
-                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground appearance-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {WEEKDAYS.map((d) => (
                   <option key={d} value={d}>
@@ -125,7 +125,7 @@ export default function PersonalItemForm({
               <select
                 value={term}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => setTerm(e.target.value as Term)}
-                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground appearance-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 {TERMS.map((t) => (
                   <option key={t} value={t}>
@@ -143,7 +143,7 @@ export default function PersonalItemForm({
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
+                className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 py-0 text-foreground appearance-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
             </label>
             <div className="flex flex-col justify-end">
@@ -159,7 +159,7 @@ export default function PersonalItemForm({
                 type="time"
                 value={start}
                 onChange={(e) => setStart(e.target.value)}
-                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring appearance-none"
               />
             </label>
             <label className="flex flex-col">
@@ -168,7 +168,7 @@ export default function PersonalItemForm({
                 type="time"
                 value={end}
                 onChange={(e) => setEnd(e.target.value)}
-                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring appearance-none"
               />
             </label>
           </div>

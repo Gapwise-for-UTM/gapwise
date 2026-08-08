@@ -220,6 +220,36 @@
   }
 }
 
+.personal-item-form input[type="color"],
+.personal-item-form input[type="time"] {
+  appearance: none;
+  background: transparent;
+  color: inherit;
+}
+
+.personal-item-form input[type="color"] {
+  padding: 0;
+}
+
+.personal-item-form input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.personal-item-form input[type="color"]::-webkit-color-swatch,
+.personal-item-form input[type="color"]::-moz-color-swatch {
+  border-radius: inherit;
+  border: none;
+  background-color: transparent;
+}
+
+.personal-item-form input[type="time"]::-webkit-datetime-edit {
+  color: inherit;
+}
+
+.personal-item-form input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(100%) opacity(0.75);
+}
+
 @utility surface {
   background-image: linear-gradient(
     170deg,
