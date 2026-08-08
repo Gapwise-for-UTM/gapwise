@@ -179,6 +179,7 @@ export function planMeetingTransition(
       `Indoor room routing not yet mapped for ${origin.buildingCode}.`,
       `Indoor room routing not yet mapped for ${destination.buildingCode}.`,
       "Distance and time remain approximate; the map can show an OpenStreetMap pedestrian route when available.",
+      "no path is drawn",
     ],
     approximateDistanceMeters: distance,
     approximateSeconds: seconds,
