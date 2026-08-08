@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -25,6 +25,8 @@ type MapLibreModule = typeof import("maplibre-gl");
 type MapStatus = "loading" | "ready" | "error" | "unsupported";
 
 const MAP_LOAD_TIMEOUT_MS = 12_000;
+const FIT_BOUNDS_PADDING_PX = 56;
+const FIT_BOUNDS_MAX_ZOOM = 17;
 
 function supportsWebGl2(): boolean {
   try {
@@ -113,6 +115,50 @@ function syncMapData(
   }
 }
 
+function collectBoundsPoints(data: MapData): [number, number][] {
+  const points: [number, number][] = [];
+  for (const meeting of data.meetings) {
+    const building = getCampusBuilding(meeting.buildingCode);
+    if (building) points.push(building.navigationPoint);
+  }
+  for (const segment of data.segments) {
+    if (segment.route.status === "routed") {
+      for (const coord of segment.route.displayCoordinates) {
+        points.push(coord as [number, number]);
+      }
+    }
+  }
+  return points;
+}
+
+function maybeFitBounds(
+  map: MapLibreMap,
+  maplibregl: MapLibreModule,
+  data: MapData,
+  lastFitKeyRef: MutableRefObject<string>,
+) {
+  const points = collectBoundsPoints(data);
+  if (points.length === 0) return;
+
+  const key = points
+    .map((point) => point.join(","))
+    .sort()
+    .join("|");
+  if (key === lastFitKeyRef.current) return;
+  lastFitKeyRef.current = key;
+
+  const [first, ...rest] = points;
+  const bounds = rest.reduce(
+    (acc, point) => acc.extend(point),
+    new maplibregl.LngLatBounds(first, first),
+  );
+  map.fitBounds(bounds, {
+    padding: FIT_BOUNDS_PADDING_PX,
+    maxZoom: FIT_BOUNDS_MAX_ZOOM,
+    duration: 500,
+  });
+}
+
 export function CampusMap({
   meetings,
   segments,
@@ -125,6 +171,7 @@ export function CampusMap({
   const mapRef = useRef<MapLibreMap | null>(null);
   const maplibreRef = useRef<MapLibreModule | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const lastFitKeyRef = useRef<string>("");
   const [status, setStatus] = useState<MapStatus>("loading");
   const [attempt, setAttempt] = useState(0);
   const latestData = useRef<MapData>({
@@ -155,6 +202,7 @@ export function CampusMap({
     let loaded = false;
     let loadTimeout: ReturnType<typeof setTimeout> | undefined;
     setStatus("loading");
+    lastFitKeyRef.current = "";
 
     void import("maplibre-gl")
       .then((maplibregl) => {
@@ -182,6 +230,7 @@ export function CampusMap({
           if (loadTimeout) clearTimeout(loadTimeout);
           setStatus("ready");
           syncMapData(map, maplibregl, latestData.current, markersRef.current);
+          maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
         });
         loadTimeout = setTimeout(() => {
           if (!disposed && !loaded) setStatus("error");
@@ -207,6 +256,7 @@ export function CampusMap({
     const maplibregl = maplibreRef.current;
     if (map && maplibregl && map.isStyleLoaded()) {
       syncMapData(map, maplibregl, latestData.current, markersRef.current);
+      maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
     }
   }, [meetings, onSelectMeeting, onSelectSegment, segments, selectedMeetingId, selectedSegmentId]);
 
