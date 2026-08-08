@@ -72,7 +72,7 @@ export default function PersonalItemForm({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as PersonalCategory)}
-              className="mt-1 rounded-md border px-3 py-2"
+              className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
             >
               {[
                 "Study",
@@ -111,7 +111,7 @@ export default function PersonalItemForm({
                 onChange={(e: ChangeEvent<HTMLSelectElement>) =>
                   setWeekday(e.target.value as Weekday)
                 }
-                className="mt-1 rounded-md border px-3 py-2"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
               >
                 {WEEKDAYS.map((d) => (
                   <option key={d} value={d}>
@@ -125,7 +125,7 @@ export default function PersonalItemForm({
               <select
                 value={term}
                 onChange={(e: ChangeEvent<HTMLSelectElement>) => setTerm(e.target.value as Term)}
-                className="mt-1 rounded-md border px-3 py-2"
+                className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-foreground"
               >
                 {TERMS.map((t) => (
                   <option key={t} value={t}>
@@ -143,7 +143,7 @@ export default function PersonalItemForm({
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="mt-1 h-11 w-full rounded-md border px-3 py-2"
+                className="mt-1 h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-foreground"
               />
             </label>
             <div className="flex flex-col justify-end">
