@@ -20,6 +20,7 @@ export default defineConfig({
       manifest: false,
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,json}"],
+        globIgnores: ["models/**"],
         navigateFallback: "/index.html",
         runtimeCaching: [
           {
@@ -41,6 +42,13 @@ export default defineConfig({
             handler: "NetworkOnly",
             options: {
               cacheName: "mapbox-tiles",
+            },
+          },
+          {
+            urlPattern: /\/models\/.*\.(?:glb|png)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "models-assets",
             },
           },
         ],
