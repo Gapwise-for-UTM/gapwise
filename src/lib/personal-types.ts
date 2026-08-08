@@ -28,6 +28,7 @@ export interface PersonalItem {
   locationRoom?: string | null;
   locationText?: string | null;
   notes?: string | null;
+  color?: string;
   flexibility: PersonalFlexibility;
   createdAt: string;
   updatedAt: string;

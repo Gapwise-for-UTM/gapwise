@@ -263,6 +263,8 @@ function Index() {
         room: p.locationRoom ?? null,
         term: p.term,
         locationUnknown: !(p.locationBuildingCode || p.locationRoom),
+        notes: p.notes ?? undefined,
+        color: p.color ?? undefined,
       })) as Meeting[];
     return [...academic, ...personalAsMeetings];
   }, [meetings, personalItems, term]);
@@ -771,6 +773,7 @@ function Index() {
                           locationRoom: null,
                           locationText: null,
                           notes: null,
+                          color: "#5b21b6",
                           flexibility: { kind: "fixed" },
                           createdAt: new Date().toISOString(),
                           updatedAt: new Date().toISOString(),

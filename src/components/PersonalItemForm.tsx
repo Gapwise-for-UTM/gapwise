@@ -27,6 +27,8 @@ export default function PersonalItemForm({
   const [weekday, setWeekday] = useState<Weekday>(WEEKDAYS[0] as Weekday);
   const [start, setStart] = useState("12:00");
   const [end, setEnd] = useState("13:00");
+  const [notes, setNotes] = useState("");
+  const [color, setColor] = useState("#5b21b6");
 
   useEffect(() => {
     if (initial) {
@@ -36,6 +38,8 @@ export default function PersonalItemForm({
       setWeekday(initial.weekday);
       setStart(formatTime(initial.startTime ?? 12 * 60).slice(0, -3));
       setEnd(formatTime(initial.endTime ?? 13 * 60).slice(0, -3));
+      setNotes(initial.notes ?? "");
+      setColor(initial.color ?? "#5b21b6");
     } else {
       setTitle("");
       setCategory("Personal");
@@ -43,6 +47,8 @@ export default function PersonalItemForm({
       setWeekday(WEEKDAYS[0] as Weekday);
       setStart("12:00");
       setEnd("13:00");
+      setNotes("");
+      setColor("#5b21b6");
     }
   }, [initial, open]);
 
@@ -87,6 +93,16 @@ export default function PersonalItemForm({
             </select>
           </label>
 
+          <label className="flex flex-col">
+            <span className="text-xs text-muted-foreground">Description</span>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="mt-1 rounded-md border px-3 py-2"
+            />
+          </label>
+
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col">
               <span className="text-xs text-muted-foreground">Day</span>
@@ -118,6 +134,22 @@ export default function PersonalItemForm({
                 ))}
               </select>
             </label>
+          </div>
+
+          <div className="grid grid-cols-[1fr_auto] gap-2">
+            <label className="flex flex-col">
+              <span className="text-xs text-muted-foreground">Color</span>
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="mt-1 h-11 w-full rounded-md border px-3 py-2"
+              />
+            </label>
+            <div className="flex flex-col justify-end">
+              <span className="text-xs text-muted-foreground">&nbsp;</span>
+              <div className="mt-1 h-11 rounded-md border border-input bg-[var(--color-background)]" />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -164,7 +196,8 @@ export default function PersonalItemForm({
                   locationBuildingCode: null,
                   locationRoom: null,
                   locationText: null,
-                  notes: null,
+                  notes: notes || null,
+                  color,
                   flexibility: { kind: "fixed" },
                   createdAt: initial?.createdAt ?? now,
                   updatedAt: now,

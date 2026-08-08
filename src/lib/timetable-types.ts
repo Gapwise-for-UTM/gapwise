@@ -37,6 +37,9 @@ export interface Meeting {
   room: string | null;
   term: Term;
   locationUnknown: boolean;
+  /** Optional UI metadata for personal items. */
+  notes?: string;
+  color?: string;
   /** Explicit source-backed location kind. Older saved schedules may omit this field. */
   locationType?: MeetingLocationType;
   dateRange?: MeetingDateRange;
