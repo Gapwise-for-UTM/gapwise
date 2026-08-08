@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarRange, LayoutGrid, MapPinned, ShieldCheck, Trash2, Upload, X } from "lucide-react";
 import { GapPlan } from "@/components/GapPlan";
+import PersonalItemForm from "@/components/PersonalItemForm";
+import { loadPersonalItems, savePersonalItems } from "@/features/personal/persistence";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
 import { TodaySummary } from "@/components/TodaySummary";
@@ -80,6 +82,9 @@ function Index() {
   const [isDemo, setIsDemo] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
   const [gapPreferences, setGapPreferences] = useState<GapPreferences>(loadGapPreferences);
+  const [editingPersonal, setEditingPersonal] = useState<
+    import("@/lib/personal-types").PersonalItem | null
+  >(null);
   const [localRecord] = useState(() => {
     if (typeof window === "undefined") return null;
     const stored = loadRememberedRecord<unknown>();
@@ -98,6 +103,10 @@ function Index() {
   });
   const [restoration, setRestoration] = useState<RestorationState>("waiting-for-auth");
   const [restorationMessage, setRestorationMessage] = useState<string | null>(null);
+  const [personalItems, setPersonalItems] = useState<import("@/lib/personal-types").PersonalItem[]>(
+    () => loadPersonalItems(),
+  );
+  const [showAddPersonal, setShowAddPersonal] = useState(false);
   const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
   const latestMeetings = useRef<Meeting[] | null>(meetings);
   const mounted = useRef(false);
@@ -235,11 +244,77 @@ function Index() {
     if (meetings?.length) setTerm(chooseDefaultTerm(meetings, new Date()));
   }, [meetings]);
 
-  const termMeetings = useMemo(
-    () => (meetings ?? []).filter((m) => m.term === term),
-    [meetings, term],
+  // Combine academic meetings with personal items for planning/visualization
+  const termMeetings = useMemo(() => {
+    const academic = (meetings ?? []).filter((m) => m.term === term);
+    // convert fixed personal items in the selected term into meeting-like objects for display
+    const personalAsMeetings = personalItems
+      .filter((p) => p.term === term && p.flexibility.kind === "fixed")
+      .map((p) => ({
+        id: p.id,
+        courseCode: p.title,
+        activityType: "OTHER" as const,
+        sectionCode: "PERSONAL",
+        courseName: p.category,
+        startTime: p.startTime ?? 0,
+        endTime: p.endTime ?? 0,
+        weekday: p.weekday,
+        buildingCode: p.locationBuildingCode ?? null,
+        room: p.locationRoom ?? null,
+        term: p.term,
+        locationUnknown: !(p.locationBuildingCode || p.locationRoom),
+      })) as Meeting[];
+    return [...academic, ...personalAsMeetings];
+  }, [meetings, personalItems, term]);
+
+  const gaps = useMemo(
+    () =>
+      findGaps(
+        (meetings ?? []).concat(
+          personalItems
+            .filter((p) => p.term === term && p.flexibility.kind === "fixed")
+            .map((p) => ({
+              id: p.id,
+              courseCode: p.title,
+              activityType: "OTHER" as const,
+              sectionCode: "PERSONAL",
+              courseName: p.category,
+              startTime: p.startTime ?? 0,
+              endTime: p.endTime ?? 0,
+              weekday: p.weekday,
+              buildingCode: p.locationBuildingCode ?? null,
+              room: p.locationRoom ?? null,
+              term: p.term,
+              locationUnknown: !(p.locationBuildingCode || p.locationRoom),
+            })) as Meeting[],
+        ),
+        term,
+      ),
+    [meetings, personalItems, term],
   );
-  const gaps = useMemo(() => findGaps(meetings ?? [], term), [meetings, term]);
+
+  // helper to persist personal items
+  const persistPersonal = (next: typeof personalItems) => {
+    setPersonalItems(next);
+    try {
+      savePersonalItems(next);
+    } catch {
+      // ignore
+    }
+  };
+
+  const addOrUpdatePersonal = (item: import("@/lib/personal-types").PersonalItem) => {
+    const existing = personalItems.find((p) => p.id === item.id);
+    if (existing) {
+      persistPersonal(personalItems.map((p) => (p.id === item.id ? item : p)));
+    } else {
+      persistPersonal([...personalItems, item]);
+    }
+  };
+
+  const deletePersonal = (id: string) => {
+    persistPersonal(personalItems.filter((p) => p.id !== id));
+  };
 
   async function handleFile(file: File) {
     const previousMeetings = latestMeetings.current;
@@ -664,9 +739,33 @@ function Index() {
               ) : (
                 <>
                   <div hidden={view !== "timetable"}>
+                    <div className="mb-3 flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={() => setShowAddPersonal(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+                      >
+                        Add
+                      </button>
+                    </div>
                     <TimetableGrid
                       meetings={termMeetings}
                       onRouteToMeeting={() => showView("route")}
+                      onEditPersonal={(id) => {
+                        const it = personalItems.find((p) => p.id === id) ?? null;
+                        setEditingPersonal(it);
+                        setShowAddPersonal(true);
+                      }}
+                      onDeletePersonal={(id) => deletePersonal(id)}
+                    />
+                    <PersonalItemForm
+                      open={showAddPersonal}
+                      onOpenChange={(open) => {
+                        setShowAddPersonal(open);
+                        if (!open) setEditingPersonal(null);
+                      }}
+                      initial={editingPersonal}
+                      onSave={(item) => addOrUpdatePersonal(item)}
                     />
                   </div>
                   {openedViews.gaps ? (

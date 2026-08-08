@@ -149,10 +149,14 @@ function MeetingDetailsDialog({
   meeting,
   onClose,
   onRoute,
+  onEditPersonal,
+  onDeletePersonal,
 }: {
   meeting: Meeting | null;
   onClose: () => void;
   onRoute: ((meeting: Meeting) => void) | undefined;
+  onEditPersonal: ((meetingId: string) => void) | undefined;
+  onDeletePersonal: ((meetingId: string) => void) | undefined;
 }) {
   const first = meeting ? firstOccurrenceForMeeting(meeting) : null;
   const last = meeting ? lastOccurrenceForMeeting(meeting) : null;
@@ -252,6 +256,31 @@ function MeetingDetailsDialog({
               Route to this class
             </button>
           ) : null}
+          {/* Edit/Delete for personal items */}
+          {meeting?.sectionCode === "PERSONAL" ? (
+            <div className="mt-3 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onEditPersonal?.(meeting.id);
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-input px-4 py-2 text-sm font-semibold"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDeletePersonal?.(meeting.id);
+                }}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground"
+              >
+                Delete
+              </button>
+            </div>
+          ) : null}
 
           <p className="text-xs leading-relaxed text-muted-foreground">
             This information comes from the ACORN calendar file you imported. Opening a class card
@@ -266,9 +295,13 @@ function MeetingDetailsDialog({
 export const TimetableGrid = memo(function TimetableGrid({
   meetings,
   onRouteToMeeting,
+  onEditPersonal,
+  onDeletePersonal,
 }: {
   meetings: Meeting[];
   onRouteToMeeting?: (meeting: Meeting) => void;
+  onEditPersonal?: (meetingId: string) => void;
+  onDeletePersonal?: (meetingId: string) => void;
 }) {
   const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -514,6 +547,8 @@ export const TimetableGrid = memo(function TimetableGrid({
         meeting={selectedMeeting}
         onClose={closeMeeting}
         onRoute={onRouteToMeeting}
+        onEditPersonal={onEditPersonal}
+        onDeletePersonal={onDeletePersonal}
       />
     </div>
   );
