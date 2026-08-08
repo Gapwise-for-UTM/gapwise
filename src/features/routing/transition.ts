@@ -178,7 +178,7 @@ export function planMeetingTransition(
     warnings: [
       `Indoor room routing not yet mapped for ${origin.buildingCode}.`,
       `Indoor room routing not yet mapped for ${destination.buildingCode}.`,
-      "Distance and time use a straight-line estimate; no path is drawn until a walking route is verified.",
+      "Distance and time remain approximate; the map can show an OpenStreetMap pedestrian route when available.",
     ],
     approximateDistanceMeters: distance,
     approximateSeconds: seconds,
@@ -200,7 +200,6 @@ function preferenceCacheKey(preferences: RoutePreferences): string {
   );
 }
 
-/** Keeps pure transition work stable while a timetable remains in memory. */
 export function createMemoizedTransitionPlanner(
   graph: RoutingGraph,
   calculate: typeof planMeetingTransition = planMeetingTransition,
@@ -218,7 +217,6 @@ export function createMemoizedTransitionPlanner(
   };
 }
 
-/** Scopes cached transitions to one loaded timetable and bounds retained results. */
 export function createScheduleTransitionPlanner(
   graph: RoutingGraph,
   meetings: readonly Meeting[],
