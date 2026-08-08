@@ -23,6 +23,7 @@ type MapData = {
 
 type MapLibreModule = typeof import("maplibre-gl");
 type MapStatus = "loading" | "ready" | "error" | "unsupported";
+type MapTheme = keyof typeof MAP_CONFIG.styleUrls;
 
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const FIT_BOUNDS_PADDING_PX = 56;
@@ -34,6 +35,11 @@ function supportsWebGl2(): boolean {
   } catch {
     return false;
   }
+}
+
+function getDocumentTheme(): MapTheme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
 function routeFeatureCollection(data: MapData) {
@@ -74,6 +80,49 @@ function addRouteLayers(map: MapLibreMap) {
   });
 }
 
+function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
+  const fillColor = theme === "dark" ? "#29445e" : "#dce7f1";
+  const outlineColor = theme === "dark" ? "#66809a" : "#9fb5c9";
+  const layers = map.getStyle().layers ?? [];
+  let styledBuildingLayer = false;
+
+  for (const layer of layers) {
+    if (!("source-layer" in layer) || layer["source-layer"] !== "building") continue;
+    if (layer.type === "fill") {
+      map.setLayoutProperty(layer.id, "visibility", "visible");
+      map.setPaintProperty(layer.id, "fill-color", fillColor);
+      map.setPaintProperty(layer.id, "fill-outline-color", outlineColor);
+      map.setPaintProperty(layer.id, "fill-opacity", theme === "dark" ? 0.82 : 0.88);
+      styledBuildingLayer = true;
+    }
+    if (layer.type === "fill-extrusion") {
+      map.setLayoutProperty(layer.id, "visibility", "visible");
+      map.setPaintProperty(layer.id, "fill-extrusion-color", fillColor);
+      map.setPaintProperty(layer.id, "fill-extrusion-opacity", theme === "dark" ? 0.86 : 0.9);
+      styledBuildingLayer = true;
+    }
+  }
+
+  if (styledBuildingLayer || !map.getSource("openmaptiles")) return;
+
+  const firstSymbolLayerId = layers.find((layer) => layer.type === "symbol")?.id;
+  map.addLayer(
+    {
+      id: "gapwise-campus-buildings",
+      type: "fill",
+      source: "openmaptiles",
+      "source-layer": "building",
+      minzoom: 13,
+      paint: {
+        "fill-color": fillColor,
+        "fill-outline-color": outlineColor,
+        "fill-opacity": theme === "dark" ? 0.82 : 0.88,
+      },
+    },
+    firstSymbolLayerId,
+  );
+}
+
 function syncMapData(
   map: MapLibreMap,
   maplibregl: MapLibreModule,
@@ -107,11 +156,6 @@ function syncMapData(
   } else if (map.isStyleLoaded()) {
     map.addSource("day-routes", { type: "geojson", data: collection });
     addRouteLayers(map);
-    const selectFeature = (event: import("maplibre-gl").MapLayerMouseEvent) => {
-      const id = event.features?.[0]?.properties?.["id"];
-      if (typeof id === "string") data.onSelectSegment(id);
-    };
-    map.on("click", "day-routes-solid", selectFeature);
   }
 }
 
@@ -172,6 +216,9 @@ export function CampusMap({
   const maplibreRef = useRef<MapLibreModule | null>(null);
   const markersRef = useRef<Marker[]>([]);
   const lastFitKeyRef = useRef<string>("");
+  const appliedThemeRef = useRef<MapTheme | null>(null);
+  const [mapTheme, setMapTheme] = useState<MapTheme>(getDocumentTheme);
+  const themeRef = useRef<MapTheme>(mapTheme);
   const [status, setStatus] = useState<MapStatus>("loading");
   const [attempt, setAttempt] = useState(0);
   const latestData = useRef<MapData>({
@@ -182,6 +229,7 @@ export function CampusMap({
     onSelectMeeting,
     onSelectSegment,
   });
+  themeRef.current = mapTheme;
   latestData.current = {
     meetings,
     segments,
@@ -192,6 +240,15 @@ export function CampusMap({
   };
 
   useEffect(() => {
+    const root = document.documentElement;
+    const syncTheme = () => setMapTheme(root.classList.contains("dark") ? "dark" : "light");
+    syncTheme();
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     if (!containerRef.current) return;
     if (!supportsWebGl2()) {
       setStatus("unsupported");
@@ -199,7 +256,8 @@ export function CampusMap({
     }
 
     let disposed = false;
-    let loaded = false;
+    let ready = false;
+    let routeClickBound = false;
     let loadTimeout: ReturnType<typeof setTimeout> | undefined;
     setStatus("loading");
     lastFitKeyRef.current = "";
@@ -208,13 +266,15 @@ export function CampusMap({
       .then((maplibregl) => {
         if (disposed || !containerRef.current) return;
         maplibregl.setWorkerUrl(mapLibreWorkerUrl);
+        const initialTheme = themeRef.current;
         const map = new maplibregl.Map({
           container: containerRef.current,
-          style: MAP_CONFIG.styleUrl,
+          style: MAP_CONFIG.styleUrls[initialTheme],
           center: MAP_CONFIG.campusCenter,
           zoom: MAP_CONFIG.initialZoom,
           attributionControl: false,
         });
+        appliedThemeRef.current = initialTheme;
         mapRef.current = map;
         maplibreRef.current = maplibregl;
         map.addControl(
@@ -222,18 +282,26 @@ export function CampusMap({
         );
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
         map.on("error", () => {
-          if (!disposed && !loaded) setStatus("error");
+          if (!disposed && !map.isStyleLoaded()) setStatus("error");
         });
-        map.once("load", () => {
+        map.on("style.load", () => {
           if (disposed) return;
-          loaded = true;
+          ready = true;
           if (loadTimeout) clearTimeout(loadTimeout);
-          setStatus("ready");
+          styleCampusBuildings(map, themeRef.current);
           syncMapData(map, maplibregl, latestData.current, markersRef.current);
+          if (!routeClickBound) {
+            map.on("click", "day-routes-solid", (event) => {
+              const id = event.features?.[0]?.properties?.["id"];
+              if (typeof id === "string") latestData.current.onSelectSegment(id);
+            });
+            routeClickBound = true;
+          }
           maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
+          setStatus("ready");
         });
         loadTimeout = setTimeout(() => {
-          if (!disposed && !loaded) setStatus("error");
+          if (!disposed && !ready) setStatus("error");
         }, MAP_LOAD_TIMEOUT_MS);
       })
       .catch(() => {
@@ -248,8 +316,17 @@ export function CampusMap({
       mapRef.current?.remove();
       mapRef.current = null;
       maplibreRef.current = null;
+      appliedThemeRef.current = null;
     };
   }, [attempt]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || appliedThemeRef.current === mapTheme) return;
+    appliedThemeRef.current = mapTheme;
+    setStatus("loading");
+    map.setStyle(MAP_CONFIG.styleUrls[mapTheme]);
+  }, [mapTheme]);
 
   useEffect(() => {
     const map = mapRef.current;
