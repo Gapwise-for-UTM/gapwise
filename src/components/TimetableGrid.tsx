@@ -103,23 +103,71 @@ function MeetingCard({
   meeting,
   compact,
   onSelect,
+  onEdit,
+  onDelete,
 }: {
   meeting: Meeting;
   compact?: boolean;
   onSelect: (meeting: Meeting) => void;
+  onEdit?: ((meetingId: string) => void) | undefined;
+  onDelete?: ((meetingId: string) => void) | undefined;
 }) {
+  const isPersonal = meeting.sectionCode === "PERSONAL";
   return (
-    <button
-      type="button"
+    <div
+      role="button"
       onClick={() => onSelect(meeting)}
+      tabIndex={0}
       aria-haspopup="dialog"
       aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
       title={`${meeting.courseCode} · ${meeting.courseName}`}
       data-activity={meeting.activityType}
-      className={`meeting-card group flex h-full w-full touch-manipulation flex-col items-stretch justify-start overflow-hidden rounded-lg px-2.5 text-left focus-visible:outline-none active:translate-y-0 active:scale-[0.99] ${
+      className={`meeting-card group relative flex h-full w-full touch-manipulation flex-col items-stretch justify-start overflow-hidden rounded-lg px-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 active:scale-[0.99] ${
         compact ? "py-1.5" : "py-2"
       }`}
     >
+      {isPersonal ? (
+        <div className="absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit?.(meeting.id);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+                onEdit?.(meeting.id);
+              }
+            }}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-xs font-semibold text-foreground shadow-sm ring-1 ring-border hover:bg-secondary"
+            aria-label="Edit personal item"
+          >
+            ✎
+          </span>
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={(event) => {
+              event.stopPropagation();
+              onDelete?.(meeting.id);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                event.stopPropagation();
+                onDelete?.(meeting.id);
+              }
+            }}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-xs font-semibold text-destructive shadow-sm ring-1 ring-border hover:bg-destructive/10"
+            aria-label="Delete personal item"
+          >
+            ×
+          </span>
+        </div>
+      ) : null}
       <div className="flex min-w-0 items-center gap-1.5">
         <span className="truncate text-xs font-extrabold tracking-[-0.01em] text-foreground">
           {meeting.courseCode}
@@ -141,7 +189,7 @@ function MeetingCard({
           {meeting.courseName}
         </p>
       ) : null}
-    </button>
+    </div>
   );
 }
 
@@ -643,6 +691,8 @@ export const TimetableGrid = memo(function TimetableGrid({
                           meeting={meeting}
                           compact={isCompactMeetingCard(meeting, laneCount)}
                           onSelect={selectMeeting}
+                          onEdit={onEditPersonal}
+                          onDelete={onDeletePersonal}
                         />
                       </div>
                     );

@@ -776,6 +776,8 @@ function Index() {
                           updatedAt: new Date().toISOString(),
                         };
                         addOrUpdatePersonal(item);
+                        setEditingPersonal(item);
+                        setShowAddPersonal(true);
                       }}
                       onMovePersonal={(id, weekday, startTime, endTime) => {
                         const it = personalItems.find((p) => p.id === id);
