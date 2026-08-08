@@ -245,6 +245,15 @@ function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
   );
 }
 
+function getMarkerOffset(slot: number, total: number): [number, number] {
+  if (total <= 1) return [0, 0];
+  const row = Math.floor(slot / 3);
+  const column = slot % 3;
+  const rows = Math.ceil(total / 3);
+  const itemsInRow = Math.min(3, total - row * 3);
+  return [(column - (itemsInRow - 1) / 2) * 36, (row - (rows - 1) / 2) * 36];
+}
+
 function syncMapData(
   map: MapLibreMap,
   maplibregl: MapLibreModule,
@@ -254,9 +263,20 @@ function syncMapData(
   for (const marker of markers) marker.remove();
   markers.length = 0;
 
+  const buildingTotals = new Map<string, number>();
+  for (const meeting of data.meetings) {
+    const building = getCampusBuilding(meeting.buildingCode);
+    if (!building) continue;
+    buildingTotals.set(building.code, (buildingTotals.get(building.code) ?? 0) + 1);
+  }
+  const buildingSlots = new Map<string, number>();
+
   data.meetings.forEach((meeting, index) => {
     const building = getCampusBuilding(meeting.buildingCode);
     if (!building) return;
+    const slot = buildingSlots.get(building.code) ?? 0;
+    buildingSlots.set(building.code, slot + 1);
+    const offset = getMarkerOffset(slot, buildingTotals.get(building.code) ?? 1);
     const markerButton = document.createElement("button");
     markerButton.type = "button";
     markerButton.className = `map-number-marker${meeting.id === data.selectedMeetingId ? " is-selected" : ""}`;
@@ -265,7 +285,7 @@ function syncMapData(
     markerButton.setAttribute("aria-label", `Select ${meeting.courseCode}, stop ${index + 1}`);
     markerButton.addEventListener("click", () => data.onSelectMeeting(meeting.id), { once: true });
     markers.push(
-      new maplibregl.Marker({ element: markerButton })
+      new maplibregl.Marker({ element: markerButton, offset })
         .setLngLat(building.navigationPoint)
         .addTo(map),
     );
