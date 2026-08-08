@@ -81,8 +81,8 @@ function addRouteLayers(map: MapLibreMap) {
 }
 
 function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
-  const fillColor = theme === "dark" ? "#29445e" : "#dce7f1";
-  const outlineColor = theme === "dark" ? "#66809a" : "#9fb5c9";
+  const fillColor = theme === "dark" ? "#365975" : "#dce7f1";
+  const outlineColor = theme === "dark" ? "#7895ad" : "#9fb5c9";
   const layers = map.getStyle().layers ?? [];
   let styledBuildingLayer = false;
 
@@ -92,20 +92,56 @@ function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
       map.setLayoutProperty(layer.id, "visibility", "visible");
       map.setPaintProperty(layer.id, "fill-color", fillColor);
       map.setPaintProperty(layer.id, "fill-outline-color", outlineColor);
-      map.setPaintProperty(layer.id, "fill-opacity", theme === "dark" ? 0.82 : 0.88);
+      map.setPaintProperty(layer.id, "fill-opacity", theme === "dark" ? 0.86 : 0.88);
       styledBuildingLayer = true;
     }
     if (layer.type === "fill-extrusion") {
       map.setLayoutProperty(layer.id, "visibility", "visible");
       map.setPaintProperty(layer.id, "fill-extrusion-color", fillColor);
-      map.setPaintProperty(layer.id, "fill-extrusion-opacity", theme === "dark" ? 0.86 : 0.9);
+      map.setPaintProperty(layer.id, "fill-extrusion-opacity", theme === "dark" ? 0.92 : 0.9);
       styledBuildingLayer = true;
     }
   }
 
-  if (styledBuildingLayer || !map.getSource("openmaptiles")) return;
+  if (!map.getSource("openmaptiles")) return;
 
   const firstSymbolLayerId = layers.find((layer) => layer.type === "symbol")?.id;
+
+  if (theme === "dark") {
+    if (!map.getLayer("gapwise-campus-buildings-3d")) {
+      map.addLayer(
+        {
+          id: "gapwise-campus-buildings-3d",
+          type: "fill-extrusion",
+          source: "openmaptiles",
+          "source-layer": "building",
+          minzoom: 13,
+          paint: {
+            "fill-extrusion-color": fillColor,
+            "fill-extrusion-height": [
+              "coalesce",
+              ["get", "render_height"],
+              ["get", "height"],
+              8,
+            ],
+            "fill-extrusion-base": [
+              "coalesce",
+              ["get", "render_min_height"],
+              ["get", "min_height"],
+              0,
+            ],
+            "fill-extrusion-opacity": 0.92,
+            "fill-extrusion-vertical-gradient": true,
+          },
+        },
+        firstSymbolLayerId,
+      );
+    }
+    return;
+  }
+
+  if (styledBuildingLayer) return;
+
   map.addLayer(
     {
       id: "gapwise-campus-buildings",
@@ -116,7 +152,7 @@ function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
       paint: {
         "fill-color": fillColor,
         "fill-outline-color": outlineColor,
-        "fill-opacity": theme === "dark" ? 0.82 : 0.88,
+        "fill-opacity": 0.88,
       },
     },
     firstSymbolLayerId,
