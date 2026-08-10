@@ -15,7 +15,9 @@ import { planGapAssessment } from "@/features/gaps/assess-gap";
 import { DEFAULT_GAP_PREFERENCES, sanitizeGapPreferences } from "@/features/gaps/preferences";
 import type { GapAction, GapPreferences, GapRecommendation } from "@/features/gaps/types";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
+import { selectedResidence } from "@/features/routing/residence";
 import type { TransitionPlanner } from "@/features/routing/transition";
+import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { groupGapsByDay } from "@/lib/gaps";
 import type { Gap } from "@/lib/timetable-types";
@@ -62,6 +64,11 @@ const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: s
     icon: Home,
     style: "bg-pra/15 text-pra",
   },
+  "go-home": {
+    label: "Go home",
+    icon: Home,
+    style: "bg-pra/15 text-pra",
+  },
   "location-dependent": {
     label: "Location dependent",
     icon: AlertTriangle,
@@ -89,12 +96,19 @@ function numericInput(value: string, fallback: number, minimum: number, maximum:
   return Math.min(maximum, Math.max(minimum, Math.round(number)));
 }
 
+function transitionMinutes(route: TransitionRoute) {
+  const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds;
+  return seconds === null ? null : Math.ceil(seconds / 60);
+}
+
 const GapSettings = memo(function GapSettings({
   value,
   onChange,
+  residenceName,
 }: {
   value: GapPreferences;
   onChange: (next: GapPreferences) => void;
+  residenceName: string | null;
 }) {
   function update(patch: Partial<GapPreferences>) {
     onChange(sanitizeGapPreferences({ ...value, ...patch }));
@@ -108,7 +122,7 @@ const GapSettings = memo(function GapSettings({
           Tune gap recommendations
         </span>
         <span className="text-xs text-muted-foreground group-open:hidden">
-          Meals, commute, setup time
+          {residenceName ? "Meals, home routes, setup time" : "Meals, commute, setup time"}
         </span>
       </summary>
 
@@ -220,80 +234,118 @@ const GapSettings = memo(function GapSettings({
         </label>
       </div>
 
-      <div className="mt-4 rounded-xl border border-border bg-secondary/35 p-4">
-        <label className="flex items-start gap-3 text-sm">
-          <input
-            type="checkbox"
-            checked={value.willingToLeaveCampus}
-            onChange={(event) => update({ willingToLeaveCampus: event.target.checked })}
-            className="mt-0.5 h-4 w-4 rounded border-input"
-          />
-          <span>
-            <span className="font-medium">Consider going home during long gaps</span>
-            <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-              Gapwise only recommends it when the round trip still leaves your minimum worthwhile
-              time at home.
-            </span>
-          </span>
-        </label>
-
-        {value.willingToLeaveCampus ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <label className="space-y-1.5 text-sm">
-              <span className="font-medium">One-way commute</span>
-              <span className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={5}
-                  max={180}
-                  placeholder="e.g. 50"
-                  value={value.oneWayHomeCommuteMinutes ?? ""}
-                  onChange={(event) =>
-                    update({
-                      oneWayHomeCommuteMinutes:
-                        event.target.value.trim() === ""
-                          ? null
-                          : numericInput(
-                              event.target.value,
-                              value.oneWayHomeCommuteMinutes ?? 45,
-                              5,
-                              180,
-                            ),
-                    })
-                  }
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2"
-                />
-                <span className="text-xs text-muted-foreground">min</span>
-              </span>
-            </label>
-
-            <label className="space-y-1.5 text-sm">
-              <span className="font-medium">Minimum worthwhile stay</span>
-              <span className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={30}
-                  max={360}
-                  step={15}
-                  value={value.minimumHomeStayMinutes}
-                  onChange={(event) =>
-                    update({
-                      minimumHomeStayMinutes: numericInput(
-                        event.target.value,
-                        value.minimumHomeStayMinutes,
-                        30,
-                        360,
-                      ),
-                    })
-                  }
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2"
-                />
-                <span className="text-xs text-muted-foreground">min</span>
-              </span>
-            </label>
+      {residenceName ? (
+        <div className="mt-4 rounded-xl border border-accent/25 bg-accent/8 p-4">
+          <div className="flex items-start gap-3">
+            <Home className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-medium">Home routes use {residenceName}</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Gapwise checks the actual walk home and back before suggesting it.
+              </p>
+            </div>
           </div>
-        ) : null}
-      </div>
+          <label className="mt-4 block space-y-1.5 text-sm">
+            <span className="font-medium">Minimum worthwhile stay</span>
+            <span className="flex items-center gap-2 sm:max-w-xs">
+              <input
+                type="number"
+                min={30}
+                max={360}
+                step={15}
+                value={value.minimumHomeStayMinutes}
+                onChange={(event) =>
+                  update({
+                    minimumHomeStayMinutes: numericInput(
+                      event.target.value,
+                      value.minimumHomeStayMinutes,
+                      30,
+                      360,
+                    ),
+                  })
+                }
+                className="w-full rounded-xl border border-input bg-background px-3 py-2"
+              />
+              <span className="text-xs text-muted-foreground">min</span>
+            </span>
+          </label>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl border border-border bg-secondary/35 p-4">
+          <label className="flex items-start gap-3 text-sm">
+            <input
+              type="checkbox"
+              checked={value.willingToLeaveCampus}
+              onChange={(event) => update({ willingToLeaveCampus: event.target.checked })}
+              className="mt-0.5 h-4 w-4 rounded border-input"
+            />
+            <span>
+              <span className="font-medium">Consider going home during long gaps</span>
+              <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                Gapwise only recommends it when the round trip still leaves your minimum worthwhile
+                time at home.
+              </span>
+            </span>
+          </label>
+
+          {value.willingToLeaveCampus ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">One-way commute</span>
+                <span className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={5}
+                    max={180}
+                    placeholder="e.g. 50"
+                    value={value.oneWayHomeCommuteMinutes ?? ""}
+                    onChange={(event) =>
+                      update({
+                        oneWayHomeCommuteMinutes:
+                          event.target.value.trim() === ""
+                            ? null
+                            : numericInput(
+                                event.target.value,
+                                value.oneWayHomeCommuteMinutes ?? 45,
+                                5,
+                                180,
+                              ),
+                      })
+                    }
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2"
+                  />
+                  <span className="text-xs text-muted-foreground">min</span>
+                </span>
+              </label>
+
+              <label className="space-y-1.5 text-sm">
+                <span className="font-medium">Minimum worthwhile stay</span>
+                <span className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={30}
+                    max={360}
+                    step={15}
+                    value={value.minimumHomeStayMinutes}
+                    onChange={(event) =>
+                      update({
+                        minimumHomeStayMinutes: numericInput(
+                          event.target.value,
+                          value.minimumHomeStayMinutes,
+                          30,
+                          360,
+                        ),
+                      })
+                    }
+                    className="w-full rounded-xl border border-input bg-background px-3 py-2"
+                  />
+                  <span className="text-xs text-muted-foreground">min</span>
+                </span>
+              </label>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <button
         type="button"
@@ -312,6 +364,8 @@ function actionChipLabel(recommendation: GapRecommendation) {
       return "Eat";
     case "leave-campus-candidate":
       return "Leave campus";
+    case "go-home":
+      return "Go home";
     case "quick-reset":
       return "Take a break";
     case "tight-transition":
@@ -334,7 +388,7 @@ const GapCard = memo(function GapCard({
   gapPreferences: GapPreferences;
   planTransition: TransitionPlanner;
 }) {
-  const { route, assessment } = useMemo(
+  const { route, assessment, residenceTrip } = useMemo(
     () => planGapAssessment(gap, preferences, gapPreferences, planTransition),
     [gap, gapPreferences, planTransition, preferences],
   );
@@ -367,6 +421,13 @@ const GapCard = memo(function GapCard({
         ? routePresentation.label
         : `~${assessment.travelMinutes} min walk`;
   const routeNote = routePresentation.status === "known" ? null : routePresentation.detail;
+  const homeOutboundMinutes = residenceTrip ? transitionMinutes(residenceTrip.outbound) : null;
+  const homeInboundMinutes = residenceTrip ? transitionMinutes(residenceTrip.inbound) : null;
+  const showingHomeRoute =
+    selected.action === "go-home" &&
+    residenceTrip !== undefined &&
+    homeOutboundMinutes !== null &&
+    homeInboundMinutes !== null;
   const detailMessages = [
     ...new Set(
       [...selected.reasons, ...assessment.warnings].map((message) =>
@@ -405,18 +466,49 @@ const GapCard = memo(function GapCard({
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-secondary/25 px-3 py-3 text-sm">
-        <p className="flex min-w-0 items-center gap-2">
-          <RouteStatusIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate">{previousLocation.label}</span>
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span className="truncate">{nextLocation.label}</span>
-        </p>
-        <p className="mt-1 pl-6 text-xs text-muted-foreground">
-          {travelCopy} · leave by {formatTime(assessment.leaveByMinutes)}
-        </p>
-        {routeNote ? (
-          <p className="mt-0.5 pl-6 text-xs text-muted-foreground">{routeNote}</p>
-        ) : null}
+        {showingHomeRoute ? (
+          <>
+            <p className="flex min-w-0 items-center gap-2">
+              <Home className="h-4 w-4 shrink-0 text-pra" aria-hidden="true" />
+              <span className="truncate">{previousLocation.label}</span>
+              <ArrowRight
+                className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="truncate">{residenceTrip.buildingName}</span>
+              <ArrowRight
+                className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="truncate">{nextLocation.label}</span>
+            </p>
+            <p className="mt-1 pl-6 text-xs text-muted-foreground">
+              ~{homeOutboundMinutes + homeInboundMinutes} min round trip · leave home by{" "}
+              {formatTime(gap.next.startTime - homeInboundMinutes - assessment.bufferMinutes)}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="flex min-w-0 items-center gap-2">
+              <RouteStatusIcon
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="truncate">{previousLocation.label}</span>
+              <ArrowRight
+                className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span className="truncate">{nextLocation.label}</span>
+            </p>
+            <p className="mt-1 pl-6 text-xs text-muted-foreground">
+              {travelCopy} · leave by {formatTime(assessment.leaveByMinutes)}
+            </p>
+            {routeNote ? (
+              <p className="mt-0.5 pl-6 text-xs text-muted-foreground">{routeNote}</p>
+            ) : null}
+          </>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -499,6 +591,7 @@ export const GapPlan = memo(function GapPlan({
   planTransition: TransitionPlanner;
 }) {
   const groups = useMemo(() => groupGapsByDay(gaps), [gaps]);
+  const residence = selectedResidence(preferences);
 
   if (groups.length === 0) {
     return (
@@ -522,7 +615,11 @@ export const GapPlan = memo(function GapPlan({
           Suggestions account for walking time, setup, pack-up, and your next class.
         </p>
       </div>
-      <GapSettings value={gapPreferences} onChange={onGapPreferencesChange} />
+      <GapSettings
+        value={gapPreferences}
+        onChange={onGapPreferencesChange}
+        residenceName={residence?.name ?? null}
+      />
 
       {groups.map((group) => (
         <section key={group.weekday} aria-labelledby={`gaps-${group.weekday}`}>

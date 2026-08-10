@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -14,6 +14,8 @@ type MapSegment = {
   route: TransitionRoute;
 };
 
+type MapHome = { buildingCode: string; label: string };
+
 type MapData = {
   meetings: Meeting[];
   segments: MapSegment[];
@@ -21,25 +23,16 @@ type MapData = {
   selectedSegmentId: string | null;
   onSelectMeeting: (id: string) => void;
   onSelectSegment: (id: string) => void;
+  home: MapHome | null;
   className?: string;
 };
 
 type MapLibreModule = typeof import("maplibre-gl");
 type MapStatus = "loading" | "ready" | "error" | "unsupported";
 type MapTheme = keyof typeof MAP_CONFIG.styleUrls;
-type WalkingRouteResponse = {
-  trip?: {
-    legs?: Array<{ shape?: string }>;
-  };
-};
-
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const FIT_BOUNDS_PADDING_PX = 56;
 const FIT_BOUNDS_MAX_ZOOM = 17;
-const WALKING_ROUTE_REQUEST_INTERVAL_MS = 1_100;
-const walkingRouteCache = new Map<string, Promise<[number, number][] | null>>();
-let walkingRouteQueue = Promise.resolve();
-let nextWalkingRouteRequestAt = 0;
 
 function supportsWebGl2(): boolean {
   try {
@@ -52,88 +45,6 @@ function supportsWebGl2(): boolean {
 function getDocumentTheme(): MapTheme {
   if (typeof document === "undefined") return "light";
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
-}
-
-function decodePolyline6(encoded: string): [number, number][] {
-  const coordinates: [number, number][] = [];
-  let index = 0;
-  let latitude = 0;
-  let longitude = 0;
-
-  const readDelta = () => {
-    let result = 0;
-    let shift = 0;
-    let byte = 0;
-    do {
-      if (index >= encoded.length) throw new Error("Invalid route geometry");
-      byte = encoded.charCodeAt(index++) - 63;
-      result |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20);
-    return result & 1 ? ~(result >> 1) : result >> 1;
-  };
-
-  while (index < encoded.length) {
-    latitude += readDelta();
-    longitude += readDelta();
-    coordinates.push([longitude / 1_000_000, latitude / 1_000_000]);
-  }
-
-  return coordinates;
-}
-
-function queueWalkingRouteRequest<T>(request: () => Promise<T>): Promise<T> {
-  const queued = walkingRouteQueue.then(async () => {
-    const waitMs = Math.max(0, nextWalkingRouteRequestAt - Date.now());
-    if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
-    nextWalkingRouteRequestAt = Date.now() + WALKING_ROUTE_REQUEST_INTERVAL_MS;
-    return request();
-  });
-  walkingRouteQueue = queued.then(
-    () => undefined,
-    () => undefined,
-  );
-  return queued;
-}
-
-function getWalkingRoute(
-  from: [number, number],
-  to: [number, number],
-): Promise<[number, number][] | null> {
-  const key = `${from.join(",")}>${to.join(",")}`;
-  const cached = walkingRouteCache.get(key);
-  if (cached) return cached;
-
-  const request = queueWalkingRouteRequest(async () => {
-    try {
-      const response = await fetch("https://valhalla1.openstreetmap.de/route", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Client-Id": "gapwise-utm.vercel.app",
-        },
-        body: JSON.stringify({
-          locations: [
-            { lat: from[1], lon: from[0] },
-            { lat: to[1], lon: to[0] },
-          ],
-          costing: "pedestrian",
-          directions_options: { units: "kilometers" },
-        }),
-      });
-      if (!response.ok) return null;
-      const payload = (await response.json()) as WalkingRouteResponse;
-      const shape = payload.trip?.legs?.[0]?.shape;
-      if (!shape) return null;
-      const coordinates = decodePolyline6(shape);
-      return coordinates.length >= 2 ? coordinates : null;
-    } catch {
-      return null;
-    }
-  });
-
-  walkingRouteCache.set(key, request);
-  return request;
 }
 
 function routeFeatureCollection(data: MapData) {
@@ -305,11 +216,31 @@ function syncMapData(
     );
   });
 
+  if (data.home) {
+    const homeBuilding = getCampusBuilding(data.home.buildingCode);
+    if (homeBuilding) {
+      const homeMarker = document.createElement("div");
+      homeMarker.className = "map-home-marker";
+      const homeIcon = document.createElement("span");
+      homeIcon.textContent = "⌂";
+      homeIcon.setAttribute("aria-hidden", "true");
+      homeMarker.append(homeIcon);
+      homeMarker.title = `Home · ${data.home.label}`;
+      homeMarker.setAttribute("role", "img");
+      homeMarker.setAttribute("aria-label", `Home at ${data.home.label}`);
+      markers.push(
+        new maplibregl.Marker({ element: homeMarker })
+          .setLngLat(homeBuilding.navigationPoint)
+          .addTo(map),
+      );
+    }
+  }
+
   const collection = routeFeatureCollection(data);
   const source = map.getSource("day-routes") as GeoJSONSource | undefined;
   if (source) {
     source.setData(collection);
-  } else if (map.isStyleLoaded()) {
+  } else {
     map.addSource("day-routes", { type: "geojson", data: collection });
     addRouteLayers(map, theme);
   }
@@ -320,6 +251,10 @@ function collectBoundsPoints(data: MapData): [number, number][] {
   for (const meeting of data.meetings) {
     const building = getCampusBuilding(meeting.buildingCode);
     if (building) points.push(building.navigationPoint);
+  }
+  if (data.home) {
+    const homeBuilding = getCampusBuilding(data.home.buildingCode);
+    if (homeBuilding) points.push(homeBuilding.navigationPoint);
   }
   for (const segment of data.segments) {
     for (const coord of segment.route.displayCoordinates) {
@@ -364,6 +299,7 @@ export function CampusMap({
   selectedSegmentId,
   onSelectMeeting,
   onSelectSegment,
+  home,
   className = "",
 }: MapData) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -373,69 +309,40 @@ export function CampusMap({
   const lastFitKeyRef = useRef<string>("");
   const appliedThemeRef = useRef<MapTheme | null>(null);
   const [mapTheme, setMapTheme] = useState<MapTheme>(getDocumentTheme);
-  const [walkingRoutes, setWalkingRoutes] = useState<Record<string, [number, number][]>>({});
   const themeRef = useRef<MapTheme>(mapTheme);
   const [status, setStatus] = useState<MapStatus>("loading");
   const [attempt, setAttempt] = useState(0);
-  const displaySegments = useMemo(
-    () =>
-      segments.map((segment) => {
-        if (segment.route.displayCoordinates.length >= 2) return segment;
-        const walkingRoute = walkingRoutes[segment.id];
-        if (!walkingRoute) return segment;
-        return {
-          ...segment,
-          route: { ...segment.route, displayCoordinates: walkingRoute },
-        };
-      }),
-    [segments, walkingRoutes],
-  );
   const latestData = useRef<MapData>({
     meetings,
-    segments: displaySegments,
+    segments,
     selectedMeetingId,
     selectedSegmentId,
     onSelectMeeting,
     onSelectSegment,
+    home,
   });
-  themeRef.current = mapTheme;
-  latestData.current = {
-    meetings,
-    segments: displaySegments,
-    selectedMeetingId,
-    selectedSegmentId,
-    onSelectMeeting,
-    onSelectSegment,
-  };
 
   useEffect(() => {
-    let cancelled = false;
-    const candidates = segments.filter(
-      (segment) =>
-        segment.route.status === "approximate" && segment.route.displayCoordinates.length < 2,
-    );
-
-    void Promise.all(
-      candidates.map(async (segment) => {
-        const fromBuilding = getCampusBuilding(segment.from.buildingCode);
-        const toBuilding = getCampusBuilding(segment.to.buildingCode);
-        if (!fromBuilding || !toBuilding) return;
-        const coordinates = await getWalkingRoute(
-          fromBuilding.navigationPoint,
-          toBuilding.navigationPoint,
-        );
-        if (!cancelled && coordinates) {
-          setWalkingRoutes((current) =>
-            current[segment.id] ? current : { ...current, [segment.id]: coordinates },
-          );
-        }
-      }),
-    );
-
-    return () => {
-      cancelled = true;
+    themeRef.current = mapTheme;
+    latestData.current = {
+      meetings,
+      segments,
+      selectedMeetingId,
+      selectedSegmentId,
+      onSelectMeeting,
+      onSelectSegment,
+      home,
     };
-  }, [segments]);
+  }, [
+    home,
+    mapTheme,
+    meetings,
+    onSelectMeeting,
+    onSelectSegment,
+    selectedMeetingId,
+    selectedSegmentId,
+    segments,
+  ]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -545,12 +452,13 @@ export function CampusMap({
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
     }
   }, [
-    displaySegments,
+    home,
     meetings,
     onSelectMeeting,
     onSelectSegment,
     selectedMeetingId,
     selectedSegmentId,
+    segments,
   ]);
 
   return (

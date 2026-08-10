@@ -58,7 +58,8 @@ expectation even though the current output is static.
 Apply migrations in filename order. Never edit an already-applied migration to
 change production; add a new migration instead. For the legacy `source_filename`
 removal, deploy and verify the compatible frontend first, then apply the migration;
-see `docs/SUPABASE.md` for the exact order.
+for the additive residence-preference columns, apply the migration before the new
+frontend. See `docs/SUPABASE.md` for both exact sequences.
 
 ```sh
 supabase db push

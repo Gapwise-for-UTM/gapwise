@@ -10,7 +10,9 @@ export type Database = {
       user_preferences: {
         Row: {
           avoid_stairs: boolean;
+          day_origin: string;
           prefer_indoor: boolean;
+          residence_building_code: string | null;
           route_mode: string;
           transition_buffer_minutes: number;
           updated_at: string;
@@ -19,7 +21,9 @@ export type Database = {
         };
         Insert: {
           avoid_stairs?: boolean;
+          day_origin?: string;
           prefer_indoor?: boolean;
+          residence_building_code?: string | null;
           route_mode?: string;
           transition_buffer_minutes?: number;
           updated_at?: string;
@@ -28,7 +32,9 @@ export type Database = {
         };
         Update: {
           avoid_stairs?: boolean;
+          day_origin?: string;
           prefer_indoor?: boolean;
+          residence_building_code?: string | null;
           route_mode?: string;
           transition_buffer_minutes?: number;
           updated_at?: string;

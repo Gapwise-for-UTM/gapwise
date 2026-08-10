@@ -1,28 +1,38 @@
 import type { RoutingGraph, RoutingNode } from "@/features/routing/types";
 import { assertRoutingGraphIntegrity } from "@/features/routing/graph-integrity";
-import { CAMPUS_BUILDINGS } from "./routing-buildings";
 import surveyRoutingData from "./generated/survey-routing.json";
+import outdoorEdgesData from "./outdoor-edges.json";
+import outdoorNodesRaw from "./outdoor-nodes.geojson?raw";
 
-export { CAMPUS_BUILDINGS, getCampusBuilding } from "./routing-buildings";
+export {
+  CAMPUS_BUILDINGS,
+  RESIDENCE_BUILDINGS,
+  getCampusBuilding,
+  getResidenceBuilding,
+} from "./routing-buildings";
 
-const ENTRANCE_NODES: RoutingNode[] = CAMPUS_BUILDINGS.map((building) => ({
-  id: building.entranceNodeId,
-  kind: "building-entrance",
-  buildingCode: building.code,
-  floor: null,
-  accessibility: "unknown",
-  longitude: building.navigationPoint[0],
-  latitude: building.navigationPoint[1],
-  label: `${building.code} mapped entrance`,
-  metadata: building.metadata,
+type OutdoorNodeFeature = {
+  id: string;
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: Omit<RoutingNode, "id" | "longitude" | "latitude">;
+};
+
+const outdoorNodeFeatures = (JSON.parse(outdoorNodesRaw) as { features: OutdoorNodeFeature[] })
+  .features;
+const outdoorNodes: RoutingNode[] = outdoorNodeFeatures.map((feature) => ({
+  id: feature.id,
+  ...feature.properties,
+  longitude: feature.geometry.coordinates[0],
+  latitude: feature.geometry.coordinates[1],
 }));
 
 /** Base navigation points plus deterministic, validated field-survey records. */
 const importedSurveyGraph = surveyRoutingData as RoutingGraph;
+const importedOutdoorEdges = outdoorEdgesData.edges as RoutingGraph["edges"];
 
 export const UTM_ROUTING_GRAPH: RoutingGraph = {
-  nodes: [...ENTRANCE_NODES, ...importedSurveyGraph.nodes],
-  edges: importedSurveyGraph.edges,
+  nodes: [...outdoorNodes, ...importedSurveyGraph.nodes],
+  edges: [...importedOutdoorEdges, ...importedSurveyGraph.edges],
 };
 
 assertRoutingGraphIntegrity(UTM_ROUTING_GRAPH);

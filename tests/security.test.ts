@@ -79,4 +79,17 @@ describe("account deletion and RLS security", () => {
     expect(syncService).not.toContain("source_filename");
     expect(databaseTypes).not.toContain("source_filename");
   });
+
+  test("stores residence choice in the existing owner-scoped preferences row", async () => {
+    const migration = await readFile(
+      "supabase/migrations/20260810192250_add_residence_preferences.sql",
+      "utf8",
+    );
+    expect(migration).toContain("alter table public.user_preferences");
+    expect(migration).toContain("add column day_origin");
+    expect(migration).toContain("add column residence_building_code");
+    expect(migration).toContain("day_origin in ('commute', 'residence')");
+    expect(migration).toMatch(/day_origin = 'residence'[\s\S]*residence_building_code is not null/);
+    expect(migration).not.toMatch(/create policy|using\s*\(true\)/i);
+  });
 });

@@ -1,53 +1,532 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "description": "Entrance points present in OpenStreetMap. Accessibility is not assumed when wheelchair tags are absent.",
-    "source": "OpenStreetMap",
-    "sourceUrl": "https://www.openstreetmap.org/",
-    "lastVerified": "2026-08-01",
+    "description": "UTM building entrances and explicitly flagged pedestrian approach points. Door points come from OpenStreetMap entrance nodes; inferred approaches are mapped path nodes used only where a door has not been published.",
+    "source": "OpenStreetMap and University of Toronto Mississauga",
+    "sourceUrl": "https://www.utm.utoronto.ca/visitors/maps-and-directions",
+    "lastVerified": "2026-08-10",
     "verificationStatus": "verified"
   },
   "features": [
     {
       "type": "Feature",
-      "id": "13738201127",
+      "id": "mn-13738201127",
       "geometry": { "type": "Point", "coordinates": [-79.6654141, 43.5513221] },
       "properties": {
         "buildingCode": "MN",
-        "entrance": "yes",
+        "label": "Mapped entrance",
+        "kind": "entrance",
+        "osmNodeId": 13738201127,
         "accessibility": "unknown",
         "source": "OpenStreetMap",
         "sourceUrl": "https://www.openstreetmap.org/node/13738201127",
-        "lastVerified": "2026-08-01",
+        "lastVerified": "2026-08-10",
         "verificationStatus": "verified"
       }
     },
     {
       "type": "Feature",
-      "id": "13568164836",
+      "id": "dh-13568164836",
       "geometry": { "type": "Point", "coordinates": [-79.6659651, 43.5503162] },
       "properties": {
         "buildingCode": "DH",
-        "entrance": "main",
+        "label": "Main entrance A",
+        "kind": "entrance",
+        "osmNodeId": 13568164836,
         "accessibility": "unknown",
         "source": "OpenStreetMap",
         "sourceUrl": "https://www.openstreetmap.org/node/13568164836",
-        "lastVerified": "2026-08-01",
+        "lastVerified": "2026-08-10",
         "verificationStatus": "verified"
       }
     },
     {
       "type": "Feature",
-      "id": "2383650599",
+      "id": "dh-13568164837",
+      "geometry": { "type": "Point", "coordinates": [-79.6666995, 43.5505658] },
+      "properties": {
+        "buildingCode": "DH",
+        "label": "Main entrance B",
+        "kind": "entrance",
+        "osmNodeId": 13568164837,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164837",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dh-13751172451",
+      "geometry": { "type": "Point", "coordinates": [-79.6660506, 43.5505348] },
+      "properties": {
+        "buildingCode": "DH",
+        "label": "Mapped entrance",
+        "kind": "entrance",
+        "osmNodeId": 13751172451,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13751172451",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-2383650599",
       "geometry": { "type": "Point", "coordinates": [-79.6636318, 43.5516425] },
       "properties": {
         "buildingCode": "IB",
-        "entrance": "main",
+        "label": "Main entrance",
+        "kind": "entrance",
+        "osmNodeId": 2383650599,
         "accessibility": "unknown",
         "source": "OpenStreetMap",
         "sourceUrl": "https://www.openstreetmap.org/node/2383650599",
-        "lastVerified": "2026-08-01",
+        "lastVerified": "2026-08-10",
         "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-2383653565",
+      "geometry": { "type": "Point", "coordinates": [-79.6642634, 43.5514803] },
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Mapped entrance",
+        "kind": "entrance",
+        "osmNodeId": 2383653565,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/2383653565",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-1728238982",
+      "geometry": { "type": "Point", "coordinates": [-79.6617704, 43.5484051] },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Main entrance A",
+        "kind": "entrance",
+        "osmNodeId": 1728238982,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1728238982",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-13568164844",
+      "geometry": { "type": "Point", "coordinates": [-79.6625598, 43.5494213] },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Accessible main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13568164844,
+        "accessibility": "accessible",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164844",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-13736463909",
+      "geometry": { "type": "Point", "coordinates": [-79.6618689, 43.5477041] },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Accessible main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13736463909,
+        "accessibility": "accessible",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13736463909",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-370306723",
+      "geometry": { "type": "Point", "coordinates": [-79.6623618, 43.5493975] },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Main entrance B",
+        "kind": "entrance",
+        "osmNodeId": 370306723,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/370306723",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "cct-13568164845",
+      "geometry": { "type": "Point", "coordinates": [-79.6626873, 43.5495452] },
+      "properties": {
+        "buildingCode": "CCT",
+        "label": "Accessible entrance",
+        "kind": "entrance",
+        "osmNodeId": 13568164845,
+        "accessibility": "accessible",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164845",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "hm-13731205434",
+      "geometry": { "type": "Point", "coordinates": [-79.6630169, 43.5510334] },
+      "properties": {
+        "buildingCode": "HM",
+        "label": "Main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13731205434,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13731205434",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "kn-13568164841",
+      "geometry": { "type": "Point", "coordinates": [-79.6635084, 43.5480958] },
+      "properties": {
+        "buildingCode": "KN",
+        "label": "Accessible main entrance A",
+        "kind": "entrance",
+        "osmNodeId": 13568164841,
+        "accessibility": "accessible",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164841",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "kn-1312579120",
+      "geometry": { "type": "Point", "coordinates": [-79.6628687, 43.5479701] },
+      "properties": {
+        "buildingCode": "KN",
+        "label": "Accessible main entrance B",
+        "kind": "entrance",
+        "osmNodeId": 1312579120,
+        "accessibility": "accessible",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1312579120",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "kn-13568164842",
+      "geometry": { "type": "Point", "coordinates": [-79.6632372, 43.5485709] },
+      "properties": {
+        "buildingCode": "KN",
+        "label": "Accessible main entrance C",
+        "kind": "entrance",
+        "osmNodeId": 13568164842,
+        "accessibility": "accessible",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164842",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rawc-13568164832",
+      "geometry": { "type": "Point", "coordinates": [-79.6606714, 43.5479331] },
+      "properties": {
+        "buildingCode": "RAWC",
+        "label": "Main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13568164832,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164832",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "xr-13568164843",
+      "geometry": { "type": "Point", "coordinates": [-79.6637236, 43.5488462] },
+      "properties": {
+        "buildingCode": "XR",
+        "label": "Main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13568164843,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164843",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "xr-2105676602",
+      "geometry": { "type": "Point", "coordinates": [-79.6639869, 43.5485377] },
+      "properties": {
+        "buildingCode": "XR",
+        "label": "Mapped entrance",
+        "kind": "entrance",
+        "osmNodeId": 2105676602,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/2105676602",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "hb-13738956113",
+      "geometry": { "type": "Point", "coordinates": [-79.6622362, 43.5497526] },
+      "properties": {
+        "buildingCode": "HB",
+        "label": "Main entrance A",
+        "kind": "entrance",
+        "osmNodeId": 13738956113,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13738956113",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "hb-13568164846",
+      "geometry": { "type": "Point", "coordinates": [-79.6623068, 43.5494997] },
+      "properties": {
+        "buildingCode": "HB",
+        "label": "Main entrance B",
+        "kind": "entrance",
+        "osmNodeId": 13568164846,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164846",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ax-1728239148",
+      "geometry": { "type": "Point", "coordinates": [-79.6643646, 43.5481895] },
+      "properties": {
+        "buildingCode": "AX",
+        "label": "Mapped pedestrian approach",
+        "kind": "approach",
+        "osmNodeId": 1728239148,
+        "accessibility": "unknown",
+        "notes": "A nearby mapped footway endpoint is used because no entrance-tagged door is published.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1728239148",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dw-13767739551",
+      "geometry": { "type": "Point", "coordinates": [-79.6661378, 43.5499078] },
+      "properties": {
+        "buildingCode": "DW",
+        "label": "Mapped entrance",
+        "kind": "entrance",
+        "osmNodeId": 13767739551,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13767739551",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "oph-13738728068",
+      "geometry": { "type": "Point", "coordinates": [-79.6659355, 43.5486076] },
+      "properties": {
+        "buildingCode": "OPH",
+        "label": "Main entrance A",
+        "kind": "entrance",
+        "osmNodeId": 13738728068,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13738728068",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "oph-1728224590",
+      "geometry": { "type": "Point", "coordinates": [-79.6656991, 43.548785] },
+      "properties": {
+        "buildingCode": "OPH",
+        "label": "Main entrance B",
+        "kind": "entrance",
+        "osmNodeId": 1728224590,
+        "accessibility": "unknown",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1728224590",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "eh-1312381405",
+      "geometry": { "type": "Point", "coordinates": [-79.665827, 43.5496711] },
+      "properties": {
+        "buildingCode": "EH",
+        "label": "Mapped residence approach",
+        "kind": "approach",
+        "osmNodeId": 1312381405,
+        "accessibility": "unknown",
+        "notes": "A mapped footway approach is used because no entrance-tagged door is published.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1312381405",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rih-1312390438",
+      "geometry": { "type": "Point", "coordinates": [-79.6669481, 43.5483514] },
+      "properties": {
+        "buildingCode": "RIH",
+        "label": "Mapped residence approach",
+        "kind": "approach",
+        "osmNodeId": 1312390438,
+        "accessibility": "unknown",
+        "notes": "A mapped footway within the residence complex is used because individual doors are not entrance-tagged.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1312390438",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mc-1312572625",
+      "geometry": { "type": "Point", "coordinates": [-79.6663369, 43.5477885] },
+      "properties": {
+        "buildingCode": "MC",
+        "label": "Mapped residence approach",
+        "kind": "approach",
+        "osmNodeId": 1312572625,
+        "accessibility": "unknown",
+        "notes": "A mapped footway within the townhouse complex is used because individual doors are not entrance-tagged.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1312572625",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "pp-1312345673",
+      "geometry": { "type": "Point", "coordinates": [-79.6647968, 43.5466479] },
+      "properties": {
+        "buildingCode": "PP",
+        "label": "Mapped residence approach",
+        "kind": "approach",
+        "osmNodeId": 1312345673,
+        "accessibility": "unknown",
+        "notes": "A mapped footway within the townhouse complex is used because individual doors are not entrance-tagged.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/1312345673",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ll-10307744191",
+      "geometry": { "type": "Point", "coordinates": [-79.6629614, 43.5460646] },
+      "properties": {
+        "buildingCode": "LL",
+        "label": "Mapped residence approach",
+        "kind": "approach",
+        "osmNodeId": 10307744191,
+        "accessibility": "unknown",
+        "notes": "A mapped sidewalk within the townhouse complex is used because individual doors are not entrance-tagged.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/10307744191",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mv-13783936312",
+      "geometry": { "type": "Point", "coordinates": [-79.6618427, 43.5459624] },
+      "properties": {
+        "buildingCode": "MV",
+        "label": "Mapped residence approach",
+        "kind": "approach",
+        "osmNodeId": 13783936312,
+        "accessibility": "unknown",
+        "notes": "A mapped footway within the townhouse complex is used because individual doors are not entrance-tagged.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13783936312",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "sw-4210336797",
+      "geometry": { "type": "Point", "coordinates": [-79.6678759, 43.5492673] },
+      "properties": {
+        "buildingCode": "SW",
+        "label": "Mapped residence approach",
+        "kind": "approach",
+        "osmNodeId": 4210336797,
+        "accessibility": "unknown",
+        "notes": "A mapped path within the residence complex is used because individual doors are not entrance-tagged.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/4210336797",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "nrb-1312470630",
+      "geometry": { "type": "Point", "coordinates": [-79.6671122, 43.5494972] },
+      "properties": {
+        "buildingCode": "NRB",
+        "label": "Five Minute Walk approach",
+        "kind": "approach",
+        "osmNodeId": 1312470630,
+        "accessibility": "unknown",
+        "notes": "The official residence opens in September 2026; a mapped footway approach is used until an entrance-tagged door is published.",
+        "source": "OpenStreetMap and UTM Student Housing & Residence Life",
+        "sourceUrl": "https://www.utm.utoronto.ca/housing/new-residence-building",
+        "lastVerified": "2026-08-10",
+        "verificationStatus": "inferred"
       }
     }
   ]

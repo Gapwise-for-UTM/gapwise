@@ -29,6 +29,19 @@ The `20260804040016_remove_schedule_source_filename.sql` migration permanently r
 
 Do not apply the migration before the compatible frontend is serving users. The migration does not alter RLS policies, ownership checks, cascading account deletion, or table grants. This repository change does not apply the migration to the hosted database.
 
+### Residence-preference migration order
+
+`20260810192250_add_residence_preferences.sql` adds constrained `day_origin` and nullable
+`residence_building_code` columns to the existing owner-scoped preference row. It does not create a
+location-history table, infer a residence, or change RLS/grants. For an existing deployment:
+
+1. Run `supabase db push` before deploying the residence-aware frontend. The old frontend remains
+   compatible because both columns have safe commuter defaults.
+2. Deploy the new frontend and verify guest local persistence first.
+3. With a disposable signed-in user, save/load both commuter mode and one residence, then confirm a
+   second user cannot read that row.
+4. Regenerate linked database types if the hosted schema differs from `src/lib/database.types.ts`.
+
 ## Browser auth sessions
 
 The browser client uses Supabase's supported persistent-session configuration: `persistSession`, automatic token refresh, OAuth URL detection, and a `localStorage` adapter. A signed-in user therefore remains signed in across reloads and normal browser restarts. If browser privacy settings block storage, auth falls back to memory for the current page instead of crashing; that fallback is intentionally not durable.

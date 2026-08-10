@@ -730,6 +730,30 @@
     0 10px 24px -8px color-mix(in oklab, var(--color-accent) 70%, transparent);
 }
 
+.map-home-marker {
+  display: inline-flex;
+  width: 2.35rem;
+  height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-accent);
+  border-radius: 0.8rem 0.8rem 0.8rem 0.2rem;
+  background: color-mix(in oklab, var(--color-card) 92%, transparent);
+  color: var(--color-accent);
+  font-family: var(--font-sans);
+  font-size: 1.35rem;
+  font-weight: 750;
+  line-height: 1;
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--color-background) 82%, transparent),
+    0 10px 26px -9px color-mix(in oklab, var(--color-accent) 64%, transparent);
+  backdrop-filter: blur(10px) saturate(120%);
+}
+
+.map-home-marker > span {
+  display: inline-block;
+}
+
 /* Keep MapLibre controls visually native to Gapwise without obscuring the map. */
 .campus-map .maplibregl-ctrl-group {
   overflow: hidden;

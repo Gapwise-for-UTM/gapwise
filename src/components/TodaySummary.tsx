@@ -1,4 +1,11 @@
-import { ArrowRight, CalendarClock, Navigation, Sparkles, type LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarClock,
+  Home,
+  Navigation,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import { memo, useEffect, useMemo, useState } from "react";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
 import type { GapPreferences } from "@/features/gaps/types";
@@ -189,15 +196,29 @@ export const TodaySummary = memo(function TodaySummary({
       detail = `${formatCompactDuration(
         summary.assessment.primary.activityMinutes,
       )} usable · Next: ${summary.gap.next.courseCode} · ${getLocationPresentation({ meeting: summary.gap.next }).label} at ${formatTime(summary.gap.next.startTime)}`;
-      const presentation = getLocationPresentation({
-        from: summary.gap.previous,
-        to: summary.gap.next,
-        route: summary.route,
-      });
-      SecondaryIcon = presentation.icon;
-      secondary = `${routeCopy(summary.gap.previous, summary.gap.next, summary.route)} · leave by ${formatTime(
-        summary.assessment.leaveByMinutes,
-      )}`;
+      const outbound = summary.residenceTrip ? routeMinutes(summary.residenceTrip.outbound) : null;
+      const inbound = summary.residenceTrip ? routeMinutes(summary.residenceTrip.inbound) : null;
+      if (
+        summary.assessment.primary.action === "go-home" &&
+        summary.residenceTrip &&
+        outbound !== null &&
+        inbound !== null
+      ) {
+        SecondaryIcon = Home;
+        secondary = `~${outbound + inbound} min campus round trip · leave home by ${formatTime(
+          summary.gap.next.startTime - inbound - summary.assessment.bufferMinutes,
+        )}`;
+      } else {
+        const presentation = getLocationPresentation({
+          from: summary.gap.previous,
+          to: summary.gap.next,
+          route: summary.route,
+        });
+        SecondaryIcon = presentation.icon;
+        secondary = `${routeCopy(summary.gap.previous, summary.gap.next, summary.route)} · leave by ${formatTime(
+          summary.assessment.leaveByMinutes,
+        )}`;
+      }
       break;
     }
     case "done":

@@ -1,61 +1,115 @@
-import type { SourceMetadata } from "@/features/routing/types";
+import type {
+  AccessibilityStatus,
+  SourceMetadata,
+  VerificationStatus,
+} from "@/features/routing/types";
+import { UTM_BUILDINGS } from "./building-registry";
+import entranceDataRaw from "./entrances.geojson?raw";
 
-export type CampusBuilding = {
-  code: "MN" | "DH" | "IB";
-  name: string;
-  navigationPoint: [number, number];
-  entranceNodeId: string;
-  indoorMapped: boolean;
+export type EntranceKind = "entrance" | "approach";
+
+export type BuildingEntrance = {
+  id: string;
+  label: string;
+  kind: EntranceKind;
+  coordinates: [number, number];
+  osmNodeId: number;
+  accessibility: AccessibilityStatus;
+  notes?: string;
   metadata: SourceMetadata;
 };
 
-const OSM_META = {
-  source: "OpenStreetMap",
-  lastVerified: "2026-08-01",
-  verificationStatus: "verified",
-} as const;
+export type CampusBuilding = {
+  code: string;
+  name: string;
+  category: "academic" | "residence";
+  entrances: BuildingEntrance[];
+  navigationPoint: [number, number];
+  entranceNodeId: string;
+  indoorMapped: boolean;
+};
 
-/** Buildings with verified navigation points. This is intentionally not the recognition registry. */
-export const CAMPUS_BUILDINGS: CampusBuilding[] = [
-  {
-    code: "MN",
-    name: "Maanjiwe nendamowinan",
-    navigationPoint: [-79.6654141, 43.5513221],
-    entranceNodeId: "entrance-mn-13738201127",
-    indoorMapped: false,
+type EntranceFeature = {
+  id: string;
+  geometry: { type: "Point"; coordinates: [number, number] };
+  properties: {
+    buildingCode: string;
+    label: string;
+    kind: EntranceKind;
+    osmNodeId: number;
+    accessibility: AccessibilityStatus;
+    notes?: string;
+    source: string;
+    sourceUrl: string;
+    lastVerified: string;
+    verificationStatus: VerificationStatus;
+  };
+};
+
+const entranceFeatures = (JSON.parse(entranceDataRaw) as { features: EntranceFeature[] }).features;
+
+function toEntrance(feature: EntranceFeature): BuildingEntrance {
+  const entrance: BuildingEntrance = {
+    id: feature.id,
+    label: feature.properties.label,
+    kind: feature.properties.kind,
+    coordinates: feature.geometry.coordinates,
+    osmNodeId: feature.properties.osmNodeId,
+    accessibility: feature.properties.accessibility,
     metadata: {
-      ...OSM_META,
-      sourceUrl: "https://www.openstreetmap.org/node/13738201127",
+      source: feature.properties.source,
+      sourceUrl: feature.properties.sourceUrl,
+      lastVerified: feature.properties.lastVerified,
+      verificationStatus: feature.properties.verificationStatus,
     },
+  };
+  if (feature.properties.notes) entrance.notes = feature.properties.notes;
+  return entrance;
+}
+
+/** One source of truth for every routable academic and residence building. */
+export const CAMPUS_BUILDINGS: CampusBuilding[] = UTM_BUILDINGS.flatMap(
+  (building): CampusBuilding[] => {
+    const entrances = entranceFeatures
+      .filter((feature) => feature.properties.buildingCode === building.code)
+      .map(toEntrance);
+    if (entrances.length === 0) return [];
+    const primary = entrances[0]!;
+    return [
+      {
+        code: building.code,
+        name: building.name,
+        category: building.category,
+        entrances,
+        navigationPoint: primary.coordinates,
+        entranceNodeId: `osm-node-${primary.osmNodeId}`,
+        indoorMapped: false,
+      } satisfies CampusBuilding,
+    ];
   },
-  {
-    code: "DH",
-    name: "Deerfield Hall",
-    navigationPoint: [-79.6659651, 43.5503162],
-    entranceNodeId: "entrance-dh-13568164836",
-    indoorMapped: false,
-    metadata: {
-      ...OSM_META,
-      sourceUrl: "https://www.openstreetmap.org/node/13568164836",
-    },
-  },
-  {
-    code: "IB",
-    name: "Instructional Centre",
-    navigationPoint: [-79.6636318, 43.5516425],
-    entranceNodeId: "entrance-ib-2383650599",
-    indoorMapped: false,
-    metadata: {
-      ...OSM_META,
-      sourceUrl: "https://www.openstreetmap.org/node/2383650599",
-    },
-  },
-];
+);
+
+export const RESIDENCE_BUILDINGS = CAMPUS_BUILDINGS.filter(
+  (building) => building.category === "residence",
+);
 
 export function getCampusBuilding(code: string | null): CampusBuilding | null {
   return CAMPUS_BUILDINGS.find((building) => building.code === code?.toUpperCase()) ?? null;
 }
 
+export function getResidenceBuilding(code: string | null): CampusBuilding | null {
+  const building = getCampusBuilding(code);
+  return building?.category === "residence" ? building : null;
+}
+
 export function hasVerifiedRoutingData(code: string): boolean {
+  return (
+    getCampusBuilding(code)?.entrances.some(
+      (entrance) => entrance.metadata.verificationStatus === "verified",
+    ) ?? false
+  );
+}
+
+export function hasMappedRoutingData(code: string): boolean {
   return getCampusBuilding(code) !== null;
 }

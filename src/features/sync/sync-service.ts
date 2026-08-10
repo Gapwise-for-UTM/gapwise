@@ -62,6 +62,8 @@ export async function savePreferences(preferences: UserPreferences): Promise<voi
     transition_buffer_minutes: value.transitionBufferMinutes,
     avoid_stairs: value.avoidStairs,
     prefer_indoor: value.preferIndoor,
+    day_origin: value.dayOrigin,
+    residence_building_code: value.residenceBuildingCode,
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
@@ -72,7 +74,9 @@ export async function loadPreferences(): Promise<UserPreferences | null> {
   const userId = await currentUserId();
   const { data, error } = await supabase
     .from("user_preferences")
-    .select("walking_speed_mps, route_mode, transition_buffer_minutes, avoid_stairs, prefer_indoor")
+    .select(
+      "walking_speed_mps, route_mode, transition_buffer_minutes, avoid_stairs, prefer_indoor, day_origin, residence_building_code",
+    )
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw error;
@@ -83,5 +87,7 @@ export async function loadPreferences(): Promise<UserPreferences | null> {
     transitionBufferMinutes: data.transition_buffer_minutes,
     avoidStairs: data.avoid_stairs,
     preferIndoor: data.prefer_indoor,
+    dayOrigin: data.day_origin as UserPreferences["dayOrigin"],
+    residenceBuildingCode: data.residence_building_code,
   });
 }

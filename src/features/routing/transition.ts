@@ -34,11 +34,9 @@ function findRoomNode(graph: RoutingGraph, buildingCode: string, room: string | 
   );
 }
 
-function findEntranceNode(graph: RoutingGraph, buildingCode: string): RoutingNode | null {
-  return (
-    graph.nodes.find(
-      (node) => node.kind === "building-entrance" && node.buildingCode === buildingCode,
-    ) ?? null
+function findEntranceNodes(graph: RoutingGraph, buildingCode: string): RoutingNode[] {
+  return graph.nodes.filter(
+    (node) => node.kind === "building-entrance" && node.buildingCode === buildingCode,
   );
 }
 
@@ -105,10 +103,10 @@ export function planMeetingTransition(
 
   const originRoom = findRoomNode(graph, origin.buildingCode, origin.room);
   const destinationRoom = findRoomNode(graph, destination.buildingCode, destination.room);
-  const originEntrance = findEntranceNode(graph, origin.buildingCode);
-  const destinationEntrance = findEntranceNode(graph, destination.buildingCode);
-  const start = originRoom ?? originEntrance;
-  const end = destinationRoom ?? destinationEntrance;
+  const originEntrances = findEntranceNodes(graph, origin.buildingCode);
+  const destinationEntrances = findEntranceNodes(graph, destination.buildingCode);
+  const starts = originRoom ? [originRoom] : originEntrances;
+  const ends = destinationRoom ? [destinationRoom] : destinationEntrances;
 
   if (sameBuilding && (!originRoom || !destinationRoom)) {
     return locationUnavailable(`Indoor room routing not yet mapped for ${origin.buildingCode}.`, [
@@ -116,8 +114,30 @@ export function planMeetingTransition(
     ]);
   }
 
-  if (start && end) {
-    const result = findRoute(graph, start.id, end.id, preferences);
+  if (starts.length > 0 && ends.length > 0) {
+    const result = starts
+      .flatMap((start) =>
+        ends.map((end) => ({
+          start,
+          end,
+          result: findRoute(graph, start.id, end.id, preferences),
+        })),
+      )
+      .filter(
+        (
+          candidate,
+        ): candidate is {
+          start: RoutingNode;
+          end: RoutingNode;
+          result: NonNullable<ReturnType<typeof findRoute>>;
+        } => candidate.result !== null,
+      )
+      .sort(
+        (a, b) =>
+          a.result.estimatedSeconds - b.result.estimatedSeconds ||
+          a.start.id.localeCompare(b.start.id) ||
+          a.end.id.localeCompare(b.end.id),
+      )[0]?.result;
     if (result) {
       const displayCoordinates = result.nodes
         .filter(
@@ -127,17 +147,20 @@ export function planMeetingTransition(
         .map((node) => [node.longitude, node.latitude] as [number, number]);
       const indoorComplete = Boolean(originRoom && destinationRoom);
       const warnings = [...result.warnings];
-      if (!originRoom)
+      if (!originRoom && getCampusBuilding(origin.buildingCode)?.category !== "residence")
         warnings.push(`Indoor room routing not yet mapped for ${origin.buildingCode}.`);
-      if (!destinationRoom) {
+      if (
+        !destinationRoom &&
+        getCampusBuilding(destination.buildingCode)?.category !== "residence"
+      ) {
         warnings.push(`Indoor room routing not yet mapped for ${destination.buildingCode}.`);
       }
       return {
         status: "routed",
-        message: "Route calculated from verified graph records.",
+        message: "Route calculated along bundled campus paths.",
         accuracy: indoorComplete
           ? "Verified indoor + outdoor route"
-          : "Verified outdoor route, indoor estimate",
+          : "Mapped campus path, indoor estimate",
         result,
         displayCoordinates,
         warnings,

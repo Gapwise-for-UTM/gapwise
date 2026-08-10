@@ -10,6 +10,31 @@ Runtime validation and conversion live in
 [`src/data/utm/survey-format.ts`](../src/data/utm/survey-format.ts). Start from the
 ready-to-fill [`survey/2026-08-04-template.json`](../survey/2026-08-04-template.json).
 
+## Bundled outdoor snapshot
+
+Outdoor campus routing has two separately reviewable sources:
+
+- `src/data/utm/entrances.geojson` lists building entrances and residence approach points with a
+  source URL, last-verified date, accessibility state, and verification status on every feature;
+- `src/data/utm/outdoor-nodes.geojson` and `outdoor-edges.json` are the committed pedestrian graph.
+
+Refresh the graph deliberately with:
+
+```sh
+bun run routing:refresh
+```
+
+The generator downloads the small UTM map bounding box at build time, retains walkable paths and
+campus access roads, joins configured building points to nearby path geometry, validates graph
+integrity, and writes deterministically sorted output. The shipped application reads only these
+bundled files; it never calls OpenStreetMap or another routing service to calculate a route.
+
+An `entrance` may be marked `verified` only when its source publishes an entrance-tagged point. An
+`approach` must remain `inferred` and explain that entrance field verification is pending. Short
+topology connectors derived between nearby public path fragments are also inferred. Neither public
+map tags nor geometric proximity can establish step-free accessibility, so use `unknown` unless an
+allowed source or field review supports a stronger value.
+
 ## Before visiting campus
 
 1. Copy the dated template to a new file named for the survey date, for example

@@ -1,6 +1,10 @@
 import { UTM_BUILDINGS, type BuildingConfiguration } from "@/data/utm/building-registry";
 import surveyRoutingData from "@/data/utm/generated/survey-routing.json";
-import { hasVerifiedRoutingData } from "@/data/utm/routing-buildings";
+import {
+  getCampusBuilding,
+  hasMappedRoutingData,
+  hasVerifiedRoutingData,
+} from "@/data/utm/routing-buildings";
 import type { RoutingNode, VerificationStatus } from "./types";
 
 export type { BuildingConfiguration } from "@/data/utm/building-registry";
@@ -14,7 +18,7 @@ export type LocationResolution = {
   room: string | null;
   status: LocationStatus;
   buildingRecognition: "recognized" | "unrecognized";
-  routingDataStatus: "verified" | "unverified";
+  routingDataStatus: "verified" | "inferred" | "unverified";
   floor: string | null;
   floorVerification: VerificationStatus;
   warning: string | null;
@@ -29,6 +33,12 @@ const SURVEY_ROUTING_BUILDINGS = new Set(
 
 function routingDataIsVerified(buildingCode: string): boolean {
   return hasVerifiedRoutingData(buildingCode) || SURVEY_ROUTING_BUILDINGS.has(buildingCode);
+}
+
+function routingDataStatus(buildingCode: string): LocationResolution["routingDataStatus"] {
+  if (routingDataIsVerified(buildingCode)) return "verified";
+  if (hasMappedRoutingData(buildingCode)) return "inferred";
+  return "unverified";
 }
 
 function cleanLocation(raw: string | null | undefined): string {
@@ -160,15 +170,19 @@ export function resolveAcornLocation(
     room,
     status: building ? "known" : "unknown",
     buildingRecognition: building ? "recognized" : "unrecognized",
-    routingDataStatus: building && routingDataIsVerified(building.code) ? "verified" : "unverified",
+    routingDataStatus: building ? routingDataStatus(building.code) : "unverified",
     floor,
     floorVerification,
     warning: building
-      ? !routingDataIsVerified(building.code)
-        ? `${building.code} is recognized as a UTM building, but verified routing data is unavailable.`
-        : floorVerification === "inferred"
-          ? `Floor ${floor} is inferred from ${building.code}'s room-numbering convention.`
-          : null
+      ? !hasMappedRoutingData(building.code)
+        ? `${building.code} is recognized as a UTM building, but mapped routing data is unavailable.`
+        : getCampusBuilding(building.code)?.entrances.every(
+              (entrance) => entrance.metadata.verificationStatus !== "verified",
+            )
+          ? `${building.code} uses a mapped pedestrian approach that still awaits entrance verification.`
+          : floorVerification === "inferred"
+            ? `Floor ${floor} is inferred from ${building.code}'s room-numbering convention.`
+            : null
       : `Building code “${parsedCode}” is not in the recognized UTM building registry.`,
   };
 }

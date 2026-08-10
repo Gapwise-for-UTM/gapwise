@@ -1,6 +1,7 @@
 import { calculateGapTiming } from "@/lib/gaps";
 import { formatDuration, meetingLocationType } from "@/lib/timetable-types";
 import type { TransitionPlanner } from "@/features/routing/transition";
+import { createResidenceMeeting, selectedResidence } from "@/features/routing/residence";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Gap } from "@/lib/timetable-types";
 import type {
@@ -60,7 +61,12 @@ function computeConfidence(input: GapAssessmentInput) {
   else if (input.route.status === "approximate") value = 0.68;
   else if (input.route.status === "unavailable") value = 0.42;
 
-  if (input.route.accuracy === "Verified outdoor route, indoor estimate") value -= 0.08;
+  if (
+    input.route.accuracy === "Verified outdoor route, indoor estimate" ||
+    input.route.accuracy === "Mapped campus path, indoor estimate"
+  ) {
+    value -= 0.08;
+  }
   if (input.gap.previous.locationUnknown) value -= 0.18;
   if (input.gap.next.locationUnknown) value -= 0.18;
   if (input.route.warnings.length > 0) value -= 0.04;
@@ -399,6 +405,66 @@ function makeHomeCandidate(
   baseTags: GapTag[],
 ): GapRecommendation | null {
   const preferences = input.gapPreferences;
+  if (input.residenceTrip) {
+    if (
+      !["routed", "same-room"].includes(input.residenceTrip.outbound.status) ||
+      !["routed", "same-room"].includes(input.residenceTrip.inbound.status)
+    ) {
+      return null;
+    }
+    const outboundSeconds =
+      input.residenceTrip.outbound.result?.estimatedSeconds ??
+      input.residenceTrip.outbound.approximateSeconds;
+    const inboundSeconds =
+      input.residenceTrip.inbound.result?.estimatedSeconds ??
+      input.residenceTrip.inbound.approximateSeconds;
+    if (outboundSeconds === null || inboundSeconds === null) return null;
+    const outboundMinutes = Math.ceil(outboundSeconds / 60);
+    const inboundMinutes = Math.ceil(inboundSeconds / 60);
+    const homeMinutes =
+      input.gap.durationMinutes -
+      outboundMinutes -
+      inboundMinutes -
+      bufferMinutes -
+      preferences.homeTurnaroundMinutes;
+    if (homeMinutes < preferences.minimumHomeStayMinutes) return null;
+
+    const timeline: GapTimelineSegment[] = [
+      { kind: "travel", label: "Walk home", minutes: outboundMinutes },
+    ];
+    if (preferences.homeTurnaroundMinutes > 0) {
+      timeline.push({
+        kind: "setup",
+        label: "Get settled",
+        minutes: preferences.homeTurnaroundMinutes,
+      });
+    }
+    timeline.push({ kind: "activity", label: "Time at home", minutes: homeMinutes });
+    timeline.push({ kind: "travel", label: "Walk to class", minutes: inboundMinutes });
+    if (bufferMinutes > 0)
+      timeline.push({ kind: "buffer", label: "Buffer", minutes: bufferMinutes });
+
+    return {
+      id: "go-home",
+      action: "go-home",
+      title: "Go home",
+      summary: `${formatDuration(homeMinutes)} at ${input.residenceTrip.buildingName}, after the real campus round trip.`,
+      score: SCORE.leaveCampus + Math.min(4, homeMinutes / 120),
+      activityMinutes: homeMinutes,
+      reasons: [
+        `Walk home: ${formatDuration(outboundMinutes)}; walk back: ${formatDuration(inboundMinutes)}.`,
+        `Your minimum worthwhile home stay is ${formatDuration(preferences.minimumHomeStayMinutes)}.`,
+        `${formatDuration(bufferMinutes)} remains protected before the next class.`,
+        ...unique([
+          ...input.residenceTrip.outbound.warnings,
+          ...input.residenceTrip.inbound.warnings,
+        ]),
+      ],
+      tags: unique([...baseTags, "good-for-commuting"]),
+      timeline,
+    };
+  }
+
   const commute = preferences.oneWayHomeCommuteMinutes;
   if (!preferences.willingToLeaveCampus || commute === null) return null;
 
@@ -575,8 +641,32 @@ export function planGapAssessment(
   planTransition: TransitionPlanner,
 ) {
   const route = planTransition(gap.previous, gap.next, routePreferences);
+  const residence = selectedResidence(routePreferences);
+  const home = residence
+    ? createResidenceMeeting({
+        buildingCode: residence.code,
+        term: gap.term,
+        weekday: gap.weekday,
+        time: gap.startTime,
+        position: "gap",
+      })
+    : null;
+  const residenceTrip = home
+    ? {
+        buildingName: residence!.name,
+        outbound: planTransition(gap.previous, home, routePreferences),
+        inbound: planTransition(home, gap.next, routePreferences),
+      }
+    : undefined;
   return {
     route,
-    assessment: assessGap({ gap, route, routePreferences, gapPreferences }),
+    residenceTrip,
+    assessment: assessGap({
+      gap,
+      route,
+      routePreferences,
+      gapPreferences,
+      ...(residenceTrip ? { residenceTrip } : {}),
+    }),
   };
 }
