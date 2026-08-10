@@ -238,7 +238,7 @@ export function findRoute(
     routeNodes.some((node) => node.metadata?.verificationStatus === "inferred") ||
     routeEdges.some((edge) => edge.metadata?.verificationStatus === "inferred")
   ) {
-    warnings.push("One or more short building approaches still await field verification.");
+    warnings.push("One or more short route connections still await field verification.");
   }
 
   return {

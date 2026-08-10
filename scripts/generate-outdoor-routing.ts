@@ -16,6 +16,16 @@ const CAMPUS_BOUNDS = "-79.6715,43.5450,-79.6600,43.5524";
 const VERIFIED_AT = "2026-08-10";
 const MAX_ENTRANCE_CONNECTOR_METERS = 80;
 const MAX_TOPOLOGY_CONNECTOR_METERS = 20;
+const REVIEWED_TOPOLOGY_CONNECTORS = [
+  {
+    id: "five-minute-walk-east-link",
+    from: "osm-node-10307668718",
+    to: "osm-node-1728239086",
+    sourceUrl: "https://www.utm.utoronto.ca/visitors/maps-and-directions",
+    notes:
+      "Reviewed 8.8 m join between the east end of Five Minute Walk and the adjacent mapped pedestrian path; field verification is pending.",
+  },
+] as const;
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const entrancesSource = resolve(repositoryRoot, "src/data/utm/entrances.geojson");
 const nodesOutput = resolve(repositoryRoot, "src/data/utm/outdoor-nodes.geojson");
@@ -248,6 +258,54 @@ function buildGraph(payload: OsmPayload, entrances: EntranceFeature[]): RoutingG
       metadata: {
         source: "Gapwise derivation from OpenStreetMap geometry",
         sourceUrl: entrance.properties.sourceUrl,
+        lastVerified: VERIFIED_AT,
+        verificationStatus: "inferred",
+      },
+    });
+  }
+
+  for (const connector of REVIEWED_TOPOLOGY_CONNECTORS) {
+    const from = nodeById.get(connector.from);
+    const to = nodeById.get(connector.to);
+    if (
+      from?.longitude === undefined ||
+      from.latitude === undefined ||
+      to?.longitude === undefined ||
+      to.latitude === undefined
+    ) {
+      throw new Error(`Reviewed topology connector ${connector.id} references a missing node.`);
+    }
+    if (
+      edges.some(
+        (edge) =>
+          (edge.from === connector.from && edge.to === connector.to) ||
+          (edge.from === connector.to && edge.to === connector.from),
+      )
+    ) {
+      continue;
+    }
+    const distanceMeters = haversineMeters(
+      [from.longitude, from.latitude],
+      [to.longitude, to.latitude],
+    );
+    if (distanceMeters > MAX_TOPOLOGY_CONNECTOR_METERS) {
+      throw new Error(
+        `Reviewed topology connector ${connector.id} is ${distanceMeters.toFixed(1)}m long; expected at most ${MAX_TOPOLOGY_CONNECTOR_METERS}m.`,
+      );
+    }
+    edges.push({
+      id: `reviewed-topology-connector-${connector.id}`,
+      from: connector.from,
+      to: connector.to,
+      distanceMeters: Math.max(0.1, distanceMeters),
+      environment: "outdoor",
+      stairs: false,
+      bidirectional: true,
+      accessibility: "unknown",
+      notes: connector.notes,
+      metadata: {
+        source: "Gapwise derivation from UTM campus map and OpenStreetMap geometry",
+        sourceUrl: connector.sourceUrl,
         lastVerified: VERIFIED_AT,
         verificationStatus: "inferred",
       },
