@@ -60,7 +60,12 @@ function computeConfidence(input: GapAssessmentInput) {
   else if (input.route.status === "approximate") value = 0.68;
   else if (input.route.status === "unavailable") value = 0.42;
 
-  if (input.route.accuracy === "Verified outdoor route, indoor estimate") value -= 0.08;
+  if (
+    input.route.accuracy === "Verified outdoor route, indoor estimate" ||
+    input.route.accuracy === "Mapped campus path, indoor estimate"
+  ) {
+    value -= 0.08;
+  }
   if (input.gap.previous.locationUnknown) value -= 0.18;
   if (input.gap.next.locationUnknown) value -= 0.18;
   if (input.route.warnings.length > 0) value -= 0.04;

@@ -73,6 +73,7 @@ export type RoutingGraph = {
 export type RouteAccuracy =
   | "Verified indoor + outdoor route"
   | "Verified outdoor route, indoor estimate"
+  | "Mapped campus path, indoor estimate"
   | "Approximate building-to-building estimate"
   | "Location unavailable";
 

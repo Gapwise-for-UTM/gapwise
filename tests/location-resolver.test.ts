@@ -73,12 +73,15 @@ describe("ACORN location resolution", () => {
     });
   });
 
-  test("separates recognition from verified routing coverage", () => {
-    const recognizedOnly = resolveAcornLocation("DV 2072");
-    expect(recognizedOnly.status).toBe("known");
-    expect(recognizedOnly.buildingRecognition).toBe("recognized");
-    expect(recognizedOnly.routingDataStatus).toBe("unverified");
-    expect(recognizedOnly.warning).toContain("verified routing data is unavailable");
+  test("separates verified entrances from inferred residence approaches", () => {
+    const verified = resolveAcornLocation("DV 2072");
+    expect(verified.status).toBe("known");
+    expect(verified.buildingRecognition).toBe("recognized");
+    expect(verified.routingDataStatus).toBe("verified");
+
+    const inferred = resolveAcornLocation("EH");
+    expect(inferred.routingDataStatus).toBe("inferred");
+    expect(inferred.warning).toContain("entrance verification");
 
     const unknown = resolveAcornLocation("XY 2010");
     expect(unknown.status).toBe("unknown");
@@ -100,6 +103,7 @@ describe("ACORN location resolution", () => {
       {
         code: "TS",
         name: "Synthetic test building",
+        category: "academic",
         verifiedRoomFloors: {
           A101: {
             floor: "G",
