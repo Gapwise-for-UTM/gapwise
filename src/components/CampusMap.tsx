@@ -321,16 +321,28 @@ export function CampusMap({
     onSelectSegment,
     home,
   });
-  themeRef.current = mapTheme;
-  latestData.current = {
+
+  useEffect(() => {
+    themeRef.current = mapTheme;
+    latestData.current = {
+      meetings,
+      segments,
+      selectedMeetingId,
+      selectedSegmentId,
+      onSelectMeeting,
+      onSelectSegment,
+      home,
+    };
+  }, [
+    home,
+    mapTheme,
     meetings,
-    segments,
-    selectedMeetingId,
-    selectedSegmentId,
     onSelectMeeting,
     onSelectSegment,
-    home,
-  };
+    selectedMeetingId,
+    selectedSegmentId,
+    segments,
+  ]);
 
   useEffect(() => {
     const root = document.documentElement;

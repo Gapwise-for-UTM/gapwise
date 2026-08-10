@@ -1,7 +1,6 @@
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import entranceDataRaw from "../src/data/utm/entrances.geojson?raw";
 import { assertRoutingGraphIntegrity } from "../src/features/routing/graph-integrity";
 import type {
   AccessibilityStatus,
@@ -18,6 +17,7 @@ const VERIFIED_AT = "2026-08-10";
 const MAX_ENTRANCE_CONNECTOR_METERS = 80;
 const MAX_TOPOLOGY_CONNECTOR_METERS = 20;
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const entrancesSource = resolve(repositoryRoot, "src/data/utm/entrances.geojson");
 const nodesOutput = resolve(repositoryRoot, "src/data/utm/outdoor-nodes.geojson");
 const edgesOutput = resolve(repositoryRoot, "src/data/utm/outdoor-edges.json");
 
@@ -42,8 +42,6 @@ type EntranceFeature = {
     verificationStatus: VerificationStatus;
   };
 };
-
-const entrances = (JSON.parse(entranceDataRaw) as { features: EntranceFeature[] }).features;
 
 function sourceMetadata(url: string): SourceMetadata {
   return {
@@ -99,7 +97,7 @@ function isWalkableWay(way: OsmWay): way is TaggedOsmWay {
   );
 }
 
-function buildGraph(payload: OsmPayload): RoutingGraph {
+function buildGraph(payload: OsmPayload, entrances: EntranceFeature[]): RoutingGraph {
   const osmNodes = new Map(
     payload.elements
       .filter((item): item is OsmNode => item.type === "node")
@@ -198,6 +196,7 @@ function buildGraph(payload: OsmPayload): RoutingGraph {
     }
   }
 
+  const pathNodes = [...nodes];
   for (const entrance of entrances) {
     const entranceId = `osm-node-${entrance.properties.osmNodeId}`;
     if (nodeById.has(entranceId)) continue;
@@ -219,7 +218,7 @@ function buildGraph(payload: OsmPayload): RoutingGraph {
       },
     };
     if (entrance.properties.notes) entranceNode.notes = entrance.properties.notes;
-    const nearest = nodes
+    const nearest = pathNodes
       .filter((node) => node.longitude !== undefined && node.latitude !== undefined)
       .map((node) => ({
         node,
@@ -294,24 +293,56 @@ function buildGraph(payload: OsmPayload): RoutingGraph {
         Boolean(component && component !== mainComponent),
       ),
   );
-  for (const component of disconnectedEntranceComponents) {
-    let nearest: { from: RoutingNode; to: RoutingNode; distanceMeters: number } | undefined;
-    for (const fromId of component) {
-      const from = nodeById.get(fromId);
-      if (from?.longitude === undefined || from.latitude === undefined) continue;
-      for (const toId of mainComponent) {
-        const to = nodeById.get(toId);
-        if (to?.longitude === undefined || to.latitude === undefined) continue;
-        const distanceMeters = haversineMeters(
-          [from.longitude, from.latitude],
-          [to.longitude, to.latitude],
-        );
-        if (!nearest || distanceMeters < nearest.distanceMeters) {
-          nearest = { from, to, distanceMeters };
+  const componentKey = (component: Set<string>) => [...component].sort()[0] ?? "unknown";
+  const remainingComponents = [...disconnectedEntranceComponents].sort((a, b) =>
+    componentKey(a).localeCompare(componentKey(b)),
+  );
+  const connectedNodeIds = new Set(mainComponent);
+  while (remainingComponents.length > 0) {
+    let nearest:
+      | {
+          component: Set<string>;
+          from: RoutingNode;
+          to: RoutingNode;
+          distanceMeters: number;
+        }
+      | undefined;
+    for (const component of remainingComponents) {
+      for (const fromId of component) {
+        const from = nodeById.get(fromId);
+        if (from?.longitude === undefined || from.latitude === undefined) continue;
+        for (const toId of connectedNodeIds) {
+          const to = nodeById.get(toId);
+          if (to?.longitude === undefined || to.latitude === undefined) continue;
+          const distanceMeters = haversineMeters(
+            [from.longitude, from.latitude],
+            [to.longitude, to.latitude],
+          );
+          const connectorId = `${from.id}-${to.id}`;
+          const nearestId = nearest ? `${nearest.from.id}-${nearest.to.id}` : "";
+          if (
+            !nearest ||
+            distanceMeters < nearest.distanceMeters ||
+            (distanceMeters === nearest.distanceMeters && connectorId < nearestId)
+          ) {
+            nearest = { component, from, to, distanceMeters };
+          }
         }
       }
     }
-    if (!nearest || nearest.distanceMeters > MAX_TOPOLOGY_CONNECTOR_METERS) continue;
+    if (!nearest || nearest.distanceMeters > MAX_TOPOLOGY_CONNECTOR_METERS) {
+      for (const component of remainingComponents) {
+        const entranceIds = entrances
+          .filter((entrance) => component.has(`osm-node-${entrance.properties.osmNodeId}`))
+          .map((entrance) => entrance.id)
+          .sort()
+          .join(", ");
+        process.stderr.write(
+          `Could not connect pedestrian fragment ${componentKey(component)} (${entranceIds || "no entrance ID"}) within ${MAX_TOPOLOGY_CONNECTOR_METERS}m.\n`,
+        );
+      }
+      break;
+    }
     edges.push({
       id: `topology-connector-${nearest.from.id}-${nearest.to.id}`,
       from: nearest.from.id,
@@ -330,6 +361,8 @@ function buildGraph(payload: OsmPayload): RoutingGraph {
         verificationStatus: "inferred",
       },
     });
+    for (const nodeId of nearest.component) connectedNodeIds.add(nodeId);
+    remainingComponents.splice(remainingComponents.indexOf(nearest.component), 1);
   }
 
   nodes.sort((a, b) => a.id.localeCompare(b.id));
@@ -338,8 +371,10 @@ function buildGraph(payload: OsmPayload): RoutingGraph {
 }
 
 async function run() {
+  const entranceDataRaw = await readFile(entrancesSource, "utf8");
+  const entrances = (JSON.parse(entranceDataRaw) as { features: EntranceFeature[] }).features;
   const payload = await fetchOsmSnapshot();
-  const graph = buildGraph(payload);
+  const graph = buildGraph(payload, entrances);
   assertRoutingGraphIntegrity(graph);
   const metadata = {
     description:

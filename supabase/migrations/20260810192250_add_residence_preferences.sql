@@ -10,7 +10,11 @@ alter table public.user_preferences
     check (
       (day_origin = 'commute' and residence_building_code is null)
       or
-      (day_origin = 'residence' and residence_building_code in (
-        'EH', 'LL', 'MV', 'MC', 'OPH', 'PP', 'RIH', 'SW', 'NRB'
-      ))
+      (
+        day_origin = 'residence'
+        and residence_building_code is not null
+        and residence_building_code in (
+          'EH', 'LL', 'MV', 'MC', 'OPH', 'PP', 'RIH', 'SW', 'NRB'
+        )
+      )
     );

@@ -26,7 +26,7 @@ Gapwise exists because a free hour is only useful when travel time, buildings, a
 - Fall, Winter, and Summer views with gap duration and leave-by guidance
 - Bundled OpenStreetMap-derived UTM pedestrian routing with entrance-level endpoints
 - Optional residence-aware day routes and real round-trip “Go home” gap suggestions
-- Route confidence labelled **verified**, **approximate**, or **unavailable**
+- Route confidence labelled **verified**, **inferred**, **approximate**, or **unavailable**
 - Light and dark themes, keyboard navigation, reduced-motion support, and map alternatives
 - Optional private sync through GitHub OAuth or email magic links and Supabase RLS
 

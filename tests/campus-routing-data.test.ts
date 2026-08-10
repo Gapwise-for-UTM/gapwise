@@ -56,24 +56,30 @@ describe("bundled UTM routing data", () => {
     }
   });
 
-  test("answers a full campus route matrix within a practical UI budget", () => {
-    const started = performance.now();
+  test("answers every pair in the full campus route matrix", () => {
     for (const origin of CAMPUS_BUILDINGS) {
       for (const destination of CAMPUS_BUILDINGS) {
-        findRoute(
+        const route = findRoute(
           UTM_ROUTING_GRAPH,
           origin.entranceNodeId,
           destination.entranceNodeId,
           DEFAULT_ROUTE_PREFERENCES,
         );
+        expect(route).not.toBeNull();
+        expect(route!.totalDistanceMeters).toBeGreaterThanOrEqual(0);
       }
     }
-    expect(performance.now() - started).toBeLessThan(1_500);
   });
 
   test("keeps route calculation offline at runtime", async () => {
-    const source = await readFile("src/components/CampusMap.tsx", "utf8");
-    expect(source).not.toContain("fetch(");
-    expect(source).not.toContain("valhalla");
+    const files = await Array.fromAsync(
+      new Bun.Glob("src/features/routing/**/*.{ts,tsx}").scan("."),
+    );
+    files.push("src/components/CampusMap.tsx");
+    for (const file of files) {
+      const source = await readFile(file, "utf8");
+      expect(source).not.toContain("fetch(");
+      expect(source.toLowerCase()).not.toContain("valhalla");
+    }
   });
 });

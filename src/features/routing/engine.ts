@@ -119,6 +119,7 @@ function buildAdjacency(graph: RoutingGraph): Map<string, Traversal[]> {
   return adjacency;
 }
 
+// Compilation is cached by object identity; replace a graph object instead of mutating it in place.
 const compiledGraphs = new WeakMap<
   RoutingGraph,
   { nodes: Map<string, RoutingNode>; adjacency: Map<string, Traversal[]> }
@@ -194,7 +195,7 @@ export function findRoute(
 
     for (const traversal of adjacency.get(current) ?? []) {
       const cost = traversalCost(traversal, nodes, preferences);
-      if (!Number.isFinite(cost)) continue;
+      if (!Number.isFinite(cost) || cost <= 0) continue;
       const candidate = (distances.get(current) ?? Infinity) + cost;
       const known = distances.get(traversal.to) ?? Infinity;
       const knownEdgeId = previous.get(traversal.to)?.edge.id ?? "\uffff";

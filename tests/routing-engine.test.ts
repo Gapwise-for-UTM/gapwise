@@ -79,6 +79,14 @@ describe("deterministic graph routing", () => {
     ).toBeNull();
   });
 
+  test("rejects non-positive traversal costs", () => {
+    const graph: RoutingGraph = {
+      nodes: [node("a"), node("b")],
+      edges: [edge("invalid-zero-cost", "a", "b", 0)],
+    };
+    expect(findRoute(graph, "a", "b", DEFAULT_ROUTE_PREFERENCES)).toBeNull();
+  });
+
   test("calculates route time, delays, distance, and floor changes", () => {
     const graph: RoutingGraph = {
       nodes: [

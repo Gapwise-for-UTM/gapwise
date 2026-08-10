@@ -89,6 +89,7 @@ describe("account deletion and RLS security", () => {
     expect(migration).toContain("add column day_origin");
     expect(migration).toContain("add column residence_building_code");
     expect(migration).toContain("day_origin in ('commute', 'residence')");
+    expect(migration).toMatch(/day_origin = 'residence'[\s\S]*residence_building_code is not null/);
     expect(migration).not.toMatch(/create policy|using\s*\(true\)/i);
   });
 });
