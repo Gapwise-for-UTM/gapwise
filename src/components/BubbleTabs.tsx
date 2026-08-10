@@ -36,23 +36,28 @@ export function BubbleTabs<T extends string>({
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     if (items.length === 0) return;
     event.preventDefault();
-    let nextIndex = selectedIndex;
+    const buttons = Array.from(
+      tablistRef.current?.querySelectorAll<HTMLButtonElement>(".bubble-tab") ?? [],
+    );
+    const focusedIndex = buttons.findIndex((button) => button === document.activeElement);
+    const currentIndex = focusedIndex >= 0 ? focusedIndex : selectedIndex;
+    let nextIndex = currentIndex;
     if (event.key === "Home") nextIndex = 0;
     if (event.key === "End") nextIndex = items.length - 1;
-    if (event.key === "ArrowLeft") nextIndex = (selectedIndex - 1 + items.length) % items.length;
-    if (event.key === "ArrowRight") nextIndex = (selectedIndex + 1) % items.length;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + items.length) % items.length;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % items.length;
     const next = items[nextIndex];
     if (!next) return;
     onChange(next.value);
     requestAnimationFrame(() => {
-      tablistRef.current?.querySelectorAll<HTMLButtonElement>("[role=tab]")[nextIndex]?.focus();
+      buttons[nextIndex]?.focus();
     });
   }
 
   return (
     <div
       ref={tablistRef}
-      role="tablist"
+      role="group"
       aria-label={label}
       onKeyDown={handleKeyDown}
       className={`bubble-tabs ${compact ? "bubble-tabs-compact" : ""} ${className}`}
@@ -64,11 +69,9 @@ export function BubbleTabs<T extends string>({
         return (
           <button
             key={item.value}
-            role="tab"
             type="button"
             aria-label={item.ariaLabel}
-            aria-selected={selected}
-            tabIndex={selected ? 0 : -1}
+            aria-pressed={selected}
             onClick={() => onChange(item.value)}
             className="bubble-tab"
           >
