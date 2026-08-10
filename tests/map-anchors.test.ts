@@ -46,6 +46,10 @@ describe("campus map route anchors", () => {
       coordinate: [-79.659, 43.551],
       source: "outgoing-route",
     });
+    expect(resolveMapAnchor("last", [0, 0], segments, null)).toMatchObject({
+      coordinate: [-79.65, 43.552],
+      source: "incoming-route",
+    });
     expect(resolveMapAnchor("unrouted", [1, 2], segments, null)).toEqual({
       coordinate: [1, 2],
       source: "fallback",
