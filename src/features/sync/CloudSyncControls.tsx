@@ -34,7 +34,7 @@ export function CloudSyncControls({
   }
 
   return (
-    <section className="border-t border-border py-4" aria-labelledby="cloud-sync-title">
+    <section className="surface p-4 sm:p-5" aria-labelledby="cloud-sync-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 id="cloud-sync-title" className="text-sm font-semibold">
@@ -61,7 +61,7 @@ export function CloudSyncControls({
                 return "Normalized timetable synced.";
               })
             }
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            className="button-primary inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
             Sync timetable
@@ -77,7 +77,7 @@ export function CloudSyncControls({
                 return "Cloud timetable loaded into this browser.";
               })
             }
-            className="inline-flex items-center gap-2 rounded-lg border border-input bg-card px-3 py-2 text-xs font-semibold hover:bg-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            className="button-secondary inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CloudDownload className="h-3.5 w-3.5" aria-hidden="true" />
             Load cloud timetable

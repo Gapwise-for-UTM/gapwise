@@ -21,6 +21,7 @@ type MapData = {
   selectedSegmentId: string | null;
   onSelectMeeting: (id: string) => void;
   onSelectSegment: (id: string) => void;
+  className?: string;
 };
 
 type MapLibreModule = typeof import("maplibre-gl");
@@ -350,6 +351,7 @@ export function CampusMap({
   selectedSegmentId,
   onSelectMeeting,
   onSelectSegment,
+  className = "",
 }: MapData) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -526,7 +528,9 @@ export function CampusMap({
   ]);
 
   return (
-    <div className="relative h-[25rem] w-full overflow-hidden rounded-xl border border-border bg-muted">
+    <div
+      className={`relative w-full overflow-hidden rounded-xl border border-border bg-muted ${className || "h-[25rem]"}`}
+    >
       <div
         ref={containerRef}
         className="h-full w-full"

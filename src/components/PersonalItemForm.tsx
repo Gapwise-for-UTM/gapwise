@@ -54,7 +54,7 @@ export default function PersonalItemForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md personal-item-form">
+      <DialogContent className="glass-panel max-w-md bg-card/75 personal-item-form">
         <DialogHeader>
           <DialogTitle>{initial ? "Edit personal item" : "Add personal item"}</DialogTitle>
         </DialogHeader>
@@ -177,7 +177,7 @@ export default function PersonalItemForm({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="rounded-xl border px-4 py-2 text-sm"
+              className="button-secondary px-4 py-2 text-sm"
             >
               Cancel
             </button>
@@ -205,7 +205,7 @@ export default function PersonalItemForm({
                 onSave(item);
                 onOpenChange(false);
               }}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              className="button-primary px-4 py-2 text-sm font-semibold"
             >
               Save
             </button>

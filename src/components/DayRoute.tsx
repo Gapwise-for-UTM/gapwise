@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { AlertTriangle, Clock3, Footprints, LocateFixed, Route as RouteIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { BubbleTabs } from "./BubbleTabs";
 import { CampusMap } from "./CampusMap";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
@@ -101,43 +102,33 @@ export function DayRoute({
 
   return (
     <div className="space-y-5">
-      <section className="surface p-4" aria-labelledby="route-preferences-title">
-        <div className="grid gap-4 lg:grid-cols-[1fr_2fr]">
+      <section className="surface p-5" aria-labelledby="route-preferences-title">
+        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.5fr]">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Term and day
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {availableTerms.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onClick={() => onTermChange(item)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-semibold ${
-                    item === term ? "bg-primary text-primary-foreground" : "bg-secondary"
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {WEEKDAYS.map((day) => (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => setWeekday(day)}
-                  className={`rounded-md px-2 py-1.5 text-xs font-medium ${
-                    day === weekday ? "bg-accent text-accent-foreground" : "hover:bg-secondary"
-                  }`}
-                >
-                  {day.slice(0, 3)}
-                </button>
-              ))}
-            </div>
+            <p className="eyebrow text-muted-foreground">Term and day</p>
+            <BubbleTabs
+              label="Route term"
+              items={availableTerms.map((item) => ({ value: item, label: item }))}
+              value={term}
+              onChange={onTermChange}
+              compact
+              className="mt-2 w-full sm:w-44"
+            />
+            <BubbleTabs
+              label="Route weekday"
+              items={WEEKDAYS.map((day) => ({
+                value: day,
+                label: day.slice(0, 3),
+                ariaLabel: day,
+              }))}
+              value={weekday}
+              onChange={setWeekday}
+              compact
+              className="mt-2 w-full"
+            />
           </div>
           <div>
-            <h2 id="route-preferences-title" className="text-sm font-semibold">
+            <h2 id="route-preferences-title" className="text-sm font-medium">
               Route preferences
             </h2>
             <div className="mt-2 grid gap-3 sm:grid-cols-3">
@@ -197,7 +188,7 @@ export function DayRoute({
                         ),
                       )
                   }
-                  className="rounded-md border border-input px-2 py-1 text-xs font-semibold hover:bg-secondary"
+                  className="button-secondary px-2 py-1 text-xs font-semibold"
                 >
                   Save preferences
                 </button>
@@ -217,7 +208,7 @@ export function DayRoute({
                         ),
                       )
                   }
-                  className="rounded-md border border-input px-2 py-1 text-xs font-semibold hover:bg-secondary"
+                  className="button-secondary px-2 py-1 text-xs font-semibold"
                 >
                   Load preferences
                 </button>
@@ -238,9 +229,10 @@ export function DayRoute({
           <p className="mt-2 text-sm text-muted-foreground">Choose another weekday or term.</p>
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(18rem,0.8fr)_minmax(0,1.5fr)]">
-          <section className="surface p-4" aria-labelledby="day-timeline-title">
-            <h2 id="day-timeline-title" className="text-lg font-semibold">
+        <div className="grid gap-5 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.65fr)]">
+          <section className="surface p-5" aria-labelledby="day-timeline-title">
+            <p className="eyebrow text-accent">Day sequence</p>
+            <h2 id="day-timeline-title" className="mt-2 text-lg font-medium tracking-tight">
               {weekday} timeline
             </h2>
             <ol className="mt-3 space-y-3">
@@ -261,8 +253,10 @@ export function DayRoute({
                     <button
                       type="button"
                       onClick={() => selectMeeting(meeting.id)}
-                      className={`w-full rounded-lg border p-3 text-left ${
-                        selected ? "border-accent bg-secondary" : "border-border hover:bg-muted/60"
+                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                        selected
+                          ? "border-accent/60 bg-accent/8"
+                          : "border-border bg-card hover:bg-muted/60"
                       }`}
                     >
                       <span className="flex items-center gap-3">
@@ -286,7 +280,7 @@ export function DayRoute({
                         onClick={() => selectSegment(segment.id)}
                         className={`ml-3 mt-2 w-[calc(100%-0.75rem)] rounded-lg border-l-2 p-3 text-left text-xs ${
                           selectedSegmentId === segment.id
-                            ? "border-accent bg-accent/10"
+                            ? "border-accent bg-accent/8"
                             : "border-border hover:bg-muted/50"
                         }`}
                       >
@@ -307,7 +301,7 @@ export function DayRoute({
             </ol>
           </section>
 
-          <div className="space-y-4">
+          <div className="route-map-stage">
             <CampusMap
               meetings={dayMeetings}
               segments={segments}
@@ -315,11 +309,12 @@ export function DayRoute({
               selectedSegmentId={selectedSegmentId}
               onSelectMeeting={selectMeeting}
               onSelectSegment={selectSegment}
+              className="h-[30rem] lg:h-[36rem]"
             />
             {selectedSegment ? (
-              <SegmentDetails segment={selectedSegment} preferences={preferences} />
+              <SegmentDetails segment={selectedSegment} preferences={preferences} overlay />
             ) : (
-              <p className="surface p-4 text-sm text-muted-foreground">
+              <p className="route-glass-panel glass-panel mt-4 p-4 text-sm text-muted-foreground lg:mt-0">
                 Select a transition to see distance, timing, and route accuracy.
               </p>
             )}
@@ -342,9 +337,11 @@ export function DayRoute({
 function SegmentDetails({
   segment,
   preferences,
+  overlay = false,
 }: {
   segment: DaySegment;
   preferences: UserPreferences;
+  overlay?: boolean;
 }) {
   const route = segment.route;
   const presentation = getLocationPresentation({
@@ -366,10 +363,13 @@ function SegmentDetails({
           segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes,
         );
   return (
-    <section className="surface p-4" aria-labelledby="segment-details-title">
+    <section
+      className={`${overlay ? "route-glass-panel glass-panel mt-4 lg:mt-0" : "surface"} p-4`}
+      aria-labelledby="segment-details-title"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 id="segment-details-title" className="text-base font-semibold">
+          <h3 id="segment-details-title" className="text-base font-medium tracking-tight">
             {fromLocation.label} → {toLocation.label}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">{presentation.detail}</p>
@@ -466,7 +466,7 @@ function Metric({
         <Icon className="h-3.5 w-3.5" aria-hidden="true" />
         {label}
       </dt>
-      <dd className="mt-0.5 font-semibold">{value}</dd>
+      <dd className="metric-value mt-1 font-semibold">{value}</dd>
     </div>
   );
 }

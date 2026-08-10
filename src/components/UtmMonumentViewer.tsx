@@ -45,8 +45,8 @@ export function UtmMonumentViewer({
   return (
     <figure
       className={[
-        "group relative isolate overflow-hidden rounded-3xl border border-border/80",
-        "bg-gradient-to-br from-card via-muted/45 to-card shadow-sm",
+        "group relative isolate overflow-hidden rounded-xl border border-border/80",
+        "bg-gradient-to-br from-card via-muted/30 to-card shadow-[var(--shadow-soft)]",
         compact ? "h-44 sm:h-52" : "h-72 sm:h-80 lg:h-[23rem]",
         className,
       ].join(" ")}

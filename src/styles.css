@@ -2,6 +2,24 @@
 @source "../src";
 @import "tw-animate-css";
 
+@font-face {
+  font-family: "Geist Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/geist/files/geist-latin-wght-normal.woff2")
+    format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Geist Mono Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2")
+    format("woff2-variations");
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /*
@@ -19,13 +37,14 @@
  */
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --radius-xs: calc(var(--radius) * 0.5);
+  --radius-sm: calc(var(--radius) * 0.75);
+  --radius-md: calc(var(--radius) * 0.875);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --radius-xl: calc(var(--radius) * 1.25);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 2);
+  --radius-4xl: calc(var(--radius) * 2.5);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -68,53 +87,55 @@
   --color-hero-accent: var(--hero-accent);
   --font-sans: var(--font-body);
   --font-display: var(--font-heading);
+  --font-mono: var(--font-code);
 }
 
 :root {
-  --radius: 0.875rem;
-  --shadow-soft: 0 1px 2px oklch(0.24 0.05 262 / 6%), 0 10px 26px -18px oklch(0.24 0.05 262 / 22%);
-  --shadow-lift: 0 2px 4px oklch(0.24 0.05 262 / 7%), 0 22px 44px -24px oklch(0.24 0.05 262 / 30%);
-  --font-heading:
-    ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --background: oklch(0.955 0.008 250);
+  --radius: 0.75rem;
+  --shadow-soft: 0 1px 2px oklch(0.18 0.02 255 / 5%);
+  --shadow-lift: 0 16px 40px -28px oklch(0.18 0.04 255 / 36%);
+  --accent-glow: 0 0 0 1px oklch(0.5 0.16 250 / 35%), 0 10px 28px -15px oklch(0.5 0.16 250 / 48%);
+  --font-heading: "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
+  --font-code: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
+  --background: oklch(0.972 0.004 255);
 
-  --foreground: oklch(0.23 0.055 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.23 0.055 265);
+  --foreground: oklch(0.2 0.025 258);
+  --card: oklch(0.995 0.002 255);
+  --card-foreground: oklch(0.2 0.025 258);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.23 0.055 265);
-  --primary: oklch(0.25 0.065 265);
-  --primary-foreground: oklch(0.965 0.008 250);
-  --secondary: oklch(0.935 0.014 250);
-  --secondary-foreground: oklch(0.25 0.065 265);
-  --muted: oklch(0.945 0.01 250);
-  --muted-foreground: oklch(0.49 0.032 258);
-  --accent: oklch(0.55 0.095 250);
-  --accent-foreground: oklch(0.99 0.005 250);
+  --popover-foreground: oklch(0.2 0.025 258);
+  --primary: oklch(0.45 0.145 250);
+  --primary-foreground: oklch(0.99 0.003 255);
+  --secondary: oklch(0.945 0.009 255);
+  --secondary-foreground: oklch(0.24 0.028 258);
+  --muted: oklch(0.952 0.006 255);
+  --muted-foreground: oklch(0.48 0.022 258);
+  --accent: oklch(0.49 0.14 250);
+  --accent-foreground: oklch(0.99 0.003 255);
   --destructive: oklch(0.55 0.19 25);
   --destructive-foreground: oklch(0.99 0.005 90);
-  --border: oklch(0.895 0.014 250);
-  --input: oklch(0.87 0.016 250);
-  --ring: oklch(0.55 0.095 250);
-  --hero: oklch(0.94 0.022 250);
-  --hero-foreground: oklch(0.24 0.055 265);
-  --hero-muted: oklch(0.87 0.035 250);
-  --hero-accent: oklch(0.5 0.115 250);
-  --lec: oklch(0.45 0.11 255);
-  --tut: oklch(0.52 0.09 195);
-  --pra: oklch(0.5 0.1 300);
-  --meeting-card-tint: 17%;
-  --meeting-card-tint-end: 5%;
-  --meeting-card-hover-tint: 24%;
-  --meeting-card-hover-tint-end: 9%;
-  --meeting-card-border-strength: 46%;
-  --meeting-card-hover-border-strength: 70%;
-  --meeting-badge-tint: 20%;
-  --meeting-badge-ring-strength: 20%;
-  --chart-1: oklch(0.45 0.11 255);
-  --chart-2: oklch(0.52 0.09 195);
-  --chart-3: oklch(0.5 0.1 300);
+  --border: oklch(0.86 0.01 255 / 78%);
+  --input: oklch(0.82 0.014 255);
+  --ring: oklch(0.49 0.14 250);
+  --hero: oklch(0.956 0.014 250);
+  --hero-foreground: oklch(0.2 0.03 258);
+  --hero-muted: oklch(0.91 0.018 250);
+  --hero-accent: oklch(0.49 0.14 250);
+  --lec: oklch(0.46 0.13 250);
+  --tut: oklch(0.52 0.105 250);
+  --pra: oklch(0.4 0.085 250);
+  --meeting-card-tint: 11%;
+  --meeting-card-tint-end: 2%;
+  --meeting-card-hover-tint: 18%;
+  --meeting-card-hover-tint-end: 5%;
+  --meeting-card-border-strength: 34%;
+  --meeting-card-hover-border-strength: 68%;
+  --meeting-badge-tint: 13%;
+  --meeting-badge-ring-strength: 16%;
+  --chart-1: oklch(0.46 0.13 250);
+  --chart-2: oklch(0.52 0.105 250);
+  --chart-3: oklch(0.4 0.085 250);
   --chart-4: oklch(0.62 0.13 60);
   --chart-5: oklch(0.55 0.12 20);
   --sidebar: oklch(0.97 0.008 250);
@@ -128,46 +149,47 @@
 }
 
 .dark {
-  --shadow-soft: 0 1px 2px oklch(0 0 0 / 30%), 0 14px 32px -20px oklch(0 0 0 / 55%);
-  --shadow-lift: 0 2px 6px oklch(0 0 0 / 36%), 0 26px 52px -26px oklch(0 0 0 / 65%);
-  --background: oklch(0.19 0.035 258);
+  --shadow-soft: 0 1px 2px oklch(0 0 0 / 24%);
+  --shadow-lift: 0 20px 46px -30px oklch(0 0 0 / 85%);
+  --accent-glow: 0 0 0 1px oklch(0.61 0.15 250 / 42%), 0 12px 34px -16px oklch(0.55 0.18 250 / 64%);
+  --background: oklch(0.105 0.009 260);
 
-  --foreground: oklch(0.96 0.008 90);
-  --card: oklch(0.235 0.04 258);
+  --foreground: oklch(0.955 0.005 255);
+  --card: oklch(0.145 0.012 260);
   --card-foreground: oklch(0.96 0.008 90);
-  --popover: oklch(0.235 0.04 258);
+  --popover: oklch(0.15 0.014 260);
   --popover-foreground: oklch(0.96 0.008 90);
-  --primary: oklch(0.72 0.11 250);
-  --primary-foreground: oklch(0.17 0.035 258);
-  --secondary: oklch(0.28 0.04 258);
+  --primary: oklch(0.48 0.145 250);
+  --primary-foreground: oklch(0.99 0.002 255);
+  --secondary: oklch(0.19 0.014 260);
   --secondary-foreground: oklch(0.96 0.008 90);
-  --muted: oklch(0.27 0.035 258);
-  --muted-foreground: oklch(0.75 0.025 250);
-  --accent: oklch(0.68 0.11 250);
-  --accent-foreground: oklch(0.17 0.035 258);
+  --muted: oklch(0.175 0.011 260);
+  --muted-foreground: oklch(0.68 0.014 255);
+  --accent: oklch(0.61 0.14 250);
+  --accent-foreground: oklch(0.99 0.002 255);
   --destructive: oklch(0.68 0.17 25);
   --destructive-foreground: oklch(0.17 0.035 258);
-  --border: oklch(1 0 0 / 14%);
-  --input: oklch(1 0 0 / 20%);
-  --ring: oklch(0.72 0.11 250);
-  --hero: oklch(0.175 0.045 268);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 17%);
+  --ring: oklch(0.61 0.14 250);
+  --hero: oklch(0.125 0.018 260);
   --hero-foreground: oklch(0.955 0.008 250);
-  --hero-muted: oklch(0.3 0.05 258);
-  --hero-accent: oklch(0.7 0.1 250);
-  --lec: oklch(0.68 0.12 255);
-  --tut: oklch(0.72 0.1 195);
-  --pra: oklch(0.7 0.11 300);
-  --meeting-card-tint: 11%;
+  --hero-muted: oklch(0.185 0.025 255);
+  --hero-accent: oklch(0.64 0.14 250);
+  --lec: oklch(0.64 0.13 250);
+  --tut: oklch(0.7 0.095 250);
+  --pra: oklch(0.56 0.08 250);
+  --meeting-card-tint: 9%;
   --meeting-card-tint-end: 0%;
-  --meeting-card-hover-tint: 17%;
-  --meeting-card-hover-tint-end: 4%;
-  --meeting-card-border-strength: 35%;
-  --meeting-card-hover-border-strength: 64%;
-  --meeting-badge-tint: 14%;
-  --meeting-badge-ring-strength: 13%;
-  --chart-1: oklch(0.68 0.12 255);
-  --chart-2: oklch(0.72 0.1 195);
-  --chart-3: oklch(0.7 0.11 300);
+  --meeting-card-hover-tint: 15%;
+  --meeting-card-hover-tint-end: 3%;
+  --meeting-card-border-strength: 28%;
+  --meeting-card-hover-border-strength: 62%;
+  --meeting-badge-tint: 11%;
+  --meeting-badge-ring-strength: 12%;
+  --chart-1: oklch(0.64 0.13 250);
+  --chart-2: oklch(0.7 0.095 250);
+  --chart-3: oklch(0.56 0.08 250);
   --chart-4: oklch(0.75 0.13 60);
   --chart-5: oklch(0.68 0.14 20);
   --sidebar: oklch(0.22 0.038 258);
@@ -185,9 +207,19 @@
     border-color: var(--color-border);
   }
 
+  html {
+    color-scheme: light;
+    background: var(--color-background);
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    min-width: 320px;
   }
 }
 
@@ -195,13 +227,17 @@
   body {
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     overflow-x: hidden;
   }
   h1,
   h2,
   h3 {
     font-family: var(--font-heading);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.025em;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 32%, transparent);
   }
   :focus-visible {
     outline: 2px solid var(--color-ring);
@@ -251,24 +287,21 @@
 }
 
 @utility surface {
-  background-image: linear-gradient(
-    170deg,
-    color-mix(in oklab, var(--color-card) 100%, var(--color-accent) 0%),
-    color-mix(in oklab, var(--color-card) 94%, var(--color-accent) 6%)
-  );
+  background-color: color-mix(in oklab, var(--color-card) 97%, transparent);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
   transition:
-    box-shadow 220ms ease,
-    border-color 220ms ease,
-    transform 220ms ease;
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease;
 }
 
 @utility surface-interactive {
   &:hover {
-    border-color: color-mix(in oklab, var(--color-accent) 45%, var(--color-border));
+    border-color: color-mix(in oklab, var(--color-accent) 34%, var(--color-border));
     box-shadow: var(--shadow-lift);
+    transform: translateY(-1px);
   }
 }
 
@@ -276,26 +309,287 @@
   background-color: var(--color-hero);
   background-image:
     radial-gradient(
-      120% 90% at 12% 0%,
-      color-mix(in oklab, var(--color-hero-accent) 26%, transparent),
-      transparent 62%
+      80% 100% at 0% 0%,
+      color-mix(in oklab, var(--color-hero-accent) 10%, transparent),
+      transparent 70%
     ),
     radial-gradient(
-      90% 70% at 100% 100%,
-      color-mix(in oklab, var(--color-hero-accent) 16%, transparent),
-      transparent 60%
+      70% 90% at 100% 100%,
+      color-mix(in oklab, var(--color-hero-accent) 7%, transparent),
+      transparent 72%
     );
 }
 
 @utility eyebrow {
-  font-size: 0.68rem;
+  font-family: var(--font-code);
+  font-size: 0.66rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
 @utility rise-in {
-  animation: rise-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rise-in 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@utility button-primary {
+  border: 1px solid color-mix(in oklab, var(--color-primary) 82%, white 18%);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  box-shadow: var(--accent-glow);
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+  &:hover {
+    background: color-mix(in oklab, var(--color-primary) 91%, white 9%);
+    transform: translateY(-1px);
+  }
+  &:active {
+    transform: translateY(0) scale(0.985);
+  }
+}
+
+@utility button-secondary {
+  border: 1px solid var(--color-input);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--color-card) 94%, transparent);
+  color: var(--color-foreground);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-accent) 40%, var(--color-input));
+    background: var(--color-secondary);
+  }
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+@layer components {
+  .app-shell {
+    background-image: linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--color-background) 97%, var(--color-accent) 3%),
+      var(--color-background) 26rem
+    );
+  }
+
+  .app-nav {
+    background: color-mix(in oklab, var(--color-background) 88%, transparent);
+    border-color: transparent;
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .app-nav[data-scrolled="true"] {
+    background: color-mix(in oklab, var(--color-background) 74%, transparent);
+    border-color: var(--color-border);
+    box-shadow: 0 10px 30px -26px oklch(0 0 0 / 70%);
+    backdrop-filter: blur(18px) saturate(135%);
+  }
+
+  .landing-stage {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .topography-field {
+    position: absolute;
+    inset: -5rem max(-12vw, -10rem) auto;
+    z-index: -1;
+    height: min(52rem, 75vh);
+    pointer-events: none;
+    opacity: 0.36;
+    mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 94%);
+    background-image:
+      repeating-radial-gradient(
+        ellipse 62% 42% at 12% 20%,
+        transparent 0 30px,
+        color-mix(in oklab, var(--color-accent) 12%, transparent) 31px 32px,
+        transparent 33px 55px
+      ),
+      repeating-radial-gradient(
+        ellipse 48% 38% at 82% 34%,
+        transparent 0 25px,
+        color-mix(in oklab, var(--color-accent) 9%, transparent) 26px 27px,
+        transparent 28px 49px
+      );
+    background-size:
+      58rem 40rem,
+      52rem 35rem;
+    background-position:
+      -8rem -8rem,
+      calc(100% + 8rem) 2rem;
+  }
+
+  .landing-bento {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .bento-cell {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    background: color-mix(in oklab, var(--color-card) 97%, transparent);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .bento-step {
+    min-height: 10.5rem;
+    transition:
+      border-color 180ms ease,
+      transform 180ms ease,
+      background-color 180ms ease;
+  }
+
+  .bento-step:hover {
+    border-color: color-mix(in oklab, var(--color-accent) 36%, var(--color-border));
+    transform: translateY(-1px);
+  }
+
+  .bento-step::after {
+    content: attr(data-step);
+    position: absolute;
+    right: 1rem;
+    top: 0.65rem;
+    font-family: var(--font-code);
+    font-size: 2.75rem;
+    font-weight: 500;
+    letter-spacing: -0.08em;
+    color: color-mix(in oklab, var(--color-muted-foreground) 10%, transparent);
+  }
+
+  .dot-field {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .dot-field::before {
+    content: "";
+    position: absolute;
+    inset: -1rem;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image: radial-gradient(
+      circle,
+      color-mix(in oklab, var(--color-muted-foreground) 17%, transparent) 0.7px,
+      transparent 0.9px
+    );
+    background-size: 20px 20px;
+    mask-image: linear-gradient(to bottom, transparent, black 10%, black 88%, transparent);
+  }
+
+  .glass-panel {
+    border: 1px solid color-mix(in oklab, var(--color-border) 72%, white 8%);
+    background: color-mix(in oklab, var(--color-card) 74%, transparent);
+    box-shadow: 0 18px 48px -26px oklch(0 0 0 / 72%);
+    backdrop-filter: blur(18px) saturate(135%);
+  }
+
+  .bubble-tabs {
+    --bubble-count: 1;
+    --bubble-index: 0;
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--bubble-count), minmax(0, 1fr));
+    min-height: 2.75rem;
+    padding: 0.25rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: color-mix(in oklab, var(--color-card) 90%, transparent);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .bubble-tabs-compact {
+    min-height: 2.35rem;
+    padding: 0.1875rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .bubble-tabs-indicator {
+    position: absolute;
+    inset-block: 0.25rem;
+    left: 0.25rem;
+    width: calc((100% - 0.5rem) / var(--bubble-count));
+    border: 1px solid color-mix(in oklab, var(--color-primary) 80%, white 20%);
+    border-radius: calc(var(--radius-xl) - 0.25rem);
+    background: var(--color-primary);
+    box-shadow: var(--accent-glow);
+    transform: translateX(calc(var(--bubble-index) * 100%));
+    transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .bubble-tabs-compact .bubble-tabs-indicator {
+    inset-block: 0.1875rem;
+    left: 0.1875rem;
+    width: calc((100% - 0.375rem) / var(--bubble-count));
+  }
+
+  .bubble-tab {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: calc(var(--radius-xl) - 0.25rem);
+    color: var(--color-muted-foreground);
+    font-size: 0.8rem;
+    font-weight: 550;
+    white-space: nowrap;
+    transition:
+      color 180ms ease,
+      transform 140ms ease;
+  }
+
+  .bubble-tab:hover {
+    color: var(--color-foreground);
+  }
+
+  .bubble-tab[aria-selected="true"] {
+    color: var(--color-primary-foreground);
+  }
+
+  .bubble-tab:active {
+    transform: scale(0.97);
+  }
+
+  .route-map-stage {
+    position: relative;
+  }
+
+  .route-glass-panel {
+    border-radius: var(--radius-xl);
+  }
+}
+
+@media (min-width: 64rem) {
+  .landing-bento {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+  }
+
+  .route-glass-panel {
+    position: absolute;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 5;
+    width: min(31rem, calc(100% - 2rem));
+    max-height: calc(100% - 2rem);
+    overflow: auto;
+  }
 }
 
 @layer components {
@@ -330,15 +624,13 @@
         var(--meeting-accent) var(--meeting-card-border-strength),
         var(--color-border)
       );
-    border-left: 4px solid var(--meeting-accent);
+    border-left: 2px solid var(--meeting-accent);
     background: linear-gradient(
       135deg,
       color-mix(in oklab, var(--meeting-accent) var(--meeting-card-tint), var(--color-card)) 0%,
       color-mix(in oklab, var(--meeting-accent) var(--meeting-card-tint-end), var(--color-card)) 72%
     );
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 38%, transparent),
-      0 1px 2px color-mix(in oklab, var(--meeting-accent) 10%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in oklab, white 5%, transparent);
     transition:
       border-color 180ms ease,
       background-color 180ms ease,
@@ -365,8 +657,8 @@
         72%
     );
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, white 42%, transparent),
-      0 10px 24px -14px color-mix(in oklab, var(--meeting-accent) 55%, transparent);
+      0 0 0 1px color-mix(in oklab, var(--meeting-accent) 22%, transparent),
+      0 12px 30px -18px color-mix(in oklab, var(--meeting-accent) 62%, transparent);
     transform: translateY(-1px);
   }
 
@@ -401,7 +693,14 @@
   }
 
   .calendar-time-label {
+    font-family: var(--font-code);
     background: color-mix(in oklab, var(--color-secondary) 20%, var(--color-card));
+  }
+
+  .metric-value,
+  .tabular-nums {
+    font-family: var(--font-code);
+    font-variant-numeric: tabular-nums;
   }
 }
 

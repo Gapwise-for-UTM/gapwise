@@ -219,13 +219,16 @@ export const TodaySummary = memo(function TodaySummary({
     summary.kind === "gap" || summary.kind === "before-first" || summary.kind === "in-class";
 
   return (
-    <section className="surface mb-6 mt-6 p-4 sm:p-5" aria-labelledby="today-title">
-      <h2 id="today-title" className="flex items-center gap-2 text-base font-semibold">
+    <section className="surface mb-6 mt-6 overflow-hidden p-5 sm:p-6" aria-labelledby="today-title">
+      <h2
+        id="today-title"
+        className="flex items-center gap-2 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+      >
         <CalendarClock className="h-4 w-4 text-accent" aria-hidden="true" />
         {heading}
       </h2>
-      <p className="mt-3 font-display text-lg font-semibold tracking-tight">{title}</p>
-      {detail ? <p className="mt-1 text-sm text-muted-foreground">{detail}</p> : null}
+      <p className="mt-4 font-display text-xl font-medium tracking-tight">{title}</p>
+      {detail ? <p className="mt-1.5 text-sm text-muted-foreground">{detail}</p> : null}
       {secondary ? (
         <p className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-sm text-muted-foreground">
           <SecondaryIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
@@ -238,7 +241,7 @@ export const TodaySummary = memo(function TodaySummary({
             <button
               type="button"
               onClick={onOpenGapPlan}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="button-primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
             >
               <Sparkles className="h-4 w-4" aria-hidden="true" />
               Plan this gap
@@ -248,10 +251,8 @@ export const TodaySummary = memo(function TodaySummary({
             <button
               type="button"
               onClick={onOpenDayRoute}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors ${
-                canPlanGap
-                  ? "border border-input bg-card hover:border-accent/60 hover:bg-secondary/60"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold ${
+                canPlanGap ? "button-secondary" : "button-primary"
               }`}
             >
               <Navigation className="h-4 w-4" aria-hidden="true" />

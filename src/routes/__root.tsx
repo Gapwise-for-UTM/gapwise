@@ -91,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           "An independent student project for finding useful UTM timetable gaps and campus routes.",
       },
       { property: "og:type", content: "website" },
-      { name: "theme-color", content: "#203b62" },
+      { name: "theme-color", content: "#0d1117" },
     ],
     links: [
       {
