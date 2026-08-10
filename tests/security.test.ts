@@ -82,7 +82,7 @@ describe("account deletion and RLS security", () => {
 
   test("stores residence choice in the existing owner-scoped preferences row", async () => {
     const migration = await readFile(
-      "supabase/migrations/20260810192250_add_residence_preferences.sql",
+      "supabase/migrations/20260810200438_add_residence_preferences.sql",
       "utf8",
     );
     expect(migration).toContain("alter table public.user_preferences");
