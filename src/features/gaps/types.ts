@@ -11,6 +11,7 @@ export type GapAction =
   | "deep-work-block"
   | "flexible-long-gap"
   | "leave-campus-candidate"
+  | "go-home"
   | "location-dependent";
 
 export type GapTag =
@@ -84,4 +85,9 @@ export type GapAssessmentInput = {
   route: TransitionRoute;
   routePreferences: UserPreferences;
   gapPreferences: GapPreferences;
+  residenceTrip?: {
+    buildingName: string;
+    outbound: TransitionRoute;
+    inbound: TransitionRoute;
+  };
 };

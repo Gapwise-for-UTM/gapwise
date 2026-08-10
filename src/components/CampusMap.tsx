@@ -14,6 +14,8 @@ type MapSegment = {
   route: TransitionRoute;
 };
 
+type MapHome = { buildingCode: string; label: string };
+
 type MapData = {
   meetings: Meeting[];
   segments: MapSegment[];
@@ -21,6 +23,7 @@ type MapData = {
   selectedSegmentId: string | null;
   onSelectMeeting: (id: string) => void;
   onSelectSegment: (id: string) => void;
+  home: MapHome | null;
   className?: string;
 };
 
@@ -213,11 +216,31 @@ function syncMapData(
     );
   });
 
+  if (data.home) {
+    const homeBuilding = getCampusBuilding(data.home.buildingCode);
+    if (homeBuilding) {
+      const homeMarker = document.createElement("div");
+      homeMarker.className = "map-home-marker";
+      const homeIcon = document.createElement("span");
+      homeIcon.textContent = "⌂";
+      homeIcon.setAttribute("aria-hidden", "true");
+      homeMarker.append(homeIcon);
+      homeMarker.title = `Home · ${data.home.label}`;
+      homeMarker.setAttribute("role", "img");
+      homeMarker.setAttribute("aria-label", `Home at ${data.home.label}`);
+      markers.push(
+        new maplibregl.Marker({ element: homeMarker })
+          .setLngLat(homeBuilding.navigationPoint)
+          .addTo(map),
+      );
+    }
+  }
+
   const collection = routeFeatureCollection(data);
   const source = map.getSource("day-routes") as GeoJSONSource | undefined;
   if (source) {
     source.setData(collection);
-  } else if (map.isStyleLoaded()) {
+  } else {
     map.addSource("day-routes", { type: "geojson", data: collection });
     addRouteLayers(map, theme);
   }
@@ -228,6 +251,10 @@ function collectBoundsPoints(data: MapData): [number, number][] {
   for (const meeting of data.meetings) {
     const building = getCampusBuilding(meeting.buildingCode);
     if (building) points.push(building.navigationPoint);
+  }
+  if (data.home) {
+    const homeBuilding = getCampusBuilding(data.home.buildingCode);
+    if (homeBuilding) points.push(homeBuilding.navigationPoint);
   }
   for (const segment of data.segments) {
     for (const coord of segment.route.displayCoordinates) {
@@ -272,6 +299,7 @@ export function CampusMap({
   selectedSegmentId,
   onSelectMeeting,
   onSelectSegment,
+  home,
   className = "",
 }: MapData) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -291,6 +319,7 @@ export function CampusMap({
     selectedSegmentId,
     onSelectMeeting,
     onSelectSegment,
+    home,
   });
   themeRef.current = mapTheme;
   latestData.current = {
@@ -300,6 +329,7 @@ export function CampusMap({
     selectedSegmentId,
     onSelectMeeting,
     onSelectSegment,
+    home,
   };
 
   useEffect(() => {
@@ -409,7 +439,15 @@ export function CampusMap({
       syncMapData(map, maplibregl, latestData.current, markersRef.current, themeRef.current);
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
     }
-  }, [meetings, onSelectMeeting, onSelectSegment, selectedMeetingId, selectedSegmentId, segments]);
+  }, [
+    home,
+    meetings,
+    onSelectMeeting,
+    onSelectSegment,
+    selectedMeetingId,
+    selectedSegmentId,
+    segments,
+  ]);
 
   return (
     <div

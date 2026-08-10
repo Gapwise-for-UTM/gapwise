@@ -1,10 +1,22 @@
 import type { User } from "@supabase/supabase-js";
-import { AlertTriangle, Clock3, Footprints, LocateFixed, Route as RouteIcon } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock3,
+  Footprints,
+  Home,
+  LocateFixed,
+  Route as RouteIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BubbleTabs } from "./BubbleTabs";
 import { CampusMap } from "./CampusMap";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
+import {
+  createResidenceMeeting,
+  isResidenceMeeting,
+  selectedResidence,
+} from "@/features/routing/residence";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import { loadPreferences, savePreferences } from "@/features/sync/sync-service";
@@ -64,10 +76,37 @@ export function DayRoute({
         .sort((a, b) => a.startTime - b.startTime),
     [meetings, term, weekday],
   );
+  const residence = selectedResidence(preferences);
+  const mapHome = useMemo(
+    () => (residence ? { buildingCode: residence.code, label: residence.name } : null),
+    [residence],
+  );
+  const routeStops = useMemo(() => {
+    if (!residence || dayMeetings.length === 0) return dayMeetings;
+    const first = dayMeetings[0]!;
+    const last = dayMeetings[dayMeetings.length - 1]!;
+    return [
+      createResidenceMeeting({
+        buildingCode: residence.code,
+        term,
+        weekday,
+        time: first.startTime,
+        position: "start",
+      }),
+      ...dayMeetings,
+      createResidenceMeeting({
+        buildingCode: residence.code,
+        term,
+        weekday,
+        time: last.endTime,
+        position: "end",
+      }),
+    ];
+  }, [dayMeetings, residence, term, weekday]);
   const segments = useMemo<DaySegment[]>(
     () =>
-      dayMeetings.slice(0, -1).map((from, index) => {
-        const to = dayMeetings[index + 1]!;
+      routeStops.slice(0, -1).map((from, index) => {
+        const to = routeStops[index + 1]!;
         return {
           id: `${from.id}--${to.id}`,
           from,
@@ -75,7 +114,7 @@ export function DayRoute({
           route: planTransition(from, to, preferences),
         };
       }),
-    [dayMeetings, planTransition, preferences],
+    [planTransition, preferences, routeStops],
   );
 
   useEffect(() => {
@@ -236,9 +275,14 @@ export function DayRoute({
               {weekday} timeline
             </h2>
             <ol className="mt-3 space-y-3">
-              {dayMeetings.map((meeting, index) => {
+              {routeStops.map((meeting, index) => {
                 const segment = segments[index];
                 const selected = selectedMeetingId === meeting.id;
+                const homeStop = isResidenceMeeting(meeting);
+                const classNumber = homeStop
+                  ? null
+                  : routeStops.slice(0, index + 1).filter((stop) => !isResidenceMeeting(stop))
+                      .length;
                 const meetingPresentation = getLocationPresentation({ meeting });
                 const segmentPresentation = segment
                   ? getLocationPresentation({
@@ -261,15 +305,24 @@ export function DayRoute({
                     >
                       <span className="flex items-center gap-3">
                         <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                          {index + 1}
+                          {homeStop ? (
+                            <Home className="h-3.5 w-3.5" aria-hidden="true" />
+                          ) : (
+                            classNumber
+                          )}
                         </span>
                         <span>
                           <span className="block text-sm font-semibold">
-                            {meeting.courseCode} {meeting.activityType}
+                            {homeStop
+                              ? index === 0
+                                ? "Start at home"
+                                : "Return home"
+                              : `${meeting.courseCode} ${meeting.activityType}`}
                           </span>
                           <span className="block text-xs text-muted-foreground">
-                            {formatTime(meeting.startTime)}–{formatTime(meeting.endTime)} ·{" "}
-                            {meetingPresentation.label}
+                            {homeStop
+                              ? `${residence?.name} · ${residence?.code}`
+                              : `${formatTime(meeting.startTime)}–${formatTime(meeting.endTime)} · ${meetingPresentation.label}`}
                           </span>
                         </span>
                       </span>
@@ -288,7 +341,11 @@ export function DayRoute({
                           {SegmentStatusIcon ? (
                             <SegmentStatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
                           ) : null}
-                          Transition to {segment.to.courseCode}
+                          {isResidenceMeeting(segment.to)
+                            ? "Walk home"
+                            : isResidenceMeeting(segment.from)
+                              ? `Walk to ${segment.to.courseCode}`
+                              : `Transition to ${segment.to.courseCode}`}
                         </span>
                         <span className="mt-1 block text-muted-foreground">
                           {segmentPresentation?.label}
@@ -309,6 +366,7 @@ export function DayRoute({
               selectedSegmentId={selectedSegmentId}
               onSelectMeeting={selectMeeting}
               onSelectSegment={selectSegment}
+              home={mapHome}
               className="h-[30rem] lg:h-[36rem]"
             />
             {selectedSegment ? (
@@ -318,7 +376,9 @@ export function DayRoute({
         </div>
       )}
 
-      {selectedSegment ? (
+      {selectedSegment &&
+      !isResidenceMeeting(selectedSegment.from) &&
+      !isResidenceMeeting(selectedSegment.to) ? (
         <IndoorFloorViewer
           key={selectedSegment.id}
           route={selectedSegment.route}
@@ -345,6 +405,10 @@ function SegmentDetails({
   });
   const fromLocation = getLocationPresentation({ meeting: segment.from });
   const toLocation = getLocationPresentation({ meeting: segment.to });
+  const fromResidence = isResidenceMeeting(segment.from) ? selectedResidence(preferences) : null;
+  const toResidence = isResidenceMeeting(segment.to) ? selectedResidence(preferences) : null;
+  const fromLabel = fromResidence?.name ?? fromLocation.label;
+  const toLabel = toResidence?.name ?? toLocation.label;
   const StatusIcon = presentation.icon;
   const routeWarnings = route.warnings.filter((warning) => warning !== presentation.detail);
   const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds;
@@ -352,16 +416,18 @@ function SegmentDetails({
   const departure =
     seconds === null
       ? null
-      : Math.max(
-          0,
-          segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes,
-        );
+      : toResidence
+        ? segment.from.endTime
+        : Math.max(
+            0,
+            segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes,
+          );
   return (
     <section className="surface route-details-panel p-4" aria-labelledby="segment-details-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id="segment-details-title" className="text-base font-medium tracking-tight">
-            {fromLocation.label} → {toLocation.label}
+            {fromLabel} → {toLabel}
           </h3>
           <p className="mt-1 text-xs text-muted-foreground">{presentation.detail}</p>
         </div>
@@ -403,7 +469,11 @@ function SegmentDetails({
             label="Distance"
             value={`${route.status === "approximate" ? "~" : ""}${distanceLabel(distance)}`}
           />
-          <Metric icon={LocateFixed} label="Leave by" value={formatTime(departure)} />
+          <Metric
+            icon={LocateFixed}
+            label={toResidence ? "Head home" : "Leave by"}
+            value={formatTime(departure)}
+          />
           <Metric
             icon={RouteIcon}
             label="Outdoor"

@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { assessGap, gapDurationCategory, planGapAssessment } from "@/features/gaps/assess-gap";
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
+import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
+import { planMeetingTransition } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
 import type { Gap, Meeting } from "@/lib/timetable-types";
@@ -166,6 +168,46 @@ describe("intelligent gap assessment", () => {
 
     expect(assessment.primary.action).toBe("leave-campus-candidate");
     expect(assessment.primary.activityMinutes).toBe(255);
+  });
+
+  test("uses real campus paths for a residence round trip", () => {
+    const result = planGapAssessment(
+      gap({ startTime: 13 * 60, endTime: 19 * 60, durationMinutes: 360 }),
+      {
+        ...DEFAULT_USER_PREFERENCES,
+        dayOrigin: "residence",
+        residenceBuildingCode: "OPH",
+      },
+      { ...DEFAULT_GAP_PREFERENCES, minimumHomeStayMinutes: 90 },
+      (from, to, preferences) => planMeetingTransition(from, to, UTM_ROUTING_GRAPH, preferences),
+    );
+
+    expect(result.assessment.primary.action).toBe("go-home");
+    expect(result.assessment.primary.summary).toContain("Oscar Peterson Hall");
+    expect(result.assessment.primary.reasons.join(" ")).toContain("Walk home:");
+    expect(result.assessment.primary.timeline.map((segment) => segment.label)).toEqual([
+      "Walk home",
+      "Get settled",
+      "Time at home",
+      "Walk to class",
+      "Buffer",
+    ]);
+
+    const short = planGapAssessment(
+      gap({ startTime: 13 * 60, endTime: 14 * 60, durationMinutes: 60 }),
+      {
+        ...DEFAULT_USER_PREFERENCES,
+        dayOrigin: "residence",
+        residenceBuildingCode: "OPH",
+      },
+      { ...DEFAULT_GAP_PREFERENCES, minimumHomeStayMinutes: 90 },
+      (from, to, preferences) => planMeetingTransition(from, to, UTM_ROUTING_GRAPH, preferences),
+    );
+    expect(
+      [short.assessment.primary, ...short.assessment.alternatives].some(
+        (candidate) => candidate.action === "go-home",
+      ),
+    ).toBe(false);
   });
 
   test("shares one transition result between Today and Gap Plan consumers", () => {

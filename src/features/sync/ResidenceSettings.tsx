@@ -75,7 +75,7 @@ export function ResidenceSettings({
         </button>
       </DialogTrigger>
       <DialogContent className="glass-panel mx-4 w-[calc(100%-2rem)] max-w-md rounded-xl border-border/80 shadow-none">
-        <DialogHeader>
+        <DialogHeader className="pr-8">
           <DialogTitle>Where does your campus day start?</DialogTitle>
           <DialogDescription>
             Gapwise uses this only for day routes and gap suggestions. No live location is

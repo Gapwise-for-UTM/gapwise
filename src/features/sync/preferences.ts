@@ -13,6 +13,7 @@ export type UserPreferences = RoutePreferences & {
 
 const LOCAL_PREFERENCES_KEY = "gapwise:user-preferences:v1";
 const RESIDENCE_CODES = new Set(UTM_RESIDENCES.map((building) => building.code));
+type PreferenceStorage = Pick<Storage, "getItem" | "setItem">;
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   ...DEFAULT_ROUTE_PREFERENCES,
@@ -40,10 +41,21 @@ export function sanitizeUserPreferences(
   };
 }
 
-export function loadLocalUserPreferences(): UserPreferences {
-  if (typeof window === "undefined") return DEFAULT_USER_PREFERENCES;
+function browserPreferenceStorage(): PreferenceStorage | null {
+  if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(LOCAL_PREFERENCES_KEY);
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+export function loadLocalUserPreferences(
+  storage: PreferenceStorage | null = browserPreferenceStorage(),
+): UserPreferences {
+  if (!storage) return DEFAULT_USER_PREFERENCES;
+  try {
+    const raw = storage.getItem(LOCAL_PREFERENCES_KEY);
     return raw
       ? sanitizeUserPreferences(JSON.parse(raw) as Partial<UserPreferences>)
       : DEFAULT_USER_PREFERENCES;
@@ -52,11 +64,14 @@ export function loadLocalUserPreferences(): UserPreferences {
   }
 }
 
-export function saveLocalUserPreferences(value: UserPreferences): UserPreferences {
+export function saveLocalUserPreferences(
+  value: UserPreferences,
+  storage: PreferenceStorage | null = browserPreferenceStorage(),
+): UserPreferences {
   const preferences = sanitizeUserPreferences(value);
-  if (typeof window === "undefined") return preferences;
+  if (!storage) return preferences;
   try {
-    window.localStorage.setItem(LOCAL_PREFERENCES_KEY, JSON.stringify(preferences));
+    storage.setItem(LOCAL_PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {
     /* Private browsing or storage policy can make localStorage unavailable. */
   }
