@@ -155,26 +155,38 @@ function routeFeatureCollection(data: MapData) {
   };
 }
 
-function addRouteLayers(map: MapLibreMap) {
+function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
+  const casingColor = theme === "dark" ? "#05070a" : "#f8fafc";
+  const routeColor = theme === "dark" ? "#60a5fa" : "#146bb8";
+  const inactiveRouteColor = theme === "dark" ? "#57728d" : "#6d879f";
+
   map.addLayer({
     id: "day-routes-casing",
     type: "line",
     source: "day-routes",
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#0b1f33", "line-width": 7, "line-opacity": 0.72 },
+    paint: {
+      "line-color": casingColor,
+      "line-width": ["case", ["==", ["get", "selected"], true], 7, 5],
+      "line-opacity": ["case", ["==", ["get", "selected"], true], 0.82, 0.42],
+    },
   });
   map.addLayer({
     id: "day-routes-solid",
     type: "line",
     source: "day-routes",
     layout: { "line-cap": "round", "line-join": "round" },
-    paint: { "line-color": "#66b3ff", "line-width": 4, "line-opacity": 1 },
+    paint: {
+      "line-color": ["case", ["==", ["get", "selected"], true], routeColor, inactiveRouteColor],
+      "line-width": ["case", ["==", ["get", "selected"], true], 4, 2.5],
+      "line-opacity": ["case", ["==", ["get", "selected"], true], 1, 0.68],
+    },
   });
 }
 
 function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
-  const fillColor = theme === "dark" ? "#365975" : "#dce7f1";
-  const outlineColor = theme === "dark" ? "#7895ad" : "#9fb5c9";
+  const fillColor = theme === "dark" ? "#202a35" : "#dde5eb";
+  const outlineColor = theme === "dark" ? "#43566a" : "#9fb0bd";
   const layers = map.getStyle().layers ?? [];
   let styledBuildingLayer = false;
 
@@ -260,6 +272,7 @@ function syncMapData(
   maplibregl: MapLibreModule,
   data: MapData,
   markers: Marker[],
+  theme: MapTheme,
 ) {
   for (const marker of markers) marker.remove();
   markers.length = 0;
@@ -298,7 +311,7 @@ function syncMapData(
     source.setData(collection);
   } else if (map.isStyleLoaded()) {
     map.addSource("day-routes", { type: "geojson", data: collection });
-    addRouteLayers(map);
+    addRouteLayers(map, theme);
   }
 }
 
@@ -462,7 +475,20 @@ export function CampusMap({
         appliedThemeRef.current = initialTheme;
         mapRef.current = map;
         maplibreRef.current = maplibregl;
-        map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
+        map.addControl(
+          new maplibregl.AttributionControl({
+            compact: true,
+          }),
+          "bottom-right",
+        );
+        const collapseAttribution = () => {
+          const attribution =
+            containerRef.current?.querySelector<HTMLElement>(".maplibregl-ctrl-attrib");
+          attribution?.classList.remove("maplibregl-compact-show");
+          attribution?.removeAttribute("open");
+        };
+        collapseAttribution();
+        map.on("styledata", collapseAttribution);
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
         map.on("error", () => {
           if (!disposed && !map.isStyleLoaded()) setStatus("error");
@@ -472,7 +498,7 @@ export function CampusMap({
           ready = true;
           if (loadTimeout) clearTimeout(loadTimeout);
           styleCampusBuildings(map, themeRef.current);
-          syncMapData(map, maplibregl, latestData.current, markersRef.current);
+          syncMapData(map, maplibregl, latestData.current, markersRef.current, themeRef.current);
           if (!routeClickBound) {
             map.on("click", "day-routes-solid", (event) => {
               const id = event.features?.[0]?.properties?.["id"];
@@ -515,7 +541,7 @@ export function CampusMap({
     const map = mapRef.current;
     const maplibregl = maplibreRef.current;
     if (map && maplibregl && map.isStyleLoaded()) {
-      syncMapData(map, maplibregl, latestData.current, markersRef.current);
+      syncMapData(map, maplibregl, latestData.current, markersRef.current, themeRef.current);
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
     }
   }, [
@@ -529,7 +555,7 @@ export function CampusMap({
 
   return (
     <div
-      className={`relative w-full overflow-hidden rounded-xl border border-border bg-muted ${className || "h-[25rem]"}`}
+      className={`campus-map relative w-full overflow-hidden rounded-xl border border-border bg-muted ${className || "h-[25rem]"}`}
     >
       <div
         ref={containerRef}

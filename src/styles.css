@@ -122,17 +122,17 @@
   --hero-foreground: oklch(0.2 0.03 258);
   --hero-muted: oklch(0.91 0.018 250);
   --hero-accent: oklch(0.49 0.14 250);
-  --lec: oklch(0.46 0.13 250);
-  --tut: oklch(0.52 0.105 250);
-  --pra: oklch(0.4 0.085 250);
-  --meeting-card-tint: 11%;
-  --meeting-card-tint-end: 2%;
-  --meeting-card-hover-tint: 18%;
-  --meeting-card-hover-tint-end: 5%;
-  --meeting-card-border-strength: 34%;
-  --meeting-card-hover-border-strength: 68%;
-  --meeting-badge-tint: 13%;
-  --meeting-badge-ring-strength: 16%;
+  --lec: oklch(0.45 0.11 255);
+  --tut: oklch(0.52 0.09 195);
+  --pra: oklch(0.5 0.1 300);
+  --meeting-card-tint: 17%;
+  --meeting-card-tint-end: 5%;
+  --meeting-card-hover-tint: 24%;
+  --meeting-card-hover-tint-end: 9%;
+  --meeting-card-border-strength: 46%;
+  --meeting-card-hover-border-strength: 70%;
+  --meeting-badge-tint: 20%;
+  --meeting-badge-ring-strength: 20%;
   --chart-1: oklch(0.46 0.13 250);
   --chart-2: oklch(0.52 0.105 250);
   --chart-3: oklch(0.4 0.085 250);
@@ -176,17 +176,17 @@
   --hero-foreground: oklch(0.955 0.008 250);
   --hero-muted: oklch(0.185 0.025 255);
   --hero-accent: oklch(0.64 0.14 250);
-  --lec: oklch(0.64 0.13 250);
-  --tut: oklch(0.7 0.095 250);
-  --pra: oklch(0.56 0.08 250);
-  --meeting-card-tint: 9%;
+  --lec: oklch(0.68 0.12 255);
+  --tut: oklch(0.72 0.1 195);
+  --pra: oklch(0.7 0.11 300);
+  --meeting-card-tint: 11%;
   --meeting-card-tint-end: 0%;
-  --meeting-card-hover-tint: 15%;
-  --meeting-card-hover-tint-end: 3%;
-  --meeting-card-border-strength: 28%;
-  --meeting-card-hover-border-strength: 62%;
-  --meeting-badge-tint: 11%;
-  --meeting-badge-ring-strength: 12%;
+  --meeting-card-hover-tint: 17%;
+  --meeting-card-hover-tint-end: 4%;
+  --meeting-card-border-strength: 35%;
+  --meeting-card-hover-border-strength: 64%;
+  --meeting-badge-tint: 14%;
+  --meeting-badge-ring-strength: 13%;
   --chart-1: oklch(0.64 0.13 250);
   --chart-2: oklch(0.7 0.095 250);
   --chart-3: oklch(0.56 0.08 250);
@@ -566,29 +566,11 @@
   .bubble-tab:active {
     transform: scale(0.97);
   }
-
-  .route-map-stage {
-    position: relative;
-  }
-
-  .route-glass-panel {
-    border-radius: var(--radius-xl);
-  }
 }
 
 @media (min-width: 64rem) {
   .landing-bento {
     grid-template-columns: repeat(12, minmax(0, 1fr));
-  }
-
-  .route-glass-panel {
-    position: absolute;
-    left: 1rem;
-    bottom: 1rem;
-    z-index: 5;
-    width: min(31rem, calc(100% - 2rem));
-    max-height: calc(100% - 2rem);
-    overflow: auto;
   }
 }
 
@@ -624,7 +606,7 @@
         var(--meeting-accent) var(--meeting-card-border-strength),
         var(--color-border)
       );
-    border-left: 2px solid var(--meeting-accent);
+    border-left: 4px solid var(--meeting-accent);
     background: linear-gradient(
       135deg,
       color-mix(in oklab, var(--meeting-accent) var(--meeting-card-tint), var(--color-card)) 0%,
@@ -721,78 +703,122 @@
   height: 2rem;
   align-items: center;
   justify-content: center;
-  border: 2px solid white;
+  border: 2px solid color-mix(in oklab, var(--color-background) 74%, white 26%);
   border-radius: 9999px;
   background: var(--color-primary);
   color: var(--color-primary-foreground);
   font-size: 0.75rem;
   font-weight: 700;
-  box-shadow: 0 2px 8px oklch(0.2 0.03 258 / 35%);
+  box-shadow:
+    0 0 0 1px oklch(0 0 0 / 24%),
+    0 6px 18px -7px oklch(0 0 0 / 58%);
   cursor: pointer;
+  transition:
+    width 160ms ease,
+    height 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
 }
 
 .map-number-marker.is-selected {
   width: 2.4rem;
   height: 2.4rem;
   background: var(--color-accent);
-  outline: 3px solid var(--color-background);
+  box-shadow:
+    0 0 0 3px color-mix(in oklab, var(--color-background) 86%, transparent),
+    0 10px 24px -8px color-mix(in oklab, var(--color-accent) 70%, transparent);
 }
 
-/* Theme MapLibre attribution control for dark map styling */
-.dark .maplibregl-ctrl-attrib.maplibregl-compact {
-  min-height: 0;
-  padding: 0;
-  margin: 0.75rem;
+/* Keep MapLibre controls visually native to Gapwise without obscuring the map. */
+.campus-map .maplibregl-ctrl-group {
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--color-border) 78%, white 6%);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--color-card) 91%, transparent);
+  box-shadow: 0 10px 24px -16px oklch(0 0 0 / 72%);
+  backdrop-filter: blur(12px) saturate(120%);
+}
+
+.campus-map .maplibregl-ctrl-group button {
+  width: 2rem;
+  height: 2rem;
   background-color: transparent;
-  color: var(--popover-foreground);
-  border: none;
 }
 
-.dark .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button {
+.campus-map .maplibregl-ctrl-group button + button {
+  border-top-color: var(--color-border);
+}
+
+.campus-map .maplibregl-ctrl-group button:hover,
+.campus-map .maplibregl-ctrl-group button:focus-visible {
+  background-color: color-mix(in oklab, var(--color-secondary) 82%, transparent);
+}
+
+.dark .campus-map .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1) opacity(0.86);
+}
+
+.campus-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  position: relative;
+  width: 1.75rem;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  margin: 0.625rem;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+  color: var(--color-popover-foreground);
+}
+
+.campus-map .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button {
   display: block !important;
-  background-color: rgba(22, 28, 42, 0.85);
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20'%3E%3Cpath fill='%23fff' d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid color-mix(in oklab, var(--color-border) 78%, white 6%);
+  border-radius: var(--radius-md);
+  background-color: color-mix(in oklab, var(--color-card) 91%, transparent);
+  box-shadow: 0 8px 20px -14px oklch(0 0 0 / 72%);
+  backdrop-filter: blur(12px) saturate(120%);
 }
 
-.dark .maplibregl-ctrl-attrib-button:hover,
-.dark .maplibregl-ctrl-attrib-button:focus-visible {
-  background-color: rgba(28, 36, 54, 0.95);
+.dark .campus-map .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button {
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 20 20'%3E%3Cpath fill='%23e8edf4' d='M4 10a6 6 0 1 0 12 0 6 6 0 1 0-12 0m5-3a1 1 0 1 0 2 0 1 1 0 1 0-2 0m0 3a1 1 0 1 1 2 0v3a1 1 0 1 1-2 0'/%3E%3C/svg%3E");
 }
 
-.dark .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-inner {
+.campus-map .maplibregl-ctrl-attrib-button:hover,
+.campus-map .maplibregl-ctrl-attrib-button:focus-visible {
+  background-color: var(--color-secondary);
+}
+
+.campus-map .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-inner {
   display: none !important;
 }
 
-.dark .maplibregl-ctrl-attrib.maplibregl-compact-show {
-  background-color: transparent;
-  padding: 0;
-}
-
-.dark .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+.campus-map .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-inner {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.4rem);
   display: block !important;
+  width: max-content;
+  max-width: min(21rem, calc(100vw - 3rem));
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklab, var(--color-popover) 96%, transparent);
+  color: var(--color-popover-foreground);
+  font-size: 0.625rem;
+  line-height: 1.45;
+  box-shadow: 0 18px 40px -24px oklch(0 0 0 / 72%);
+  backdrop-filter: blur(14px) saturate(120%);
 }
 
-.dark .maplibregl-ctrl-attrib-inner {
-  background: var(--popover);
-  color: var(--popover-foreground);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.25);
-  padding: 0.875rem 1rem;
-  max-width: 22rem;
+.campus-map .maplibregl-ctrl-attrib-inner a {
+  color: var(--color-accent);
 }
 
-.dark .maplibregl-ctrl-attrib-inner a {
-  color: var(--primary);
-}
-
-.dark .maplibregl-ctrl-attrib-inner a:hover,
-.dark .maplibregl-ctrl-attrib-inner a:focus-visible {
+.campus-map .maplibregl-ctrl-attrib-inner a:hover,
+.campus-map .maplibregl-ctrl-attrib-inner a:focus-visible {
   text-decoration: underline;
-}
-
-.dark .maplibregl-ctrl-attrib.maplibregl-compact-show .maplibregl-ctrl-attrib-button {
-  background-color: rgba(255, 255, 255, 0.08);
 }

@@ -301,7 +301,7 @@ export function DayRoute({
             </ol>
           </section>
 
-          <div className="route-map-stage">
+          <div className="space-y-3">
             <CampusMap
               meetings={dayMeetings}
               segments={segments}
@@ -312,12 +312,8 @@ export function DayRoute({
               className="h-[30rem] lg:h-[36rem]"
             />
             {selectedSegment ? (
-              <SegmentDetails segment={selectedSegment} preferences={preferences} overlay />
-            ) : (
-              <p className="route-glass-panel glass-panel mt-4 p-4 text-sm text-muted-foreground lg:mt-0">
-                Select a transition to see distance, timing, and route accuracy.
-              </p>
-            )}
+              <SegmentDetails segment={selectedSegment} preferences={preferences} />
+            ) : null}
           </div>
         </div>
       )}
@@ -337,11 +333,9 @@ export function DayRoute({
 function SegmentDetails({
   segment,
   preferences,
-  overlay = false,
 }: {
   segment: DaySegment;
   preferences: UserPreferences;
-  overlay?: boolean;
 }) {
   const route = segment.route;
   const presentation = getLocationPresentation({
@@ -363,10 +357,7 @@ function SegmentDetails({
           segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes,
         );
   return (
-    <section
-      className={`${overlay ? "route-glass-panel glass-panel mt-4 lg:mt-0" : "surface"} p-4`}
-      aria-labelledby="segment-details-title"
-    >
+    <section className="surface route-details-panel p-4" aria-labelledby="segment-details-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 id="segment-details-title" className="text-base font-medium tracking-tight">
