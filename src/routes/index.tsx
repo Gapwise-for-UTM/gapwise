@@ -25,6 +25,7 @@ import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
 import { AccountStatus } from "@/features/auth/AccountStatus";
 import { useAuth } from "@/features/auth/use-auth";
 import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
+import { ResidenceSettings } from "@/features/sync/ResidenceSettings";
 import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import {
   loadGapPreferences,
@@ -32,7 +33,11 @@ import {
   saveGapPreferences,
 } from "@/features/gaps/preferences";
 import type { GapPreferences } from "@/features/gaps/types";
-import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
+import {
+  loadLocalUserPreferences,
+  saveLocalUserPreferences,
+  type UserPreferences,
+} from "@/features/sync/preferences";
 import {
   loadRememberedRecord,
   saveRemembered,
@@ -101,7 +106,7 @@ function Index() {
   const [view, setView] = useState<"timetable" | "gaps" | "route">("timetable");
   const [openedViews, setOpenedViews] = useState({ gaps: false, route: false });
   const [isDemo, setIsDemo] = useState(false);
-  const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_USER_PREFERENCES);
+  const [preferences, setPreferences] = useState<UserPreferences>(loadLocalUserPreferences);
   const [gapPreferences, setGapPreferences] = useState<GapPreferences>(loadGapPreferences);
   const [editingPersonal, setEditingPersonal] = useState<
     import("@/lib/personal-types").PersonalItem | null
@@ -128,6 +133,9 @@ function Index() {
     () => loadPersonalItems(),
   );
   const [showAddPersonal, setShowAddPersonal] = useState(false);
+  const updateUserPreferences = useCallback((next: UserPreferences) => {
+    setPreferences(saveLocalUserPreferences(next));
+  }, []);
   const [isOnline, setIsOnline] = useState(
     typeof window !== "undefined" && "onLine" in navigator ? navigator.onLine : true,
   );
@@ -510,6 +518,11 @@ function Index() {
 
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <ResidenceSettings
+              user={user}
+              preferences={preferences}
+              onPreferencesChange={updateUserPreferences}
+            />
             <AccountStatus
               user={user}
               loading={authLoading}
@@ -910,7 +923,7 @@ function Index() {
                           term={term}
                           onTermChange={setTerm}
                           preferences={preferences}
-                          onPreferencesChange={setPreferences}
+                          onPreferencesChange={updateUserPreferences}
                           user={user}
                           planTransition={planTransition}
                         />

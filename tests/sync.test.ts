@@ -42,4 +42,16 @@ describe("guest-safe cloud services", () => {
     expect(sanitizeUserPreferences(undefined)).toEqual(DEFAULT_USER_PREFERENCES);
     expect(sanitizeUserPreferences({ walkingSpeedMps: 99 }).walkingSpeedMps).toBe(1.35);
   });
+
+  test("accepts only a listed residence and otherwise preserves commuter defaults", () => {
+    expect(
+      sanitizeUserPreferences({ dayOrigin: "residence", residenceBuildingCode: "OPH" }),
+    ).toMatchObject({ dayOrigin: "residence", residenceBuildingCode: "OPH" });
+    expect(
+      sanitizeUserPreferences({ dayOrigin: "residence", residenceBuildingCode: "NOT-A-HOME" }),
+    ).toMatchObject({ dayOrigin: "commute", residenceBuildingCode: null });
+    expect(
+      sanitizeUserPreferences({ dayOrigin: "commute", residenceBuildingCode: "OPH" }),
+    ).toMatchObject({ dayOrigin: "commute", residenceBuildingCode: null });
+  });
 });
