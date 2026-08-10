@@ -108,7 +108,7 @@ export function AccountStatus({
       ) : user ? (
         <>
           <DropdownMenu>
-            <DropdownMenuTrigger className="inline-flex min-h-11 max-w-52 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary">
+            <DropdownMenuTrigger className="button-secondary inline-flex min-h-9 max-w-52 items-center gap-2 px-3 text-sm font-medium">
               <UserRound className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
               <span className="truncate">{getAccountIdentity(user)}</span>
               <ChevronDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -177,13 +177,13 @@ export function AccountStatus({
             type="button"
             onClick={() => setSignInOpen((open) => !open)}
             disabled={!isSupabaseConfigured}
-            className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+            className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
             aria-expanded={signInOpen}
           >
             <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
           </button>
           {signInOpen ? (
-            <section className="absolute right-0 top-12 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-border bg-card p-4 shadow-lg">
+            <section className="glass-panel absolute right-0 top-11 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-xl p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                   <h2 className="font-semibold">Sign in to sync</h2>
@@ -209,7 +209,7 @@ export function AccountStatus({
                   )
                 }
                 disabled={busy}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+                className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
               >
                 <Github className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
               </button>
@@ -231,7 +231,7 @@ export function AccountStatus({
                     type="button"
                     disabled={busy}
                     onClick={() => setEmailSent(false)}
-                    className="min-h-11 w-full rounded-lg border border-border px-3 text-sm font-medium hover:bg-secondary disabled:opacity-50"
+                    className="button-secondary min-h-11 w-full px-3 text-sm font-medium disabled:opacity-50"
                   >
                     Use a different email or resend
                   </button>
@@ -259,7 +259,7 @@ export function AccountStatus({
                   <button
                     type="submit"
                     disabled={busy || !email.trim()}
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                    className="button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
                   >
                     <Mail className="h-4 w-4" aria-hidden="true" />
                     {busy ? "Sending…" : "Email me a sign-in link"}
@@ -273,7 +273,7 @@ export function AccountStatus({
       {message ? (
         <span
           role="status"
-          className="fixed right-4 top-20 z-[60] max-w-sm rounded-lg border border-border bg-card px-4 py-3 text-sm shadow-sm"
+          className="glass-panel fixed right-4 top-20 z-[60] max-w-sm rounded-lg px-4 py-3 text-sm"
         >
           {message}
         </span>

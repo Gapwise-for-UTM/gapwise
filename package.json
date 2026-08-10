@@ -21,6 +21,8 @@
     "model:stone": "bash scripts/apply-realistic-stone.sh"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
     "@google/model-viewer": "^4.3.1",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",

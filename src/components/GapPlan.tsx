@@ -101,7 +101,7 @@ const GapSettings = memo(function GapSettings({
   }
 
   return (
-    <details className="surface group p-4">
+    <details className="surface group p-4 sm:p-5">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-sm font-semibold">
           <SlidersHorizontal className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -220,7 +220,7 @@ const GapSettings = memo(function GapSettings({
         </label>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-border bg-secondary/35 p-4">
+      <div className="mt-4 rounded-xl border border-border bg-secondary/35 p-4">
         <label className="flex items-start gap-3 text-sm">
           <input
             type="checkbox"
@@ -376,13 +376,13 @@ const GapCard = memo(function GapCard({
   ];
 
   return (
-    <article className="surface p-4 sm:p-5">
+    <article className="surface surface-interactive p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 text-sm font-semibold">
+        <p className="flex items-center gap-2 font-mono text-xs font-medium tabular-nums text-muted-foreground">
           <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
           {formatTime(gap.startTime)} – {formatTime(gap.endTime)}
         </p>
-        <span className="text-sm font-semibold text-muted-foreground">
+        <span className="font-mono text-xs font-medium text-muted-foreground">
           {formatCompactDuration(gap.durationMinutes)}
         </span>
       </div>
@@ -394,7 +394,9 @@ const GapCard = memo(function GapCard({
           <ActionIcon className="h-4 w-4" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <h4 className="font-display text-base font-semibold leading-tight">{selected.title}</h4>
+          <h4 className="font-display text-lg font-medium leading-tight tracking-tight">
+            {selected.title}
+          </h4>
           <p className="mt-0.5 text-sm font-medium text-foreground">
             {formatCompactDuration(selected.activityMinutes)} usable
           </p>
@@ -402,7 +404,7 @@ const GapCard = memo(function GapCard({
         </div>
       </div>
 
-      <div className="mt-3 rounded-lg border border-border bg-secondary/25 px-3 py-2.5 text-sm">
+      <div className="mt-4 rounded-lg border border-border bg-secondary/25 px-3 py-3 text-sm">
         <p className="flex min-w-0 items-center gap-2">
           <RouteStatusIcon className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
           <span className="truncate">{previousLocation.label}</span>
@@ -426,10 +428,10 @@ const GapCard = memo(function GapCard({
               type="button"
               aria-pressed={selectedOption}
               onClick={() => setSelectedRecommendationId(recommendation.id)}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all active:scale-[0.98] ${
                 selectedOption
-                  ? "border-accent bg-accent/10 text-foreground"
-                  : "border-input text-muted-foreground hover:border-accent/60 hover:text-foreground"
+                  ? "border-primary bg-primary text-primary-foreground shadow-[var(--accent-glow)]"
+                  : "border-input bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary hover:text-foreground"
               }`}
             >
               {actionChipLabel(recommendation)}
@@ -439,7 +441,7 @@ const GapCard = memo(function GapCard({
       </div>
 
       <details className="group mt-3 text-xs">
-        <summary className="ml-auto w-fit cursor-pointer rounded-full border border-input px-3 py-1 font-semibold text-muted-foreground hover:border-accent/60 hover:text-foreground">
+        <summary className="ml-auto w-fit cursor-pointer rounded-lg border border-input px-3 py-1 font-semibold text-muted-foreground hover:border-accent/60 hover:text-foreground">
           Details
         </summary>
         <div className="mt-3 rounded-lg border border-border bg-background/45 p-3 text-muted-foreground">
@@ -511,11 +513,20 @@ export const GapPlan = memo(function GapPlan({
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col gap-2 px-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="eyebrow text-accent">Between classes</p>
+          <h2 className="mt-2 text-xl font-medium tracking-tight">Plan around your day</h2>
+        </div>
+        <p className="max-w-md text-sm leading-6 text-muted-foreground">
+          Suggestions account for walking time, setup, pack-up, and your next class.
+        </p>
+      </div>
       <GapSettings value={gapPreferences} onChange={onGapPreferencesChange} />
 
       {groups.map((group) => (
         <section key={group.weekday} aria-labelledby={`gaps-${group.weekday}`}>
-          <h3 id={`gaps-${group.weekday}`} className="text-base font-semibold">
+          <h3 id={`gaps-${group.weekday}`} className="text-base font-medium tracking-tight">
             {group.weekday}
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {group.gaps.length} gap{group.gaps.length === 1 ? "" : "s"}

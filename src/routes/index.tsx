@@ -1,6 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CalendarRange, LayoutGrid, MapPinned, ShieldCheck, Trash2, Upload, X } from "lucide-react";
+import {
+  CalendarRange,
+  Download,
+  FileCheck2,
+  LayoutGrid,
+  MapPinned,
+  ShieldCheck,
+  Trash2,
+  Upload,
+  Waypoints,
+  X,
+} from "lucide-react";
+import { BubbleTabs } from "@/components/BubbleTabs";
 import { GapPlan } from "@/components/GapPlan";
 import PersonalItemForm from "@/components/PersonalItemForm";
 import { loadPersonalItems, savePersonalItems } from "@/features/personal/persistence";
@@ -58,11 +70,20 @@ export const Route = createFileRoute("/")({
 });
 
 const STEPS = [
-  { title: "Export from ACORN", body: "Download your timetable as a .ics calendar file." },
-  { title: "Upload the .ics file", body: "It is parsed locally in your browser." },
+  {
+    title: "Export from ACORN",
+    body: "Download your timetable as a .ics calendar file.",
+    icon: Download,
+  },
+  {
+    title: "Upload the .ics file",
+    body: "It is parsed locally in your browser.",
+    icon: FileCheck2,
+  },
   {
     title: "Review your weekly gap plan",
     body: "See every gap, how long it is, and where you are.",
+    icon: Waypoints,
   },
 ];
 
@@ -110,6 +131,7 @@ function Index() {
   const [isOnline, setIsOnline] = useState(
     typeof window !== "undefined" && "onLine" in navigator ? navigator.onLine : true,
   );
+  const [isScrolled, setIsScrolled] = useState(false);
   const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
   const latestMeetings = useRef<Meeting[] | null>(meetings);
   const mounted = useRef(false);
@@ -130,6 +152,13 @@ function Index() {
     return () => {
       mounted.current = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const updateScrollState = () => setIsScrolled(window.scrollY > 10);
+    updateScrollState();
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrollState);
   }, []);
 
   useEffect(() => {
@@ -455,9 +484,12 @@ function Index() {
   const openDayRoute = useCallback(() => showView("route"), [showView]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+    <div className="app-shell min-h-screen bg-background text-foreground">
+      <header
+        className="app-nav sticky top-0 z-30 border-b"
+        data-scrolled={isScrolled ? "true" : "false"}
+      >
+        <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <a
             href="/"
             aria-label="Gapwise for UTM home"
@@ -467,10 +499,10 @@ function Index() {
               src="/logo-mark.svg"
               alt=""
               aria-hidden="true"
-              className="h-8 w-8 shrink-0 transition-transform duration-300 group-hover:scale-105"
+              className="h-7 w-7 shrink-0 transition-transform duration-300 group-hover:scale-105"
             />
             <div className="min-w-0">
-              <p className="truncate font-display text-lg font-semibold tracking-tight">
+              <p className="truncate font-display text-base font-semibold tracking-[-0.025em]">
                 Gapwise <span className="text-accent">for UTM</span>
               </p>
             </div>
@@ -496,7 +528,10 @@ function Index() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-7 sm:px-6 sm:py-9">
+      <main
+        className={`mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 ${!meetings ? "landing-stage" : ""}`}
+      >
+        {!meetings ? <div className="topography-field" aria-hidden="true" /> : null}
         {(authLoading || restoration === "checking-cloud") && !meetings ? (
           <div className="py-16" role="status" aria-live="polite">
             <div className="h-4 w-36 animate-pulse rounded bg-muted" />
@@ -505,34 +540,41 @@ function Index() {
           </div>
         ) : !meetings ? (
           <>
-            <div className="rise-in grid grid-cols-1 overflow-hidden rounded-3xl border border-border bg-card shadow-[var(--shadow-lift)] lg:grid-cols-[1.05fr_1fr]">
-              <section className="hero-surface relative flex flex-col p-7 text-hero-foreground sm:p-11 lg:p-12">
-                <p className="inline-flex w-fit items-center gap-2 rounded-full border border-hero-accent/30 bg-hero-muted/70 px-3 py-1.5 backdrop-blur">
-                  <ShieldCheck className="h-3.5 w-3.5 text-hero-accent" aria-hidden="true" />
-                  <span className="eyebrow">Your timetable stays on your device</span>
-                </p>
+            <div className="landing-bento rise-in">
+              <section className="bento-cell hero-surface flex min-h-[24rem] flex-col p-7 text-hero-foreground sm:p-10 lg:col-span-7 lg:min-h-[26rem] lg:p-12">
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="inline-flex w-fit items-center gap-2 rounded-lg border border-hero-accent/25 bg-hero-muted/35 px-3 py-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-hero-accent" aria-hidden="true" />
+                    <span className="eyebrow">Private by design</span>
+                  </p>
+                  <span className="eyebrow text-hero-foreground/45">UTM campus utility</span>
+                </div>
 
-                <h1 className="mt-7 max-w-[19ch] text-balance font-display text-[2.15rem] font-bold leading-[1.05] tracking-tight sm:text-[3.15rem]">
-                  Find the gaps in your <span className="text-hero-accent">UTM timetable.</span>
+                <h1 className="mt-10 max-w-[13ch] text-balance font-display text-[2.65rem] font-medium leading-[0.98] tracking-[-0.055em] sm:text-[4.15rem]">
+                  Make every gap on campus count.
                 </h1>
 
-                <p className="mt-4 max-w-md text-base leading-relaxed text-hero-foreground/75 sm:text-lg">
-                  Upload your ACORN calendar export to see useful gaps, plan study time, and route
-                  between classes across campus.
+                <p className="mt-6 max-w-[34rem] text-[0.95rem] leading-7 text-hero-foreground/68 sm:text-base">
+                  Turn your ACORN export into a precise weekly timetable, useful gap plan, and
+                  route-aware guide for moving across UTM.
                 </p>
 
-                <div className="mt-8 lg:mt-auto lg:pt-10">
-                  <UtmMonumentViewer className="border-hero-accent/25 bg-hero-muted/40 bg-none" />
-                  <p className="mt-3 text-xs text-hero-foreground/65">
-                    Drag to rotate the UTM entrance monument · scroll or pinch to zoom
+                <div className="mt-auto grid gap-3 pt-10 text-xs text-hero-foreground/58 sm:grid-cols-2">
+                  <p className="flex items-center gap-2 border-t border-hero-foreground/10 pt-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-hero-accent" aria-hidden="true" />
+                    Original .ics files never leave your device
+                  </p>
+                  <p className="flex items-center gap-2 border-t border-hero-foreground/10 pt-3">
+                    <span className="h-1.5 w-1.5 rounded-full bg-hero-accent" aria-hidden="true" />
+                    Built around the UTM campus
                   </p>
                 </div>
               </section>
 
-              <div className="flex flex-col justify-center p-7 sm:p-11 lg:p-12">
+              <section className="bento-cell flex flex-col justify-center p-6 sm:p-8 lg:col-span-5 lg:row-span-2 lg:p-10">
                 <div className="mx-auto w-full max-w-md">
                   {!isOnline ? (
-                    <div className="mb-6 rounded-3xl border border-border bg-card/80 p-6 text-left text-foreground shadow-[var(--shadow-soft)]">
+                    <div className="glass-panel mb-6 rounded-xl p-5 text-left text-foreground">
                       <p className="font-semibold">You’re offline</p>
                       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                         Gapwise can still parse ACORN .ics files locally and display any timetable
@@ -550,26 +592,62 @@ function Index() {
                     remember={remember}
                     onRememberChange={handleRemember}
                   />
-                  <p className="mt-9 border-t border-border pt-6 text-center text-[0.65rem] uppercase leading-relaxed tracking-widest text-muted-foreground">
-                    Independent student project · Not affiliated with the University of Toronto
+                  <p className="mt-8 border-t border-border pt-5 text-center font-mono text-[0.625rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
+                    Independent student project · Not affiliated with U of T
                   </p>
                 </div>
-              </div>
-            </div>
+              </section>
 
-            <ol className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {STEPS.map((step, i) => (
-                <li key={step.title} className="surface surface-interactive p-5">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary font-display text-sm font-bold text-accent">
-                    {i + 1}
-                  </span>
-                  <h2 className="mt-4 font-display text-base font-semibold tracking-tight">
-                    {step.title}
-                  </h2>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-                </li>
-              ))}
-            </ol>
+              <section className="bento-cell min-h-[17rem] p-5 sm:p-6 lg:col-span-7">
+                <div className="grid h-full gap-5 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(0,1.3fr)] sm:items-center">
+                  <div className="relative z-10">
+                    <p className="eyebrow text-accent">A familiar landmark</p>
+                    <h2 className="mt-3 max-w-[13ch] text-xl font-medium tracking-tight">
+                      Designed for the campus you actually cross.
+                    </h2>
+                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                      Route context is grounded in UTM buildings, entrances, and indoor transitions.
+                    </p>
+                    <p className="mt-5 flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.11em] text-muted-foreground">
+                      <Waypoints className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                      Mississauga · Ontario
+                    </p>
+                  </div>
+                  <div>
+                    <UtmMonumentViewer
+                      compact
+                      className="border-accent/20 bg-hero-muted/25 bg-none"
+                    />
+                    <p className="mt-2 text-center text-[0.68rem] text-muted-foreground">
+                      Drag to rotate · scroll or pinch to zoom
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {STEPS.map((step, i) => {
+                const StepIcon = step.icon;
+                return (
+                  <article
+                    key={step.title}
+                    data-step={`0${i + 1}`}
+                    className={`bento-cell bento-step p-5 sm:p-6 ${
+                      i === 0 ? "lg:col-span-5" : i === 1 ? "lg:col-span-4" : "lg:col-span-3"
+                    }`}
+                  >
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-accent/20 bg-accent/8 text-accent">
+                      <StepIcon className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <h2 className="mt-7 max-w-[18rem] font-display text-base font-medium tracking-tight">
+                      {step.title}
+                    </h2>
+                    <p className="mt-1.5 max-w-[20rem] text-sm leading-6 text-muted-foreground">
+                      {step.body}
+                    </p>
+                  </article>
+                );
+              })}
+            </div>
 
             <div className="mt-6">
               <CloudSyncControls
@@ -629,7 +707,7 @@ function Index() {
                   type="button"
                   disabled={loading}
                   onClick={() => replacementInputRef.current?.click()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+                  className="button-primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold disabled:opacity-60"
                 >
                   <Upload className="h-4 w-4" aria-hidden="true" />
                   {loading ? "Updating…" : "Update timetable"}
@@ -642,7 +720,7 @@ function Index() {
                   }}
                   aria-label="Remove timetable"
                   title="Remove timetable"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-input bg-card text-muted-foreground transition-colors hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                  className="button-secondary inline-flex h-10 w-10 items-center justify-center text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
                 </button>
@@ -672,81 +750,44 @@ function Index() {
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
               {terms.length > 1 ? (
-                <div
-                  role="tablist"
-                  aria-label="Term"
-                  className="inline-flex rounded-2xl border border-border bg-card p-1 shadow-[var(--shadow-soft)]"
-                >
-                  {terms.map((t) => (
-                    <button
-                      key={t}
-                      role="tab"
-                      type="button"
-                      aria-selected={term === t}
-                      onClick={() => setTerm(t)}
-                      className={`rounded-xl px-4 py-1.5 text-sm font-semibold transition-all duration-200 ${
-                        term === t
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-secondary"
-                      }`}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
+                <BubbleTabs
+                  label="Term"
+                  items={terms.map((item) => ({ value: item, label: item }))}
+                  value={term}
+                  onChange={setTerm}
+                  compact
+                  className="w-full sm:w-44"
+                />
               ) : null}
 
-              <div
-                role="tablist"
-                aria-label="View mode"
-                className="grid w-full grid-cols-3 rounded-2xl border border-border bg-card p-1 shadow-[var(--shadow-soft)] sm:inline-flex sm:w-auto"
-              >
-                <button
-                  role="tab"
-                  type="button"
-                  aria-label="Weekly timetable"
-                  aria-selected={view === "timetable"}
-                  onClick={() => showView("timetable")}
-                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-sm font-semibold transition-all duration-200 sm:gap-2 sm:px-4 ${
-                    view === "timetable"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-secondary"
-                  }`}
-                >
-                  <LayoutGrid className="h-4 w-4" aria-hidden="true" />
-                  <span>
-                    <span className="hidden sm:inline">Weekly </span>timetable
-                  </span>
-                </button>
-                <button
-                  role="tab"
-                  type="button"
-                  aria-selected={view === "gaps"}
-                  onClick={() => showView("gaps")}
-                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-sm font-semibold transition-all duration-200 sm:gap-2 sm:px-4 ${
-                    view === "gaps"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-secondary"
-                  }`}
-                >
-                  <CalendarRange className="h-4 w-4" aria-hidden="true" />
-                  Gap plan
-                </button>
-                <button
-                  role="tab"
-                  type="button"
-                  aria-selected={view === "route"}
-                  onClick={() => showView("route")}
-                  className={`inline-flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-1.5 text-sm font-semibold transition-all duration-200 sm:gap-2 sm:px-4 ${
-                    view === "route"
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-secondary"
-                  }`}
-                >
-                  <MapPinned className="h-4 w-4" aria-hidden="true" />
-                  Day route
-                </button>
-              </div>
+              <BubbleTabs
+                label="View mode"
+                items={[
+                  {
+                    value: "timetable" as const,
+                    ariaLabel: "Weekly timetable",
+                    label: (
+                      <span>
+                        <span className="hidden sm:inline">Weekly </span>timetable
+                      </span>
+                    ),
+                    icon: <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden="true" />,
+                  },
+                  {
+                    value: "gaps" as const,
+                    label: "Gap plan",
+                    icon: <CalendarRange className="h-4 w-4 shrink-0" aria-hidden="true" />,
+                  },
+                  {
+                    value: "route" as const,
+                    label: "Day route",
+                    icon: <MapPinned className="h-4 w-4 shrink-0" aria-hidden="true" />,
+                  },
+                ]}
+                value={view}
+                onChange={showView}
+                className="w-full sm:w-[30rem]"
+              />
             </div>
 
             <div className="mt-6">
@@ -766,17 +807,17 @@ function Index() {
               ) : (
                 <>
                   <div hidden={view !== "timetable"}>
-                    <div className="mb-3 flex items-center justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddPersonal(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
-                      >
-                        Add
-                      </button>
-                    </div>
                     <TimetableGrid
                       meetings={termMeetings}
+                      headerAction={
+                        <button
+                          type="button"
+                          onClick={() => setShowAddPersonal(true)}
+                          className="button-primary inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
+                        >
+                          Add personal
+                        </button>
+                      }
                       onRouteToMeeting={() => showView("route")}
                       onEditPersonal={(id) => {
                         const it = personalItems.find((p) => p.id === id) ?? null;
@@ -842,7 +883,7 @@ function Index() {
                     />
                   </div>
                   {openedViews.gaps ? (
-                    <div hidden={view !== "gaps"}>
+                    <div className="dot-field" hidden={view !== "gaps"}>
                       <GapPlan
                         gaps={gaps}
                         preferences={preferences}
@@ -892,7 +933,7 @@ function Index() {
         )}
         {restorationMessage ? (
           <div
-            className="fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-sm shadow-sm"
+            className="glass-panel fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-lg px-4 py-3 text-sm"
             role="status"
           >
             <span>{restorationMessage}</span>
@@ -908,8 +949,8 @@ function Index() {
         ) : null}
       </main>
 
-      <footer className="mt-4 border-t border-border bg-card/40">
-        <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 text-sm text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
+      <footer className="mt-4 border-t border-border bg-card/30">
+        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 text-sm text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
           <div className="min-w-0 space-y-2">
             <p className="inline-flex items-center gap-2 font-medium text-foreground">
               <Upload className="h-4 w-4 text-accent" aria-hidden="true" />

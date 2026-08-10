@@ -1,5 +1,13 @@
 import { BookOpen, CalendarDays, Clock3, MapPin, Navigation } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +60,11 @@ export function ActivityBadge({ type }: { type: ActivityType }) {
 
 function CalendarLegend({ activityTypes }: { activityTypes: ActivityType[] }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5" aria-label="Class components">
+    <div
+      className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
+      role="group"
+      aria-label="Class components"
+    >
       {activityTypes.map((type) => (
         <span key={type} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
           <span
@@ -211,7 +223,7 @@ function MeetingDetailsDialog({
   return (
     <Dialog open={meeting !== null} onOpenChange={(open) => !open && onClose()}>
       {meeting ? (
-        <DialogContent className="max-h-[85vh] overflow-y-auto border-border bg-card sm:max-w-md">
+        <DialogContent className="glass-panel max-h-[85vh] overflow-y-auto bg-card/75 sm:max-w-md">
           <DialogHeader className="pr-8">
             <div className="flex flex-wrap items-center gap-2">
               <DialogTitle>{meeting.courseCode}</DialogTitle>
@@ -285,7 +297,7 @@ function MeetingDetailsDialog({
                 onRoute?.(meeting);
                 onClose();
               }}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="button-primary inline-flex w-full items-center justify-center gap-2 px-4 py-2 text-sm font-semibold"
             >
               <Navigation className="h-4 w-4" aria-hidden="true" />
               Route to this class
@@ -341,6 +353,7 @@ export const TimetableGrid = memo(function TimetableGrid({
   onCreatePersonal,
   onMovePersonal,
   onResizePersonal,
+  headerAction,
 }: {
   meetings: Meeting[];
   onRouteToMeeting?: (meeting: Meeting) => void;
@@ -349,6 +362,7 @@ export const TimetableGrid = memo(function TimetableGrid({
   onCreatePersonal?: (payload: { weekday: string; startTime: number; endTime: number }) => void;
   onMovePersonal?: (id: string, weekday: string, startTime: number, endTime: number) => void;
   onResizePersonal?: (id: string, startTime: number, endTime: number) => void;
+  headerAction?: ReactNode;
 }) {
   const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -401,24 +415,25 @@ export const TimetableGrid = memo(function TimetableGrid({
 
   return (
     <div>
-      <div className="mb-3 flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4 flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-secondary text-accent">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/8 text-accent">
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-sm font-semibold text-foreground">Week at a glance</p>
+            <p className="text-sm font-medium text-foreground">Week at a glance</p>
             <p className="text-xs text-muted-foreground">Select a class to view its details</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {headerAction}
           <CalendarLegend activityTypes={visibleActivityTypes} />
           {scale.compactableHours.size > 0 ? (
             <button
               type="button"
               aria-pressed={compactHours}
               onClick={() => setCompactHours((current) => !current)}
-              className="hidden rounded-full border border-input px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:border-accent/60 hover:text-foreground md:inline-flex"
+              className="button-secondary hidden px-2.5 py-1 text-xs font-semibold text-muted-foreground md:inline-flex"
             >
               {compactHours ? "Full spacing" : "Compact empty time"}
             </button>
@@ -429,7 +444,7 @@ export const TimetableGrid = memo(function TimetableGrid({
       {/* Desktop grid */}
       <div className="hidden md:block">
         <div className="surface overflow-hidden bg-card">
-          <div className="grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border bg-secondary/70 shadow-[0_1px_0_color-mix(in_oklab,var(--color-border)_65%,transparent)]">
+          <div className="grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border bg-card">
             <div className="flex items-center px-2.5 py-3 text-xs font-semibold text-muted-foreground">
               Time
             </div>
@@ -439,7 +454,7 @@ export const TimetableGrid = memo(function TimetableGrid({
               return (
                 <div
                   key={day}
-                  className={`flex min-w-0 items-center justify-between gap-1 border-l border-border px-2.5 py-3 ${isToday ? "bg-accent/10" : ""}`}
+                  className={`flex min-w-0 items-center justify-between gap-1 border-l border-border px-2.5 py-3 ${isToday ? "bg-accent/8" : ""}`}
                 >
                   <span className="truncate text-xs font-bold text-foreground">{day}</span>
                   <span
@@ -456,7 +471,7 @@ export const TimetableGrid = memo(function TimetableGrid({
             })}
           </div>
           <div className="grid grid-cols-[4.5rem_repeat(5,1fr)]">
-            <div className="relative bg-secondary/20">
+            <div className="relative bg-secondary/14">
               {hours.map((hour) => (
                 <div
                   key={hour}
@@ -821,8 +836,8 @@ export const TimetableGrid = memo(function TimetableGrid({
               className="surface overflow-hidden p-0"
               aria-labelledby={`day-${day}`}
             >
-              <div className="flex items-center justify-between border-b border-border bg-secondary/55 px-4 py-3">
-                <h3 id={`day-${day}`} className="text-sm font-bold">
+              <div className="flex items-center justify-between border-b border-border bg-secondary/30 px-4 py-3">
+                <h3 id={`day-${day}`} className="text-sm font-medium">
                   {day}
                 </h3>
                 <span className="rounded-full bg-background/70 px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">
