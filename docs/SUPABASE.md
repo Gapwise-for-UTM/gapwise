@@ -31,7 +31,7 @@ Do not apply the migration before the compatible frontend is serving users. The 
 
 ### Residence-preference migration order
 
-`20260810192250_add_residence_preferences.sql` adds constrained `day_origin` and nullable
+`20260810200438_add_residence_preferences.sql` adds constrained `day_origin` and nullable
 `residence_building_code` columns to the existing owner-scoped preference row. It does not create a
 location-history table, infer a residence, or change RLS/grants. For an existing deployment:
 
