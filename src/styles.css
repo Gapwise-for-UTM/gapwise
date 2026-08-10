@@ -227,7 +227,7 @@
   body {
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizelegibility;
     overflow-x: hidden;
   }
   h1,
@@ -499,6 +499,7 @@
   .bubble-tabs {
     --bubble-count: 1;
     --bubble-index: 0;
+
     position: relative;
     display: grid;
     grid-template-columns: repeat(var(--bubble-count), minmax(0, 1fr));
@@ -559,7 +560,7 @@
     color: var(--color-foreground);
   }
 
-  .bubble-tab[aria-selected="true"] {
+  .bubble-tab[aria-pressed="true"] {
     color: var(--color-primary-foreground);
   }
 
