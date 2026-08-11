@@ -260,17 +260,34 @@ async function requestDeviceKeyBundle(
 ): Promise<DeviceKeyBundle> {
   const { accessToken } = await sessionForUser(userId);
   abortIfRequested(signal);
-  const response = await fetch("/api/key-broker", {
-    method: "POST",
-    credentials: "same-origin",
-    referrerPolicy: "no-referrer",
-    ...(signal ? { signal } : {}),
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ devicePublicKey: device.publicJwk }),
-  });
+  const controller = new AbortController();
+  let timedOut = false;
+  const timeout = globalThis.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 15_000);
+  const abortFromCaller = () => controller.abort();
+  signal?.addEventListener("abort", abortFromCaller, { once: true });
+  let response: Response;
+  try {
+    response = await fetch("/api/key-broker", {
+      method: "POST",
+      credentials: "same-origin",
+      referrerPolicy: "no-referrer",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ devicePublicKey: device.publicJwk }),
+    });
+  } catch (error) {
+    if (timedOut && !signal?.aborted) throw new Error("Encrypted key setup timed out.");
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeout);
+    signal?.removeEventListener("abort", abortFromCaller);
+  }
   const body = await readSmallJson(response);
   if (!response.ok) throw new Error("Encrypted key setup is temporarily unavailable.");
   return parseDeviceKeyBundle(body);
@@ -779,11 +796,11 @@ export function isEncryptedSyncOptedIn(userId: string): boolean {
 }
 
 export async function deleteEncryptedPrivateCloud(userId: string): Promise<void> {
-  await sessionForUser(userId);
   if (deletingCloudUsers.has(userId)) throw new Error("Encrypted cloud deletion is in progress.");
   deletingCloudUsers.add(userId);
   optedInUsers.delete(userId);
   try {
+    await sessionForUser(userId);
     await saveQueues.get(userId)?.catch(() => undefined);
     // A save that was already running can restore the opt-in marker before it
     // drains. Clear it again before opening the final deletion window.

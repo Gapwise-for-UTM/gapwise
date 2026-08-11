@@ -5,7 +5,7 @@ import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
 import { TERMS, WEEKDAYS } from "@/lib/timetable-types";
 import { deserializeSchedule, serializeSchedule } from "@/features/sync/schedule-serialization";
 import { sanitizeUserPreferences, type UserPreferences } from "@/features/sync/preferences";
-import { PRIVATE_DATA_SCHEMA_VERSION } from "./crypto-context";
+import { PRIVATE_DATA_SCHEMA_VERSION } from "./crypto-context.js";
 
 const PERSONAL_CATEGORIES: PersonalCategory[] = [
   "Study",

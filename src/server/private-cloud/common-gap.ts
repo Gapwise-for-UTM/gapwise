@@ -14,6 +14,9 @@ import { ApiError, requireExactObject } from "./http.js";
 import { loadKek, unwrapStoredDataKeyMaterial, type KekLoader } from "./kek.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const AES_GCM_TAG_BYTES = 16;
+const AES_GCM_NONCE_BYTES = 12;
+const MAX_CAPSULE_CIPHERTEXT_BYTES = MAX_CAPSULE_PLAINTEXT_BYTES + AES_GCM_TAG_BYTES;
 
 export type FriendCapsuleMaterial =
   Database["public"]["Functions"]["get_friend_capsule_material"]["Returns"][number];
@@ -37,8 +40,8 @@ async function decryptCapsuleMaterial(row: FriendCapsuleMaterial, kekLoader: Kek
     return await decryptJsonRecord(
       dek,
       {
-        ciphertext: byteaHexToBytes(row.capsule_ciphertext, 8_208),
-        nonce: byteaHexToBytes(row.capsule_nonce, 12),
+        ciphertext: byteaHexToBytes(row.capsule_ciphertext, MAX_CAPSULE_CIPHERTEXT_BYTES),
+        nonce: byteaHexToBytes(row.capsule_nonce, AES_GCM_NONCE_BYTES),
       },
       {
         cryptoVersion: row.crypto_version,
@@ -85,7 +88,7 @@ export async function findCommonGaps(
     p_term: term,
   });
   if (error) {
-    if (error.message.includes("temporarily unavailable")) {
+    if (error.code === "P0001") {
       throw new ApiError(429, "Common-gap lookup temporarily unavailable.");
     }
     throw new Error("Friend capsule material lookup failed.");

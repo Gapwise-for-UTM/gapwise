@@ -13,11 +13,8 @@ const configuredOrigins = new Set([
     .map((origin) => origin.trim())
     .filter(Boolean),
 ]);
-const gapwisePreviewOrigin =
-  /^https:\/\/gapwise-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?-andrew-muratov-s-projects\.vercel\.app$/i;
-
 function isAllowedOrigin(origin: string | null): boolean {
-  return !origin || configuredOrigins.has(origin) || gapwisePreviewOrigin.test(origin);
+  return !origin || configuredOrigins.has(origin);
 }
 
 function cors(origin: string | null): HeadersInit {

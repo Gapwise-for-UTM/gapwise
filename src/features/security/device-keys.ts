@@ -122,8 +122,9 @@ export async function unwrapDeviceDataKey(
   if (wrappedDek.byteLength !== DEVICE_RSA_CIPHERTEXT_BYTES) {
     throw new Error("Device-wrapped key has an invalid length.");
   }
+  let key: CryptoKey;
   try {
-    const key = await runtime(selected).subtle.unwrapKey(
+    key = await runtime(selected).subtle.unwrapKey(
       "raw",
       ownedBuffer(wrappedDek),
       privateKey,
@@ -132,9 +133,9 @@ export async function unwrapDeviceDataKey(
       false,
       ["encrypt", "decrypt"],
     );
-    if (key.extractable) throw new Error("Unwrapped DEK must be non-extractable.");
-    return key;
   } catch {
     throw new Error("Device key unwrap failed.");
   }
+  if (key.extractable) throw new Error("Unwrapped DEK must be non-extractable.");
+  return key;
 }

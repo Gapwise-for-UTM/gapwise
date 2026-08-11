@@ -75,6 +75,28 @@ describe("persistent Supabase auth storage", () => {
     expect(sessionRemovalCalls).toBe(1);
   });
 
+  test("preserves falsy cleanup rejection values", async () => {
+    for (const rejected of [undefined, null, false, 0, ""]) {
+      await expect(
+        completeLocalSignOut(
+          async () => Promise.reject(rejected),
+          async () => undefined,
+        ),
+      ).rejects.toBe(rejected);
+    }
+  });
+
+  test("preserves falsy session-removal rejection values", async () => {
+    for (const rejected of [undefined, null, false, 0, ""]) {
+      await expect(
+        completeLocalSignOut(
+          async () => undefined,
+          async () => Promise.reject(rejected),
+        ),
+      ).rejects.toBe(rejected);
+    }
+  });
+
   test("survives adapter recreation like a reload or browser restart", async () => {
     const persistent = new MapStorage();
     const firstStorage = createSafeAuthStorage(persistent);

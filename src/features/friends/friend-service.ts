@@ -3,10 +3,19 @@ import { requireSupabaseClient } from "@/lib/supabase";
 import { TERMS, WEEKDAYS, type Term, type Weekday } from "@/lib/timetable-types";
 import type { FriendConnection, FriendGapOverlap, FriendInvite } from "./types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
-import { AVAILABILITY_RESPONSE_CAP } from "@/features/security/availability-capsule";
+import {
+  AVAILABILITY_DAY_END,
+  AVAILABILITY_DAY_START,
+  AVAILABILITY_MINIMUM_MINUTES,
+  AVAILABILITY_RESPONSE_CAP,
+  AVAILABILITY_ROUNDING_MINUTES,
+} from "@/features/security/availability-capsule";
 
 const DISPLAY_NAME_LIMIT = 80;
 const UNSAFE_DISPLAY_CHARACTER = /[\p{Cc}\p{Cf}]/u;
+const COMMON_GAP_TIMEOUT_MS = 10_000;
+const COMMON_GAP_MAX_BYTES = 8 * 1024;
+const MAX_ENCRYPTED_GAP_CONNECTIONS = 10;
 
 export function sanitizeFriendDisplayName(value: string): string {
   const normalized = [...value]
@@ -55,11 +64,11 @@ export function parseCommonGapResponse(
       !WEEKDAYS.includes(weekday as Weekday) ||
       !Number.isInteger(startMinute) ||
       !Number.isInteger(endMinute) ||
-      (startMinute as number) < 9 * 60 ||
-      (endMinute as number) > 18 * 60 ||
-      (startMinute as number) % 30 !== 0 ||
-      (endMinute as number) % 30 !== 0 ||
-      (endMinute as number) - (startMinute as number) < 60
+      (startMinute as number) < AVAILABILITY_DAY_START ||
+      (endMinute as number) > AVAILABILITY_DAY_END ||
+      (startMinute as number) % AVAILABILITY_ROUNDING_MINUTES !== 0 ||
+      (endMinute as number) % AVAILABILITY_ROUNDING_MINUTES !== 0 ||
+      (endMinute as number) - (startMinute as number) < AVAILABILITY_MINIMUM_MINUTES
     ) {
       throw new Error("Common-gap response is malformed.");
     }
@@ -71,27 +80,67 @@ export function parseCommonGapResponse(
   });
 }
 
+async function readBoundedText(response: Response, maximumBytes: number): Promise<string> {
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("Common-gap response is malformed.");
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maximumBytes) {
+        await reader.cancel();
+        throw new Error("Common-gap response is too large.");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder("utf-8", { fatal: true }).decode(body);
+}
+
 async function loadEncryptedFriendGaps(
   connection: FriendConnection,
   term: Term,
   accessToken: string,
 ): Promise<FriendGapOverlap[]> {
-  const response = await fetch("/api/common-gap", {
-    method: "POST",
-    credentials: "same-origin",
-    referrerPolicy: "no-referrer",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ friendshipId: connection.id, term }),
-  });
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), COMMON_GAP_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch("/api/common-gap", {
+      method: "POST",
+      credentials: "same-origin",
+      referrerPolicy: "no-referrer",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ friendshipId: connection.id, term }),
+    });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error("Common-gap lookup timed out.");
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
   if (response.status === 429) throw new FriendOverlapRateLimitError();
   if (!response.ok) throw new Error("Common-gap lookup failed.");
-  const text = await response.text();
-  if (new TextEncoder().encode(text).byteLength > 8 * 1024) {
+  const declaredLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(declaredLength) && declaredLength > COMMON_GAP_MAX_BYTES) {
     throw new Error("Common-gap response is too large.");
   }
+  const text = await readBoundedText(response, COMMON_GAP_MAX_BYTES);
   let body: unknown;
   try {
     body = JSON.parse(text) as unknown;
@@ -218,15 +267,25 @@ export async function loadFriendGapOverlaps(term: Term): Promise<FriendGapOverla
     const connections = allConnections.filter(
       (connection) => connection.status === "accepted" && connection.direction === "mutual",
     );
-    return (
-      await Promise.all(
-        connections
-          .slice(0, 10)
-          .map((connection) =>
-            loadEncryptedFriendGaps(connection, term, data.session.access_token),
-          ),
+    if (connections.length > MAX_ENCRYPTED_GAP_CONNECTIONS) {
+      throw new Error(
+        `Common-gap refresh supports up to ${MAX_ENCRYPTED_GAP_CONNECTIONS} mutual friends at once.`,
+      );
+    }
+    const settled = await Promise.allSettled(
+      connections.map((connection) =>
+        loadEncryptedFriendGaps(connection, term, data.session.access_token),
+      ),
+    );
+    if (
+      settled.some(
+        (result) =>
+          result.status === "rejected" && result.reason instanceof FriendOverlapRateLimitError,
       )
-    ).flat();
+    ) {
+      throw new FriendOverlapRateLimitError();
+    }
+    return settled.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
   }
   const supabase = requireSupabaseClient();
   const { data, error } = await supabase.rpc("get_friend_gap_overlaps", { p_term: term });

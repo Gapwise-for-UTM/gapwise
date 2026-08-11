@@ -218,7 +218,10 @@ function Index() {
       requestVersion.current += 1;
       requestedUser.current = null;
       let currentMeetings = latestMeetings.current;
-      if (previousUser.current && restoredSource.current === "cloud") {
+      if (
+        previousUser.current &&
+        (restoredSource.current === "cloud" || isEncryptedPrivateCloudAuthoritative)
+      ) {
         currentMeetings = null;
         latestMeetings.current = null;
         setMeetings(null);
@@ -253,7 +256,10 @@ function Index() {
       cloudRestoration.cancel(previousUser.current);
       requestVersion.current += 1;
       requestedUser.current = null;
-      if (previousUser.current && restoredSource.current === "cloud") {
+      if (
+        previousUser.current &&
+        (restoredSource.current === "cloud" || isEncryptedPrivateCloudAuthoritative)
+      ) {
         latestMeetings.current = null;
         setMeetings(null);
         if (isEncryptedPrivateCloudAuthoritative) {
@@ -346,7 +352,7 @@ function Index() {
     if (
       !isEncryptedPrivateCloudAuthoritative ||
       !authenticatedUserId ||
-      !meetings?.length ||
+      meetings === null ||
       isDemo ||
       !isOnline ||
       !isEncryptedSyncOptedIn(authenticatedUserId)

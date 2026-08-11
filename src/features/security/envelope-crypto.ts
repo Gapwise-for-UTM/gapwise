@@ -144,7 +144,7 @@ export async function decryptJsonRecord<T>(
   if (plaintext.byteLength > maximumPlaintextBytes) throw new Error("Decrypted data is too large.");
   let parsed: unknown;
   try {
-    parsed = JSON.parse(decodeUtf8(plaintext.buffer));
+    parsed = JSON.parse(decodeUtf8(plaintext));
   } catch {
     throw new Error("Decrypted data is malformed.");
   }

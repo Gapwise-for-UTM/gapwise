@@ -14,7 +14,7 @@ export type UserPreferences = RoutePreferences & {
 
 const LOCAL_PREFERENCES_KEY = "gapwise:user-preferences:v1";
 const RESIDENCE_CODES = new Set(UTM_RESIDENCES.map((building) => building.code));
-type PreferenceStorage = Pick<Storage, "getItem" | "setItem">;
+type PreferenceStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   ...DEFAULT_ROUTE_PREFERENCES,
@@ -54,6 +54,14 @@ function browserPreferenceStorage(): PreferenceStorage | null {
 export function loadLocalUserPreferences(
   storage: PreferenceStorage | null = browserPreferenceStorage(),
 ): UserPreferences {
+  if (isEncryptedPrivateCloudAuthoritative) {
+    try {
+      storage?.removeItem(LOCAL_PREFERENCES_KEY);
+    } catch {
+      // Authoritative encrypted mode ignores inaccessible legacy plaintext state.
+    }
+    return DEFAULT_USER_PREFERENCES;
+  }
   if (!storage) return DEFAULT_USER_PREFERENCES;
   try {
     const raw = storage.getItem(LOCAL_PREFERENCES_KEY);

@@ -58,7 +58,7 @@ No destructive migration may rely on its small count.
 The browser parses ICS, owns interactive plaintext while the app is open, creates a non-extractable
 RSA-OAEP device private key, receives only device-wrapped data keys, and performs all routine data
 encryption/decryption. It renders schedules, routes days, finds personal gaps, and derives the
-lossy friend capsule locally. Normal reloads use IndexedDB and do not call a crypto function.
+lossy friend capsule locally. Normal reloads use IndexedDB and local Web Crypto without calling the key broker or any server-side crypto function.
 
 The browser is not trusted to assert a user ID or friendship authorization. It never receives the
 Vercel key-encryption key (KEK), another user's data key, capsule, timetable, or complete

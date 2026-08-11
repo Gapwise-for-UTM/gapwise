@@ -101,6 +101,17 @@ describe("versioned private-data encryption", () => {
     expect(() =>
       createPrivateDataPayload({
         schedule: [meeting()],
+        personalItems: Array.from({ length: 200 }, (_, index) => ({
+          ...personalItem,
+          id: `private-item-${index}`,
+        })),
+        preferences: DEFAULT_USER_PREFERENCES,
+        gapPreferences: DEFAULT_GAP_PREFERENCES,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      createPrivateDataPayload({
+        schedule: [meeting()],
         personalItems: Array.from({ length: 201 }, (_, index) => ({
           ...personalItem,
           id: `private-item-${index}`,

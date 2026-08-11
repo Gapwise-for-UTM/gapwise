@@ -5,6 +5,8 @@ the linked provider pages before a cutover or a large enrolment campaign.
 
 ## Current free-plan limits
 
+The Vercel Hobby figures below are capacity references only for eligible personal, non-commercial use and previews. Do not treat them as a production entitlement for an institutional or commercial deployment; re-evaluate on an eligible Vercel plan or another hosting plan before such a rollout.
+
 | Resource                           |     Current included amount | Gapwise use                                               |
 | ---------------------------------- | --------------------------: | --------------------------------------------------------- |
 | Supabase database size             |          500 MB per project | Ciphertext, key envelopes, Auth and relationship metadata |

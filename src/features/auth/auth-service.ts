@@ -63,21 +63,25 @@ export async function completeLocalSignOut(
   clearPrivateState: () => Promise<void>,
   removeLocalSession: () => Promise<void>,
 ): Promise<void> {
+  let cleanupFailed = false;
   let cleanupError: unknown;
   try {
     await clearPrivateState();
   } catch (error) {
+    cleanupFailed = true;
     cleanupError = error;
   }
 
+  let signOutFailed = false;
   let signOutError: unknown;
   try {
     await removeLocalSession();
   } catch (error) {
+    signOutFailed = true;
     signOutError = error;
   }
-  if (cleanupError) throw cleanupError;
-  if (signOutError) throw signOutError;
+  if (cleanupFailed) throw cleanupError;
+  if (signOutFailed) throw signOutError;
 }
 
 export async function signOut(): Promise<void> {

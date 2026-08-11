@@ -1,6 +1,6 @@
-import type { EncryptedBytes } from "./envelope-crypto";
-import type { AvailabilityCapsuleV1 } from "./availability-capsule";
-import type { PrivateDataPayloadV1 } from "./private-data";
+import type { EncryptedBytes } from "./envelope-crypto.js";
+import type { AvailabilityCapsuleV1 } from "./availability-capsule.js";
+import type { PrivateDataPayloadV1 } from "./private-data.js";
 
 const DATABASE_NAME = "gapwise-private-v1";
 const DATABASE_VERSION = 1;
@@ -136,7 +136,8 @@ function openDatabase(factory: IDBFactory): Promise<IDBDatabase> {
 
 export async function createIndexedDbSecurityStore(
   factory: IDBFactory | undefined = globalThis.indexedDB,
-  cryptoRuntime: Pick<Crypto, "subtle"> | undefined = globalThis.crypto,
+  cryptoRuntime:
+    (Pick<Crypto, "subtle"> & Partial<Pick<Crypto, "randomUUID">>) | undefined = globalThis.crypto,
 ): Promise<SecurityStore> {
   if (!factory || !cryptoRuntime?.subtle)
     throw new Error("Secure browser persistence is unavailable.");
@@ -188,8 +189,10 @@ export async function createIndexedDbSecurityStore(
   }
 
   async function verifyCryptoKeyPersistence(): Promise<boolean> {
-    const probeId = crypto.randomUUID();
+    let probeId: string | null = null;
     try {
+      if (!cryptoRuntime.randomUUID) return false;
+      probeId = cryptoRuntime.randomUUID();
       const key = await cryptoRuntime.subtle.generateKey({ name: "AES-GCM", length: 256 }, false, [
         "encrypt",
         "decrypt",
@@ -209,8 +212,10 @@ export async function createIndexedDbSecurityStore(
     } finally {
       try {
         const transaction = database.transaction(CRYPTO_PROBE_STORE, "readwrite");
-        transaction.objectStore(CRYPTO_PROBE_STORE).delete(probeId);
-        await transactionDone(transaction);
+        if (probeId) {
+          transaction.objectStore(CRYPTO_PROBE_STORE).delete(probeId);
+          await transactionDone(transaction);
+        }
       } catch {
         // The probe is opaque and contains no user data; a failed cleanup is non-fatal.
       }

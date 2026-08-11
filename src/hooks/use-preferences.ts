@@ -59,6 +59,11 @@ export function loadRememberedRecord<T>(): {
   record: RememberedRecord<T> | null;
 } {
   try {
+    if (isEncryptedPrivateCloudAuthoritative) {
+      window.localStorage.removeItem(TIMETABLE_KEY);
+      window.localStorage.removeItem(REMEMBER_KEY);
+      return { remember: false, record: null };
+    }
     const remember = window.localStorage.getItem(REMEMBER_KEY) === "1";
     if (!remember) return { remember, record: null };
     const raw = window.localStorage.getItem(TIMETABLE_KEY);

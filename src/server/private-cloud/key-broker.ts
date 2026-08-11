@@ -66,13 +66,15 @@ async function wrapNewEnvelopeKey(
   subjectId: string,
   keyId: string,
   kekVersion: number,
+  cryptoVersion: number = CRYPTO_VERSION,
+  keyVersion: number = KEY_VERSION,
 ) {
   return wrapDataEncryptionKey(kek, rawDek, {
-    cryptoVersion: CRYPTO_VERSION,
+    cryptoVersion,
     purpose,
     subjectId,
     keyId,
-    keyVersion: KEY_VERSION,
+    keyVersion,
     kekVersion,
   });
 }
@@ -173,6 +175,8 @@ export async function rewrapEnvelopeToKek(
         envelope.subject_id,
         envelope.private_data_key_id,
         newKekVersion,
+        envelope.crypto_version,
+        envelope.key_version,
       ),
       wrapNewEnvelopeKey(
         friendAvailabilityDek,
@@ -181,6 +185,8 @@ export async function rewrapEnvelopeToKek(
         envelope.subject_id,
         envelope.friend_availability_key_id,
         newKekVersion,
+        envelope.crypto_version,
+        envelope.key_version,
       ),
     ]);
     await verifyRotatedWrap(

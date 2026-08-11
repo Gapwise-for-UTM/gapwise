@@ -190,7 +190,7 @@ Confirm a request without a bearer token is rejected, an origin outside `ALLOWED
 - Configure the email template and exact redirect allowlist for passwordless links. Do not add an email/password flow merely to clear the leaked-password warning.
 - Set the exact production Site URL and localhost development redirect.
 - Keep Vercel redirects narrow; avoid broad production wildcards.
-- Verify only the publishable key is configured in Vercel.
+- Verify that only the publishable key is exposed to browser-facing configuration; keep server-only KEK variables confined to Vercel Sensitive function variables.
 - Keep the service-role key confined to the existing Supabase-hosted account-deletion function;
   neither Vercel private-cloud function may possess it.
 - Keep production on `VITE_PRIVATE_CLOUD_MODE=off` until the migration runbook gates pass.

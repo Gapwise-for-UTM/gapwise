@@ -80,14 +80,16 @@ export function CloudSyncControls({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={!enabled || !meetings?.length || busy}
+            disabled={
+              !enabled || busy || (!isEncryptedPrivateCloudAuthoritative && !meetings?.length)
+            }
             onClick={(event) => {
               emitClickSpark(event);
               void run(async () => {
                 if (!isEncryptedPrivateCloudAuthoritative) await saveSchedule(meetings!);
                 if (shouldWritePrivateCloud) {
                   const result = await saveEncryptedPrivateState(user!.id, {
-                    schedule: meetings!,
+                    schedule: meetings ?? [],
                     personalItems,
                     preferences,
                     gapPreferences,

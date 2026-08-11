@@ -88,6 +88,32 @@ describe("friend overlap privacy contract", () => {
         windows: [{ weekday: "Monday", startMinute: 690, endMinute: 720, detail: "forbidden" }],
       }),
     ).toThrow("malformed");
+    expect(() =>
+      parseCommonGapResponse({
+        windows: [{ weekday: "Monday", startMinute: 510, endMinute: 600 }],
+      }),
+    ).toThrow("malformed");
+    expect(() =>
+      parseCommonGapResponse({
+        windows: [{ weekday: "Monday", startMinute: 1020, endMinute: 1110 }],
+      }),
+    ).toThrow("malformed");
+    expect(() =>
+      parseCommonGapResponse({
+        windows: [{ weekday: "Monday", startMinute: 660, endMinute: 690 }],
+      }),
+    ).toThrow("malformed");
+    expect(() =>
+      parseCommonGapResponse({
+        windows: [{ weekday: "Funday", startMinute: 660, endMinute: 750 }],
+      }),
+    ).toThrow("malformed");
+    expect(() =>
+      parseCommonGapResponse({
+        windows: [{ weekday: "Monday", startMinute: 660, endMinute: 750 }],
+        detail: "forbidden",
+      }),
+    ).toThrow("malformed");
   });
 
   test("migration exposes a fixed derived overlap payload", async () => {

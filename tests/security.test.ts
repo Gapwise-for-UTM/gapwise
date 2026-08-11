@@ -65,18 +65,29 @@ describe("account deletion and RLS security", () => {
     expect(source).not.toContain("VITE_SUPABASE_SERVICE_ROLE_KEY");
   });
 
-  test("allows production and narrowly scoped Gapwise previews without reflecting rejected origins", async () => {
+  test("allows only exact configured account-deletion origins", async () => {
     const source = await readFile("supabase/functions/delete-account/index.ts", "utf8");
     expect(source).toContain('"https://gapwise-utm.vercel.app"');
-    expect(source).toContain("const gapwisePreviewOrigin =");
-    expect(source).toContain("gapwise-");
-    expect(source).toContain("andrew-muratov-s-projects\\.vercel\\.app");
     expect(source).toContain("configuredOrigins.has(origin)");
-    expect(source).toContain("gapwisePreviewOrigin.test(origin)");
     expect(source).toContain("const originAllowed = isAllowedOrigin(origin)");
     expect(source).toContain("if (!originAllowed)");
+    expect(source).not.toContain("gapwisePreviewOrigin");
     expect(source).not.toContain("https://*.vercel.app");
     expect(source).not.toContain("defaultOrigins[0]");
+  });
+
+  test("authoritative encrypted mode clears cross-account and legacy plaintext state", async () => {
+    const [route, preferences, remembered] = await Promise.all([
+      readFile("src/routes/index.tsx", "utf8"),
+      readFile("src/features/sync/preferences.ts", "utf8"),
+      readFile("src/hooks/use-preferences.ts", "utf8"),
+    ]);
+    expect(
+      route.match(/restoredSource\.current === "cloud" \|\| isEncryptedPrivateCloudAuthoritative/g),
+    ).toHaveLength(2);
+    expect(preferences).toContain("storage?.removeItem(LOCAL_PREFERENCES_KEY)");
+    expect(remembered).toContain("window.localStorage.removeItem(TIMETABLE_KEY)");
+    expect(remembered).toContain("window.localStorage.removeItem(REMEMBER_KEY)");
   });
 
   test("all user tables use RLS, ownership checks, and cascading deletion", async () => {
