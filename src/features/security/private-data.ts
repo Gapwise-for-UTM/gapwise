@@ -31,6 +31,14 @@ export type PrivateDataPayloadV1 = {
   gapPreferences: GapPreferences;
 };
 
+const PRIVATE_PAYLOAD_KEYS = [
+  "schemaVersion",
+  "schedule",
+  "personalItems",
+  "preferences",
+  "gapPreferences",
+] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -201,13 +209,8 @@ export function createPrivateDataPayload(input: {
 export function validatePrivateDataPayload(value: unknown): PrivateDataPayloadV1 {
   if (
     !isRecord(value) ||
-    !hasOnlyKeys(value, [
-      "schemaVersion",
-      "schedule",
-      "personalItems",
-      "preferences",
-      "gapPreferences",
-    ]) ||
+    !hasOnlyKeys(value, PRIVATE_PAYLOAD_KEYS) ||
+    !PRIVATE_PAYLOAD_KEYS.every((key) => Object.hasOwn(value, key)) ||
     value["schemaVersion"] !== PRIVATE_DATA_SCHEMA_VERSION ||
     !Array.isArray(value["personalItems"]) ||
     value["personalItems"].length > MAX_PERSONAL_ITEMS

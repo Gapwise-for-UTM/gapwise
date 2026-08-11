@@ -100,12 +100,12 @@ export async function decryptBytes(
     const plaintext = await runtime(selected).subtle.decrypt(
       {
         name: "AES-GCM",
-        iv: encrypted.nonce.buffer,
+        iv: ownedArrayBuffer(encrypted.nonce),
         additionalData: ownedArrayBuffer(additionalData),
         tagLength: GCM_TAG_BITS,
       },
       key,
-      encrypted.ciphertext.buffer,
+      ownedArrayBuffer(encrypted.ciphertext),
     );
     return new Uint8Array(plaintext);
   } catch {

@@ -10,7 +10,9 @@ import {
   type KeyEnvelopeContext,
 } from "@/features/security/crypto-context";
 import {
+  decryptBytes,
   decryptJsonRecord,
+  encryptBytes,
   encryptJsonRecord,
   generateDataEncryptionKey,
   importAes256Key,
@@ -23,7 +25,7 @@ import {
 } from "@/features/security/private-data";
 import { validateAvailabilityCapsule } from "@/features/security/availability-capsule";
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
-import { equalBytes } from "@/features/security/encoding";
+import { equalBytes, utf8 } from "@/features/security/encoding";
 import { meeting } from "./fixtures";
 
 const SUBJECT_ID = "10000000-0000-4000-8000-000000000001";
@@ -63,6 +65,26 @@ function tamper(value: Uint8Array, index: number): Uint8Array {
 }
 
 describe("versioned private-data encryption", () => {
+  test("rejects private payloads missing any required field", () => {
+    const payload = createPrivateDataPayload({
+      schedule: [meeting()],
+      personalItems: [],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+    });
+    for (const key of [
+      "schemaVersion",
+      "schedule",
+      "personalItems",
+      "preferences",
+      "gapPreferences",
+    ] as const) {
+      const incomplete: Record<string, unknown> = { ...payload };
+      delete incomplete[key];
+      expect(() => validatePrivateDataPayload(incomplete)).toThrow("malformed");
+    }
+  });
+
   test("rejects private payload creation above the personal-item cap", () => {
     const personalItem = {
       id: "private-item",
@@ -165,6 +187,27 @@ describe("versioned private-data encryption", () => {
     const second = await encryptJsonRecord(key, payload, privateContext());
     expect(equalBytes(first.nonce, second.nonce)).toBe(false);
     expect(equalBytes(first.ciphertext, second.ciphertext)).toBe(false);
+  });
+
+  test("decrypts validated subarray views without including surrounding bytes", async () => {
+    const key = await generateDataEncryptionKey();
+    const plaintext = utf8("private subarray payload");
+    const aad = utf8("private subarray context");
+    const encrypted = await encryptBytes(key, plaintext, aad);
+    const nonceBacking = new Uint8Array(new ArrayBuffer(encrypted.nonce.byteLength + 8));
+    const ciphertextBacking = new Uint8Array(new ArrayBuffer(encrypted.ciphertext.byteLength + 8));
+    nonceBacking.set(encrypted.nonce, 4);
+    ciphertextBacking.set(encrypted.ciphertext, 4);
+
+    const restored = await decryptBytes(
+      key,
+      {
+        nonce: nonceBacking.subarray(4, 4 + encrypted.nonce.byteLength),
+        ciphertext: ciphertextBacking.subarray(4, 4 + encrypted.ciphertext.byteLength),
+      },
+      aad,
+    );
+    expect(equalBytes(restored, plaintext)).toBe(true);
   });
 
   test("rejects ciphertext and authentication-tag tampering", async () => {

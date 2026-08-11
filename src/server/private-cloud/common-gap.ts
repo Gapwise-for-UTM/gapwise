@@ -78,6 +78,8 @@ export async function findCommonGaps(
   friendshipId: string,
   term: Term,
 ): Promise<{ windows: AvailabilityWindow[] }> {
+  // Each user has one opaque all-term capsule row. PostgreSQL validates the requested term but
+  // cannot filter inside ciphertext; only this Vercel boundary can select a term after decryption.
   const { data, error } = await authenticated.client.rpc("get_friend_capsule_material", {
     p_friendship_id: friendshipId,
     p_term: term,
