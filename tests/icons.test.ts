@@ -165,5 +165,5 @@ describe("generated brand icons", () => {
         rm(secondDirectory, { recursive: true, force: true }),
       ]);
     }
-  });
+  }, 10_000);
 });

@@ -1,14 +1,18 @@
 # Supabase setup and security
 
-Gapwise supports GitHub OAuth and passwordless email magic links through Supabase Auth, PostgREST with Row Level Security, narrowly scoped database RPCs, and one account-deletion Edge Function. Guest mode does not require Supabase.
+Gapwise supports GitHub OAuth and passwordless email magic links through Supabase Auth, PostgREST
+with Row Level Security, narrowly scoped database RPCs, and one account-deletion Edge Function.
+The staged private-cloud path stores application-encrypted private data and encrypted lossy friend
+capsules. Guest mode does not require Supabase.
 
 ## Browser configuration
 
 Expose only `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY`. A publishable key identifies the project but cannot bypass RLS. Never expose a secret/service-role key in frontend source, Vite variables, CI output, documentation, or browser requests.
 
-Apply the files in `supabase/migrations` in filename order for a new environment. The repository's
-initial migration version matches the connected project's migration history, and
-the follow-up privilege migration removes Supabase default grants the browser
+Apply the files in `supabase/migrations` in filename order for a new environment. Every repository
+version through the currently deployed friend migration, including the hosted `20260807132654`
+source-filename migration, matches production history. The follow-up privilege migration removes
+Supabase default grants the browser
 does not need. Both user tables:
 
 - reference `auth.users(id)` with `ON DELETE CASCADE`;
@@ -35,8 +39,9 @@ cross-user calculation; it is never used to make a table directly readable.
 display label, and update time. The browser receives neither participant's Supabase Auth UUID and
 has no direct `SELECT` grant on `friendships`.
 
-## Friend overlap privacy boundary
+## Legacy friend overlap privacy boundary
 
+While `VITE_PRIVATE_CLOUD_MODE` is `off` or `shadow`,
 `public.get_friend_gap_overlaps(term)` is the only cross-user schedule path. It locks and verifies
 an active friendship row with both acceptance timestamps and no revocation, then returns a fixed
 contract:
@@ -78,9 +83,41 @@ supabase test db
 supabase db lint --local --level warning --fail-on error
 ```
 
+## Encrypted private-cloud phase
+
+`20260811063830_encrypted_private_cloud_phase1.sql` adds, without altering legacy values:
+
+- one owner-RLS key-envelope row containing two Vercel-KEK-wrapped DEKs;
+- one owner-RLS encrypted private payload row;
+- one owner-RLS encrypted, deliberately lossy availability capsule row;
+- one private aggregate caller rate-limit row;
+- a friend-material RPC that derives identity from `auth.uid()` and returns only two encrypted
+  capsules plus the minimum wrapped availability-key material.
+
+`20260811063841_encrypted_key_envelope_rotation.sql` adds the only key-envelope update surface. It
+compare-and-swaps the authenticated caller's wraps to a strictly higher KEK version. The browser
+role has no direct envelope `UPDATE` grant. Both RPCs revoke `PUBLIC` and `anon`, use an empty
+`search_path`, validate fixed inputs, and accept no user ID as authority.
+
+The browser directly writes only its own ciphertext rows. Immutable context and an exact
+`old revision + 1` trigger prevent stale-device overwrites. Friends have no direct cross-user table
+policy. In authoritative encrypted mode the legacy plaintext overlap RPC is not called; Vercel
+decrypts only the two bounded capsules and returns at most three rounded windows.
+
+The encrypted pgTAP suite has 50 assertions covering grants, forced RLS, cross-user reads/writes,
+accepted/pending/revoked friend material, identity substitution, rotation CAS, revision/context
+guards and cascading deletion. Run it only against the isolated CI/local database.
+
+Both migrations were applied to production on 2026-08-11 after the isolated database-security and
+application CI jobs passed. Post-apply checks found RLS enabled and forced on every new table and
+both legacy private-data tables, with zero key-envelope or ciphertext rows. The one legacy schedule
+and preference row remain unchanged and authoritative. Follow
+[`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md); production remains `off`
+until disposable preview proof and operator KEK recovery both pass.
+
 ### Safe `source_filename` removal order
 
-The `20260804040016_remove_schedule_source_filename.sql` migration permanently removes a legacy metadata column. For an existing deployment, use this order:
+The `20260807132654_remove_schedule_source_filename.sql` migration permanently removes a legacy metadata column. For an existing deployment, use this order:
 
 1. Deploy the frontend version that no longer sends `source_filename`.
 2. Verify guest import, explicit cloud sync, and cloud restoration against the existing schema.
@@ -104,15 +141,18 @@ location-history table, infer a residence, or change RLS/grants. For an existing
 
 ## Browser auth sessions
 
-The browser client uses Supabase's supported persistent-session configuration: `persistSession`, automatic token refresh, OAuth URL detection, and a `localStorage` adapter. A signed-in user therefore remains signed in across reloads and normal browser restarts. If browser privacy settings block storage, auth falls back to memory for the current page instead of crashing; that fallback is intentionally not durable.
+The browser client uses Supabase's supported persistent-session configuration: `persistSession`, automatic token refresh, OAuth URL detection, and a `localStorage` adapter. A signed-in user therefore remains signed in across reloads and normal browser restarts. If browser privacy settings block storage, auth falls back to memory for the current page instead of crashing; that fallback is intentionally not durable. Authentication session storage is separate from private application data: raw DEKs and private timetable JSON never enter localStorage/sessionStorage in encrypted mode.
 
 The app owns one page-lifetime `onAuthStateChange` subscription. Auth initialization does not make a second `getSession` request, cloud restoration is single-flight per user, and sign-out aborts/invalidates stale restoration work before clearing the local Supabase session. **Remember on this device** remains a separate opt-in timetable setting and does not control authentication.
 
-Use **Sign out** on shared devices. It clears the local browser auth session only; it does not delete the GitHub/email identity, synced schedule, or preferences. Use **Delete account and cloud data** for permanent server-side deletion.
+Use **Sign out** on shared devices. It clears the local auth session and the signed-in user's
+non-extractable device key, DEKs, encrypted local records and decrypted application state; it does
+not delete the provider identity or cloud ciphertext. Use **Delete account and cloud data** for
+permanent server-side deletion.
 
 ## Account deletion Edge Function
 
-`supabase/functions/delete-account/index.ts` accepts only authenticated `POST` requests. It verifies the bearer token with Supabase, derives the ID from that verified user, and ignores all browser-supplied identity. The Admin API runs only inside the function. Deleting `auth.users` cascades to every current user-owned row.
+`supabase/functions/delete-account/index.ts` accepts only authenticated `POST` requests. It verifies the bearer token with Supabase, derives the ID from that verified user, and ignores all browser-supplied identity. The Admin API runs only inside the function. Deleting `auth.users` cascades to every current user-owned row, including encrypted private data, capsules, both wrapped keys and private capsule-rate state after phase 1 is applied.
 
 Deletion order is authentication user first with database cascades in the same database operation.
 Foreign keys from both friendship participants, request metadata, friend profiles, invite hashes,
@@ -150,13 +190,25 @@ Confirm a request without a bearer token is rejected, an origin outside `ALLOWED
 - Configure the email template and exact redirect allowlist for passwordless links. Do not add an email/password flow merely to clear the leaked-password warning.
 - Set the exact production Site URL and localhost development redirect.
 - Keep Vercel redirects narrow; avoid broad production wildcards.
-- Verify only the publishable key is configured in Vercel.
-- Keep the service-role key confined to hosted server-side secrets.
+- Verify that only the publishable key is exposed to browser-facing configuration; keep server-only KEK variables confined to Vercel Sensitive function variables.
+- Keep the service-role key confined to the existing Supabase-hosted account-deletion function;
+  neither Vercel private-cloud function may possess it.
+- Keep production on `VITE_PRIVATE_CLOUD_MODE=off` until the migration runbook gates pass.
+- Store KEKs only in Vercel Sensitive production variables and an operator recovery vault. Never
+  place a KEK in Supabase or a `VITE_*` variable.
 - Run Security Advisor and verify RLS remains enabled on every user-data table.
 - Exercise read/write/delete with two test users and verify neither can access the other's rows.
 - Re-run the account-deletion and friend-overlap pgTAP checks whenever a user-owned or
   relationship table is added, and add cascading foreign keys for every participant reference.
 
-## Free-plan limitations
+## Advisor and free-plan limitations
+
+The 2026-08-11 production Security Advisor results contain two intentional no-policy notices for
+tables that have no browser grants, warnings for deliberately callable friend `SECURITY DEFINER`
+functions, and leaked-password protection disabled. The password warning does not apply to
+Gapwise's GitHub/magic-link flow. The Performance Advisor reports an unindexed `revoked_by` FK and
+two unused indexes on the currently empty friendship table; changing those indexes is not justified
+without real query evidence. Re-run both advisors after additive migration and account for every
+new notice.
 
 Supabase's leaked-password protection may be unavailable or disabled depending on plan and Auth configuration. Gapwise uses GitHub OAuth and single-use email magic links; it does not add a password flow to silence that advisory. Dashboard advisories and provider settings require manual review; repository code cannot prove the deployed dashboard state.

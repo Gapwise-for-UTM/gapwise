@@ -1,6 +1,7 @@
 import { DEFAULT_ROUTE_PREFERENCES, sanitizeRoutePreferences } from "@/config/routing";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 import type { RoutePreferences } from "@/features/routing/types";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 export type DayOrigin = "commute" | "residence";
 
@@ -13,7 +14,7 @@ export type UserPreferences = RoutePreferences & {
 
 const LOCAL_PREFERENCES_KEY = "gapwise:user-preferences:v1";
 const RESIDENCE_CODES = new Set(UTM_RESIDENCES.map((building) => building.code));
-type PreferenceStorage = Pick<Storage, "getItem" | "setItem">;
+type PreferenceStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   ...DEFAULT_ROUTE_PREFERENCES,
@@ -53,6 +54,14 @@ function browserPreferenceStorage(): PreferenceStorage | null {
 export function loadLocalUserPreferences(
   storage: PreferenceStorage | null = browserPreferenceStorage(),
 ): UserPreferences {
+  if (isEncryptedPrivateCloudAuthoritative) {
+    try {
+      storage?.removeItem(LOCAL_PREFERENCES_KEY);
+    } catch {
+      // Authoritative encrypted mode ignores inaccessible legacy plaintext state.
+    }
+    return DEFAULT_USER_PREFERENCES;
+  }
   if (!storage) return DEFAULT_USER_PREFERENCES;
   try {
     const raw = storage.getItem(LOCAL_PREFERENCES_KEY);
@@ -70,10 +79,22 @@ export function saveLocalUserPreferences(
 ): UserPreferences {
   const preferences = sanitizeUserPreferences(value);
   if (!storage) return preferences;
+  if (isEncryptedPrivateCloudAuthoritative) return preferences;
   try {
     storage.setItem(LOCAL_PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {
     /* Private browsing or storage policy can make localStorage unavailable. */
   }
   return preferences;
+}
+
+export function clearStoredUserPreferences(storage?: Pick<Storage, "removeItem"> | null) {
+  let selected = storage;
+  try {
+    if (selected === undefined)
+      selected = typeof window === "undefined" ? null : window.localStorage;
+    selected?.removeItem(LOCAL_PREFERENCES_KEY);
+  } catch {
+    // A verified encrypted copy still exists; blocked storage needs no cleanup.
+  }
 }

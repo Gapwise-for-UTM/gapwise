@@ -79,6 +79,7 @@ mock.module("@/features/sync/sync-service", () => ({
     saveCalls.push(meetings);
   },
   deleteSchedule: async () => undefined,
+  deletePreferences: async () => undefined,
   savePreferences: async () => undefined,
   loadPreferences: async () => null,
 }));

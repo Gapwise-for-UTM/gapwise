@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, requireSupabaseClient } from "@/lib/supabase";
 import { authStore } from "./auth-store";
+import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 
 export async function signInWithGitHub(): Promise<void> {
   const supabase = requireSupabaseClient();
@@ -58,15 +59,48 @@ export function consumeOAuthError(
   return `GitHub sign-in failed: ${error.replace(/\+/g, " ")}`;
 }
 
+export async function completeLocalSignOut(
+  clearPrivateState: () => Promise<void>,
+  removeLocalSession: () => Promise<void>,
+): Promise<void> {
+  let cleanupFailed = false;
+  let cleanupError: unknown;
+  try {
+    await clearPrivateState();
+  } catch (error) {
+    cleanupFailed = true;
+    cleanupError = error;
+  }
+
+  let signOutFailed = false;
+  let signOutError: unknown;
+  try {
+    await removeLocalSession();
+  } catch (error) {
+    signOutFailed = true;
+    signOutError = error;
+  }
+  if (cleanupFailed) throw cleanupError;
+  if (signOutFailed) throw signOutError;
+}
+
 export async function signOut(): Promise<void> {
   const supabase = requireSupabaseClient();
+  const { data: sessionData } = await supabase.auth.getSession().catch(() => ({ data: null }));
+  const userId = sessionData?.session?.user.id ?? authStore.getSnapshot().user?.id ?? null;
   authStore.forceSignedOut();
   try {
-    const { error } = await supabase.auth.signOut({ scope: "local" });
-    if (error) throw error;
-  } catch (error) {
+    await completeLocalSignOut(
+      async () => {
+        if (userId) await clearPrivateCloudLocalUser(userId);
+      },
+      async () => {
+        const { error } = await supabase.auth.signOut({ scope: "local" });
+        if (error) throw error;
+      },
+    );
+  } finally {
     authStore.forceSignedOut();
-    throw error;
   }
 }
 

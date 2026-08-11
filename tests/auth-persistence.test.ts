@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createClient, type AuthChangeEvent, type Session, type User } from "@supabase/supabase-js";
+import { completeLocalSignOut } from "@/features/auth/auth-service";
 import { createAuthStore, type AuthClient } from "@/features/auth/auth-store";
 import { createSafeAuthStorage } from "@/lib/supabase";
 
@@ -58,6 +59,44 @@ function clientWithStorage(
 }
 
 describe("persistent Supabase auth storage", () => {
+  test("attempts local session removal even when private-state cleanup fails", async () => {
+    const cleanupError = new Error("cleanup failed");
+    let sessionRemovalCalls = 0;
+    await expect(
+      completeLocalSignOut(
+        async () => {
+          throw cleanupError;
+        },
+        async () => {
+          sessionRemovalCalls += 1;
+        },
+      ),
+    ).rejects.toBe(cleanupError);
+    expect(sessionRemovalCalls).toBe(1);
+  });
+
+  test("preserves falsy cleanup rejection values", async () => {
+    for (const rejected of [undefined, null, false, 0, ""]) {
+      await expect(
+        completeLocalSignOut(
+          async () => Promise.reject(rejected),
+          async () => undefined,
+        ),
+      ).rejects.toBe(rejected);
+    }
+  });
+
+  test("preserves falsy session-removal rejection values", async () => {
+    for (const rejected of [undefined, null, false, 0, ""]) {
+      await expect(
+        completeLocalSignOut(
+          async () => undefined,
+          async () => Promise.reject(rejected),
+        ),
+      ).rejects.toBe(rejected);
+    }
+  });
+
   test("survives adapter recreation like a reload or browser restart", async () => {
     const persistent = new MapStorage();
     const firstStorage = createSafeAuthStorage(persistent);

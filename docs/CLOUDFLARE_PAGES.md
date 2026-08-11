@@ -1,7 +1,11 @@
 # Cloudflare Pages deployment
 
-Gapwise is a client-only static Vite application. It needs no Worker, Pages Function,
-KV, D1, paid map API, or other paid Cloudflare service.
+Gapwise guest mode and the legacy cloud path are deployable as a client-only static Vite
+application. They need no Worker, Pages Function, KV, D1, paid map API, or other paid Cloudflare
+service. The encrypted private-cloud path is different: its key-broker and common-gap endpoints are
+Vercel Node functions. Do not enable `VITE_PRIVATE_CLOUD_MODE=shadow` or `encrypted` on a standalone
+Cloudflare Pages deployment unless those same-origin API routes have been deliberately implemented,
+reviewed, and verified on that platform.
 
 ## Build settings
 
@@ -35,10 +39,15 @@ set these for Production (and Preview only if desired):
 ```text
 VITE_SUPABASE_URL
 VITE_SUPABASE_PUBLISHABLE_KEY
+VITE_PRIVATE_CLOUD_MODE=off
 ```
 
 These values are compiled into the public client bundle, so only the browser-safe
 publishable/anon key is allowed. Never configure a service-role key.
+
+`GAPWISE_KEK_V<n>` is not a Pages variable. Never copy a production Vercel KEK into Cloudflare,
+into a `VITE_` variable, or into a static build. Production private-cloud activation is governed by
+[`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
 
 After the first deploy, add the final Pages origin to Supabase's allowed redirect URLs,
 GitHub OAuth configuration, and email magic-link redirect configuration as described in

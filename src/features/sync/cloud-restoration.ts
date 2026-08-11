@@ -1,4 +1,6 @@
 import { loadScheduleRecord, type CloudScheduleRecord } from "./sync-service";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
+import { loadEncryptedPrivateState } from "./encrypted-sync-service";
 
 type ScheduleLoader = (userId: string, signal: AbortSignal) => Promise<CloudScheduleRecord | null>;
 
@@ -45,6 +47,15 @@ export function isRestorationAbort(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
-export const cloudRestoration = createCloudRestorationCoordinator((userId, signal) =>
-  loadScheduleRecord(userId, signal),
-);
+export const cloudRestoration = createCloudRestorationCoordinator(async (userId, signal) => {
+  if (!isEncryptedPrivateCloudAuthoritative) return loadScheduleRecord(userId, signal);
+  const restored = await loadEncryptedPrivateState(userId, signal);
+  if (!restored) return null;
+  return {
+    meetings: restored.payload.schedule,
+    updatedAt: restored.updatedAt,
+    privateData: restored.payload,
+    storageSource: restored.source === "cloud" ? "encrypted-cloud" : "secure-local",
+    persistentKeys: restored.persistentKeys,
+  };
+});

@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
+import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import {
   consumeOAuthError,
   deleteAccount,
@@ -46,6 +48,7 @@ export function AccountStatus({
   const [signInOpen, setSignInOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
+  const [cleanupUserId, setCleanupUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const error = consumeOAuthError(window.location, window.history);
@@ -54,17 +57,53 @@ export function AccountStatus({
 
   async function removeAccount() {
     if (busy) return;
+    const deletedUserId = user?.id ?? null;
     setBusy(true);
     setMessage(null);
     try {
       await deleteAccount();
+      let localCleanupFailed = false;
+      if (shouldWritePrivateCloud && deletedUserId) {
+        try {
+          await clearPrivateCloudLocalUser(deletedUserId);
+        } catch {
+          localCleanupFailed = true;
+          setCleanupUserId(deletedUserId);
+        }
+      }
       if (clearLocal) clearRememberedTimetable();
       onAccountDeleted(clearLocal);
       await signOut().catch(() => undefined);
       setDeleteOpen(false);
-      setMessage("Your account and cloud data were permanently deleted.");
+      if (localCleanupFailed) {
+        setMessage(
+          "Your account and cloud data were deleted, but this browser couldn't finish clearing encrypted local data. Retry local cleanup.",
+        );
+      } else {
+        setCleanupUserId(null);
+        setMessage("Your account and cloud data were permanently deleted.");
+      }
     } catch {
       setMessage("We couldn't delete your account. Your session and local data are unchanged.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function retryLocalCleanup() {
+    if (busy || !cleanupUserId) return;
+    setBusy(true);
+    try {
+      await clearPrivateCloudLocalUser(cleanupUserId);
+      if (clearLocal) clearRememberedTimetable();
+      setCleanupUserId(null);
+      setMessage(
+        "Your account and cloud data were permanently deleted, and this browser's private data was cleared.",
+      );
+    } catch {
+      setMessage(
+        "Your account is deleted, but this browser still couldn't clear encrypted local data. Retry or clear this site's browser data.",
+      );
     } finally {
       setBusy(false);
     }
@@ -137,10 +176,9 @@ export function AccountStatus({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete account and cloud data?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes your Supabase account, normalized cloud timetable, saved
-                  preferences, private invite codes, and every friend/request entry involving you.
-                  Former friends immediately lose access and see no relationship history. Your
-                  original .ics file was never uploaded.
+                  {shouldWritePrivateCloud
+                    ? "This permanently removes your Supabase account, encrypted cloud private data and availability, private invite codes, and every friend/request entry involving you. Former friends immediately lose access and see no relationship history. Your original .ics file was never uploaded."
+                    : "This permanently removes your Supabase account, normalized cloud timetable, saved preferences, private invite codes, and every friend/request entry involving you. Former friends immediately lose access and see no relationship history. Your original .ics file was never uploaded."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <label className="flex min-h-11 items-center gap-3 rounded-lg border border-border p-3 text-sm">
@@ -151,10 +189,12 @@ export function AccountStatus({
                   disabled={busy}
                   className="h-4 w-4"
                 />
-                Also clear the remembered timetable from this browser
+                Also clear any legacy remembered timetable from this browser
               </label>
               <p className="text-xs text-muted-foreground">
-                If unchecked, local browser data stays available in guest mode.
+                {shouldWritePrivateCloud
+                  ? "Gapwise clears secure device keys and encrypted local records during account deletion. If browser storage blocks cleanup, you will be prompted to retry. If unchecked, legacy guest data stays available."
+                  : "If unchecked, local browser data stays available in guest mode."}
               </p>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={busy}>Keep account</AlertDialogCancel>
@@ -272,12 +312,22 @@ export function AccountStatus({
         </>
       )}
       {message ? (
-        <span
+        <div
           role="status"
           className="glass-panel fixed right-4 top-20 z-[60] max-w-sm rounded-lg px-4 py-3 text-sm"
         >
-          {message}
-        </span>
+          <span>{message}</span>
+          {cleanupUserId ? (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void retryLocalCleanup()}
+              className="button-secondary mt-2 min-h-9 px-3 text-xs font-semibold disabled:opacity-50"
+            >
+              {busy ? "Retrying…" : "Retry local cleanup"}
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
