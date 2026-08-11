@@ -27,8 +27,8 @@ An invalid or missing flag becomes `off`. No mode ever uploads the original ICS 
 
 The following migrations are additive and have scoped rollback scripts:
 
-- `20260811045001_encrypted_private_cloud_phase1.sql`
-- `20260811051109_encrypted_key_envelope_rotation.sql`
+- `20260811063830_encrypted_private_cloud_phase1.sql`
+- `20260811063841_encrypted_key_envelope_rotation.sql`
 
 Before applying them, run the isolated pgTAP and database linter jobs. Inspect `supabase db push
 --dry-run`, then apply only the expected versions. Applying phase 1 does not copy, modify, or delete
@@ -48,6 +48,11 @@ Afterward verify:
 Do not use a rollback script after encrypted users exist without first proving what data would be
 lost. The rollback is safe only while production remains `off` and the new tables contain no needed
 records.
+
+Production checkpoint (2026-08-11): Gate 1 is complete. Both migrations were applied after green
+application and isolated database-security CI. Post-apply catalog checks confirm RLS is enabled and
+forced, all new tables contain zero rows, and the one legacy schedule and preference row remain
+untouched. Production mode is still `off`; this checkpoint does not satisfy Gate 2 or Gate 3.
 
 ## Gate 2: operator KEK recovery action — mandatory pause
 

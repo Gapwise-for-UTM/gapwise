@@ -85,7 +85,7 @@ supabase db lint --local --level warning --fail-on error
 
 ## Encrypted private-cloud phase
 
-`20260811045001_encrypted_private_cloud_phase1.sql` adds, without altering legacy values:
+`20260811063830_encrypted_private_cloud_phase1.sql` adds, without altering legacy values:
 
 - one owner-RLS key-envelope row containing two Vercel-KEK-wrapped DEKs;
 - one owner-RLS encrypted private payload row;
@@ -94,7 +94,7 @@ supabase db lint --local --level warning --fail-on error
 - a friend-material RPC that derives identity from `auth.uid()` and returns only two encrypted
   capsules plus the minimum wrapped availability-key material.
 
-`20260811051109_encrypted_key_envelope_rotation.sql` adds the only key-envelope update surface. It
+`20260811063841_encrypted_key_envelope_rotation.sql` adds the only key-envelope update surface. It
 compare-and-swaps the authenticated caller's wraps to a strictly higher KEK version. The browser
 role has no direct envelope `UPDATE` grant. Both RPCs revoke `PUBLIC` and `anon`, use an empty
 `search_path`, validate fixed inputs, and accept no user ID as authority.
@@ -108,9 +108,12 @@ The encrypted pgTAP suite has 50 assertions covering grants, forced RLS, cross-u
 accepted/pending/revoked friend material, identity substitution, rotation CAS, revision/context
 guards and cascading deletion. Run it only against the isolated CI/local database.
 
-These migrations are not yet applied to production. Follow
+Both migrations were applied to production on 2026-08-11 after the isolated database-security and
+application CI jobs passed. Post-apply checks found RLS enabled and forced on every new table and
+both legacy private-data tables, with zero key-envelope or ciphertext rows. The one legacy schedule
+and preference row remain unchanged and authoritative. Follow
 [`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md); production remains `off`
-until CI, additive migration, disposable preview proof and operator KEK recovery all pass.
+until disposable preview proof and operator KEK recovery both pass.
 
 ### Safe `source_filename` removal order
 

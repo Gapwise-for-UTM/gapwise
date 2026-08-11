@@ -1,8 +1,8 @@
 # Gapwise private cloud security architecture
 
-Status: implemented on the dedicated security branch behind a fail-safe rollout gate. Production
-remains `off`, the additive migrations are not yet applied, and legacy tables remain authoritative
-until every cutover gate in this document has passed.
+Status: implemented on the dedicated security branch behind a fail-safe rollout gate. The additive
+schema is applied and empty, production remains `off`, and legacy tables remain authoritative until
+every remaining cutover gate in this document has passed.
 
 ## Security claim and limits
 
@@ -34,11 +34,18 @@ runtime can also expose data.
   preferences are currently plaintext at rest.
 - PostgreSQL currently computes cross-user gaps from plaintext schedules inside a
   `SECURITY DEFINER` function.
-- Current RLS is enabled on all application tables. Schedule and preference tables do not yet force
-  RLS because the additive migration is not applied. A 2026-08-11 Security Advisor refresh reports
-  the expected intentional `SECURITY DEFINER` warnings plus two tables with intentionally no
-  readable policy. The only Performance Advisor items are one low-value unindexed revoked-by FK
-  and two unused-index notices on the empty friendship table; these are not migration blockers.
+- Current RLS is enabled on all application tables. The 2026-08-11 additive deployment also forces
+  RLS on the encrypted tables and legacy schedule/preference tables. A post-deploy Security Advisor
+  refresh reports the expected intentional `SECURITY DEFINER` warnings plus private tables with
+  intentionally no readable policy. Performance Advisor additionally flags the composite parent
+  FKs on the two one-row-per-user encrypted tables; their `user_id` primary keys already narrow a
+  cascade to at most one row, so separate composite indexes would add write/storage cost without a
+  meaningful lookup benefit. The prior low-value revoked-by FK and unused friendship indexes remain
+  informational and are not migration blockers.
+- The hosted migration ledger records `20260811063830_encrypted_private_cloud_phase1` and
+  `20260811063841_encrypted_key_envelope_rotation`. All four new tables contain zero rows; the one
+  legacy schedule and preference row remain unchanged. No KEK exists and no encrypted migration has
+  begun.
 - The active production deployment is the merge of PR #55 on canonical branch `main`; CI is green.
 
 The single production row is treated as real until its owner explicitly classifies it otherwise.
