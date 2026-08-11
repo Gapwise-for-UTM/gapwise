@@ -50,9 +50,10 @@ lost. The rollback is safe only while production remains `off` and the new table
 records.
 
 Production checkpoint (2026-08-11): Gate 1 is complete. Both migrations were applied after green
-application and isolated database-security CI. Post-apply catalog checks confirm RLS is enabled and
-forced, all new tables contain zero rows, and the one legacy schedule and preference row remain
-untouched. Production mode is still `off`; this checkpoint does not satisfy Gate 2 or Gate 3.
+application and isolated database-security CI. At that checkpoint, catalog checks confirmed RLS was
+enabled and forced, all new tables contained zero rows, and the one legacy schedule and preference
+row remained untouched. Production mode remained `off`; later preview proof populated encrypted
+rows without changing that production-mode setting.
 
 ## Gate 2: operator KEK recovery action — mandatory pause
 
@@ -76,6 +77,11 @@ Production encrypted setup must not begin until the operator completes all of th
 Preview testing must use a separately generated preview KEK and preview-only variables. Never copy
 the production KEK into a preview environment.
 
+Operational checkpoint (2026-08-11): the production v1 KEK recovery copy was stored before its
+Sensitive production Vercel variable was configured, and a separately generated Preview KEK was
+used for Preview testing. No KEK was placed in Supabase, browser configuration, repository files, or
+Vercel browser-exposed variables. Production `VITE_PRIVATE_CLOUD_MODE` remained `off`.
+
 ## Gate 3: disposable end-to-end proof
 
 With additive tables present, a separate preview KEK, and a disposable authenticated account:
@@ -95,6 +101,17 @@ With additive tables present, a separate preview KEK, and a disposable authentic
    metadata.
 
 Record counts, hashes and pass/fail evidence—not tokens, plaintext, ciphertext dumps, or keys.
+
+Operational checkpoint (2026-08-11): live Preview proof exercised both `shadow` and `encrypted`
+modes with distinctive disposable fixtures. Encrypted cloud restore succeeded on a fresh browser
+context; a normal same-device reload made no additional `/api/key-broker` request; mutual friend
+availability used the real `/api/common-gap` path and returned only the expected rounded windows;
+and deleting the disposable account removed its auth-linked encrypted rows, key envelope, friend
+profile, friendship/invite state, legacy rows and rate-limit state while the retained owner account
+remained intact. The owner's real timetable was restored after fixture testing. The isolated RLS and
+crypto suites cover cross-user access denial, ciphertext/nonce/AAD tampering, revision conflicts and
+fail-closed behavior. These results are evidence for the gate, not authorization to switch
+production to `encrypted`; any still-unperformed manual substep must be completed before Gate 5.
 
 ## Gate 4: migrate the existing legacy row
 
