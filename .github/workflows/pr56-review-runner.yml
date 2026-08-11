@@ -83,7 +83,6 @@ jobs:
             src/features/security/envelope-crypto.ts \
             src/features/security/private-data.ts \
             src/server/private-cloud/key-broker.ts \
-            supabase/rollbacks/20260811063830_encrypted_private_cloud_phase1.sql \
             docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md \
             docs/SUPABASE.md docs/PRIVATE_CLOUD_CAPACITY.md \
             tests/auth-persistence.test.ts tests/friend-overlap.test.ts \
