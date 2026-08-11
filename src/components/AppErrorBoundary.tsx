@@ -15,8 +15,8 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
     return { hasError: true };
   }
 
-  override componentDidCatch(error: unknown, info: ErrorInfo) {
-    console.error(error, info);
+  override componentDidCatch(_error: unknown, _info: ErrorInfo) {
+    console.error("Gapwise component rendering failed.");
   }
 
   override render() {

@@ -24,6 +24,36 @@ describe("supply-chain configuration", () => {
     );
     expect(sources.join("\n")).not.toMatch(/fonts\.(googleapis|gstatic)\.com/);
   });
+
+  test("uses a narrow browser execution and connection policy", async () => {
+    const [vercel, fallbackHeaders] = await Promise.all([
+      readFile("vercel.json", "utf8"),
+      readFile("public/_headers", "utf8"),
+    ]);
+    for (const source of [vercel, fallbackHeaders]) {
+      expect(source).toContain("script-src 'self'");
+      expect(source).not.toContain("'unsafe-eval'");
+      expect(source).toContain("object-src 'none'");
+      expect(source).toContain("frame-ancestors 'none'");
+      expect(source).toContain("Strict-Transport-Security");
+      expect(source).toContain("https://olrtvbblxbgcxbhvujaw.supabase.co");
+      expect(source).not.toContain("https://*.supabase.co");
+      expect(source).not.toContain("valhalla1.openstreetmap.de");
+    }
+  });
+
+  test("keeps client error telemetry generic and has no raw HTML sink", async () => {
+    const [reporter, root, boundary] = await Promise.all([
+      readFile("src/lib/lovable-error-reporting.ts", "utf8"),
+      readFile("src/routes/__root.tsx", "utf8"),
+      readFile("src/components/AppErrorBoundary.tsx", "utf8"),
+    ]);
+    expect(reporter).not.toContain("captureException?.(\n    error,");
+    expect(reporter).toContain('new Error("Gapwise client rendering error")');
+    expect(root).not.toContain("console.error(error)");
+    expect(boundary).not.toContain("console.error(error, info)");
+    await expect(readFile("src/components/ui/chart.tsx", "utf8")).rejects.toThrow();
+  });
 });
 
 describe("account deletion and RLS security", () => {
@@ -69,7 +99,7 @@ describe("account deletion and RLS security", () => {
 
   test("removes source filenames without changing RLS policies", async () => {
     const migration = await readFile(
-      "supabase/migrations/20260804040016_remove_schedule_source_filename.sql",
+      "supabase/migrations/20260807132654_remove_schedule_source_filename.sql",
       "utf8",
     );
     const syncService = await readFile("src/features/sync/sync-service.ts", "utf8");
