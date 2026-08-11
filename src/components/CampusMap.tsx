@@ -4,6 +4,12 @@ import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&ur
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MAP_CONFIG } from "@/config/map";
 import { getCampusBuilding } from "@/data/utm/campus";
+import {
+  resolveMapAnchor,
+  type MapAnchorSegment,
+  type MapCoordinate,
+} from "@/features/routing/map-anchors";
+import { isResidenceMeeting } from "@/features/routing/residence";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { Meeting } from "@/lib/timetable-types";
 
@@ -64,6 +70,24 @@ function routeFeatureCollection(data: MapData) {
         },
       })),
   };
+}
+
+function anchorSegments(data: MapData): MapAnchorSegment[] {
+  return data.segments.map((segment) => ({
+    id: segment.id,
+    fromId: segment.from.id,
+    toId: segment.to.id,
+    coordinates: segment.route.displayCoordinates,
+  }));
+}
+
+function residenceStopIds(data: MapData): string[] {
+  const ids = new Set<string>();
+  for (const segment of data.segments) {
+    if (isResidenceMeeting(segment.from)) ids.add(segment.from.id);
+    if (isResidenceMeeting(segment.to)) ids.add(segment.to.id);
+  }
+  return [...ids];
 }
 
 function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
@@ -188,6 +212,7 @@ function syncMapData(
   for (const marker of markers) marker.remove();
   markers.length = 0;
 
+  const routes = anchorSegments(data);
   const buildingTotals = new Map<string, number>();
   for (const meeting of data.meetings) {
     const building = getCampusBuilding(meeting.buildingCode);
@@ -201,7 +226,16 @@ function syncMapData(
     if (!building) return;
     const slot = buildingSlots.get(building.code) ?? 0;
     buildingSlots.set(building.code, slot + 1);
-    const offset = getMarkerOffset(slot, buildingTotals.get(building.code) ?? 1);
+    const anchor = resolveMapAnchor(
+      meeting.id,
+      building.navigationPoint,
+      routes,
+      data.selectedSegmentId,
+    );
+    const offset =
+      anchor.source === "fallback"
+        ? getMarkerOffset(slot, buildingTotals.get(building.code) ?? 1)
+        : ([0, 0] as [number, number]);
     const markerButton = document.createElement("button");
     markerButton.type = "button";
     markerButton.className = `map-number-marker${meeting.id === data.selectedMeetingId ? " is-selected" : ""}`;
@@ -211,7 +245,7 @@ function syncMapData(
     markerButton.addEventListener("click", () => data.onSelectMeeting(meeting.id), { once: true });
     markers.push(
       new maplibregl.Marker({ element: markerButton, offset })
-        .setLngLat(building.navigationPoint)
+        .setLngLat(anchor.coordinate)
         .addTo(map),
     );
   });
@@ -219,6 +253,12 @@ function syncMapData(
   if (data.home) {
     const homeBuilding = getCampusBuilding(data.home.buildingCode);
     if (homeBuilding) {
+      const anchor = resolveMapAnchor(
+        residenceStopIds(data),
+        homeBuilding.navigationPoint,
+        routes,
+        data.selectedSegmentId,
+      );
       const homeMarker = document.createElement("div");
       homeMarker.className = "map-home-marker";
       const homeIcon = document.createElement("span");
@@ -229,9 +269,7 @@ function syncMapData(
       homeMarker.setAttribute("role", "img");
       homeMarker.setAttribute("aria-label", `Home at ${data.home.label}`);
       markers.push(
-        new maplibregl.Marker({ element: homeMarker })
-          .setLngLat(homeBuilding.navigationPoint)
-          .addTo(map),
+        new maplibregl.Marker({ element: homeMarker }).setLngLat(anchor.coordinate).addTo(map),
       );
     }
   }
@@ -248,17 +286,32 @@ function syncMapData(
 
 function collectBoundsPoints(data: MapData): [number, number][] {
   const points: [number, number][] = [];
+  const routes = anchorSegments(data);
   for (const meeting of data.meetings) {
     const building = getCampusBuilding(meeting.buildingCode);
-    if (building) points.push(building.navigationPoint);
+    if (building) {
+      points.push(
+        resolveMapAnchor(meeting.id, building.navigationPoint, routes, data.selectedSegmentId)
+          .coordinate,
+      );
+    }
   }
   if (data.home) {
     const homeBuilding = getCampusBuilding(data.home.buildingCode);
-    if (homeBuilding) points.push(homeBuilding.navigationPoint);
+    if (homeBuilding) {
+      points.push(
+        resolveMapAnchor(
+          residenceStopIds(data),
+          homeBuilding.navigationPoint,
+          routes,
+          data.selectedSegmentId,
+        ).coordinate,
+      );
+    }
   }
   for (const segment of data.segments) {
     for (const coord of segment.route.displayCoordinates) {
-      points.push(coord as [number, number]);
+      points.push(coord as MapCoordinate);
     }
   }
   return points;

@@ -4,6 +4,7 @@
 <h1 align="center">Gapwise for UTM</h1>
 <p align="center">A privacy-first timetable gap and campus route planner for University of Toronto Mississauga students.</p>
 <p align="center"><a href="https://gapwise-utm.vercel.app"><strong>Open Gapwise</strong></a> · React 19 · TypeScript · MapLibre</p>
+<p align="center"><a href="https://coderabbit.ai"><img src="https://img.shields.io/coderabbit/prs/github/andrewmuratov/gapwise?utm_source=oss&amp;utm_medium=github&amp;utm_campaign=andrewmuratov%2Fgapwise&amp;labelColor=171717&amp;color=FF570A&amp;link=https%3A%2F%2Fcoderabbit.ai&amp;label=CodeRabbit+Reviews" alt="CodeRabbit Pull Request Reviews"></a></p>
 
 ## What Gapwise does
 

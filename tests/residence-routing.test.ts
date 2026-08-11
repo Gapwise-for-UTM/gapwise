@@ -73,4 +73,22 @@ describe("residence-aware campus routing", () => {
     expect(segments[0]!.warnings.join(" ")).toContain("field verification");
     expect(segments[2]!.warnings.join(" ")).toContain("field verification");
   });
+
+  test("uses the reviewed central shortcut for the fastest Erindale-to-Davis route", () => {
+    const home = createResidenceMeeting({
+      buildingCode: "EH",
+      term: "Fall",
+      weekday: "Monday",
+      time: 540,
+      position: "start",
+    });
+    const davisClass = meeting({ id: "davis", buildingCode: "DV", room: "2080" });
+    const route = planMeetingTransition(home, davisClass, UTM_ROUTING_GRAPH, residentPreferences);
+
+    expect(route.status).toBe("routed");
+    expect(route.result!.totalDistanceMeters).toBeLessThan(400);
+    expect(route.result!.edges.map((edge) => edge.id)).toContain(
+      "reviewed-topology-connector-five-minute-walk-east-link",
+    );
+  });
 });
