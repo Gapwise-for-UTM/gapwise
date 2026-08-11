@@ -23,6 +23,42 @@ jobs:
         run: |
           awk '/python3 <<'"'"'PY'"'"'/{capture=1; next} /^          PY$/{capture=0} capture' .github/workflows/pr56-review-fixes.yml \
             | sed 's/^          //' > /tmp/pr56-fix.py
+          python3 <<'PY'
+          from pathlib import Path
+
+          # The one-shot patch script had one malformed exact-match literal for this function.
+          # Apply that source edit directly, then remove only that block from the extracted script.
+          source_path = Path("src/hooks/use-preferences.ts")
+          source = source_path.read_text()
+          old = '''export function loadRememberedRecord<T>(): {
+            remember: boolean;
+            record: RememberedRecord<T> | null;
+          } {
+            try {
+              const remember = window.localStorage.getItem(REMEMBER_KEY) === "1";'''.replace("          ", "")
+          new = '''export function loadRememberedRecord<T>(): {
+            remember: boolean;
+            record: RememberedRecord<T> | null;
+          } {
+            try {
+              if (isEncryptedPrivateCloudAuthoritative) {
+                window.localStorage.removeItem(TIMETABLE_KEY);
+                window.localStorage.removeItem(REMEMBER_KEY);
+                return { remember: false, record: null };
+              }
+              const remember = window.localStorage.getItem(REMEMBER_KEY) === "1";'''.replace("          ", "")
+          if source.count(old) != 1:
+              raise SystemExit("use-preferences source shape changed unexpectedly")
+          source_path.write_text(source.replace(old, new, 1))
+
+          script_path = Path("/tmp/pr56-fix.py")
+          script = script_path.read_text()
+          start_marker = 'replace_once(\n    "src/hooks/use-preferences.ts",'
+          end_marker = '# Preserve falsy Promise rejection values during sign-out cleanup.'
+          start = script.index(start_marker)
+          end = script.index(end_marker, start)
+          script_path.write_text(script[:start] + script[end:])
+          PY
           python3 /tmp/pr56-fix.py
       - name: Format and validate
         shell: bash
@@ -53,6 +89,7 @@ jobs:
           bun run lint
           bun test
           bun run build
+          bun run format:check
       - name: Commit validated fixes
         shell: bash
         run: |
