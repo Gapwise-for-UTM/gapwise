@@ -358,7 +358,9 @@ function Index() {
     if (fingerprint === lastEncryptedFingerprint.current) return;
     const timeout = window.setTimeout(() => {
       lastEncryptedFingerprint.current = fingerprint;
-      void saveEncryptedPrivateState(authenticatedUserId, input).catch(() => {
+      void saveEncryptedPrivateState(authenticatedUserId, input, {
+        requireExistingOptIn: true,
+      }).catch(() => {
         if (lastEncryptedFingerprint.current === fingerprint) {
           lastEncryptedFingerprint.current = null;
         }

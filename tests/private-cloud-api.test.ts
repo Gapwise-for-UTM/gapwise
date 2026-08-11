@@ -25,7 +25,7 @@ import {
   type FriendCapsuleMaterial,
 } from "@/server/private-cloud/common-gap";
 import { readBearerToken } from "@/server/private-cloud/auth";
-import { handleJsonPost } from "@/server/private-cloud/http";
+import { errorResponse, handleJsonPost } from "@/server/private-cloud/http";
 import { loadKek, readActiveKekVersion, type KeyEnvelopeRow } from "@/server/private-cloud/kek";
 import { rewrapEnvelopeToKek, wrapEnvelopeKeysForDevice } from "@/server/private-cloud/key-broker";
 
@@ -150,6 +150,21 @@ async function capsuleMaterial(
 }
 
 describe("private-cloud Vercel request boundary", () => {
+  test("keeps unexpected server errors out of responses and logs", async () => {
+    const distinctiveSecret = "DISTINCTIVE-PRIVATE-ERROR-CONTEXT-918";
+    const logs: string[] = [];
+    const originalError = console.error;
+    console.error = (...values: unknown[]) => logs.push(values.map(String).join(" "));
+    try {
+      const response = errorResponse(new Error(distinctiveSecret));
+      expect(response.status).toBe(503);
+      expect(await response.text()).not.toContain(distinctiveSecret);
+    } finally {
+      console.error = originalError;
+    }
+    expect(logs.join(" ")).not.toContain(distinctiveSecret);
+  });
+
   test("accepts only a small same-origin JSON POST", async () => {
     const request = new Request("https://gapwise.example/api/test", {
       method: "POST",
@@ -242,6 +257,9 @@ describe("versioned Vercel KEK handling", () => {
     ).rejects.toThrow();
     await expect(
       loadKek(KEK_VERSION, { [`GAPWISE_KEK_V${KEK_VERSION}`]: `${bytesToBase64Url(rawKek)} ` }),
+    ).rejects.toThrow();
+    await expect(
+      loadKek(KEK_VERSION, { [`GAPWISE_KEK_V${KEK_VERSION}`]: `${bytesToBase64Url(rawKek)}=` }),
     ).rejects.toThrow();
   });
 });
@@ -425,11 +443,22 @@ describe("common-gap cryptographic boundary", () => {
         [],
       ),
     ]);
-    const bytes = base64UrlToBytes(bytesToBase64Url(new Uint8Array([1])));
-    expect(bytes).toEqual(new Uint8Array([1]));
-    rows[1] = { ...rows[1]!, capsule_revision: 2 };
-    await expect(decryptCommonGapMaterial(rows, "Fall", testKekLoader)).rejects.toThrow(
-      "authentication failed",
-    );
+    const ciphertext = rows[0]!.capsule_ciphertext;
+    const tamperedCiphertext = `${ciphertext.slice(0, -1)}${ciphertext.endsWith("0") ? "1" : "0"}`;
+    await expect(
+      decryptCommonGapMaterial(
+        [{ ...rows[0]!, capsule_ciphertext: tamperedCiphertext }, rows[1]!],
+        "Fall",
+        testKekLoader,
+      ),
+    ).rejects.toThrow("authentication failed");
+
+    const revisionTamperedRows: FriendCapsuleMaterial[] = [
+      rows[0]!,
+      { ...rows[1]!, capsule_revision: 2 },
+    ];
+    await expect(
+      decryptCommonGapMaterial(revisionTamperedRows, "Fall", testKekLoader),
+    ).rejects.toThrow("authentication failed");
   });
 });

@@ -110,11 +110,40 @@ describe("encrypted local-first records", () => {
     const store = createMemorySecurityStore();
     const userKeys = await dataKeys();
     const guestKeys = await dataKeys("guest", SUBJECT_B);
+    const payload = createPrivateDataPayload({
+      schedule: [meeting()],
+      personalItems: [],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+    });
+    const capsule = deriveAvailabilityCapsule([]);
     await store.putDataKeys(userKeys);
     await store.putDataKeys(guestKeys);
+    await store.putEncryptedRecords(
+      await sealPrivateData({ userId: USER_A, keys: userKeys, payload, revision: 1 }),
+      await sealAvailabilityCapsule({
+        userId: USER_A,
+        keys: userKeys,
+        capsule,
+        revision: 1,
+      }),
+    );
+    await store.putEncryptedRecords(
+      await sealPrivateData({ userId: "guest", keys: guestKeys, payload, revision: 1 }),
+      await sealAvailabilityCapsule({
+        userId: "guest",
+        keys: guestKeys,
+        capsule,
+        revision: 1,
+      }),
+    );
 
     await store.clearUser(USER_A);
     expect(await store.getDataKeys(USER_A)).toBeNull();
+    expect(await store.getPrivateRecord(USER_A)).toBeNull();
+    expect(await store.getCapsuleRecord(USER_A)).toBeNull();
     expect(await store.getDataKeys("guest")).toBe(guestKeys);
+    expect(await store.getPrivateRecord("guest")).not.toBeNull();
+    expect(await store.getCapsuleRecord("guest")).not.toBeNull();
   });
 });

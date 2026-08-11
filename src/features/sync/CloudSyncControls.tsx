@@ -70,9 +70,11 @@ export function CloudSyncControls({
                   : "Local only"}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            {shouldWritePrivateCloud
+            {isEncryptedPrivateCloudAuthoritative
               ? "Timetable, custom items, and private settings are encrypted before sync. The original .ics file is never uploaded."
-              : "Only normalized meetings are stored. The original .ics file is never uploaded."}
+              : shouldWritePrivateCloud
+                ? "Migration mode stores the normalized timetable on the legacy path and also uploads an encrypted private-data copy. The original .ics file is never uploaded."
+                : "Only normalized meetings are stored. The original .ics file is never uploaded."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -90,6 +92,11 @@ export function CloudSyncControls({
                     preferences,
                     gapPreferences,
                   });
+                  if (!isEncryptedPrivateCloudAuthoritative) {
+                    return result.persistentKeys
+                      ? "Legacy plaintext timetable and encrypted migration copy synced and verified."
+                      : "Legacy plaintext timetable and encrypted migration copy synced. Secure encrypted restore is available only while this page stays open on this browser.";
+                  }
                   return result.persistentKeys
                     ? "Private data encrypted, synced, and verified."
                     : "Private data encrypted and synced. Secure restore is available only while this page stays open on this browser.";
@@ -100,7 +107,11 @@ export function CloudSyncControls({
             className="button-primary click-spark inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
-            {shouldWritePrivateCloud ? "Sync private data" : "Sync timetable"}
+            {isEncryptedPrivateCloudAuthoritative
+              ? "Sync private data"
+              : shouldWritePrivateCloud
+                ? "Sync migration copy"
+                : "Sync timetable"}
           </button>
           <button
             type="button"
@@ -130,8 +141,16 @@ export function CloudSyncControls({
             onClick={() => {
               if (!window.confirm("Delete your synced private data from your account?")) return;
               void run(async () => {
-                if (shouldWritePrivateCloud) await deleteEncryptedPrivateCloud(user!.id);
-                await Promise.all([deleteSchedule(), deletePreferences()]);
+                const results = await Promise.allSettled([
+                  ...(shouldWritePrivateCloud ? [deleteEncryptedPrivateCloud(user!.id)] : []),
+                  deleteSchedule(),
+                  deletePreferences(),
+                ]);
+                if (results.some((result) => result.status === "rejected")) {
+                  throw new Error(
+                    "Some cloud data could not be deleted. Try again to remove the rest.",
+                  );
+                }
                 return "Cloud private data deleted. Local browser data was not changed.";
               });
             }}

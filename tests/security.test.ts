@@ -31,7 +31,7 @@ describe("supply-chain configuration", () => {
       readFile("public/_headers", "utf8"),
     ]);
     for (const source of [vercel, fallbackHeaders]) {
-      expect(source).toContain("script-src 'self'");
+      expect(source).toMatch(/script-src 'self'\s*;/u);
       expect(source).not.toContain("'unsafe-eval'");
       expect(source).toContain("object-src 'none'");
       expect(source).toContain("frame-ancestors 'none'");
@@ -48,7 +48,7 @@ describe("supply-chain configuration", () => {
       readFile("src/routes/__root.tsx", "utf8"),
       readFile("src/components/AppErrorBoundary.tsx", "utf8"),
     ]);
-    expect(reporter).not.toContain("captureException?.(\n    error,");
+    expect(reporter).not.toMatch(/captureException\?\.\(\s*error\s*[,)]/u);
     expect(reporter).toContain('new Error("Gapwise client rendering error")');
     expect(root).not.toContain("console.error(error)");
     expect(boundary).not.toContain("console.error(error, info)");

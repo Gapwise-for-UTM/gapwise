@@ -12,6 +12,7 @@ import {
   encryptedRevisionConflicts,
   parseDeviceKeyBundle,
   restoreEncryptedLocalState,
+  saveEncryptedPrivateState,
 } from "@/features/sync/encrypted-sync-service";
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
 import { meeting } from "./fixtures";
@@ -217,6 +218,21 @@ describe("encrypted client sync boundary", () => {
     expect(encryptedRevisionConflicts({ cloudRevision: null }, { revision: 1 })).toBe(true);
     expect(encryptedRevisionConflicts({ cloudRevision: 3 }, null)).toBe(true);
     expect(encryptedRevisionConflicts({ cloudRevision: null }, null)).toBe(false);
+  });
+
+  test("a stale background save cannot re-enable explicitly deleted cloud persistence", async () => {
+    await expect(
+      saveEncryptedPrivateState(
+        USER_ID,
+        {
+          schedule: [meeting()],
+          personalItems: [],
+          preferences: DEFAULT_USER_PREFERENCES,
+          gapPreferences: DEFAULT_GAP_PREFERENCES,
+        },
+        { requireExistingOptIn: true },
+      ),
+    ).rejects.toThrow("sync is disabled");
   });
 
   test("preflights only context metadata before the final ciphertext verification read", async () => {

@@ -23,6 +23,8 @@ export function errorResponse(error: unknown): Response {
   if (error instanceof ApiError) {
     return jsonResponse({ error: error.publicMessage }, error.status);
   }
+  // Unknown crypto/database errors can carry sensitive context. Do not
+  // serialize the caught value into either the response or server logs.
   return jsonResponse({ error: "The private cloud service is temporarily unavailable." }, 503);
 }
 

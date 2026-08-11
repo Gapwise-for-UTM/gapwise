@@ -59,18 +59,44 @@ export function consumeOAuthError(
   return `GitHub sign-in failed: ${error.replace(/\+/g, " ")}`;
 }
 
+export async function completeLocalSignOut(
+  clearPrivateState: () => Promise<void>,
+  removeLocalSession: () => Promise<void>,
+): Promise<void> {
+  let cleanupError: unknown;
+  try {
+    await clearPrivateState();
+  } catch (error) {
+    cleanupError = error;
+  }
+
+  let signOutError: unknown;
+  try {
+    await removeLocalSession();
+  } catch (error) {
+    signOutError = error;
+  }
+  if (cleanupError) throw cleanupError;
+  if (signOutError) throw signOutError;
+}
+
 export async function signOut(): Promise<void> {
   const supabase = requireSupabaseClient();
   const { data: sessionData } = await supabase.auth.getSession().catch(() => ({ data: null }));
   const userId = sessionData?.session?.user.id ?? authStore.getSnapshot().user?.id ?? null;
   authStore.forceSignedOut();
   try {
-    if (userId) await clearPrivateCloudLocalUser(userId);
-    const { error } = await supabase.auth.signOut({ scope: "local" });
-    if (error) throw error;
-  } catch (error) {
+    await completeLocalSignOut(
+      async () => {
+        if (userId) await clearPrivateCloudLocalUser(userId);
+      },
+      async () => {
+        const { error } = await supabase.auth.signOut({ scope: "local" });
+        if (error) throw error;
+      },
+    );
+  } finally {
     authStore.forceSignedOut();
-    throw error;
   }
 }
 

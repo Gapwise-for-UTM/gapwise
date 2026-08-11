@@ -90,6 +90,7 @@ type StoreSelection = { persistent: boolean; store: SecurityStore };
 
 let storeSelectionPromise: Promise<StoreSelection> | null = null;
 const optedInUsers = new Set<string>();
+const deletingCloudUsers = new Set<string>();
 const saveQueues = new Map<string, Promise<unknown>>();
 
 function abortIfRequested(signal?: AbortSignal) {
@@ -753,7 +754,14 @@ async function saveEncryptedPrivateStateNow(
 export function saveEncryptedPrivateState(
   userId: string,
   input: PrivateCloudState,
+  options: { requireExistingOptIn?: boolean } = {},
 ): Promise<PrivateCloudRestoration> {
+  if (deletingCloudUsers.has(userId)) {
+    return Promise.reject(new Error("Encrypted cloud deletion is in progress."));
+  }
+  if (options.requireExistingOptIn === true && !optedInUsers.has(userId)) {
+    return Promise.reject(new Error("Encrypted cloud sync is disabled."));
+  }
   const previous = saveQueues.get(userId) ?? Promise.resolve();
   const next = previous
     .catch(() => undefined)
@@ -772,25 +780,41 @@ export function isEncryptedSyncOptedIn(userId: string): boolean {
 
 export async function deleteEncryptedPrivateCloud(userId: string): Promise<void> {
   await sessionForUser(userId);
-  await saveQueues.get(userId)?.catch(() => undefined);
-  const supabase = requireSupabaseClient();
-  const results = await Promise.all([
-    supabase.from("encrypted_friend_availability").delete().eq("user_id", userId),
-    supabase.from("encrypted_private_data").delete().eq("user_id", userId),
-  ]);
-  if (results.some((result) => result.error)) throw new Error("Encrypted cloud deletion failed.");
-  const selection = await securityStore();
-  const keys = await selection.store.getDataKeys(userId);
-  if (keys) await selection.store.putDataKeys({ ...keys, cloudSyncEnabled: false });
+  if (deletingCloudUsers.has(userId)) throw new Error("Encrypted cloud deletion is in progress.");
+  deletingCloudUsers.add(userId);
   optedInUsers.delete(userId);
+  try {
+    await saveQueues.get(userId)?.catch(() => undefined);
+    // A save that was already running can restore the opt-in marker before it
+    // drains. Clear it again before opening the final deletion window.
+    optedInUsers.delete(userId);
+    const supabase = requireSupabaseClient();
+    const results = await Promise.all([
+      supabase.from("encrypted_friend_availability").delete().eq("user_id", userId),
+      supabase.from("encrypted_private_data").delete().eq("user_id", userId),
+    ]);
+    if (results.some((result) => result.error)) throw new Error("Encrypted cloud deletion failed.");
+    const selection = await securityStore();
+    const keys = await selection.store.getDataKeys(userId);
+    if (keys) await selection.store.putDataKeys({ ...keys, cloudSyncEnabled: false });
+  } finally {
+    deletingCloudUsers.delete(userId);
+  }
 }
 
 export async function clearPrivateCloudLocalUser(userId: string): Promise<void> {
+  const alreadyBlocked = deletingCloudUsers.has(userId);
+  deletingCloudUsers.add(userId);
   optedInUsers.delete(userId);
-  await saveQueues.get(userId)?.catch(() => undefined);
-  saveQueues.delete(userId);
-  const selection = await securityStore();
-  await selection.store.clearUser(userId);
+  try {
+    await saveQueues.get(userId)?.catch(() => undefined);
+    optedInUsers.delete(userId);
+    saveQueues.delete(userId);
+    const selection = await securityStore();
+    await selection.store.clearUser(userId);
+  } finally {
+    if (!alreadyBlocked) deletingCloudUsers.delete(userId);
+  }
 }
 
 export function privateCloudState(input: {

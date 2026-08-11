@@ -330,17 +330,14 @@ select is(
   0::bigint,
   'an accepted friend still cannot direct-select user B capsule'
 );
-select is(
-  (
-    with changed as (
-      update public.encrypted_private_data
-      set ciphertext = decode(repeat('71', 32), 'hex'), revision = 2
-      where user_id = '00000000-0000-4000-8000-000000000102'
-      returning 1
-    )
-    select count(*) from changed
-  ),
-  0::bigint,
+select results_eq(
+  $$
+    update public.encrypted_private_data
+    set ciphertext = decode(repeat('71', 32), 'hex'), revision = 2
+    where user_id = '00000000-0000-4000-8000-000000000102'
+    returning 1
+  $$,
+  array[]::integer[],
   'user A cannot mutate user B encrypted private payload'
 );
 select is(
