@@ -7,6 +7,93 @@ export type Database = {
   };
   public: {
     Tables: {
+      friend_invites: {
+        Row: {
+          created_at: string;
+          expires_at: string;
+          owner_id: string;
+          token_hash: string;
+        };
+        Insert: {
+          created_at?: string;
+          expires_at: string;
+          owner_id: string;
+          token_hash: string;
+        };
+        Update: {
+          created_at?: string;
+          expires_at?: string;
+          owner_id?: string;
+          token_hash?: string;
+        };
+        Relationships: [];
+      };
+      friend_profiles: {
+        Row: {
+          created_at: string;
+          display_name: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      friendships: {
+        Row: {
+          accepted_at: string | null;
+          created_at: string;
+          id: string;
+          recipient_accepted_at: string | null;
+          requested_by: string;
+          requester_accepted_at: string;
+          revoked_at: string | null;
+          revoked_by: string | null;
+          status: string;
+          updated_at: string;
+          user_a_id: string;
+          user_b_id: string;
+        };
+        Insert: {
+          accepted_at?: string | null;
+          created_at?: string;
+          id?: string;
+          recipient_accepted_at?: string | null;
+          requested_by: string;
+          requester_accepted_at?: string;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_a_id: string;
+          user_b_id: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          created_at?: string;
+          id?: string;
+          recipient_accepted_at?: string | null;
+          requested_by?: string;
+          requester_accepted_at?: string;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          status?: string;
+          updated_at?: string;
+          user_a_id?: string;
+          user_b_id?: string;
+        };
+        Relationships: [];
+      };
       user_preferences: {
         Row: {
           avoid_stairs: boolean;
@@ -69,7 +156,46 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      claim_friend_invite: {
+        Args: { p_invite_code: string };
+        Returns: boolean;
+      };
+      create_friend_invite: {
+        Args: Record<PropertyKey, never>;
+        Returns: { expires_at: string; invite_code: string }[];
+      };
+      disable_friend_invite: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      get_friend_gap_overlaps: {
+        Args: { p_term: string };
+        Returns: {
+          end_minute: number;
+          friend_display_name: string;
+          friendship_id: string;
+          start_minute: number;
+          weekday: string;
+        }[];
+      };
+      list_friend_connections: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          direction: string;
+          friend_display_name: string;
+          friendship_id: string;
+          status: string;
+          updated_at: string;
+        }[];
+      };
+      respond_to_friend_request: {
+        Args: { p_accept: boolean; p_friendship_id: string };
+        Returns: boolean;
+      };
+      revoke_friendship: {
+        Args: { p_friendship_id: string };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;

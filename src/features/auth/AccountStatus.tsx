@@ -138,8 +138,9 @@ export function AccountStatus({
                 <AlertDialogTitle>Delete account and cloud data?</AlertDialogTitle>
                 <AlertDialogDescription>
                   This permanently removes your Supabase account, normalized cloud timetable, saved
-                  preferences, and every other server-side record you own. Your original .ics file
-                  was never uploaded.
+                  preferences, private invite codes, and every friend/request entry involving you.
+                  Former friends immediately lose access and see no relationship history. Your
+                  original .ics file was never uploaded.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <label className="flex min-h-11 items-center gap-3 rounded-lg border border-border p-3 text-sm">

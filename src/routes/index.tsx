@@ -903,6 +903,8 @@ function Index() {
                         gapPreferences={gapPreferences}
                         onGapPreferencesChange={updateGapPreferences}
                         planTransition={planTransition}
+                        user={user}
+                        term={term}
                       />
                     </div>
                   ) : null}

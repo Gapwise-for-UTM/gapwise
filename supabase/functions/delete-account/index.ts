@@ -71,8 +71,9 @@ Deno.serve(async (request) => {
       headers,
     });
 
-  // The verified token is the only source of identity. Cascading foreign keys remove
-  // all strictly user-owned public rows; retries are safe if a prior attempt stopped early.
+  // The verified token is the only source of identity. One auth.users deletion atomically
+  // cascades through owned rows, both sides of every friendship/request, private invite
+  // hashes, and overlap rate-limit state. Retries remain safe.
   const { error } = await admin.auth.admin.deleteUser(data.user.id);
   if (error)
     return new Response(JSON.stringify({ error: "Deletion failed" }), { status: 500, headers });
