@@ -26,7 +26,8 @@ Official sources: [Supabase billing quotas](https://supabase.com/docs/guides/pla
 
 ## Measurements
 
-- The production database was 11,390,099 bytes (reported as 11 MB) on 2026-08-11.
+- After the additive schema deployment, the production database was 11,685,011 bytes (reported as
+  11 MB) on 2026-08-11.
 - Production contained one 1,543-byte legacy schedule JSON value. Only counts and sizes were read.
 - The committed 18-meeting demo serializes to a 5,317-byte private JSON payload and a 5,333-byte
   AES-GCM ciphertext (the 16-byte authentication tag is included).
@@ -55,7 +56,7 @@ This is a capacity allocation, not a claim that every PostgreSQL tuple is exactl
 `pg_database_size`, table/index sizes, average ciphertext length, and friendship density as usage
 grows.
 
-| Fully provisioned users | Modelled total including current 11.39 MB | Share of 500 MB | Assessment                                                         |
+| Fully provisioned users | Modelled total including current 11.69 MB | Share of 500 MB | Assessment                                                         |
 | ----------------------: | ----------------------------------------: | --------------: | ------------------------------------------------------------------ |
 |                  17,000 |                                    283 MB |             57% | Comfortable                                                        |
 |                  20,000 |                                    331 MB |             66% | Comfortable with monitoring                                        |

@@ -24,8 +24,8 @@ runtime can also expose data.
 
 ## Current-state findings (2026-08-11)
 
-- Production runs on one healthy Supabase PostgreSQL 17 project and one Vercel project. The live
-  database currently occupies 11,390,099 bytes (reported as 11 MB).
+- Production runs on one healthy Supabase PostgreSQL 17 project and one Vercel project. After the
+  additive schema deployment, the live database occupies 11,685,011 bytes (reported as 11 MB).
 - Production has one Auth user, one non-empty plaintext `user_schedules` row, one plaintext
   `user_preferences` row, one friend profile, no friendship rows, and no accepted friendships.
 - The schedule JSON occupies 1,543 bytes. This inspection read aggregates and sizes only, not its
