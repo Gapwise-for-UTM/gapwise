@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import type { User } from "@supabase/supabase-js";
 import {
   defaultFriendDisplayName,
+  parseCommonGapResponse,
   sanitizeFriendDisplayName,
 } from "@/features/friends/friend-service";
 import { findGaps } from "@/lib/gaps";
@@ -60,6 +61,33 @@ describe("friend overlap privacy contract", () => {
     expect(sanitizeFriendDisplayName("   ")).toBe("Gapwise friend");
     expect(sanitizeFriendDisplayName("x".repeat(100))).toHaveLength(80);
     expect([...sanitizeFriendDisplayName("🙂".repeat(100))]).toHaveLength(80);
+  });
+
+  test("accepts only capped, rounded common-gap responses", () => {
+    expect(
+      parseCommonGapResponse({
+        windows: [{ weekday: "Monday", startMinute: 660, endMinute: 750 }],
+      }),
+    ).toEqual([{ weekday: "Monday", startMinute: 660, endMinute: 750 }]);
+    expect(() =>
+      parseCommonGapResponse({
+        windows: Array.from({ length: 4 }, () => ({
+          weekday: "Monday",
+          startMinute: 660,
+          endMinute: 750,
+        })),
+      }),
+    ).toThrow("malformed");
+    expect(() =>
+      parseCommonGapResponse({
+        windows: [{ weekday: "Monday", startMinute: 665, endMinute: 750 }],
+      }),
+    ).toThrow("malformed");
+    expect(() =>
+      parseCommonGapResponse({
+        windows: [{ weekday: "Monday", startMinute: 690, endMinute: 720, detail: "forbidden" }],
+      }),
+    ).toThrow("malformed");
   });
 
   test("migration exposes a fixed derived overlap payload", async () => {

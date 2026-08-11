@@ -33,7 +33,7 @@ export function chooseRestoration(
 ): RestorationChoice {
   if (memory?.length) return { source: "memory", state: "restored-memory", meetings: memory };
   const localValid = local?.data?.length ? local : null;
-  const cloudValid = cloud?.meetings?.length ? cloud : null;
+  const cloudValid = cloud?.privateData || cloud?.meetings?.length ? cloud : null;
   if (localValid && !cloudValid)
     return { source: "local", state: "restored-local", meetings: localValid.data };
   if (cloudValid && !localValid)

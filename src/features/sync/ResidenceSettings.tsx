@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 import { emitClickSpark } from "@/lib/micro-interactions";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import { sanitizeUserPreferences, type UserPreferences } from "./preferences";
 import { loadPreferences, savePreferences } from "./sync-service";
 
@@ -148,7 +149,7 @@ export function ResidenceSettings({
           </label>
         ) : null}
 
-        {user ? (
+        {user && !isEncryptedPrivateCloudAuthoritative ? (
           <div className="flex flex-wrap gap-2 border-t border-border pt-4">
             <button
               type="button"
@@ -170,6 +171,10 @@ export function ResidenceSettings({
               <CloudDownload className="h-3.5 w-3.5" aria-hidden="true" /> Load account setting
             </button>
           </div>
+        ) : user ? (
+          <p className="border-t border-border pt-4 text-xs text-muted-foreground">
+            This private setting is included in encrypted private-data sync.
+          </p>
         ) : (
           <p className="border-t border-border pt-4 text-xs text-muted-foreground">
             Stored only in this browser. Sign in if you want to sync it across devices.

@@ -21,6 +21,7 @@ import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import { loadPreferences, savePreferences } from "@/features/sync/sync-service";
 import type { UserPreferences } from "@/features/sync/preferences";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
 import { formatDuration, formatTime, TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
@@ -218,7 +219,7 @@ export function DayRoute({
                 />
               </label>
             </div>
-            {user ? (
+            {user && !isEncryptedPrivateCloudAuthoritative ? (
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
@@ -261,6 +262,10 @@ export function DayRoute({
                   </span>
                 ) : null}
               </div>
+            ) : user ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Route preferences are included in encrypted private-data sync.
+              </p>
             ) : null}
           </div>
         </div>

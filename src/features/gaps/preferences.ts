@@ -1,4 +1,5 @@
 import type { GapPreferences, RiskTolerance } from "./types";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 const STORAGE_KEY = "gapwise-gap-preferences-v2";
 
@@ -101,9 +102,19 @@ export function loadGapPreferences(): GapPreferences {
 
 export function saveGapPreferences(value: GapPreferences) {
   if (typeof window === "undefined") return;
+  if (isEncryptedPrivateCloudAuthoritative) return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitizeGapPreferences(value)));
   } catch {
     // Recommendation settings are optional; storage failures should never break the planner.
+  }
+}
+
+export function clearStoredGapPreferences() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // A verified encrypted copy still exists; blocked storage needs no cleanup.
   }
 }

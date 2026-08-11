@@ -28,12 +28,14 @@ import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
 import { ResidenceSettings } from "@/features/sync/ResidenceSettings";
 import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import {
+  DEFAULT_GAP_PREFERENCES,
   loadGapPreferences,
   sanitizeGapPreferences,
   saveGapPreferences,
 } from "@/features/gaps/preferences";
 import type { GapPreferences } from "@/features/gaps/types";
 import {
+  DEFAULT_USER_PREFERENCES,
   loadLocalUserPreferences,
   saveLocalUserPreferences,
   type UserPreferences,
@@ -54,6 +56,12 @@ import { chooseRestoration, type RestorationState } from "@/features/sync/restor
 import { deserializeSchedule } from "@/features/sync/schedule-serialization";
 import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
+import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
+import {
+  isEncryptedSyncOptedIn,
+  saveEncryptedPrivateState,
+} from "@/features/sync/encrypted-sync-service";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -148,6 +156,7 @@ function Index() {
   const requestedUser = useRef<string | null>(null);
   const previousUser = useRef<string | null>(null);
   const replacementInputRef = useRef<HTMLInputElement>(null);
+  const lastEncryptedFingerprint = useRef<string | null>(null);
   const authenticatedUserId = user?.id ?? null;
   const planTransition = useMemo(
     () => createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings ?? []),
@@ -155,6 +164,18 @@ function Index() {
   );
 
   latestMeetings.current = meetings;
+
+  const applyPrivateData = useCallback((payload: PrivateDataPayloadV1) => {
+    latestMeetings.current = payload.schedule;
+    setMeetings(payload.schedule);
+    setPersonalItems(payload.personalItems);
+    setPreferences(payload.preferences);
+    setGapPreferences(payload.gapPreferences);
+    setWarnings([]);
+    setError(null);
+    setIsDemo(false);
+    lastEncryptedFingerprint.current = JSON.stringify(payload);
+  }, []);
 
   useEffect(() => {
     mounted.current = true;
@@ -201,6 +222,12 @@ function Index() {
         currentMeetings = null;
         latestMeetings.current = null;
         setMeetings(null);
+        if (isEncryptedPrivateCloudAuthoritative) {
+          setPersonalItems([]);
+          setPreferences(DEFAULT_USER_PREFERENCES);
+          setGapPreferences(DEFAULT_GAP_PREFERENCES);
+          lastEncryptedFingerprint.current = null;
+        }
       }
       previousUser.current = null;
       const choice = chooseRestoration(
@@ -229,6 +256,12 @@ function Index() {
       if (previousUser.current && restoredSource.current === "cloud") {
         latestMeetings.current = null;
         setMeetings(null);
+        if (isEncryptedPrivateCloudAuthoritative) {
+          setPersonalItems([]);
+          setPreferences(DEFAULT_USER_PREFERENCES);
+          setGapPreferences(DEFAULT_GAP_PREFERENCES);
+          lastEncryptedFingerprint.current = null;
+        }
       }
       previousUser.current = userId;
     }
@@ -252,15 +285,27 @@ function Index() {
         )
           return;
         const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
-        const choice = chooseRestoration(memory, localRecord?.record ?? null, cloud);
+        const legacyLocal =
+          isEncryptedPrivateCloudAuthoritative && cloud?.privateData
+            ? null
+            : (localRecord?.record ?? null);
+        const choice = chooseRestoration(memory, legacyLocal, cloud);
         if (choice.meetings && choice.source !== "memory") {
           latestMeetings.current = choice.meetings;
           setMeetings(choice.meetings);
         }
+        if (choice.source === "cloud" && cloud?.privateData) {
+          applyPrivateData(cloud.privateData);
+        }
         restoredSource.current = choice.source;
         setRestoration(choice.state);
-        if (choice.state === "cloud-version-available")
+        if (choice.state === "cloud-version-available") {
           setRestorationMessage("A cloud version is available; your local timetable was kept.");
+        } else if (choice.source === "cloud" && cloud?.persistentKeys === false) {
+          setRestorationMessage(
+            "Encrypted data restored. This browser cannot persist non-extractable keys, so another broker check will be needed after reload.",
+          );
+        }
       })
       .catch((restoreError: unknown) => {
         if (isRestorationAbort(restoreError)) return;
@@ -282,7 +327,7 @@ function Index() {
           "We couldn't restore your cloud timetable. Your local timetable is unchanged.",
         );
       });
-  }, [authLoading, authError, authenticatedUserId, localRecord]);
+  }, [applyPrivateData, authLoading, authError, authenticatedUserId, localRecord]);
 
   const terms = useMemo(() => {
     if (!meetings) return [] as Term[];
@@ -296,6 +341,34 @@ function Index() {
   useEffect(() => {
     if (meetings?.length) setTerm(chooseDefaultTerm(meetings, new Date()));
   }, [meetings]);
+
+  useEffect(() => {
+    if (
+      !isEncryptedPrivateCloudAuthoritative ||
+      !authenticatedUserId ||
+      !meetings?.length ||
+      isDemo ||
+      !isOnline ||
+      !isEncryptedSyncOptedIn(authenticatedUserId)
+    ) {
+      return;
+    }
+    const input = { schedule: meetings, personalItems, preferences, gapPreferences };
+    const fingerprint = JSON.stringify({ schemaVersion: 1, ...input });
+    if (fingerprint === lastEncryptedFingerprint.current) return;
+    const timeout = window.setTimeout(() => {
+      lastEncryptedFingerprint.current = fingerprint;
+      void saveEncryptedPrivateState(authenticatedUserId, input).catch(() => {
+        if (lastEncryptedFingerprint.current === fingerprint) {
+          lastEncryptedFingerprint.current = null;
+        }
+        setRestorationMessage(
+          "Encrypted local data was kept, but cloud sync could not finish. Try again when connected.",
+        );
+      });
+    }, 750);
+    return () => window.clearTimeout(timeout);
+  }, [authenticatedUserId, gapPreferences, isDemo, isOnline, meetings, personalItems, preferences]);
 
   // Combine academic meetings with personal items for planning/visualization
   const termMeetings = useMemo(() => {
@@ -471,6 +544,13 @@ function Index() {
     setRestoration("restored-cloud");
   }
 
+  function loadPrivateData(payload: PrivateDataPayloadV1) {
+    applyPrivateData(payload);
+    restoredSource.current = "cloud";
+    setRestoration("restored-cloud");
+    setRestorationMessage(null);
+  }
+
   function handleRemember(value: boolean) {
     setRemember(value);
     saveRemembered(value, value && !isDemo ? meetings : null);
@@ -536,6 +616,12 @@ function Index() {
                 restoredSource.current = retainedLocal?.length ? "local" : "none";
                 setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
                 setRestorationMessage(null);
+                if (isEncryptedPrivateCloudAuthoritative) {
+                  setPersonalItems([]);
+                  setPreferences(DEFAULT_USER_PREFERENCES);
+                  setGapPreferences(DEFAULT_GAP_PREFERENCES);
+                  lastEncryptedFingerprint.current = null;
+                }
               }}
             />
           </div>
@@ -667,7 +753,11 @@ function Index() {
               <CloudSyncControls
                 user={user}
                 meetings={meetings}
+                personalItems={personalItems}
+                preferences={preferences}
+                gapPreferences={gapPreferences}
                 onLoad={loadCloudTimetable}
+                onLoadPrivate={loadPrivateData}
                 restorationState={restoration}
               />
             </div>
@@ -944,7 +1034,11 @@ function Index() {
               <CloudSyncControls
                 user={user}
                 meetings={meetings}
+                personalItems={personalItems}
+                preferences={preferences}
+                gapPreferences={gapPreferences}
                 onLoad={loadCloudTimetable}
+                onLoadPrivate={loadPrivateData}
                 restorationState={restoration}
               />
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 const THEME_KEY = "gapwise:theme";
 
@@ -88,6 +89,7 @@ export function loadRememberedRecord<T>(): {
 
 export function saveRemembered(remember: boolean, data: unknown) {
   try {
+    if (isEncryptedPrivateCloudAuthoritative) return;
     window.localStorage.setItem(REMEMBER_KEY, remember ? "1" : "0");
     if (remember && data) {
       window.localStorage.setItem(

@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, requireSupabaseClient } from "@/lib/supabase";
 import { authStore } from "./auth-store";
+import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 
 export async function signInWithGitHub(): Promise<void> {
   const supabase = requireSupabaseClient();
@@ -60,8 +61,11 @@ export function consumeOAuthError(
 
 export async function signOut(): Promise<void> {
   const supabase = requireSupabaseClient();
+  const { data: sessionData } = await supabase.auth.getSession().catch(() => ({ data: null }));
+  const userId = sessionData?.session?.user.id ?? authStore.getSnapshot().user?.id ?? null;
   authStore.forceSignedOut();
   try {
+    if (userId) await clearPrivateCloudLocalUser(userId);
     const { error } = await supabase.auth.signOut({ scope: "local" });
     if (error) throw error;
   } catch (error) {

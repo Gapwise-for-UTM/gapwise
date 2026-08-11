@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { chooseRestoration } from "@/features/sync/restoration";
+import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
+import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
 import { meeting } from "./fixtures";
 
 const localMeeting = meeting({ id: "local" });
@@ -30,5 +32,20 @@ describe("cloud restoration precedence", () => {
   });
   test("reports no cloud data for empty sources", () => {
     expect(chooseRestoration(null, null, null).state).toBe("no-cloud-data");
+  });
+  test("restores an encrypted private payload even when its timetable is empty", () => {
+    const choice = chooseRestoration(null, null, {
+      meetings: [],
+      updatedAt: "2026-08-11T00:00:00.000Z",
+      privateData: {
+        schemaVersion: 1,
+        schedule: [],
+        personalItems: [],
+        preferences: DEFAULT_USER_PREFERENCES,
+        gapPreferences: DEFAULT_GAP_PREFERENCES,
+      },
+    });
+    expect(choice.source).toBe("cloud");
+    expect(choice.meetings).toEqual([]);
   });
 });

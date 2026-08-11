@@ -2,6 +2,8 @@ import type { Meeting } from "@/lib/timetable-types";
 import { requireSupabaseClient, type Json } from "@/lib/supabase";
 import { deserializeSchedule, serializeSchedule } from "./schedule-serialization";
 import { sanitizeUserPreferences, type UserPreferences } from "./preferences";
+import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 async function currentUserId(): Promise<string> {
   const supabase = requireSupabaseClient();
@@ -12,6 +14,9 @@ async function currentUserId(): Promise<string> {
 }
 
 export async function saveSchedule(meetings: Meeting[]): Promise<void> {
+  if (isEncryptedPrivateCloudAuthoritative) {
+    throw new Error("Use encrypted private-data sync on this deployment.");
+  }
   const supabase = requireSupabaseClient();
   const userId = await currentUserId();
   const { error } = await supabase.from("user_schedules").upsert({
@@ -23,12 +28,21 @@ export async function saveSchedule(meetings: Meeting[]): Promise<void> {
   if (error) throw error;
 }
 
-export type CloudScheduleRecord = { meetings: Meeting[]; updatedAt: string | null };
+export type CloudScheduleRecord = {
+  meetings: Meeting[];
+  updatedAt: string | null;
+  privateData?: PrivateDataPayloadV1;
+  storageSource?: "legacy-cloud" | "secure-local" | "encrypted-cloud";
+  persistentKeys?: boolean;
+};
 
 export async function loadScheduleRecord(
   authenticatedUserId?: string,
   signal?: AbortSignal,
 ): Promise<CloudScheduleRecord | null> {
+  if (isEncryptedPrivateCloudAuthoritative) {
+    throw new Error("Legacy plaintext restore is disabled on this deployment.");
+  }
   const supabase = requireSupabaseClient();
   const userId = authenticatedUserId ?? (await currentUserId());
   let query = supabase.from("user_schedules").select("meetings, updated_at").eq("user_id", userId);
@@ -51,7 +65,17 @@ export async function deleteSchedule(): Promise<void> {
   if (error) throw error;
 }
 
+export async function deletePreferences(): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const userId = await currentUserId();
+  const { error } = await supabase.from("user_preferences").delete().eq("user_id", userId);
+  if (error) throw error;
+}
+
 export async function savePreferences(preferences: UserPreferences): Promise<void> {
+  if (isEncryptedPrivateCloudAuthoritative) {
+    throw new Error("Private settings are included in encrypted private-data sync.");
+  }
   const supabase = requireSupabaseClient();
   const userId = await currentUserId();
   const value = sanitizeUserPreferences(preferences);
@@ -70,6 +94,9 @@ export async function savePreferences(preferences: UserPreferences): Promise<voi
 }
 
 export async function loadPreferences(): Promise<UserPreferences | null> {
+  if (isEncryptedPrivateCloudAuthoritative) {
+    throw new Error("Legacy plaintext settings are disabled on this deployment.");
+  }
   const supabase = requireSupabaseClient();
   const userId = await currentUserId();
   const { data, error } = await supabase

@@ -28,6 +28,7 @@ export async function sealPrivateData(input: {
   keys: StoredDataKeys;
   payload: PrivateDataPayloadV1;
   revision: number;
+  cloudRevision?: number | null;
   recordId?: string;
   updatedAt?: string;
 }): Promise<StoredPrivateRecord> {
@@ -52,6 +53,7 @@ export async function sealPrivateData(input: {
     recordId,
     keyId: input.keys.privateData.keyId,
     revision: input.revision,
+    cloudRevision: input.cloudRevision ?? null,
     encrypted,
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };
@@ -90,6 +92,7 @@ export async function sealAvailabilityCapsule(input: {
   keys: StoredDataKeys;
   capsule: AvailabilityCapsuleV1;
   revision: number;
+  cloudRevision?: number | null;
   recordId?: string;
   updatedAt?: string;
 }): Promise<StoredCapsuleRecord> {
@@ -114,6 +117,7 @@ export async function sealAvailabilityCapsule(input: {
     recordId,
     keyId: input.keys.friendAvailability.keyId,
     revision: input.revision,
+    cloudRevision: input.cloudRevision ?? null,
     encrypted,
     updatedAt: input.updatedAt ?? new Date().toISOString(),
   };

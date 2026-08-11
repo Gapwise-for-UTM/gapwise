@@ -21,6 +21,8 @@ export type StoredDataKeys = {
   userId: string;
   cryptoVersion: number;
   subjectId: string;
+  /** True only after a verified cloud save/load; false after explicit cloud deletion. */
+  cloudSyncEnabled?: boolean;
   privateData: { keyId: string; keyVersion: number; key: CryptoKey };
   friendAvailability: { keyId: string; keyVersion: number; key: CryptoKey };
   createdAt: string;
@@ -35,6 +37,8 @@ export type StoredEncryptedRecord<TPurpose extends "private-data" | "friend-avai
   recordId: string;
   keyId: string;
   revision: number;
+  /** Last cloud revision this device observed; null means never verified. */
+  cloudRevision: number | null;
   encrypted: EncryptedBytes;
   updatedAt: string;
 };
@@ -56,6 +60,10 @@ export interface SecurityStore {
   putPrivateRecord(value: StoredPrivateRecord): Promise<void>;
   getCapsuleRecord(userId: string): Promise<StoredCapsuleRecord | null>;
   putCapsuleRecord(value: StoredCapsuleRecord): Promise<void>;
+  putEncryptedRecords(
+    privateRecord: StoredPrivateRecord,
+    capsuleRecord: StoredCapsuleRecord,
+  ): Promise<void>;
   clearUser(userId: string): Promise<void>;
   verifyCryptoKeyPersistence(): Promise<boolean>;
   close(): void;
@@ -163,6 +171,22 @@ export async function createIndexedDbSecurityStore(
     await transactionDone(transaction);
   }
 
+  async function putEncryptedRecords(
+    privateRecord: StoredPrivateRecord,
+    capsuleRecord: StoredCapsuleRecord,
+  ): Promise<void> {
+    if (privateRecord.userId !== capsuleRecord.userId) {
+      throw new Error("Encrypted local record owner mismatch.");
+    }
+    const transaction = database.transaction(
+      [PRIVATE_RECORDS_STORE, CAPSULE_RECORDS_STORE],
+      "readwrite",
+    );
+    transaction.objectStore(PRIVATE_RECORDS_STORE).put(privateRecord);
+    transaction.objectStore(CAPSULE_RECORDS_STORE).put(capsuleRecord);
+    await transactionDone(transaction);
+  }
+
   async function verifyCryptoKeyPersistence(): Promise<boolean> {
     const probeId = crypto.randomUUID();
     try {
@@ -202,6 +226,7 @@ export async function createIndexedDbSecurityStore(
     putPrivateRecord: (value) => put(PRIVATE_RECORDS_STORE, value),
     getCapsuleRecord: (userId) => get(CAPSULE_RECORDS_STORE, userId),
     putCapsuleRecord: (value) => put(CAPSULE_RECORDS_STORE, value),
+    putEncryptedRecords,
     clearUser,
     verifyCryptoKeyPersistence,
     close: () => database.close(),
@@ -222,6 +247,13 @@ export function createMemorySecurityStore(): SecurityStore {
     putPrivateRecord: async (value) => void privateRecords.set(value.userId, value),
     getCapsuleRecord: async (userId) => capsuleRecords.get(userId) ?? null,
     putCapsuleRecord: async (value) => void capsuleRecords.set(value.userId, value),
+    putEncryptedRecords: async (privateRecord, capsuleRecord) => {
+      if (privateRecord.userId !== capsuleRecord.userId) {
+        throw new Error("Encrypted local record owner mismatch.");
+      }
+      privateRecords.set(privateRecord.userId, privateRecord);
+      capsuleRecords.set(capsuleRecord.userId, capsuleRecord);
+    },
     clearUser: async (userId) => {
       deviceKeys.delete(userId);
       dataKeys.delete(userId);

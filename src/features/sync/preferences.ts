@@ -1,6 +1,7 @@
 import { DEFAULT_ROUTE_PREFERENCES, sanitizeRoutePreferences } from "@/config/routing";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 import type { RoutePreferences } from "@/features/routing/types";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 export type DayOrigin = "commute" | "residence";
 
@@ -70,10 +71,22 @@ export function saveLocalUserPreferences(
 ): UserPreferences {
   const preferences = sanitizeUserPreferences(value);
   if (!storage) return preferences;
+  if (isEncryptedPrivateCloudAuthoritative) return preferences;
   try {
     storage.setItem(LOCAL_PREFERENCES_KEY, JSON.stringify(preferences));
   } catch {
     /* Private browsing or storage policy can make localStorage unavailable. */
   }
   return preferences;
+}
+
+export function clearStoredUserPreferences(storage?: Pick<Storage, "removeItem"> | null) {
+  let selected = storage;
+  try {
+    if (selected === undefined)
+      selected = typeof window === "undefined" ? null : window.localStorage;
+    selected?.removeItem(LOCAL_PREFERENCES_KEY);
+  } catch {
+    // A verified encrypted copy still exists; blocked storage needs no cleanup.
+  }
 }

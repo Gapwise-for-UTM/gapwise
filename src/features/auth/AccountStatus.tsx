@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import {
   consumeOAuthError,
   deleteAccount,
@@ -137,10 +138,9 @@ export function AccountStatus({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete account and cloud data?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes your Supabase account, normalized cloud timetable, saved
-                  preferences, private invite codes, and every friend/request entry involving you.
-                  Former friends immediately lose access and see no relationship history. Your
-                  original .ics file was never uploaded.
+                  {shouldWritePrivateCloud
+                    ? "This permanently removes your Supabase account, encrypted cloud private data and availability, private invite codes, and every friend/request entry involving you. Former friends immediately lose access and see no relationship history. Your original .ics file was never uploaded."
+                    : "This permanently removes your Supabase account, normalized cloud timetable, saved preferences, private invite codes, and every friend/request entry involving you. Former friends immediately lose access and see no relationship history. Your original .ics file was never uploaded."}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <label className="flex min-h-11 items-center gap-3 rounded-lg border border-border p-3 text-sm">
@@ -151,10 +151,12 @@ export function AccountStatus({
                   disabled={busy}
                   className="h-4 w-4"
                 />
-                Also clear the remembered timetable from this browser
+                Also clear any legacy remembered timetable from this browser
               </label>
               <p className="text-xs text-muted-foreground">
-                If unchecked, local browser data stays available in guest mode.
+                {shouldWritePrivateCloud
+                  ? "Secure device keys and encrypted local records are always cleared on account deletion. If unchecked, legacy guest data stays available."
+                  : "If unchecked, local browser data stays available in guest mode."}
               </p>
               <AlertDialogFooter>
                 <AlertDialogCancel disabled={busy}>Keep account</AlertDialogCancel>

@@ -2,6 +2,8 @@ import type { User } from "@supabase/supabase-js";
 import { requireSupabaseClient } from "@/lib/supabase";
 import { TERMS, WEEKDAYS, type Term, type Weekday } from "@/lib/timetable-types";
 import type { FriendConnection, FriendGapOverlap, FriendInvite } from "./types";
+import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
+import { AVAILABILITY_RESPONSE_CAP } from "@/features/security/availability-capsule";
 
 const DISPLAY_NAME_LIMIT = 80;
 const UNSAFE_DISPLAY_CHARACTER = /[\p{Cc}\p{Cf}]/u;
@@ -20,6 +22,88 @@ export class FriendOverlapRateLimitError extends Error {
   constructor() {
     super("Friend overlap refresh limit reached.");
   }
+}
+
+export function parseCommonGapResponse(
+  value: unknown,
+): Array<{ weekday: Weekday; startMinute: number; endMinute: number }> {
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    Array.isArray(value) ||
+    Object.keys(value).length !== 1 ||
+    !("windows" in value) ||
+    !Array.isArray(value.windows) ||
+    value.windows.length > AVAILABILITY_RESPONSE_CAP
+  ) {
+    throw new Error("Common-gap response is malformed.");
+  }
+  return value.windows.map((window: unknown) => {
+    if (
+      typeof window !== "object" ||
+      window === null ||
+      Array.isArray(window) ||
+      Object.keys(window).some((key) => !["weekday", "startMinute", "endMinute"].includes(key))
+    ) {
+      throw new Error("Common-gap response is malformed.");
+    }
+    const candidate = window as Record<string, unknown>;
+    const weekday = candidate["weekday"];
+    const startMinute = candidate["startMinute"];
+    const endMinute = candidate["endMinute"];
+    if (
+      !WEEKDAYS.includes(weekday as Weekday) ||
+      !Number.isInteger(startMinute) ||
+      !Number.isInteger(endMinute) ||
+      (startMinute as number) < 9 * 60 ||
+      (endMinute as number) > 18 * 60 ||
+      (startMinute as number) % 30 !== 0 ||
+      (endMinute as number) % 30 !== 0 ||
+      (endMinute as number) - (startMinute as number) < 60
+    ) {
+      throw new Error("Common-gap response is malformed.");
+    }
+    return {
+      weekday: weekday as Weekday,
+      startMinute: startMinute as number,
+      endMinute: endMinute as number,
+    };
+  });
+}
+
+async function loadEncryptedFriendGaps(
+  connection: FriendConnection,
+  term: Term,
+  accessToken: string,
+): Promise<FriendGapOverlap[]> {
+  const response = await fetch("/api/common-gap", {
+    method: "POST",
+    credentials: "same-origin",
+    referrerPolicy: "no-referrer",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ friendshipId: connection.id, term }),
+  });
+  if (response.status === 429) throw new FriendOverlapRateLimitError();
+  if (!response.ok) throw new Error("Common-gap lookup failed.");
+  const text = await response.text();
+  if (new TextEncoder().encode(text).byteLength > 8 * 1024) {
+    throw new Error("Common-gap response is too large.");
+  }
+  let body: unknown;
+  try {
+    body = JSON.parse(text) as unknown;
+  } catch {
+    throw new Error("Common-gap response is malformed.");
+  }
+  return parseCommonGapResponse(body).map((window) => ({
+    friendshipId: connection.id,
+    friendDisplayName: connection.displayName,
+    term,
+    ...window,
+  }));
 }
 
 /** Never uses the Auth email address as a social identifier. */
@@ -124,6 +208,26 @@ export async function revokeFriendship(friendshipId: string): Promise<void> {
 }
 
 export async function loadFriendGapOverlaps(term: Term): Promise<FriendGapOverlap[]> {
+  if (isEncryptedPrivateCloudAuthoritative) {
+    const supabase = requireSupabaseClient();
+    const [{ data, error }, allConnections] = await Promise.all([
+      supabase.auth.getSession(),
+      loadFriendConnections(),
+    ]);
+    if (error || !data.session) throw new Error("Sign in before checking common gaps.");
+    const connections = allConnections.filter(
+      (connection) => connection.status === "accepted" && connection.direction === "mutual",
+    );
+    return (
+      await Promise.all(
+        connections
+          .slice(0, 10)
+          .map((connection) =>
+            loadEncryptedFriendGaps(connection, term, data.session.access_token),
+          ),
+      )
+    ).flat();
+  }
   const supabase = requireSupabaseClient();
   const { data, error } = await supabase.rpc("get_friend_gap_overlaps", { p_term: term });
   if (error?.code === "P0001") throw new FriendOverlapRateLimitError();
