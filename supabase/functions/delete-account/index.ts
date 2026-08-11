@@ -13,10 +13,16 @@ const configuredOrigins = new Set([
     .map((origin) => origin.trim())
     .filter(Boolean),
 ]);
+const gapwisePreviewOrigin =
+  /^https:\/\/gapwise-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?-andrew-muratov-s-projects\.vercel\.app$/i;
+
+function isAllowedOrigin(origin: string | null): boolean {
+  return !origin || configuredOrigins.has(origin) || gapwisePreviewOrigin.test(origin);
+}
 
 function cors(origin: string | null): HeadersInit {
   return {
-    ...(origin && configuredOrigins.has(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
+    ...(origin && isAllowedOrigin(origin) ? { "Access-Control-Allow-Origin": origin } : {}),
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     Vary: "Origin",
@@ -25,7 +31,7 @@ function cors(origin: string | null): HeadersInit {
 
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
-  const originAllowed = !origin || configuredOrigins.has(origin);
+  const originAllowed = isAllowedOrigin(origin);
   const headers = { ...cors(origin), "Content-Type": "application/json" };
 
   if (request.method === "OPTIONS") {
