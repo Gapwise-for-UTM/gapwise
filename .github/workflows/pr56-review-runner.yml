@@ -32,6 +32,32 @@ jobs:
           python3 scripts/pr56_review_fix.py
           python3 <<'PY'
           from pathlib import Path
+
+          store = Path("src/features/security/security-store.ts")
+          source = store.read_text()
+          old = '''        if (!probeId) return;
+        transaction.objectStore(CRYPTO_PROBE_STORE).delete(probeId);
+        await transactionDone(transaction);'''
+          new = '''        if (probeId) {
+          transaction.objectStore(CRYPTO_PROBE_STORE).delete(probeId);
+          await transactionDone(transaction);
+        }'''
+          if source.count(old) != 1:
+              raise SystemExit("security-store cleanup shape changed unexpectedly")
+          store.write_text(source.replace(old, new, 1))
+
+          broker = Path("src/server/private-cloud/key-broker.ts")
+          source = broker.read_text()
+          old = '''  cryptoVersion = CRYPTO_VERSION,
+  keyVersion = KEY_VERSION,'''
+          new = '''  cryptoVersion: number = CRYPTO_VERSION,
+  keyVersion: number = KEY_VERSION,'''
+          if source.count(old) != 1:
+              raise SystemExit("key-broker version parameter shape changed unexpectedly")
+          broker.write_text(source.replace(old, new, 1))
+          PY
+          python3 <<'PY'
+          from pathlib import Path
           path = Path("tests/security.test.ts")
           source = path.read_text()
           start = source.index('  test("allows production and narrowly scoped Gapwise previews without reflecting rejected origins"')
