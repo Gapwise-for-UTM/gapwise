@@ -145,7 +145,7 @@ export function CloudSyncControls({
               if (!window.confirm(`Delete your ${label} from your account?`)) return;
               void run(async () => {
                 const results = await Promise.allSettled([
-                  ...(shouldWritePrivateCloud ? [deleteEncryptedPrivateCloud(user!.id)] : []),
+                  deleteEncryptedPrivateCloud(user!.id),
                   deleteSchedule(),
                   deletePreferences(),
                 ]);

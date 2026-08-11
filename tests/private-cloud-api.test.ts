@@ -32,7 +32,11 @@ import {
   MAX_API_RESPONSE_BYTES,
 } from "@/server/private-cloud/http";
 import { loadKek, readActiveKekVersion, type KeyEnvelopeRow } from "@/server/private-cloud/kek";
-import { rewrapEnvelopeToKek, wrapEnvelopeKeysForDevice } from "@/server/private-cloud/key-broker";
+import {
+  confirmRotatedEnvelope,
+  rewrapEnvelopeToKek,
+  wrapEnvelopeKeysForDevice,
+} from "@/server/private-cloud/key-broker";
 
 const SUBJECT_A = "10000000-0000-4000-8000-000000000101";
 const SUBJECT_B = "10000000-0000-4000-8000-000000000102";
@@ -383,6 +387,23 @@ describe("key broker cryptographic boundary", () => {
     );
     await expect(rewrapEnvelopeToKek(envelope, KEK_VERSION - 1, rotationKekLoader)).rejects.toThrow(
       "higher version",
+    );
+  });
+
+  test("accepts a concurrent rotation only after the active envelope is confirmed", async () => {
+    const envelope = await storedEnvelope(
+      SUBJECT_A,
+      PRIVATE_KEY_A,
+      AVAILABILITY_KEY_A,
+      privateDekA,
+      availabilityDekA,
+    );
+    const concurrent = { ...envelope, kek_version: KEK_VERSION + 1 };
+    expect(confirmRotatedEnvelope(concurrent, KEK_VERSION + 1, new Error("CAS lost"))).toBe(
+      concurrent,
+    );
+    expect(() => confirmRotatedEnvelope(envelope, KEK_VERSION + 1, new Error("CAS lost"))).toThrow(
+      "rotation failed",
     );
   });
 });

@@ -186,6 +186,9 @@ export function createPrivateDataPayload(input: {
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
 }): PrivateDataPayloadV1 {
+  if (input.personalItems.length > MAX_PERSONAL_ITEMS) {
+    throw new Error("Private data payload exceeds the personal item cap.");
+  }
   return {
     schemaVersion: PRIVATE_DATA_SCHEMA_VERSION,
     schedule: serializeSchedule(input.schedule),

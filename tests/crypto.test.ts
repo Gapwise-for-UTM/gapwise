@@ -63,6 +63,32 @@ function tamper(value: Uint8Array, index: number): Uint8Array {
 }
 
 describe("versioned private-data encryption", () => {
+  test("rejects private payload creation above the personal-item cap", () => {
+    const personalItem = {
+      id: "private-item",
+      title: "Private item",
+      category: "Personal" as const,
+      term: "Fall" as const,
+      weekday: "Monday" as const,
+      startTime: 780,
+      endTime: 840,
+      flexibility: { kind: "fixed" as const },
+      createdAt: "2026-08-11T00:00:00.000Z",
+      updatedAt: "2026-08-11T00:00:00.000Z",
+    };
+    expect(() =>
+      createPrivateDataPayload({
+        schedule: [meeting()],
+        personalItems: Array.from({ length: 201 }, (_, index) => ({
+          ...personalItem,
+          id: `private-item-${index}`,
+        })),
+        preferences: DEFAULT_USER_PREFERENCES,
+        gapPreferences: DEFAULT_GAP_PREFERENCES,
+      }),
+    ).toThrow("personal item cap");
+  });
+
   test("roundtrips schedule, private settings, and custom events", async () => {
     const key = await generateDataEncryptionKey();
     const payload = createPrivateDataPayload({

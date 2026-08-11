@@ -214,6 +214,17 @@ export async function rewrapEnvelopeToKek(
   }
 }
 
+export function confirmRotatedEnvelope(
+  current: KeyEnvelopeRow | null,
+  activeKekVersion: number,
+  rpcError: unknown,
+): KeyEnvelopeRow {
+  if (current?.kek_version === activeKekVersion) return current;
+  throw new Error(
+    rpcError ? "Key envelope rotation failed." : "Key envelope rotation was not confirmed.",
+  );
+}
+
 async function rotateEnvelopeIfNeeded(
   authenticated: AuthenticatedRequest,
   envelope: KeyEnvelopeRow,
@@ -233,13 +244,9 @@ async function rotateEnvelopeIfNeeded(
     p_friend_availability_wrapped_dek: rotated.friendAvailabilityWrappedDek,
     p_friend_availability_wrap_nonce: rotated.friendAvailabilityWrapNonce,
   });
-  if (error) throw new Error("Key envelope rotation failed.");
 
   const current = await readOwnEnvelope(authenticated.client, authenticated.userId);
-  if (!current || current.kek_version !== activeKekVersion) {
-    throw new Error("Key envelope rotation was not confirmed.");
-  }
-  return current;
+  return confirmRotatedEnvelope(current, activeKekVersion, error);
 }
 
 export async function wrapEnvelopeKeysForDevice(
