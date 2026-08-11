@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(43);
+select plan(53);
 
 select has_table('public', 'friend_profiles', 'friend profiles table exists');
 select has_table('public', 'friend_invites', 'private-code hash table exists');
@@ -48,7 +48,8 @@ values
   ('00000000-0000-0000-0000-000000000001', 'a@example.test'),
   ('00000000-0000-0000-0000-000000000002', 'b@example.test'),
   ('00000000-0000-0000-0000-000000000003', 'c@example.test'),
-  ('00000000-0000-0000-0000-000000000004', 'd@example.test');
+  ('00000000-0000-0000-0000-000000000004', 'd@example.test'),
+  ('00000000-0000-0000-0000-000000000005', 'e@example.test');
 
 insert into public.friend_profiles (user_id, display_name)
 values
@@ -334,6 +335,31 @@ select is(
   'one-sided invite consent never enables overlap'
 );
 
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000005';
+select is(
+  public.claim_friend_invite((select invite_code from captured_invite)),
+  true,
+  'reusing a consumed invite returns the same generic result'
+);
+
+reset role;
+select is(
+  (
+    select count(*)
+    from public.friendships
+    where (
+      user_a_id = '00000000-0000-0000-0000-000000000004'
+      and user_b_id = '00000000-0000-0000-0000-000000000005'
+    ) or (
+      user_a_id = '00000000-0000-0000-0000-000000000005'
+      and user_b_id = '00000000-0000-0000-0000-000000000004'
+    )
+  ),
+  0::bigint,
+  'a consumed invite cannot create a second relationship'
+);
+
+set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000004';
 select is(
   public.respond_to_friend_request(
@@ -372,6 +398,100 @@ select is(
 
 reset role;
 
+insert into public.friend_invites (owner_id, token_hash, expires_at, created_at)
+values (
+  '00000000-0000-0000-0000-000000000003',
+  extensions.digest(repeat('1', 48), 'sha256'),
+  now() - interval '1 minute',
+  now() - interval '2 minutes'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000005';
+select is(
+  public.claim_friend_invite(repeat('1', 48)),
+  true,
+  'an expired invite returns the same generic result'
+);
+
+reset role;
+select is(
+  (
+    select count(*)
+    from public.friendships
+    where (
+      user_a_id = '00000000-0000-0000-0000-000000000003'
+      and user_b_id = '00000000-0000-0000-0000-000000000005'
+    ) or (
+      user_a_id = '00000000-0000-0000-0000-000000000005'
+      and user_b_id = '00000000-0000-0000-0000-000000000003'
+    )
+  ),
+  0::bigint,
+  'an expired invite cannot create a relationship'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000003';
+create temporary table captured_disabled_invite (invite_code text not null);
+insert into captured_disabled_invite (invite_code)
+select invite.invite_code from public.create_friend_invite() as invite;
+select is(
+  public.disable_friend_invite(),
+  true,
+  'an invite owner can disable an active private code'
+);
+
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000005';
+select is(
+  public.claim_friend_invite((select invite_code from captured_disabled_invite)),
+  true,
+  'a disabled invite returns the same generic result'
+);
+
+reset role;
+select is(
+  (
+    select count(*)
+    from public.friendships
+    where (
+      user_a_id = '00000000-0000-0000-0000-000000000003'
+      and user_b_id = '00000000-0000-0000-0000-000000000005'
+    ) or (
+      user_a_id = '00000000-0000-0000-0000-000000000005'
+      and user_b_id = '00000000-0000-0000-0000-000000000003'
+    )
+  ),
+  0::bigint,
+  'a disabled invite cannot create a relationship'
+);
+
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000005';
+select lives_ok(
+  $rate_limit$
+    do $body$
+    declare
+      attempt integer;
+    begin
+      for attempt in 1..30 loop
+        perform * from public.get_friend_gap_overlaps('Fall');
+      end loop;
+    end;
+    $body$
+  $rate_limit$,
+  'the first thirty overlap lookups in a fresh window remain available'
+);
+select throws_like(
+  $$
+    select * from public.get_friend_gap_overlaps('Fall')
+  $$,
+  '%Overlap lookup temporarily unavailable.%',
+  'the thirty-first overlap lookup is rejected by the database rate limit'
+);
+
+reset role;
+
 update public.user_schedules
 set meetings = '[
   {"term":"Fall","weekday":"Monday","courseCode":"CSC148H5","activityType":"LEC","startTime":"invalid","endTime":660}
@@ -400,15 +520,37 @@ insert into public.friendships (
   recipient_accepted_at,
   accepted_at
 )
-values (
-  '10000000-0000-0000-0000-000000000003',
-  '00000000-0000-0000-0000-000000000002',
-  '00000000-0000-0000-0000-000000000003',
-  '00000000-0000-0000-0000-000000000002',
-  'accepted',
-  now(),
-  now(),
-  now()
+values
+  (
+    '10000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000003',
+    '00000000-0000-0000-0000-000000000002',
+    'accepted',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '10000000-0000-0000-0000-000000000004',
+    '00000000-0000-0000-0000-000000000002',
+    '00000000-0000-0000-0000-000000000005',
+    '00000000-0000-0000-0000-000000000002',
+    'pending',
+    now(),
+    null,
+    null
+  );
+
+select is(
+  (
+    select count(*)
+    from public.friendships
+    where '00000000-0000-0000-0000-000000000002' in (user_a_id, user_b_id)
+      and status = 'pending'
+  ),
+  1::bigint,
+  'the deletion fixture includes a genuinely pending relationship'
 );
 
 set local role authenticated;
