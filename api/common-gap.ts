@@ -1,6 +1,6 @@
-import { authenticateSupabaseRequest } from "../src/server/private-cloud/auth";
-import { findCommonGaps, parseCommonGapBody } from "../src/server/private-cloud/common-gap";
-import { handleJsonPost } from "../src/server/private-cloud/http";
+import { authenticateSupabaseRequest } from "../src/server/private-cloud/auth.js";
+import { findCommonGaps, parseCommonGapBody } from "../src/server/private-cloud/common-gap.js";
+import { handleJsonPost } from "../src/server/private-cloud/http.js";
 
 export default {
   fetch(request: Request): Promise<Response> {

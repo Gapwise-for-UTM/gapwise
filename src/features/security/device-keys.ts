@@ -1,5 +1,5 @@
-import { AES_KEY_BYTES } from "./envelope-crypto";
-import { base64UrlToBytes } from "./encoding";
+import { AES_KEY_BYTES } from "./envelope-crypto.js";
+import { base64UrlToBytes } from "./encoding.js";
 
 export const DEVICE_RSA_MODULUS_BITS = 2048;
 export const DEVICE_RSA_CIPHERTEXT_BYTES = DEVICE_RSA_MODULUS_BITS / 8;

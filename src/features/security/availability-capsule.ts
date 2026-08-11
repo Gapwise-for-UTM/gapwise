@@ -1,5 +1,5 @@
-import { TERMS, WEEKDAYS, type Term, type Weekday } from "../../lib/timetable-types";
-import { AVAILABILITY_SCHEMA_VERSION } from "./crypto-context";
+import { TERMS, WEEKDAYS, type Term, type Weekday } from "../../lib/timetable-types.js";
+import { AVAILABILITY_SCHEMA_VERSION } from "./crypto-context.js";
 
 export const AVAILABILITY_DAY_START = 9 * 60;
 export const AVAILABILITY_DAY_END = 18 * 60;

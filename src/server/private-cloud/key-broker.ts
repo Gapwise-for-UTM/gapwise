@@ -1,30 +1,30 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database, TablesInsert } from "../../lib/database.types";
+import type { Database, TablesInsert } from "../../lib/database.types.js";
 import {
   CRYPTO_VERSION,
   KEY_VERSION,
   type CryptoPurpose,
-} from "../../features/security/crypto-context";
+} from "../../features/security/crypto-context.js";
 import {
   AES_KEY_BYTES,
   unwrapDataEncryptionKey,
   wrapDataEncryptionKey,
-} from "../../features/security/envelope-crypto";
+} from "../../features/security/envelope-crypto.js";
 import {
   importDevicePublicKey,
   validateDevicePublicJwk,
   wrapRawDataKeyForDevice,
-} from "../../features/security/device-keys";
-import { bytesToBase64Url, bytesToByteaHex, equalBytes } from "../../features/security/encoding";
-import type { AuthenticatedRequest } from "./auth";
-import { ApiError, requireExactObject } from "./http";
+} from "../../features/security/device-keys.js";
+import { bytesToBase64Url, bytesToByteaHex, equalBytes } from "../../features/security/encoding.js";
+import type { AuthenticatedRequest } from "./auth.js";
+import { ApiError, requireExactObject } from "./http.js";
 import {
   loadKek,
   readActiveKekVersion,
   unwrapStoredDataKey,
   type KekLoader,
   type KeyEnvelopeRow,
-} from "./kek";
+} from "./kek.js";
 
 export type DeviceKeyBundle = {
   cryptoVersion: number;

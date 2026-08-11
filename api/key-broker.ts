@@ -1,6 +1,9 @@
-import { authenticateSupabaseRequest } from "../src/server/private-cloud/auth";
-import { handleJsonPost } from "../src/server/private-cloud/http";
-import { issueDeviceKeyBundle, parseKeyBrokerBody } from "../src/server/private-cloud/key-broker";
+import { authenticateSupabaseRequest } from "../src/server/private-cloud/auth.js";
+import { handleJsonPost } from "../src/server/private-cloud/http.js";
+import {
+  issueDeviceKeyBundle,
+  parseKeyBrokerBody,
+} from "../src/server/private-cloud/key-broker.js";
 
 export default {
   fetch(request: Request): Promise<Response> {

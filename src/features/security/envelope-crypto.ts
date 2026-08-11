@@ -4,8 +4,8 @@ import {
   keyEnvelopeAad,
   type EncryptedRecordContext,
   type KeyEnvelopeContext,
-} from "./crypto-context";
-import { decodeUtf8, utf8 } from "./encoding";
+} from "./crypto-context.js";
+import { decodeUtf8, utf8 } from "./encoding.js";
 
 export const AES_KEY_BYTES = 32;
 export const GCM_NONCE_BYTES = 12;

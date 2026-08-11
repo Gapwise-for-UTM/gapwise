@@ -1,17 +1,17 @@
-import type { Database } from "../../lib/database.types";
-import type { Term } from "../../lib/timetable-types";
-import { TERMS } from "../../lib/timetable-types";
+import type { Database } from "../../lib/database.types.js";
+import type { Term } from "../../lib/timetable-types.js";
+import { TERMS } from "../../lib/timetable-types.js";
 import {
   intersectAvailabilityCapsules,
   MAX_CAPSULE_PLAINTEXT_BYTES,
   validateAvailabilityCapsule,
   type AvailabilityWindow,
-} from "../../features/security/availability-capsule";
-import { decryptJsonRecord, importAes256Key } from "../../features/security/envelope-crypto";
-import { byteaHexToBytes } from "../../features/security/encoding";
-import type { AuthenticatedRequest } from "./auth";
-import { ApiError, requireExactObject } from "./http";
-import { loadKek, unwrapStoredDataKeyMaterial, type KekLoader } from "./kek";
+} from "../../features/security/availability-capsule.js";
+import { decryptJsonRecord, importAes256Key } from "../../features/security/envelope-crypto.js";
+import { byteaHexToBytes } from "../../features/security/encoding.js";
+import type { AuthenticatedRequest } from "./auth.js";
+import { ApiError, requireExactObject } from "./http.js";
+import { loadKek, unwrapStoredDataKeyMaterial, type KekLoader } from "./kek.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 

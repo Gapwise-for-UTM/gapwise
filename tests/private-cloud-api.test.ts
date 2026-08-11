@@ -159,6 +159,39 @@ async function capsuleMaterial(
 }
 
 describe("private-cloud Vercel request boundary", () => {
+  test("uses Node ESM-resolvable relative imports throughout the function graph", async () => {
+    const runtimeFiles = [
+      "api/common-gap.ts",
+      "api/key-broker.ts",
+      "src/server/private-cloud/auth.ts",
+      "src/server/private-cloud/common-gap.ts",
+      "src/server/private-cloud/http.ts",
+      "src/server/private-cloud/kek.ts",
+      "src/server/private-cloud/key-broker.ts",
+      "src/features/security/availability-capsule.ts",
+      "src/features/security/crypto-context.ts",
+      "src/features/security/device-keys.ts",
+      "src/features/security/encoding.ts",
+      "src/features/security/envelope-crypto.ts",
+    ];
+
+    for (const file of runtimeFiles) {
+      const source = await Bun.file(file).text();
+      const relativeSpecifiers = [...source.matchAll(/\bfrom\s+["'](\.{1,2}\/[^"']+)["']/gu)].map(
+        (match) => match[1],
+      );
+      if (!file.endsWith("encoding.ts") && !file.endsWith("http.ts")) {
+        expect(
+          relativeSpecifiers.length,
+          `${file} should remain in the traced function graph`,
+        ).toBeGreaterThan(0);
+      }
+      for (const specifier of relativeSpecifiers) {
+        expect(specifier, `${file} emits directly to Node ESM`).toEndWith(".js");
+      }
+    }
+  });
+
   test("fails closed before emitting an oversized JSON response", async () => {
     const response = jsonResponse({ value: "x".repeat(MAX_API_RESPONSE_BYTES) });
     expect(response.status).toBe(503);

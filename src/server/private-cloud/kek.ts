@@ -1,13 +1,13 @@
 import process from "node:process";
-import type { Tables } from "../../lib/database.types";
+import type { Tables } from "../../lib/database.types.js";
 import {
   assertCurrentCryptoVersion,
   importAes256Key,
   unwrapDataEncryptionKey,
   type EncryptedBytes,
-} from "../../features/security/envelope-crypto";
-import { KEY_VERSION, type CryptoPurpose } from "../../features/security/crypto-context";
-import { base64UrlToBytes, byteaHexToBytes } from "../../features/security/encoding";
+} from "../../features/security/envelope-crypto.js";
+import { KEY_VERSION, type CryptoPurpose } from "../../features/security/crypto-context.js";
+import { base64UrlToBytes, byteaHexToBytes } from "../../features/security/encoding.js";
 
 export type KeyEnvelopeRow = Tables<"crypto_key_envelopes">;
 export type KekLoader = (version: number) => Promise<CryptoKey>;

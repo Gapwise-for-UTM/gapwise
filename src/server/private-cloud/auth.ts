@@ -1,7 +1,7 @@
 import process from "node:process";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "../../lib/database.types";
-import { ApiError } from "./http";
+import type { Database } from "../../lib/database.types.js";
+import { ApiError } from "./http.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 const BEARER_PATTERN = /^Bearer ([A-Za-z0-9._~-]+)$/u;

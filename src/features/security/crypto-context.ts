@@ -1,4 +1,4 @@
-import { utf8 } from "./encoding";
+import { utf8 } from "./encoding.js";
 
 export const CRYPTO_VERSION = 1 as const;
 export const PRIVATE_DATA_SCHEMA_VERSION = 1 as const;
