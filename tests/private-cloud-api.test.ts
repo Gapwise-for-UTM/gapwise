@@ -27,7 +27,7 @@ import {
 import { readBearerToken } from "@/server/private-cloud/auth";
 import { handleJsonPost } from "@/server/private-cloud/http";
 import { loadKek, readActiveKekVersion, type KeyEnvelopeRow } from "@/server/private-cloud/kek";
-import { wrapEnvelopeKeysForDevice } from "@/server/private-cloud/key-broker";
+import { rewrapEnvelopeToKek, wrapEnvelopeKeysForDevice } from "@/server/private-cloud/key-broker";
 
 const SUBJECT_A = "10000000-0000-4000-8000-000000000101";
 const SUBJECT_B = "10000000-0000-4000-8000-000000000102";
@@ -41,6 +41,7 @@ const FRIENDSHIP_ID = "50000000-0000-4000-8000-000000000101";
 const KEK_VERSION = 7;
 
 const rawKek = Uint8Array.from({ length: 32 }, (_, index) => index + 1);
+const nextRawKek = Uint8Array.from({ length: 32 }, (_, index) => 255 - index);
 const privateDekA = Uint8Array.from({ length: 32 }, (_, index) => index + 11);
 const privateDekB = Uint8Array.from({ length: 32 }, (_, index) => index + 21);
 const availabilityDekA = Uint8Array.from({ length: 32 }, (_, index) => index + 31);
@@ -92,6 +93,12 @@ async function storedEnvelope(
 const testKekLoader = async (version: number) => {
   if (version !== KEK_VERSION) throw new Error("Unknown test KEK.");
   return importAes256Key(rawKek, false);
+};
+
+const rotationKekLoader = async (version: number) => {
+  if (version === KEK_VERSION) return importAes256Key(rawKek, false);
+  if (version === KEK_VERSION + 1) return importAes256Key(nextRawKek, false);
+  throw new Error("Unknown test KEK.");
 };
 
 async function capsuleMaterial(
@@ -293,6 +300,59 @@ describe("key broker cryptographic boundary", () => {
         testKekLoader,
       ),
     ).rejects.toThrow("authentication failed");
+  });
+
+  test("verifies higher-version rewraps without changing either DEK", async () => {
+    const envelope = await storedEnvelope(
+      SUBJECT_A,
+      PRIVATE_KEY_A,
+      AVAILABILITY_KEY_A,
+      privateDekA,
+      availabilityDekA,
+    );
+    const rotated = await rewrapEnvelopeToKek(envelope, KEK_VERSION + 1, rotationKekLoader);
+    expect(rotated.newKekVersion).toBe(KEK_VERSION + 1);
+    expect(rotated.privateDataWrappedDek).not.toBe(envelope.private_data_wrapped_dek);
+    expect(rotated.friendAvailabilityWrappedDek).not.toBe(envelope.friend_availability_wrapped_dek);
+
+    const rotatedEnvelope = {
+      ...envelope,
+      private_data_wrapped_dek: rotated.privateDataWrappedDek,
+      private_data_wrap_nonce: rotated.privateDataWrapNonce,
+      friend_availability_wrapped_dek: rotated.friendAvailabilityWrappedDek,
+      friend_availability_wrap_nonce: rotated.friendAvailabilityWrapNonce,
+      kek_version: rotated.newKekVersion,
+    };
+    const device = await generateDeviceKeyMaterial();
+    const bundle = await wrapEnvelopeKeysForDevice(
+      rotatedEnvelope,
+      device.publicJwk,
+      rotationKekLoader,
+    );
+    const devicePrivateKey = await unwrapDeviceDataKey(
+      base64UrlToBytes(bundle.privateData.wrappedDek),
+      device.privateKey,
+    );
+    const aad = utf8("rotated-broker-key-equivalence");
+    const plaintext = utf8("PRIVATE_ROOM_987");
+    const encrypted = await encryptBytes(await importAes256Key(privateDekA), plaintext, aad);
+    expect(equalBytes(await decryptBytes(devicePrivateKey, encrypted, aad), plaintext)).toBe(true);
+  });
+
+  test("never rotates a key envelope backward or in place", async () => {
+    const envelope = await storedEnvelope(
+      SUBJECT_A,
+      PRIVATE_KEY_A,
+      AVAILABILITY_KEY_A,
+      privateDekA,
+      availabilityDekA,
+    );
+    await expect(rewrapEnvelopeToKek(envelope, KEK_VERSION, rotationKekLoader)).rejects.toThrow(
+      "higher version",
+    );
+    await expect(rewrapEnvelopeToKek(envelope, KEK_VERSION - 1, rotationKekLoader)).rejects.toThrow(
+      "higher version",
+    );
   });
 });
 

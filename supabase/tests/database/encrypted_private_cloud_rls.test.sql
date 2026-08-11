@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(44);
+select plan(50);
 
 select has_table('public', 'crypto_key_envelopes', 'key envelope table exists');
 select has_table('public', 'encrypted_private_data', 'encrypted private-data table exists');
@@ -99,6 +99,23 @@ select is(
   ),
   false,
   'browser roles cannot execute trigger helpers directly'
+);
+select ok(
+  has_function_privilege(
+    'authenticated',
+    'public.rotate_own_key_envelope(integer,integer,bytea,bytea,bytea,bytea)',
+    'execute'
+  ),
+  'authenticated users may call the narrow owner rotation RPC'
+);
+select is(
+  has_function_privilege(
+    'anon',
+    'public.rotate_own_key_envelope(integer,integer,bytea,bytea,bytea,bytea)',
+    'execute'
+  ),
+  false,
+  'anonymous users cannot call the key rotation RPC'
 );
 
 insert into auth.users (id, email)
@@ -325,6 +342,41 @@ select is(
   ),
   0::bigint,
   'user A cannot mutate user B encrypted private payload'
+);
+select is(
+  public.rotate_own_key_envelope(
+    1,
+    2,
+    decode(repeat('91', 48), 'hex'),
+    decode(repeat('92', 12), 'hex'),
+    decode(repeat('93', 48), 'hex'),
+    decode(repeat('94', 12), 'hex')
+  ),
+  true,
+  'the owner can compare-and-swap only wrapped keys to a higher KEK version'
+);
+select is(
+  (select kek_version from public.crypto_key_envelopes),
+  2,
+  'successful rotation persists the higher KEK version'
+);
+select is(
+  public.rotate_own_key_envelope(
+    1,
+    3,
+    decode(repeat('a1', 48), 'hex'),
+    decode(repeat('a2', 12), 'hex'),
+    decode(repeat('a3', 48), 'hex'),
+    decode(repeat('a4', 12), 'hex')
+  ),
+  false,
+  'a stale rotation cannot overwrite a newer key envelope'
+);
+select ok(
+  pg_get_function_arguments(
+    'public.rotate_own_key_envelope(integer,integer,bytea,bytea,bytea,bytea)'::regprocedure
+  ) !~* '(user|caller)',
+  'the rotation RPC accepts no browser-supplied identity'
 );
 select is(
   (

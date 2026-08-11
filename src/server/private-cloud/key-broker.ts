@@ -5,13 +5,17 @@ import {
   KEY_VERSION,
   type CryptoPurpose,
 } from "../../features/security/crypto-context";
-import { AES_KEY_BYTES, wrapDataEncryptionKey } from "../../features/security/envelope-crypto";
+import {
+  AES_KEY_BYTES,
+  unwrapDataEncryptionKey,
+  wrapDataEncryptionKey,
+} from "../../features/security/envelope-crypto";
 import {
   importDevicePublicKey,
   validateDevicePublicJwk,
   wrapRawDataKeyForDevice,
 } from "../../features/security/device-keys";
-import { bytesToBase64Url, bytesToByteaHex } from "../../features/security/encoding";
+import { bytesToBase64Url, bytesToByteaHex, equalBytes } from "../../features/security/encoding";
 import type { AuthenticatedRequest } from "./auth";
 import { ApiError, requireExactObject } from "./http";
 import {
@@ -28,6 +32,14 @@ export type DeviceKeyBundle = {
   keyVersion: number;
   privateData: { keyId: string; wrappedDek: string };
   subjectId: string;
+};
+
+export type RotatedKeyWraps = {
+  friendAvailabilityWrapNonce: string;
+  friendAvailabilityWrappedDek: string;
+  newKekVersion: number;
+  privateDataWrapNonce: string;
+  privateDataWrappedDek: string;
 };
 
 async function readOwnEnvelope(
@@ -114,6 +126,122 @@ async function createOwnEnvelope(client: SupabaseClient<Database>, userId: strin
   }
 }
 
+async function verifyRotatedWrap(
+  kek: CryptoKey,
+  rawDek: Uint8Array<ArrayBuffer>,
+  wrapped: Awaited<ReturnType<typeof wrapDataEncryptionKey>>,
+  envelope: KeyEnvelopeRow,
+  purpose: CryptoPurpose,
+  keyId: string,
+  newKekVersion: number,
+): Promise<void> {
+  const verified = await unwrapDataEncryptionKey(kek, wrapped, {
+    cryptoVersion: envelope.crypto_version,
+    purpose,
+    subjectId: envelope.subject_id,
+    keyId,
+    keyVersion: envelope.key_version,
+    kekVersion: newKekVersion,
+  });
+  try {
+    if (!equalBytes(verified, rawDek)) throw new Error("Rotated key verification failed.");
+  } finally {
+    verified.fill(0);
+  }
+}
+
+export async function rewrapEnvelopeToKek(
+  envelope: KeyEnvelopeRow,
+  newKekVersion: number,
+  kekLoader: KekLoader = loadKek,
+): Promise<RotatedKeyWraps> {
+  if (!Number.isSafeInteger(newKekVersion) || newKekVersion <= envelope.kek_version) {
+    throw new Error("KEK rotation must move to a higher version.");
+  }
+
+  let privateDataDek: Uint8Array<ArrayBuffer> | null = null;
+  let friendAvailabilityDek: Uint8Array<ArrayBuffer> | null = null;
+  try {
+    privateDataDek = await unwrapStoredDataKey(envelope, "private-data", kekLoader);
+    friendAvailabilityDek = await unwrapStoredDataKey(envelope, "friend-availability", kekLoader);
+    const newKek = await kekLoader(newKekVersion);
+    const [privateData, friendAvailability] = await Promise.all([
+      wrapNewEnvelopeKey(
+        privateDataDek,
+        newKek,
+        "private-data",
+        envelope.subject_id,
+        envelope.private_data_key_id,
+        newKekVersion,
+      ),
+      wrapNewEnvelopeKey(
+        friendAvailabilityDek,
+        newKek,
+        "friend-availability",
+        envelope.subject_id,
+        envelope.friend_availability_key_id,
+        newKekVersion,
+      ),
+    ]);
+    await verifyRotatedWrap(
+      newKek,
+      privateDataDek,
+      privateData,
+      envelope,
+      "private-data",
+      envelope.private_data_key_id,
+      newKekVersion,
+    );
+    await verifyRotatedWrap(
+      newKek,
+      friendAvailabilityDek,
+      friendAvailability,
+      envelope,
+      "friend-availability",
+      envelope.friend_availability_key_id,
+      newKekVersion,
+    );
+    return {
+      privateDataWrappedDek: bytesToByteaHex(privateData.ciphertext),
+      privateDataWrapNonce: bytesToByteaHex(privateData.nonce),
+      friendAvailabilityWrappedDek: bytesToByteaHex(friendAvailability.ciphertext),
+      friendAvailabilityWrapNonce: bytesToByteaHex(friendAvailability.nonce),
+      newKekVersion,
+    };
+  } finally {
+    privateDataDek?.fill(0);
+    friendAvailabilityDek?.fill(0);
+  }
+}
+
+async function rotateEnvelopeIfNeeded(
+  authenticated: AuthenticatedRequest,
+  envelope: KeyEnvelopeRow,
+): Promise<KeyEnvelopeRow> {
+  const activeKekVersion = readActiveKekVersion();
+  if (envelope.kek_version === activeKekVersion) return envelope;
+  if (envelope.kek_version > activeKekVersion) {
+    throw new Error("Active KEK version is older than the stored envelope.");
+  }
+
+  const rotated = await rewrapEnvelopeToKek(envelope, activeKekVersion);
+  const { error } = await authenticated.client.rpc("rotate_own_key_envelope", {
+    p_expected_kek_version: envelope.kek_version,
+    p_new_kek_version: rotated.newKekVersion,
+    p_private_data_wrapped_dek: rotated.privateDataWrappedDek,
+    p_private_data_wrap_nonce: rotated.privateDataWrapNonce,
+    p_friend_availability_wrapped_dek: rotated.friendAvailabilityWrappedDek,
+    p_friend_availability_wrap_nonce: rotated.friendAvailabilityWrapNonce,
+  });
+  if (error) throw new Error("Key envelope rotation failed.");
+
+  const current = await readOwnEnvelope(authenticated.client, authenticated.userId);
+  if (!current || current.kek_version !== activeKekVersion) {
+    throw new Error("Key envelope rotation was not confirmed.");
+  }
+  return current;
+}
+
 export async function wrapEnvelopeKeysForDevice(
   envelope: KeyEnvelopeRow,
   publicJwk: unknown,
@@ -159,6 +287,7 @@ export async function issueDeviceKeyBundle(
     envelope = await readOwnEnvelope(authenticated.client, authenticated.userId);
   }
   if (!envelope) throw new Error("Key envelope was not persisted.");
+  envelope = await rotateEnvelopeIfNeeded(authenticated, envelope);
   return wrapEnvelopeKeysForDevice(envelope, publicJwk);
 }
 

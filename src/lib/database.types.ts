@@ -337,6 +337,17 @@ export type Database = {
         Args: { p_accept: boolean; p_friendship_id: string };
         Returns: boolean;
       };
+      rotate_own_key_envelope: {
+        Args: {
+          p_expected_kek_version: number;
+          p_friend_availability_wrap_nonce: string;
+          p_friend_availability_wrapped_dek: string;
+          p_new_kek_version: number;
+          p_private_data_wrap_nonce: string;
+          p_private_data_wrapped_dek: string;
+        };
+        Returns: boolean;
+      };
       revoke_friendship: {
         Args: { p_friendship_id: string };
         Returns: boolean;
