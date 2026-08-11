@@ -19,7 +19,7 @@ export function bytesToBase64Url(value: BufferSource): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/u, "");
 }
 
-export function base64UrlToBytes(value: string, maximumBytes = 64 * 1024): Uint8Array {
+export function base64UrlToBytes(value: string, maximumBytes = 64 * 1024): Uint8Array<ArrayBuffer> {
   if (!BASE64URL_PATTERN.test(value)) throw new Error("Invalid base64url value.");
   const padding = (4 - (value.length % 4)) % 4;
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat(padding);
@@ -30,7 +30,11 @@ export function base64UrlToBytes(value: string, maximumBytes = 64 * 1024): Uint8
     throw new Error("Invalid base64url value.");
   }
   if (binary.length > maximumBytes) throw new Error("Decoded value is too large.");
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
 }
 
 export function bytesToByteaHex(value: BufferSource): string {
@@ -41,12 +45,12 @@ export function bytesToByteaHex(value: BufferSource): string {
   return `\\x${[...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
-export function byteaHexToBytes(value: string, maximumBytes = 64 * 1024): Uint8Array {
+export function byteaHexToBytes(value: string, maximumBytes = 64 * 1024): Uint8Array<ArrayBuffer> {
   if (!BYTEA_HEX_PATTERN.test(value)) throw new Error("Invalid bytea value.");
   const hex = value.slice(2);
   const length = hex.length / 2;
   if (length > maximumBytes) throw new Error("Decoded value is too large.");
-  const bytes = new Uint8Array(length);
+  const bytes = new Uint8Array(new ArrayBuffer(length));
   for (let index = 0; index < length; index += 1) {
     bytes[index] = Number.parseInt(hex.slice(index * 2, index * 2 + 2), 16);
   }

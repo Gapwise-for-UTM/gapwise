@@ -1,4 +1,4 @@
-import { TERMS, WEEKDAYS, type Term, type Weekday } from "@/lib/timetable-types";
+import { TERMS, WEEKDAYS, type Term, type Weekday } from "../../lib/timetable-types";
 import { AVAILABILITY_SCHEMA_VERSION } from "./crypto-context";
 
 export const AVAILABILITY_DAY_START = 9 * 60;

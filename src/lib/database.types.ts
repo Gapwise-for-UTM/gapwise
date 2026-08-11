@@ -1,4 +1,5 @@
-// Generated from the connected Supabase project. Regenerate after schema migrations.
+// Generated from the connected Supabase project and the pending additive migrations.
+// Regenerate from the linked schema after those migrations are applied.
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
@@ -7,6 +8,132 @@ export type Database = {
   };
   public: {
     Tables: {
+      crypto_key_envelopes: {
+        Row: {
+          created_at: string;
+          crypto_version: number;
+          friend_availability_key_id: string;
+          friend_availability_wrap_nonce: string;
+          friend_availability_wrapped_dek: string;
+          kek_version: number;
+          key_version: number;
+          private_data_key_id: string;
+          private_data_wrap_nonce: string;
+          private_data_wrapped_dek: string;
+          subject_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          crypto_version?: number;
+          friend_availability_key_id?: string;
+          friend_availability_wrap_nonce: string;
+          friend_availability_wrapped_dek: string;
+          kek_version: number;
+          key_version?: number;
+          private_data_key_id?: string;
+          private_data_wrap_nonce: string;
+          private_data_wrapped_dek: string;
+          subject_id?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          crypto_version?: number;
+          friend_availability_key_id?: string;
+          friend_availability_wrap_nonce?: string;
+          friend_availability_wrapped_dek?: string;
+          kek_version?: number;
+          key_version?: number;
+          private_data_key_id?: string;
+          private_data_wrap_nonce?: string;
+          private_data_wrapped_dek?: string;
+          subject_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      encrypted_friend_availability: {
+        Row: {
+          capsule_id: string;
+          ciphertext: string;
+          crypto_version: number;
+          key_id: string;
+          nonce: string;
+          revision: number;
+          schema_version: number;
+          subject_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          capsule_id?: string;
+          ciphertext: string;
+          crypto_version?: number;
+          key_id: string;
+          nonce: string;
+          revision?: number;
+          schema_version?: number;
+          subject_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          capsule_id?: string;
+          ciphertext?: string;
+          crypto_version?: number;
+          key_id?: string;
+          nonce?: string;
+          revision?: number;
+          schema_version?: number;
+          subject_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      encrypted_private_data: {
+        Row: {
+          ciphertext: string;
+          crypto_version: number;
+          key_id: string;
+          nonce: string;
+          record_id: string;
+          revision: number;
+          schema_version: number;
+          subject_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          ciphertext: string;
+          crypto_version?: number;
+          key_id: string;
+          nonce: string;
+          record_id?: string;
+          revision?: number;
+          schema_version?: number;
+          subject_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          ciphertext?: string;
+          crypto_version?: number;
+          key_id?: string;
+          nonce?: string;
+          record_id?: string;
+          revision?: number;
+          schema_version?: number;
+          subject_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       friend_invites: {
         Row: {
           created_at: string;
@@ -176,6 +303,24 @@ export type Database = {
           friendship_id: string;
           start_minute: number;
           weekday: string;
+        }[];
+      };
+      get_friend_capsule_material: {
+        Args: { p_friendship_id: string; p_term: string };
+        Returns: {
+          capsule_ciphertext: string;
+          capsule_id: string;
+          capsule_nonce: string;
+          capsule_revision: number;
+          capsule_schema_version: number;
+          crypto_version: number;
+          key_id: string;
+          key_version: number;
+          kek_version: number;
+          participant: string;
+          subject_id: string;
+          wrap_nonce: string;
+          wrapped_dek: string;
         }[];
       };
       list_friend_connections: {

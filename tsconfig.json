@@ -1,5 +1,6 @@
 {
   "include": [
+    "api/**/*.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
     "scripts/**/*.ts",
