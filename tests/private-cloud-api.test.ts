@@ -25,7 +25,12 @@ import {
   type FriendCapsuleMaterial,
 } from "@/server/private-cloud/common-gap";
 import { readBearerToken } from "@/server/private-cloud/auth";
-import { errorResponse, handleJsonPost } from "@/server/private-cloud/http";
+import {
+  errorResponse,
+  handleJsonPost,
+  jsonResponse,
+  MAX_API_RESPONSE_BYTES,
+} from "@/server/private-cloud/http";
 import { loadKek, readActiveKekVersion, type KeyEnvelopeRow } from "@/server/private-cloud/kek";
 import { rewrapEnvelopeToKek, wrapEnvelopeKeysForDevice } from "@/server/private-cloud/key-broker";
 
@@ -150,6 +155,14 @@ async function capsuleMaterial(
 }
 
 describe("private-cloud Vercel request boundary", () => {
+  test("fails closed before emitting an oversized JSON response", async () => {
+    const response = jsonResponse({ value: "x".repeat(MAX_API_RESPONSE_BYTES) });
+    expect(response.status).toBe(503);
+    expect(new TextEncoder().encode(await response.text()).byteLength).toBeLessThanOrEqual(
+      MAX_API_RESPONSE_BYTES,
+    );
+  });
+
   test("keeps unexpected server errors out of responses and logs", async () => {
     const distinctiveSecret = "DISTINCTIVE-PRIVATE-ERROR-CONTEXT-918";
     const logs: string[] = [];

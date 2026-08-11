@@ -139,7 +139,10 @@ export function CloudSyncControls({
             type="button"
             disabled={!enabled || busy}
             onClick={() => {
-              if (!window.confirm("Delete your synced private data from your account?")) return;
+              const label = shouldWritePrivateCloud
+                ? "synced private data"
+                : "synced timetable and preferences";
+              if (!window.confirm(`Delete your ${label} from your account?`)) return;
               void run(async () => {
                 const results = await Promise.allSettled([
                   ...(shouldWritePrivateCloud ? [deleteEncryptedPrivateCloud(user!.id)] : []),
@@ -151,7 +154,7 @@ export function CloudSyncControls({
                     "Some cloud data could not be deleted. Try again to remove the rest.",
                   );
                 }
-                return "Cloud private data deleted. Local browser data was not changed.";
+                return `Cloud ${label} deleted. Local browser data was not changed.`;
               });
             }}
             className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 bg-card px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"

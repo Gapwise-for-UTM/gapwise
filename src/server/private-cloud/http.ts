@@ -1,4 +1,5 @@
 export const MAX_API_BODY_BYTES = 8 * 1024;
+export const MAX_API_RESPONSE_BYTES = 8 * 1024;
 
 const JSON_HEADERS = {
   "Cache-Control": "no-store",
@@ -16,7 +17,14 @@ export class ApiError extends Error {
 }
 
 export function jsonResponse(value: unknown, status = 200): Response {
-  return new Response(JSON.stringify(value), { status, headers: JSON_HEADERS });
+  const body = JSON.stringify(value);
+  if (body === undefined || new TextEncoder().encode(body).byteLength > MAX_API_RESPONSE_BYTES) {
+    return new Response(
+      JSON.stringify({ error: "The private cloud service is temporarily unavailable." }),
+      { status: 503, headers: JSON_HEADERS },
+    );
+  }
+  return new Response(body, { status, headers: JSON_HEADERS });
 }
 
 export function errorResponse(error: unknown): Response {
