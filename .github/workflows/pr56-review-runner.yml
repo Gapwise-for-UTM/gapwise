@@ -108,13 +108,13 @@ jobs:
           bun run lint
           bun test
           bun run build
+          rm -f .github/workflows/pr56-review-fixes.yml .github/workflows/pr56-review-runner.yml scripts/pr56_review_fix.py scripts/.pr56-trigger
           bun run format:check
       - name: Commit validated fixes
         shell: bash
         run: |
           git config user.name "OpenAI"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/pr56-review-fixes.yml .github/workflows/pr56-review-runner.yml scripts/pr56_review_fix.py scripts/.pr56-trigger
           git add -A
           git commit -m "fix: address final private-cloud review findings"
           git push origin HEAD:security/private-cloud-architecture
