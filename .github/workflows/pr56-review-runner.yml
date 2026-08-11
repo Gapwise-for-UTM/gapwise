@@ -18,48 +18,8 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: 1.3.14
-      - name: Extract and apply reviewed fixes
-        shell: bash
-        run: |
-          awk '/python3 <<'"'"'PY'"'"'/{capture=1; next} /^          PY$/{capture=0} capture' .github/workflows/pr56-review-fixes.yml \
-            | sed 's/^          //' > /tmp/pr56-fix.py
-          python3 <<'PY'
-          from pathlib import Path
-
-          # The one-shot patch script had one malformed exact-match literal for this function.
-          # Apply that source edit directly, then remove only that block from the extracted script.
-          source_path = Path("src/hooks/use-preferences.ts")
-          source = source_path.read_text()
-          old = '''export function loadRememberedRecord<T>(): {
-            remember: boolean;
-            record: RememberedRecord<T> | null;
-          } {
-            try {
-              const remember = window.localStorage.getItem(REMEMBER_KEY) === "1";'''.replace("          ", "")
-          new = '''export function loadRememberedRecord<T>(): {
-            remember: boolean;
-            record: RememberedRecord<T> | null;
-          } {
-            try {
-              if (isEncryptedPrivateCloudAuthoritative) {
-                window.localStorage.removeItem(TIMETABLE_KEY);
-                window.localStorage.removeItem(REMEMBER_KEY);
-                return { remember: false, record: null };
-              }
-              const remember = window.localStorage.getItem(REMEMBER_KEY) === "1";'''.replace("          ", "")
-          if source.count(old) != 1:
-              raise SystemExit("use-preferences source shape changed unexpectedly")
-          source_path.write_text(source.replace(old, new, 1))
-
-          script_path = Path("/tmp/pr56-fix.py")
-          script = script_path.read_text()
-          start_marker = 'replace_once(\n    "src/hooks/use-preferences.ts",'
-          end_marker = '# Preserve falsy Promise rejection values during sign-out cleanup.'
-          start = script.index(start_marker)
-          end = script.index(end_marker, start)
-          script_path.write_text(script[:start] + script[end:])
-          PY
-          python3 /tmp/pr56-fix.py
+      - name: Apply reviewed fixes
+        run: python3 scripts/pr56_review_fix.py
       - name: Format and validate
         shell: bash
         run: |
@@ -76,15 +36,16 @@ jobs:
             src/features/sync/encrypted-sync-service.ts \
             src/server/private-cloud/auth.ts \
             src/server/private-cloud/common-gap.ts \
-            api/common-gap.ts api/key-broker.ts \
             supabase/functions/delete-account/index.ts \
             src/features/security/device-keys.ts \
             src/features/security/envelope-crypto.ts \
             src/features/security/private-data.ts \
             src/server/private-cloud/key-broker.ts \
+            supabase/rollbacks/20260811063830_encrypted_private_cloud_phase1.sql \
             docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md \
             docs/SUPABASE.md docs/PRIVATE_CLOUD_CAPACITY.md \
-            tests/auth-persistence.test.ts tests/friend-overlap.test.ts tests/crypto.test.ts tests/security.test.ts
+            tests/auth-persistence.test.ts tests/friend-overlap.test.ts \
+            tests/crypto.test.ts tests/security.test.ts
           bun run typecheck
           bun run lint
           bun test
@@ -95,7 +56,7 @@ jobs:
         run: |
           git config user.name "OpenAI"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/workflows/pr56-review-fixes.yml .github/workflows/pr56-review-runner.yml
+          git rm .github/workflows/pr56-review-fixes.yml .github/workflows/pr56-review-runner.yml scripts/pr56_review_fix.py
           git add -A
           git commit -m "fix: address final private-cloud review findings"
           git push origin HEAD:security/private-cloud-architecture
