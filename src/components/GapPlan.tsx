@@ -27,6 +27,8 @@ import { groupGapsByDay } from "@/lib/gaps";
 import type { Gap, Term } from "@/lib/timetable-types";
 import { formatCompactDuration, formatDuration, formatTime } from "@/lib/timetable-types";
 
+const EMPTY_FRIEND_OVERLAPS: FriendGapOverlap[] = [];
+
 const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: string }> = {
   "tight-transition": {
     label: "Tight transition",
@@ -624,11 +626,26 @@ export const GapPlan = memo(function GapPlan({
     overlaps: FriendGapOverlap[];
   }>({ userId: null, overlaps: [] });
   const userId = user?.id ?? null;
-  const friendOverlaps = friendOverlapState.userId === userId ? friendOverlapState.overlaps : [];
   const handleFriendOverlapsChange = useCallback(
     (overlaps: FriendGapOverlap[]) => setFriendOverlapState({ userId, overlaps }),
     [userId],
   );
+  const friendOverlapsByGapId = useMemo(() => {
+    const friendOverlaps =
+      friendOverlapState.userId === userId ? friendOverlapState.overlaps : EMPTY_FRIEND_OVERLAPS;
+    const overlapsByGap = new Map<string, FriendGapOverlap[]>();
+    for (const gap of gaps) {
+      const matches = friendOverlaps.filter(
+        (overlap) =>
+          overlap.term === gap.term &&
+          overlap.weekday === gap.weekday &&
+          overlap.startMinute >= gap.startTime &&
+          overlap.endMinute <= gap.endTime,
+      );
+      overlapsByGap.set(gap.id, matches.length > 0 ? matches : EMPTY_FRIEND_OVERLAPS);
+    }
+    return overlapsByGap;
+  }, [friendOverlapState, gaps, userId]);
 
   return (
     <div className="space-y-6">
@@ -679,13 +696,7 @@ export const GapPlan = memo(function GapPlan({
                 preferences={preferences}
                 gapPreferences={gapPreferences}
                 planTransition={planTransition}
-                friendOverlaps={friendOverlaps.filter(
-                  (overlap) =>
-                    overlap.term === gap.term &&
-                    overlap.weekday === gap.weekday &&
-                    overlap.startMinute >= gap.startTime &&
-                    overlap.endMinute <= gap.endTime,
-                )}
+                friendOverlaps={friendOverlapsByGapId.get(gap.id) ?? EMPTY_FRIEND_OVERLAPS}
               />
             ))}
           </div>

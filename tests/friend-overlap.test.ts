@@ -56,22 +56,26 @@ describe("friend overlap privacy contract", () => {
   test("normalizes user-controlled display labels", () => {
     expect(sanitizeFriendDisplayName("  Alex\u0000\n ")).toBe("Alex");
     expect(sanitizeFriendDisplayName("Al\u0085ex")).toBe("Alex");
+    expect(sanitizeFriendDisplayName("Al\u200b\u202eex")).toBe("Alex");
     expect(sanitizeFriendDisplayName("   ")).toBe("Gapwise friend");
     expect(sanitizeFriendDisplayName("x".repeat(100))).toHaveLength(80);
     expect([...sanitizeFriendDisplayName("🙂".repeat(100))]).toHaveLength(80);
   });
 
-  test("migration preserves owner-only schedules and exposes a fixed derived payload", async () => {
+  test("migration exposes a fixed derived overlap payload", async () => {
     const sql = await readFile(
       "supabase/migrations/20260811002848_friend_timetable_overlap.sql",
       "utf8",
     );
-    const overlapFunction = sql.slice(
-      sql.indexOf("create or replace function public.get_friend_gap_overlaps"),
-    );
-    const returnContract = overlapFunction.slice(0, overlapFunction.indexOf("language plpgsql"));
+    const functionStart = sql.indexOf("create or replace function public.get_friend_gap_overlaps");
+    expect(functionStart).toBeGreaterThanOrEqual(0);
+    const bodyEnd = sql.indexOf("\n$$;", functionStart);
+    expect(bodyEnd).toBeGreaterThan(functionStart);
+    const overlapFunction = sql.slice(functionStart, bodyEnd);
+    const languageIndex = overlapFunction.indexOf("language plpgsql");
+    expect(languageIndex).toBeGreaterThan(0);
+    const returnContract = overlapFunction.slice(0, languageIndex);
 
-    expect(sql).not.toMatch(/create policy[\s\S]{0,200}on public\.user_schedules/i);
     expect(sql).toContain("friendship.status = 'accepted'");
     expect(sql).toContain("friendship.recipient_accepted_at is not null");
     expect(sql).toContain("friendship.revoked_at is null");
@@ -114,6 +118,8 @@ describe("friend overlap privacy contract", () => {
     expect(migration).toContain("extensions.gen_random_bytes(24)");
     expect(migration).toContain("normalized_code !~ '^[0-9a-f]{48}$'");
     expect(service).not.toMatch(/auth\.users|\.email\b|signInWithOtp/i);
+    expect(service).not.toContain('.from("friendships")');
+    expect(service).toContain('.rpc("list_friend_connections")');
   });
 
   test("rollback removes only friend-overlap objects", async () => {

@@ -4,13 +4,11 @@ import { TERMS, WEEKDAYS, type Term, type Weekday } from "@/lib/timetable-types"
 import type { FriendConnection, FriendGapOverlap, FriendInvite } from "./types";
 
 const DISPLAY_NAME_LIMIT = 80;
+const UNSAFE_DISPLAY_CHARACTER = /[\p{Cc}\p{Cf}]/u;
 
 export function sanitizeFriendDisplayName(value: string): string {
   const normalized = [...value]
-    .filter((character) => {
-      const codePoint = character.codePointAt(0) ?? 0;
-      return codePoint >= 32 && codePoint !== 127 && !(codePoint >= 0x80 && codePoint <= 0x9f);
-    })
+    .filter((character) => !UNSAFE_DISPLAY_CHARACTER.test(character))
     .slice(0, DISPLAY_NAME_LIMIT)
     .join("")
     .trim();
@@ -82,47 +80,26 @@ export async function submitFriendInviteCode(code: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function loadFriendConnections(userId: string): Promise<FriendConnection[]> {
+export async function loadFriendConnections(): Promise<FriendConnection[]> {
   const supabase = requireSupabaseClient();
-  const { data: relationships, error } = await supabase
-    .from("friendships")
-    .select("id, user_a_id, user_b_id, requested_by, status, updated_at")
-    .order("updated_at", { ascending: false });
+  const { data: relationships, error } = await supabase.rpc("list_friend_connections");
   if (error) throw error;
 
-  const friendIds = [
-    ...new Set(
-      (relationships ?? []).map((relationship) =>
-        relationship.user_a_id === userId ? relationship.user_b_id : relationship.user_a_id,
-      ),
-    ),
-  ];
-  const profiles = new Map<string, string>();
-  if (friendIds.length > 0) {
-    const { data, error: profileError } = await supabase
-      .from("friend_profiles")
-      .select("user_id, display_name")
-      .in("user_id", friendIds);
-    if (profileError) throw profileError;
-    for (const profile of data ?? []) profiles.set(profile.user_id, profile.display_name);
-  }
-
   return (relationships ?? []).flatMap((relationship) => {
-    if (relationship.status !== "pending" && relationship.status !== "accepted") return [];
-    const friendUserId =
-      relationship.user_a_id === userId ? relationship.user_b_id : relationship.user_a_id;
+    if (
+      (relationship.status !== "pending" && relationship.status !== "accepted") ||
+      (relationship.direction !== "incoming" &&
+        relationship.direction !== "outgoing" &&
+        relationship.direction !== "mutual")
+    ) {
+      return [];
+    }
     return [
       {
-        id: relationship.id,
-        friendUserId,
-        displayName: profiles.get(friendUserId) ?? "Gapwise friend",
+        id: relationship.friendship_id,
+        displayName: relationship.friend_display_name,
         status: relationship.status,
-        direction:
-          relationship.status === "accepted"
-            ? "mutual"
-            : relationship.requested_by === userId
-              ? "outgoing"
-              : "incoming",
+        direction: relationship.direction,
         updatedAt: relationship.updated_at,
       } satisfies FriendConnection,
     ];

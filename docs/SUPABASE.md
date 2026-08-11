@@ -20,15 +20,20 @@ There are no `USING (true)` policies or public user-data grants. `user_schedules
 `user_preferences` remain strictly owner-readable: accepted friends do not receive a cross-user
 table policy. The friend feature adds three public tables with RLS:
 
-- `friend_profiles`: a user-selected display label, visible only to its owner and current
-  pending/accepted connections;
-- `friendships`: a canonical pair with separate requester and recipient acceptance timestamps;
+- `friend_profiles`: a user-selected display label with owner-only direct reads; current
+  connections receive the label only through a minimal projection RPC;
+- `friendships`: an unexposed canonical pair with separate requester and recipient acceptance
+  timestamps;
 - `friend_invites`: a 192-bit private-code hash with no browser-readable policy or grant.
 
 The friend mutation and overlap RPCs require `authenticated`, revoke default `PUBLIC`/`anon`
 execution, set an empty `search_path`, and derive the caller only from `auth.uid()`. Their
 `SECURITY DEFINER` scope is required for the unexposed invite-hash lookup and the derived
 cross-user calculation; it is never used to make a table directly readable.
+
+`public.list_friend_connections()` projects only an opaque friendship ID, status, direction,
+display label, and update time. The browser receives neither participant's Supabase Auth UUID and
+has no direct `SELECT` grant on `friendships`.
 
 ## Friend overlap privacy boundary
 

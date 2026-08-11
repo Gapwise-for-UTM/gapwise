@@ -8,6 +8,8 @@
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
 
+create extension if not exists pgcrypto with schema extensions;
+
 create table public.friend_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
@@ -18,6 +20,17 @@ create table public.friend_profiles (
       display_name = btrim(display_name)
       and char_length(display_name) between 1 and 80
       and display_name !~ '[[:cntrl:]]'
+      and translate(
+        display_name,
+        chr(173) || chr(1564) || chr(6158) ||
+        chr(8203) || chr(8204) || chr(8205) || chr(8206) || chr(8207) ||
+        chr(8234) || chr(8235) || chr(8236) || chr(8237) || chr(8238) ||
+        chr(8288) || chr(8289) || chr(8290) || chr(8291) || chr(8292) ||
+        chr(8294) || chr(8295) || chr(8296) || chr(8297) || chr(8298) ||
+        chr(8299) || chr(8300) || chr(8301) || chr(8302) || chr(8303) ||
+        chr(65279),
+        ''
+      ) = display_name
     )
 );
 
@@ -116,23 +129,13 @@ create policy "friendships_select_current_participants"
     and revoked_at is null
   );
 
-create policy "friend_profiles_select_visible_relationships"
+create policy "friend_profiles_select_own"
   on public.friend_profiles
   for select
   to authenticated
   using (
     (select auth.uid()) is not null
-    and (
-      (select auth.uid()) = user_id
-      or exists (
-        select 1
-        from public.friendships as friendship
-        where friendship.status in ('pending', 'accepted')
-          and friendship.revoked_at is null
-          and (select auth.uid()) in (friendship.user_a_id, friendship.user_b_id)
-          and user_id in (friendship.user_a_id, friendship.user_b_id)
-      )
-    )
+    and (select auth.uid()) = user_id
   );
 
 create policy "friend_profiles_insert_own"
@@ -154,7 +157,44 @@ revoke all on table public.friendships from public, anon, authenticated;
 revoke all on table private.friend_overlap_rate_limits from public, anon, authenticated;
 
 grant select, insert, update on table public.friend_profiles to authenticated;
-grant select on table public.friendships to authenticated;
+
+-- Relationship rows contain participant Auth UUIDs and are never granted to
+-- browser roles. This projection is the only friend-list read surface.
+create or replace function public.list_friend_connections()
+returns table (
+  friendship_id uuid,
+  status text,
+  direction text,
+  friend_display_name text,
+  updated_at timestamptz
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    friendship.id,
+    friendship.status,
+    case
+      when friendship.status = 'accepted' then 'mutual'
+      when friendship.requested_by = (select auth.uid()) then 'outgoing'
+      else 'incoming'
+    end,
+    coalesce(profile.display_name, 'Gapwise friend'),
+    friendship.updated_at
+  from public.friendships as friendship
+  left join public.friend_profiles as profile
+    on profile.user_id = case
+      when friendship.user_a_id = (select auth.uid()) then friendship.user_b_id
+      else friendship.user_a_id
+    end
+  where (select auth.uid()) is not null
+    and (select auth.uid()) in (friendship.user_a_id, friendship.user_b_id)
+    and friendship.status in ('pending', 'accepted')
+    and friendship.revoked_at is null
+  order by friendship.updated_at desc
+$$;
 
 -- Invitations use 192-bit single-use secrets. Only the hash is stored, and the
 -- invite table has no browser-readable policy or grant.
@@ -356,19 +396,62 @@ $$;
 -- course code and activity type. In particular, CSC108 LEC and CSC108 TUT/PRA
 -- records are never collapsed into one course-only component. The function then
 -- merges busy intervals and yields only gaps between them.
+create or replace function private.is_valid_schedule_meeting(
+  p_meeting jsonb,
+  p_term text
+)
+returns boolean
+language sql
+immutable
+security invoker
+set search_path = ''
+as $$
+  select
+    jsonb_typeof(p_meeting) = 'object'
+    and p_meeting ->> 'term' = p_term
+    and p_meeting ->> 'weekday' in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+    and p_meeting ->> 'activityType' in ('LEC', 'TUT', 'PRA', 'OTHER')
+    and btrim(coalesce(p_meeting ->> 'courseCode', '')) <> ''
+    and case
+      when p_meeting ->> 'startTime' ~ '^\d{1,4}$'
+        and p_meeting ->> 'endTime' ~ '^\d{1,4}$'
+      then (p_meeting ->> 'startTime')::integer between 0 and 1439
+        and (p_meeting ->> 'endTime')::integer between 1 and 1440
+        and (p_meeting ->> 'endTime')::integer > (p_meeting ->> 'startTime')::integer
+      else false
+    end
+$$;
+
 create or replace function private.schedule_gap_windows(p_user_id uuid, p_term text)
 returns table (weekday text, start_minute integer, end_minute integer)
-language sql
+language plpgsql
 stable
 security invoker
 set search_path = ''
 as $$
+declare
+  has_term_records boolean;
+  has_valid_records boolean;
+begin
+  select
+    bool_or(entry.meeting ->> 'term' = p_term),
+    bool_or(private.is_valid_schedule_meeting(entry.meeting, p_term))
+  into has_term_records, has_valid_records
+  from public.user_schedules as schedule
+  cross join lateral jsonb_array_elements(schedule.meetings) as entry(meeting)
+  where schedule.user_id = p_user_id;
+
+  if coalesce(has_term_records, false) and not coalesce(has_valid_records, false) then
+    raise exception 'Persisted schedule data is invalid.' using errcode = 'P0002';
+  end if;
+
+  return query
   with raw_meetings as (
     select entry.meeting
     from public.user_schedules as schedule
     cross join lateral jsonb_array_elements(schedule.meetings) as entry(meeting)
     where schedule.user_id = p_user_id
-      and jsonb_typeof(entry.meeting) = 'object'
+      and private.is_valid_schedule_meeting(entry.meeting, p_term)
   ),
   parsed_components as (
     select
@@ -386,48 +469,49 @@ as $$
       upper(btrim(meeting ->> 'courseCode')) as course_code,
       meeting ->> 'activityType' as activity_type
     from raw_meetings
-    where meeting ->> 'term' = p_term
-      and meeting ->> 'weekday' in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-      and meeting ->> 'activityType' in ('LEC', 'TUT', 'PRA', 'OTHER')
-      and btrim(coalesce(meeting ->> 'courseCode', '')) <> ''
   ),
   distinct_components as (
     select distinct
-      weekday,
-      start_minute,
-      end_minute,
-      course_code,
-      activity_type
-    from parsed_components
-    where start_minute between 0 and 1439
-      and end_minute between 1 and 1440
-      and end_minute > start_minute
+      component.weekday,
+      component.start_minute,
+      component.end_minute,
+      component.course_code,
+      component.activity_type
+    from parsed_components as component
+    where component.start_minute between 0 and 1439
+      and component.end_minute between 1 and 1440
+      and component.end_minute > component.start_minute
   ),
   running_busy_intervals as (
     select
-      weekday,
-      start_minute,
-      max(end_minute) over (
-        partition by weekday
-        order by start_minute, end_minute, course_code, activity_type
+      component.weekday,
+      component.start_minute,
+      max(component.end_minute) over (
+        partition by component.weekday
+        order by
+          component.start_minute,
+          component.end_minute,
+          component.course_code,
+          component.activity_type
         rows between unbounded preceding and current row
       ) as running_end
-    from distinct_components
+    from distinct_components as component
   ),
   boundaries as (
     select
-      weekday,
-      start_minute,
-      lag(running_end) over (
-        partition by weekday
-        order by start_minute, running_end
+      busy_interval.weekday,
+      busy_interval.start_minute,
+      lag(busy_interval.running_end) over (
+        partition by busy_interval.weekday
+        order by busy_interval.start_minute, busy_interval.running_end
       ) as previous_end
-    from running_busy_intervals
+    from running_busy_intervals as busy_interval
   )
-  select weekday, previous_end, start_minute
-  from boundaries
-  where previous_end is not null
-    and start_minute > previous_end
+  select boundary.weekday, boundary.previous_end, boundary.start_minute
+  from boundaries as boundary
+  where boundary.previous_end is not null
+    and boundary.start_minute > boundary.previous_end;
+end;
 $$;
 
 create or replace function public.get_friend_gap_overlaps(p_term text)
@@ -503,6 +587,10 @@ begin
       and friendship.accepted_at is not null
       and friendship.revoked_at is null
   ),
+  own_gaps as materialized (
+    select own_gap.weekday, own_gap.start_minute, own_gap.end_minute
+    from private.schedule_gap_windows(caller, p_term) as own_gap
+  ),
   raw_overlaps as (
     select
       active_friend.friendship_id,
@@ -511,7 +599,7 @@ begin
       greatest(own_gap.start_minute, friend_gap.start_minute) as raw_start,
       least(own_gap.end_minute, friend_gap.end_minute) as raw_end
     from active_friends as active_friend
-    cross join lateral private.schedule_gap_windows(caller, p_term) as own_gap
+    cross join own_gaps as own_gap
     join lateral private.schedule_gap_windows(active_friend.friend_user_id, p_term) as friend_gap
       on friend_gap.weekday = own_gap.weekday
       and greatest(own_gap.start_minute, friend_gap.start_minute)
@@ -557,16 +645,20 @@ end;
 $$;
 
 revoke all on function public.create_friend_invite() from public, anon, authenticated;
+revoke all on function public.list_friend_connections() from public, anon, authenticated;
 revoke all on function public.disable_friend_invite() from public, anon, authenticated;
 revoke all on function public.claim_friend_invite(text) from public, anon, authenticated;
 revoke all on function public.respond_to_friend_request(uuid, boolean)
   from public, anon, authenticated;
 revoke all on function public.revoke_friendship(uuid) from public, anon, authenticated;
 revoke all on function public.get_friend_gap_overlaps(text) from public, anon, authenticated;
+revoke all on function private.is_valid_schedule_meeting(jsonb, text)
+  from public, anon, authenticated;
 revoke all on function private.schedule_gap_windows(uuid, text)
   from public, anon, authenticated;
 
 grant execute on function public.create_friend_invite() to authenticated;
+grant execute on function public.list_friend_connections() to authenticated;
 grant execute on function public.disable_friend_invite() to authenticated;
 grant execute on function public.claim_friend_invite(text) to authenticated;
 grant execute on function public.respond_to_friend_request(uuid, boolean) to authenticated;
@@ -574,10 +666,12 @@ grant execute on function public.revoke_friendship(uuid) to authenticated;
 grant execute on function public.get_friend_gap_overlaps(text) to authenticated;
 
 comment on table public.friend_profiles is
-  'Minimal names visible only to the owner and current pending/accepted connections.';
+  'Minimal user-chosen names; direct table reads are owner-only.';
 comment on table public.friend_invites is
   'Unexposed hashes of 192-bit, expiring, single-use private friend codes.';
 comment on table public.friendships is
-  'Canonical two-party requests; overlap requires both acceptance timestamps and no revocation.';
+  'Unexposed canonical two-party requests; overlap requires both acceptance timestamps and no revocation.';
+comment on function public.list_friend_connections() is
+  'Returns only opaque relationship state, direction, display label, and update time; never Auth UUIDs.';
 comment on function public.get_friend_gap_overlaps(text) is
   'Returns at most three 30-minute-quantized mutual free windows per active friend and no schedule details.';

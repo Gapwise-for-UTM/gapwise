@@ -178,6 +178,16 @@ export type Database = {
           weekday: string;
         }[];
       };
+      list_friend_connections: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          direction: string;
+          friend_display_name: string;
+          friendship_id: string;
+          status: string;
+          updated_at: string;
+        }[];
+      };
       respond_to_friend_request: {
         Args: { p_accept: boolean; p_friendship_id: string };
         Returns: boolean;

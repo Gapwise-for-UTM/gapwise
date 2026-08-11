@@ -36,7 +36,9 @@ Supabase Auth magic-link quota.
 
 The social profile contains only a user-chosen display label. Gapwise never automatically uses an
 Auth email address as that label. Pending relationship metadata is visible only to the two people
-involved so they can accept, decline, or cancel the request.
+involved so they can accept, decline, or cancel the request. This metadata is projected as an
+opaque friendship ID, status, direction, label, and update time; raw friendship rows and participant
+Supabase Auth user IDs are not readable by browser clients.
 
 ## Revocation and deletion
 

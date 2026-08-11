@@ -4,7 +4,6 @@ export type FriendshipStatus = "pending" | "accepted";
 
 export type FriendConnection = {
   id: string;
-  friendUserId: string;
   displayName: string;
   status: FriendshipStatus;
   direction: "incoming" | "outgoing" | "mutual";

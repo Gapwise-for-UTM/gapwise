@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(41);
 
 select has_table('public', 'friend_profiles', 'friend profiles table exists');
 select has_table('public', 'friend_invites', 'private-code hash table exists');
@@ -29,6 +29,11 @@ select is(
   'authenticated clients cannot read invite hashes'
 );
 select is(
+  has_table_privilege('authenticated', 'public.friendships', 'select'),
+  false,
+  'authenticated clients cannot read participant Auth UUIDs from friendships'
+);
+select is(
   has_function_privilege(
     'authenticated',
     'private.schedule_gap_windows(uuid,text)',
@@ -52,6 +57,16 @@ values
   ('00000000-0000-0000-0000-000000000003', 'Casey'),
   ('00000000-0000-0000-0000-000000000004', 'Devon');
 
+select throws_like(
+  $$
+    update public.friend_profiles
+    set display_name = 'Al' || chr(8238) || 'ex'
+    where user_id = '00000000-0000-0000-0000-000000000001'
+  $$,
+  '%friend_profiles_display_name%',
+  'the database rejects bidirectional display-name controls'
+);
+
 insert into public.user_schedules (user_id, meetings)
 values
   (
@@ -60,7 +75,12 @@ values
       {"id":"a-mon-lec","courseCode":"CSC108H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":540,"endTime":600,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
       {"id":"a-mon-tut","courseCode":"MAT102H5","activityType":"TUT","sectionCode":"0101","courseName":"Synthetic","startTime":720,"endTime":780,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
       {"id":"a-wed-lec","courseCode":"CSC108H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":600,"endTime":660,"weekday":"Wednesday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
-      {"id":"a-wed-next","courseCode":"MAT102H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":780,"endTime":840,"weekday":"Wednesday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false}
+      {"id":"a-wed-next","courseCode":"MAT102H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":780,"endTime":840,"weekday":"Wednesday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
+      {"id":"a-win-1","courseCode":"CSC101H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":540,"endTime":570,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"a-win-2","courseCode":"CSC102H5","activityType":"TUT","sectionCode":"0101","courseName":"Synthetic","startTime":600,"endTime":630,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"a-win-3","courseCode":"CSC103H5","activityType":"PRA","sectionCode":"0101","courseName":"Synthetic","startTime":660,"endTime":690,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"a-win-4","courseCode":"CSC104H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":720,"endTime":750,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"a-win-5","courseCode":"CSC105H5","activityType":"TUT","sectionCode":"0101","courseName":"Synthetic","startTime":780,"endTime":810,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false}
     ]'::jsonb
   ),
   (
@@ -69,7 +89,12 @@ values
       {"id":"b-mon-tut","courseCode":"CSC108H5","activityType":"TUT","sectionCode":"0101","courseName":"Synthetic","startTime":570,"endTime":630,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
       {"id":"b-mon-next","courseCode":"MAT102H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":750,"endTime":810,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
       {"id":"b-wed-tut","courseCode":"CSC108H5","activityType":"TUT","sectionCode":"0101","courseName":"Synthetic","startTime":600,"endTime":720,"weekday":"Wednesday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
-      {"id":"b-wed-next","courseCode":"MAT102H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":780,"endTime":840,"weekday":"Wednesday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false}
+      {"id":"b-wed-next","courseCode":"MAT102H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":780,"endTime":840,"weekday":"Wednesday","buildingCode":"MN","room":"1000","term":"Fall","locationUnknown":false},
+      {"id":"b-win-1","courseCode":"CSC101H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":540,"endTime":570,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"b-win-2","courseCode":"CSC102H5","activityType":"TUT","sectionCode":"0101","courseName":"Synthetic","startTime":600,"endTime":630,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"b-win-3","courseCode":"CSC103H5","activityType":"PRA","sectionCode":"0101","courseName":"Synthetic","startTime":660,"endTime":690,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"b-win-4","courseCode":"CSC104H5","activityType":"LEC","sectionCode":"0101","courseName":"Synthetic","startTime":720,"endTime":750,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false},
+      {"id":"b-win-5","courseCode":"CSC105H5","activityType":"TUT","sectionCode":"0101","courseName":"Synthetic","startTime":780,"endTime":810,"weekday":"Monday","buildingCode":"MN","room":"1000","term":"Winter","locationUnknown":false}
     ]'::jsonb
   ),
   (
@@ -137,9 +162,14 @@ select is(
   'a crafted direct query cannot read an accepted friend schedule'
 );
 select is(
-  (select count(*) from public.friendships),
+  (select count(*) from public.friend_profiles),
+  1::bigint,
+  'direct profile reads expose only the caller row and never friend Auth UUIDs'
+);
+select is(
+  (select count(*) from public.list_friend_connections()),
   2::bigint,
-  'a participant sees only their current accepted and pending relationships'
+  'the connection RPC returns only the caller current relationships'
 );
 
 set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000003';
@@ -174,15 +204,24 @@ select results_eq(
   'a same-course LEC/TUT mismatch stays busy until both users are truly free'
 );
 select ok(
-  (select count(*) <= 3 from public.get_friend_gap_overlaps('Fall')),
-  'no friend can receive more than three windows per term request'
+  (select count(*) = 3 from public.get_friend_gap_overlaps('Winter')),
+  'four mutual windows are capped to exactly three results per friend and term'
 );
 select ok(
   (
     select bool_and(
       not (
         to_jsonb(overlap_row)
-        ?| array['course_code', 'activity_type', 'section_code', 'building_code', 'room', 'meetings']
+        ?| array[
+          'friend_user_id',
+          'user_id',
+          'course_code',
+          'activity_type',
+          'section_code',
+          'building_code',
+          'room',
+          'meetings'
+        ]
       )
     )
     from public.get_friend_gap_overlaps('Fall') as overlap_row
@@ -202,8 +241,8 @@ select is(
 select is(
   (
     select count(*)
-    from public.friendships
-    where id = '10000000-0000-0000-0000-000000000001'
+    from public.list_friend_connections()
+    where friendship_id = '10000000-0000-0000-0000-000000000001'
   ),
   0::bigint,
   'revoked relationship history is hidden from former friends'
@@ -221,7 +260,7 @@ select is(
 
 set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000001';
 select is(
-  (select count(*) from public.friendships),
+  (select count(*) from public.list_friend_connections()),
   0::bigint,
   'declined request history is hidden from both participants'
 );
@@ -252,9 +291,9 @@ select is(
 select is(
   (
     select count(*)
-    from public.friendships
+    from public.list_friend_connections()
     where status = 'pending'
-      and requested_by = '00000000-0000-0000-0000-000000000002'
+      and direction = 'outgoing'
   ),
   1::bigint,
   'claiming a code records only one-sided requester consent'
@@ -269,9 +308,9 @@ set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000004';
 select is(
   public.respond_to_friend_request(
     (
-      select id
-      from public.friendships
-      where requested_by = '00000000-0000-0000-0000-000000000002'
+      select friendship_id
+      from public.list_friend_connections()
+      where direction = 'incoming'
     ),
     true
   ),
@@ -287,10 +326,9 @@ select ok(
 select is(
   public.revoke_friendship(
     (
-      select id
-      from public.friendships
+      select friendship_id
+      from public.list_friend_connections()
       where status = 'accepted'
-        and '00000000-0000-0000-0000-000000000004' in (user_a_id, user_b_id)
     )
   ),
   true,
@@ -303,6 +341,24 @@ select is(
 );
 
 reset role;
+
+update public.user_schedules
+set meetings = '[
+  {"term":"Fall","weekday":"Monday","courseCode":"CSC148H5","activityType":"LEC","startTime":"invalid","endTime":660}
+]'::jsonb
+where user_id = '00000000-0000-0000-0000-000000000003';
+
+select throws_like(
+  $$
+    select *
+    from private.schedule_gap_windows(
+      '00000000-0000-0000-0000-000000000003',
+      'Fall'
+    )
+  $$,
+  '%Persisted schedule data is invalid%',
+  'an all-invalid persisted term fails closed instead of implying free time'
+);
 
 insert into public.friendships (
   id,
@@ -333,6 +389,16 @@ begin
 end;
 $$;
 reset role;
+
+select is(
+  (
+    select count(*)
+    from private.friend_overlap_rate_limits
+    where caller_id = '00000000-0000-0000-0000-000000000002'
+  ),
+  1::bigint,
+  'the deletion fixture contains private overlap rate-limit state before deletion'
+);
 
 delete from auth.users where id = '00000000-0000-0000-0000-000000000002';
 
@@ -385,10 +451,12 @@ select is(
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000001';
 select is(
-  (select count(*) from public.friendships),
+  (select count(*) from public.list_friend_connections()),
   0::bigint,
   'former friends see no relationship trace after account deletion'
 );
+
+reset role;
 
 select * from finish();
 rollback;

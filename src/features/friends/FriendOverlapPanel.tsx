@@ -52,35 +52,69 @@ export function FriendOverlapPanel({
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const displayNameDirty = useRef(false);
+  const mounted = useRef(true);
+  const requestVersion = useRef(0);
+  const overlapCache = useRef(new Map<Term, FriendGapOverlap[]>());
+  const overlapRequests = useRef(new Map<Term, Promise<FriendGapOverlap[]>>());
 
-  const refresh = useCallback(async () => {
-    if (!userId) {
-      setConnections([]);
-      onOverlapsChange([]);
-      return;
-    }
-    setLoading(true);
-    try {
-      const [profile, nextConnections, overlaps] = await Promise.all([
-        loadOwnFriendProfile(userId),
-        loadFriendConnections(userId),
-        loadFriendGapOverlaps(term),
-      ]);
-      if (!displayNameDirty.current) setDisplayName(profile ?? fallbackDisplayName);
-      setConnections(nextConnections);
-      onOverlapsChange(overlaps);
-    } catch (error) {
-      setMessage(friendFailureMessage(error));
-      onOverlapsChange([]);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  }, [fallbackDisplayName, onOverlapsChange, term, userId]);
+  const refresh = useCallback(
+    async (forceOverlap = false) => {
+      const version = ++requestVersion.current;
+      if (forceOverlap) overlapCache.current.delete(term);
+      if (!userId) {
+        setConnections([]);
+        onOverlapsChange([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const cachedOverlaps = forceOverlap ? undefined : overlapCache.current.get(term);
+        let overlapRequest =
+          cachedOverlaps === undefined ? overlapRequests.current.get(term) : undefined;
+        if (cachedOverlaps === undefined && !overlapRequest) {
+          overlapRequest = loadFriendGapOverlaps(term);
+          overlapRequests.current.set(term, overlapRequest);
+          const clearRequest = () => {
+            if (overlapRequests.current.get(term) === overlapRequest) {
+              overlapRequests.current.delete(term);
+            }
+          };
+          void overlapRequest.then(clearRequest, clearRequest);
+        }
+        const [profile, nextConnections, overlaps] = await Promise.all([
+          loadOwnFriendProfile(userId),
+          loadFriendConnections(),
+          cachedOverlaps ?? overlapRequest!,
+        ]);
+        if (!mounted.current || version !== requestVersion.current) return;
+        overlapCache.current.set(term, overlaps);
+        if (!displayNameDirty.current) setDisplayName(profile ?? fallbackDisplayName);
+        setConnections(nextConnections);
+        onOverlapsChange(overlaps);
+      } catch (error) {
+        if (!mounted.current || version !== requestVersion.current) throw error;
+        overlapCache.current.delete(term);
+        setMessage(friendFailureMessage(error));
+        onOverlapsChange([]);
+        throw error;
+      } finally {
+        if (mounted.current && version === requestVersion.current) setLoading(false);
+      }
+    },
+    [fallbackDisplayName, onOverlapsChange, term, userId],
+  );
 
   useEffect(() => {
     void refresh().catch(() => undefined);
   }, [refresh]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      requestVersion.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     displayNameDirty.current = false;
@@ -99,12 +133,25 @@ export function FriendOverlapPanel({
     setMessage(null);
     try {
       await action();
-      if (refreshAfter) await refresh();
+      if (refreshAfter) {
+        overlapCache.current.clear();
+        await refresh(true);
+      }
       setMessage(success);
     } catch (error) {
       setMessage(friendFailureMessage(error));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function copyInviteCode(code: string) {
+    try {
+      if (!navigator.clipboard) throw new Error("Clipboard unavailable.");
+      await navigator.clipboard.writeText(code);
+      setMessage("Private code copied.");
+    } catch {
+      setMessage("The private code could not be copied. Select and copy it manually.");
     }
   }
 
@@ -154,7 +201,7 @@ export function FriendOverlapPanel({
         <button
           type="button"
           disabled={busy || loading}
-          onClick={() => void refresh().catch(() => undefined)}
+          onClick={() => void refresh(true).catch(() => undefined)}
           className="button-secondary inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold disabled:opacity-50"
         >
           <RefreshCw
@@ -240,10 +287,7 @@ export function FriendOverlapPanel({
                 </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    void navigator.clipboard?.writeText(invite.code);
-                    setMessage("Private code copied.");
-                  }}
+                  onClick={() => void copyInviteCode(invite.code)}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent"
                 >
                   <Copy className="h-3.5 w-3.5" aria-hidden="true" />
@@ -367,11 +411,14 @@ export function FriendOverlapPanel({
         </ConnectionGroup>
       </div>
 
-      {message ? (
-        <p role="status" className="mt-3 text-xs text-muted-foreground">
-          {message}
-        </p>
-      ) : null}
+      <p
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="mt-3 min-h-4 text-xs text-muted-foreground"
+      >
+        {message}
+      </p>
     </section>
   );
 }
