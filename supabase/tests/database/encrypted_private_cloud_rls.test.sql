@@ -446,6 +446,7 @@ select throws_like(
   '%Unsupported term%',
   'the friend-material RPC rejects arbitrary term input'
 );
+reset role;
 select is(
   (
     select request_count
@@ -455,6 +456,8 @@ select is(
   5,
   'rate limiting stores only the caller aggregate and counts fixed-semantic requests'
 );
+set local role authenticated;
+set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000101';
 
 update public.encrypted_private_data
 set ciphertext = decode(repeat('81', 32), 'hex'), revision = 2
@@ -511,6 +514,7 @@ select is(
   2::bigint,
   'either accepted participant receives only the two encrypted material rows'
 );
+reset role;
 select is(
   (
     select count(*)
