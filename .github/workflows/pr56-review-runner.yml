@@ -19,7 +19,49 @@ jobs:
         with:
           bun-version: 1.3.14
       - name: Apply reviewed fixes
-        run: python3 scripts/pr56_review_fix.py
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path("scripts/pr56_review_fix.py")
+          source = path.read_text()
+          start = source.index('replace_once(\n    "tests/security.test.ts",')
+          end = source.index('\n\nprint("PR #56 reviewed source fixes applied")', start)
+          path.write_text(source[:start] + source[end:])
+          PY
+          python3 scripts/pr56_review_fix.py
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path("tests/security.test.ts")
+          source = path.read_text()
+          start = source.index('  test("allows production and narrowly scoped Gapwise previews without reflecting rejected origins"')
+          end = source.index('\n\n  test("all user tables use RLS, ownership checks, and cascading deletion"', start)
+          replacement = r'''  test("allows only exact configured account-deletion origins", async () => {
+            const source = await readFile("supabase/functions/delete-account/index.ts", "utf8");
+            expect(source).toContain('"https://gapwise-utm.vercel.app"');
+            expect(source).toContain("configuredOrigins.has(origin)");
+            expect(source).toContain("const originAllowed = isAllowedOrigin(origin)");
+            expect(source).toContain("if (!originAllowed)");
+            expect(source).not.toContain("gapwisePreviewOrigin");
+            expect(source).not.toContain("https://*.vercel.app");
+            expect(source).not.toContain("defaultOrigins[0]");
+          });
+
+          test("authoritative encrypted mode clears cross-account and legacy plaintext state", async () => {
+            const [route, preferences, remembered] = await Promise.all([
+              readFile("src/routes/index.tsx", "utf8"),
+              readFile("src/features/sync/preferences.ts", "utf8"),
+              readFile("src/hooks/use-preferences.ts", "utf8"),
+            ]);
+            expect(
+              route.match(/restoredSource\.current === "cloud" \|\| isEncryptedPrivateCloudAuthoritative/g),
+            ).toHaveLength(2);
+            expect(preferences).toContain("storage?.removeItem(LOCAL_PREFERENCES_KEY)");
+            expect(remembered).toContain("window.localStorage.removeItem(TIMETABLE_KEY)");
+            expect(remembered).toContain("window.localStorage.removeItem(REMEMBER_KEY)");
+          });'''
+          path.write_text(source[:start] + replacement + source[end:])
+          PY
       - name: Format and validate
         shell: bash
         run: |
