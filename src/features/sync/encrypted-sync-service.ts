@@ -1,7 +1,12 @@
 import type { Tables, TablesInsert, TablesUpdate } from "@/lib/database.types";
 import { requireSupabaseClient } from "@/lib/supabase";
 import type { PersonalItem } from "@/lib/personal-types";
-import { CRYPTO_VERSION, KEY_VERSION } from "@/features/security/crypto-context";
+import {
+  AVAILABILITY_SCHEMA_VERSION,
+  CRYPTO_VERSION,
+  KEY_VERSION,
+  PRIVATE_DATA_SCHEMA_VERSION,
+} from "@/features/security/crypto-context";
 import {
   generateDeviceKeyMaterial,
   unwrapDeviceDataKey,
@@ -43,6 +48,26 @@ const MAX_BROKER_RESPONSE_BYTES = 8 * 1024;
 
 type EncryptedPrivateRow = Tables<"encrypted_private_data">;
 type EncryptedCapsuleRow = Tables<"encrypted_friend_availability">;
+type EncryptedPrivateMetadata = Pick<
+  EncryptedPrivateRow,
+  | "user_id"
+  | "subject_id"
+  | "record_id"
+  | "key_id"
+  | "crypto_version"
+  | "schema_version"
+  | "revision"
+>;
+type EncryptedCapsuleMetadata = Pick<
+  EncryptedCapsuleRow,
+  | "user_id"
+  | "subject_id"
+  | "capsule_id"
+  | "key_id"
+  | "crypto_version"
+  | "schema_version"
+  | "revision"
+>;
 
 export type PrivateCloudState = Omit<PrivateDataPayloadV1, "schemaVersion">;
 
@@ -389,6 +414,65 @@ async function loadCloudRows(
   return { privateData: privateResult.data, capsule: capsuleResult.data };
 }
 
+async function loadCloudMetadata(userId: string): Promise<{
+  capsule: EncryptedCapsuleMetadata | null;
+  privateData: EncryptedPrivateMetadata | null;
+}> {
+  const supabase = requireSupabaseClient();
+  const [privateResult, capsuleResult] = await Promise.all([
+    supabase
+      .from("encrypted_private_data")
+      .select("user_id, subject_id, record_id, key_id, crypto_version, schema_version, revision")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("encrypted_friend_availability")
+      .select("user_id, subject_id, capsule_id, key_id, crypto_version, schema_version, revision")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+  if (privateResult.error || capsuleResult.error) throw new Error("Encrypted cloud read failed.");
+  return { privateData: privateResult.data, capsule: capsuleResult.data };
+}
+
+function validatePrivateMetadata(
+  userId: string,
+  keys: StoredDataKeys,
+  local: StoredPrivateRecord | null,
+  cloud: EncryptedPrivateMetadata,
+) {
+  if (
+    cloud.user_id !== userId ||
+    cloud.subject_id !== keys.subjectId ||
+    cloud.key_id !== keys.privateData.keyId ||
+    cloud.crypto_version !== CRYPTO_VERSION ||
+    cloud.schema_version !== PRIVATE_DATA_SCHEMA_VERSION ||
+    !positiveInteger(cloud.revision) ||
+    (local !== null && cloud.record_id !== local.recordId)
+  ) {
+    throw new Error("Encrypted private-data context mismatch.");
+  }
+}
+
+function validateCapsuleMetadata(
+  userId: string,
+  keys: StoredDataKeys,
+  local: StoredCapsuleRecord | null,
+  cloud: EncryptedCapsuleMetadata,
+) {
+  if (
+    cloud.user_id !== userId ||
+    cloud.subject_id !== keys.subjectId ||
+    cloud.key_id !== keys.friendAvailability.keyId ||
+    cloud.crypto_version !== CRYPTO_VERSION ||
+    cloud.schema_version !== AVAILABILITY_SCHEMA_VERSION ||
+    !positiveInteger(cloud.revision) ||
+    (local !== null && cloud.capsule_id !== local.recordId)
+  ) {
+    throw new Error("Encrypted availability context mismatch.");
+  }
+}
+
 export async function loadEncryptedPrivateState(
   userId: string,
   signal?: AbortSignal,
@@ -489,7 +573,7 @@ function busyEvents(payload: PrivateDataPayloadV1): BusyEvent[] {
 
 async function writePrivateRecord(
   record: StoredPrivateRecord,
-  current: EncryptedPrivateRow | null,
+  current: { revision: number } | null,
 ): Promise<void> {
   const supabase = requireSupabaseClient();
   const row = privateRowFromRecord(record);
@@ -514,7 +598,7 @@ async function writePrivateRecord(
 
 async function writeCapsuleRecord(
   record: StoredCapsuleRecord,
-  current: EncryptedCapsuleRow | null,
+  current: { revision: number } | null,
 ): Promise<void> {
   const supabase = requireSupabaseClient();
   const row = capsuleRowFromRecord(record);
@@ -582,40 +666,40 @@ async function saveEncryptedPrivateStateNow(
 
   // The encrypted local transaction completes before any cloud read/write. A
   // network failure therefore never discards the user's current in-browser state.
-  const cloud = await loadCloudRows(userId);
-  const currentPrivate = cloud.privateData ? privateRecordFromRow(userId, cloud.privateData) : null;
-  const currentCapsule = cloud.capsule ? capsuleRecordFromRow(userId, cloud.capsule) : null;
-  await Promise.all([
-    currentPrivate ? openPrivateData(keys, currentPrivate) : Promise.resolve(),
-    currentCapsule ? openAvailabilityCapsule(keys, currentCapsule) : Promise.resolve(),
-  ]);
-  if (encryptedRevisionConflicts(previousLocalPrivate, currentPrivate)) {
+  const cloud = await loadCloudMetadata(userId);
+  if (cloud.privateData) {
+    validatePrivateMetadata(userId, keys, previousLocalPrivate, cloud.privateData);
+  }
+  if (cloud.capsule) {
+    validateCapsuleMetadata(userId, keys, previousLocalCapsule, cloud.capsule);
+  }
+  if (encryptedRevisionConflicts(previousLocalPrivate, cloud.privateData)) {
     throw new Error("Encrypted private data changed on another device. Reload before syncing.");
   }
-  if (encryptedRevisionConflicts(previousLocalCapsule, currentCapsule)) {
+  if (encryptedRevisionConflicts(previousLocalCapsule, cloud.capsule)) {
     throw new Error("Encrypted availability changed on another device. Reload before syncing.");
   }
   const updatedAt = new Date().toISOString();
   const [privateRecord, capsuleRecord] = await Promise.all([
-    currentPrivate
+    cloud.privateData
       ? sealPrivateData({
           userId,
           keys,
           payload,
-          revision: currentPrivate.revision + 1,
-          recordId: currentPrivate.recordId,
-          cloudRevision: currentPrivate.revision,
+          revision: cloud.privateData.revision + 1,
+          recordId: cloud.privateData.record_id,
+          cloudRevision: cloud.privateData.revision,
           updatedAt,
         })
       : Promise.resolve(localPrivate),
-    currentCapsule
+    cloud.capsule
       ? sealAvailabilityCapsule({
           userId,
           keys,
           capsule,
-          revision: currentCapsule.revision + 1,
-          recordId: currentCapsule.recordId,
-          cloudRevision: currentCapsule.revision,
+          revision: cloud.capsule.revision + 1,
+          recordId: cloud.capsule.capsule_id,
+          cloudRevision: cloud.capsule.revision,
           updatedAt,
         })
       : Promise.resolve(localCapsule),
