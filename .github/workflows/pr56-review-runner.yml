@@ -1,0 +1,64 @@
+name: PR56 review runner
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.event.pull_request.head.ref == 'security/private-cloud-architecture'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: security/private-cloud-architecture
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+      - name: Extract and apply reviewed fixes
+        shell: bash
+        run: |
+          awk '/python3 <<'"'"'PY'"'"'/{capture=1; next} /^          PY$/{capture=0} capture' .github/workflows/pr56-review-fixes.yml \
+            | sed 's/^          //' > /tmp/pr56-fix.py
+          python3 /tmp/pr56-fix.py
+      - name: Format and validate
+        shell: bash
+        run: |
+          bun install --frozen-lockfile
+          bunx prettier --write \
+            src/routes/index.tsx \
+            src/features/sync/preferences.ts \
+            src/hooks/use-preferences.ts \
+            src/features/auth/auth-service.ts \
+            src/features/auth/AccountStatus.tsx \
+            src/features/friends/friend-service.ts \
+            src/features/security/security-store.ts \
+            src/features/sync/CloudSyncControls.tsx \
+            src/features/sync/encrypted-sync-service.ts \
+            src/server/private-cloud/auth.ts \
+            src/server/private-cloud/common-gap.ts \
+            api/common-gap.ts api/key-broker.ts \
+            supabase/functions/delete-account/index.ts \
+            src/features/security/device-keys.ts \
+            src/features/security/envelope-crypto.ts \
+            src/features/security/private-data.ts \
+            src/server/private-cloud/key-broker.ts \
+            docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md \
+            docs/SUPABASE.md docs/PRIVATE_CLOUD_CAPACITY.md \
+            tests/auth-persistence.test.ts tests/friend-overlap.test.ts tests/crypto.test.ts tests/security.test.ts
+          bun run typecheck
+          bun run lint
+          bun test
+          bun run build
+      - name: Commit validated fixes
+        shell: bash
+        run: |
+          git config user.name "OpenAI"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/pr56-review-fixes.yml .github/workflows/pr56-review-runner.yml
+          git add -A
+          git commit -m "fix: address final private-cloud review findings"
+          git push origin HEAD:security/private-cloud-architecture
