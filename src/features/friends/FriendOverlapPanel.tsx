@@ -70,7 +70,9 @@ export function FriendOverlapPanel({
       try {
         const cachedOverlaps = forceOverlap ? undefined : overlapCache.current.get(term);
         let overlapRequest =
-          cachedOverlaps === undefined ? overlapRequests.current.get(term) : undefined;
+          cachedOverlaps === undefined && !forceOverlap
+            ? overlapRequests.current.get(term)
+            : undefined;
         if (cachedOverlaps === undefined && !overlapRequest) {
           overlapRequest = loadFriendGapOverlaps(term);
           overlapRequests.current.set(term, overlapRequest);

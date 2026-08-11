@@ -15,6 +15,7 @@ drop table if exists private.friend_overlap_rate_limits;
 drop table if exists public.friendships;
 drop table if exists public.friend_invites;
 drop table if exists public.friend_profiles;
+drop function if exists private.is_safe_friend_display_name(text);
 
 -- The private schema may be shared by future migrations, so it is intentionally
 -- retained. Drop it manually only after confirming it contains no other objects.

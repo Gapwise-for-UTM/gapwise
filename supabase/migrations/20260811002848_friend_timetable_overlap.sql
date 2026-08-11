@@ -10,6 +10,44 @@ revoke all on schema private from public, anon, authenticated;
 
 create extension if not exists pgcrypto with schema extensions;
 
+-- PostgreSQL's POSIX [[:cntrl:]] class does not include Unicode category Cf.
+-- Check every code point against the complete format-control ranges so a
+-- direct table write cannot inject bidi, zero-width, annotation, or tag
+-- controls into the only friend-facing identifier.
+create or replace function private.is_safe_friend_display_name(p_value text)
+returns boolean
+language plpgsql
+immutable
+strict
+security invoker
+set search_path = ''
+as $$
+declare
+  character_index integer;
+  codepoint integer;
+begin
+  for character_index in 1..char_length(p_value) loop
+    codepoint := ascii(substr(p_value, character_index, 1));
+    if codepoint in (173, 1564, 1757, 1807, 6158, 65279, 65529, 65530, 65531, 69821, 69837, 917505)
+      or codepoint between 1536 and 1541
+      or codepoint between 2192 and 2193
+      or codepoint = 2274
+      or codepoint between 8203 and 8207
+      or codepoint between 8234 and 8238
+      or codepoint between 8288 and 8292
+      or codepoint between 8294 and 8303
+      or codepoint between 78896 and 78911
+      or codepoint between 113824 and 113827
+      or codepoint between 119155 and 119162
+      or codepoint between 917536 and 917631
+    then
+      return false;
+    end if;
+  end loop;
+  return true;
+end;
+$$;
+
 create table public.friend_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
@@ -20,17 +58,7 @@ create table public.friend_profiles (
       display_name = btrim(display_name)
       and char_length(display_name) between 1 and 80
       and display_name !~ '[[:cntrl:]]'
-      and translate(
-        display_name,
-        chr(173) || chr(1564) || chr(6158) ||
-        chr(8203) || chr(8204) || chr(8205) || chr(8206) || chr(8207) ||
-        chr(8234) || chr(8235) || chr(8236) || chr(8237) || chr(8238) ||
-        chr(8288) || chr(8289) || chr(8290) || chr(8291) || chr(8292) ||
-        chr(8294) || chr(8295) || chr(8296) || chr(8297) || chr(8298) ||
-        chr(8299) || chr(8300) || chr(8301) || chr(8302) || chr(8303) ||
-        chr(65279),
-        ''
-      ) = display_name
+      and private.is_safe_friend_display_name(display_name)
     )
 );
 
@@ -652,6 +680,8 @@ revoke all on function public.respond_to_friend_request(uuid, boolean)
   from public, anon, authenticated;
 revoke all on function public.revoke_friendship(uuid) from public, anon, authenticated;
 revoke all on function public.get_friend_gap_overlaps(text) from public, anon, authenticated;
+revoke all on function private.is_safe_friend_display_name(text)
+  from public, anon, authenticated;
 revoke all on function private.is_valid_schedule_meeting(jsonb, text)
   from public, anon, authenticated;
 revoke all on function private.schedule_gap_windows(uuid, text)
@@ -664,6 +694,8 @@ grant execute on function public.claim_friend_invite(text) to authenticated;
 grant execute on function public.respond_to_friend_request(uuid, boolean) to authenticated;
 grant execute on function public.revoke_friendship(uuid) to authenticated;
 grant execute on function public.get_friend_gap_overlaps(text) to authenticated;
+grant execute on function private.is_safe_friend_display_name(text)
+  to authenticated, service_role;
 
 comment on table public.friend_profiles is
   'Minimal user-chosen names; direct table reads are owner-only.';

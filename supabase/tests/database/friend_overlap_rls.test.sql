@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(41);
+select plan(43);
 
 select has_table('public', 'friend_profiles', 'friend profiles table exists');
 select has_table('public', 'friend_invites', 'private-code hash table exists');
@@ -65,6 +65,28 @@ select throws_like(
   $$,
   '%friend_profiles_display_name%',
   'the database rejects bidirectional display-name controls'
+);
+select ok(
+  (
+    with format_codepoints(codepoint) as (
+      select unnest(array[173, 1564, 1757, 1807, 6158, 65279, 65529, 65530, 65531, 69821, 69837, 917505])
+      union all select generate_series(1536, 1541)
+      union all select generate_series(2192, 2193)
+      union all select 2274
+      union all select generate_series(8203, 8207)
+      union all select generate_series(8234, 8238)
+      union all select generate_series(8288, 8292)
+      union all select generate_series(8294, 8303)
+      union all select generate_series(78896, 78911)
+      union all select generate_series(113824, 113827)
+      union all select generate_series(119155, 119162)
+      union all select generate_series(917536, 917631)
+    )
+    select count(*) = 170
+      and bool_and(not private.is_safe_friend_display_name(chr(codepoint)))
+    from format_codepoints
+  ),
+  'all Unicode format-control code points are rejected at the database boundary'
 );
 
 insert into public.user_schedules (user_id, meetings)
@@ -147,6 +169,14 @@ values
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-0000-0000-000000000001';
 
+select lives_ok(
+  $$
+    update public.friend_profiles
+    set display_name = 'Alex'
+    where user_id = '00000000-0000-0000-0000-000000000001'
+  $$,
+  'authenticated owners can save a safe display name through the private constraint helper'
+);
 select is(
   (select count(*) from public.user_schedules),
   1::bigint,
