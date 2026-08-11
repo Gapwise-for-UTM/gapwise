@@ -16,10 +16,25 @@ Gapwise exists because a free hour is only useful when travel time, buildings, a
 
 - The original `.ics` file never leaves the browser.
 - Campus route calculation uses a bundled path graph and makes no routing-provider request.
-- Cloud sync is optional and stores only normalized meeting fields (course, section, time, building, and room).
-- **Saving is always explicit:** only pressing **Sync timetable** changes cloud data.
-- After sign-in or refresh, Gapwise checks for an existing cloud timetable automatically. Automatic loading is not automatic uploading.
+- Cloud sync is optional. The new private-cloud path encrypts the full private payload and a separate,
+  deliberately lossy friend-availability capsule in the browser before either reaches the database.
+- Full timetable contents, custom events, residence choice, and private routing preferences use a
+  key that normal server flows do not decrypt. The friend service can decrypt only the lossy capsule.
+- Friends receive at most three mutual rounded windows for a selected term. They never receive a
+  timetable, capsule, arbitrary availability probe, course, room, building, or event label.
+- A valid encrypted local copy restores before the network path. Routine reloads make no server
+  crypto request, and edits are saved locally before any cloud write.
+- Cloud persistence remains opt-in. Deleting the cloud copy disables future automatic uploads until
+  the user opts in again; signing out clears that user's local keys and decrypted UI state.
 - Calculated gaps and routes remain browser-side. Vercel Web Analytics and Speed Insights collect operational page/performance metrics; timetable contents and auth tokens are not sent to them. There is no advertising.
+
+The encrypted architecture is shipped behind a fail-safe rollout flag. Production remains on the
+known-good legacy path until the additive schema, disposable-account proof, operator KEK recovery
+copy, and verified migration gates pass. Legacy plaintext is preserved throughout that process; see
+the [migration runbook](docs/PRIVATE_CLOUD_MIGRATION_RUNBOOK.md). This is defense in depth against a
+database-only compromise, not a claim of end-to-end encryption or zero knowledge: plaintext still
+exists in the active browser, and the narrowly scoped common-gap function can decrypt only the lossy
+friend capsule.
 
 ## Key features
 
@@ -33,15 +48,30 @@ Gapwise exists because a free hour is only useful when travel time, buildings, a
 
 Outdoor paths cover the current mapped campus and every recognized academic/residence building has at least one routing point. “Verified” means the source contains an entrance-tagged point; “inferred” means a nearby mapped pedestrian approach is used because no public door point exists; “approximate” is a clearly labelled fallback. Indoor room routing remains incomplete, and basemap geometry alone is never treated as indoor evidence.
 
-## Cloud sync and restoration
+## Private cloud sync and restoration
 
-When both remembered local and cloud copies exist, Gapwise uses the newest safely comparable timestamp. If timestamps cannot be compared, it keeps the local copy and notes that a cloud version is available. An already loaded timetable is never replaced automatically. Manual cloud loading remains available for recovery.
+In encrypted mode, the browser keeps non-extractable data keys and encrypted private records in
+IndexedDB when the platform supports durable `CryptoKey` cloning. A normal reload decrypts that local
+record without calling the key broker. After browser storage is cleared or on a new device, ordinary
+sign-in lets a narrow broker wrap the user's existing data keys to a new non-extractable device key;
+the browser then downloads ciphertext directly under Supabase Row Level Security and decrypts it
+locally. If durable key storage is unavailable, Gapwise uses page-lifetime non-extractable keys and
+does not persist raw key material.
+
+Encrypted sync uses authenticated revisions and rejects stale writes rather than silently replacing a
+newer cloud value. It writes the encrypted local transaction first, so a Supabase or Vercel outage
+does not discard the valid local copy. The legacy restoration path remains authoritative while the
+production rollout flag is `off`.
 
 GitHub or passwordless email sign-in is remembered in this browser using Supabase's persistent browser session until you sign out, the session expires, or browser storage is cleared. This is separate from **Remember on this device**, which controls only the parsed timetable. On a shared device, use **Sign out** from the account menu; it clears this browser's auth session without deleting your provider account or cloud data.
 
 ## Account and data deletion
 
-Open the signed-in account menu and choose **Delete account and cloud data**. One confirmation permanently removes the Supabase authentication account, normalized timetable, preferences, and all other user-owned server records. You may also clear this browser's remembered timetable; it remains in guest mode when that option is unchecked. The original `.ics` was never uploaded. **Account deletion is permanent.**
+Open the signed-in account menu and choose **Delete account and cloud data**. One confirmation
+permanently removes the Supabase authentication account and every user-owned legacy, encrypted,
+key-envelope, availability, profile, invite, friendship, and rate-limit record through database
+cascades. The client also removes that user's local keys, ciphertext, remembered timetable, and
+decrypted state. The original `.ics` was never uploaded. **Account deletion is permanent.**
 
 ## Local development
 
@@ -58,6 +88,13 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
 Never put the service-role key in a `VITE_` variable. Without these values, guest mode remains fully functional. See [architecture and operations](docs/OPERATIONS.md), [Supabase setup](docs/SUPABASE.md), [Vercel deployment](docs/VERCEL.md), and [Cloudflare Pages notes](docs/CLOUDFLARE_PAGES.md).
+
+The private-cloud rollout additionally uses server-only versioned KEKs on Vercel. Do not create or
+activate a production KEK from ordinary development instructions; follow the operator gate in the
+[private-cloud migration runbook](docs/PRIVATE_CLOUD_MIGRATION_RUNBOOK.md). The detailed threat model
+and measured free-tier capacity are documented in
+[PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md) and
+[PRIVATE_CLOUD_CAPACITY.md](docs/PRIVATE_CLOUD_CAPACITY.md).
 
 ## Testing and assets
 

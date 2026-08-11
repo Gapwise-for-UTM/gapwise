@@ -1,7 +1,8 @@
 # Gapwise private cloud security architecture
 
-Status: implementation design for the additive private-cloud migration. The legacy production
-tables remain authoritative until every cutover gate in this document has passed.
+Status: implemented on the dedicated security branch behind a fail-safe rollout gate. Production
+remains `off`, the additive migrations are not yet applied, and legacy tables remain authoritative
+until every cutover gate in this document has passed.
 
 ## Security claim and limits
 
@@ -23,7 +24,8 @@ runtime can also expose data.
 
 ## Current-state findings (2026-08-11)
 
-- Production runs on one healthy Supabase PostgreSQL 17 project and one Vercel project.
+- Production runs on one healthy Supabase PostgreSQL 17 project and one Vercel project. The live
+  database currently occupies 11,390,099 bytes (reported as 11 MB).
 - Production has one Auth user, one non-empty plaintext `user_schedules` row, one plaintext
   `user_preferences` row, one friend profile, no friendship rows, and no accepted friendships.
 - The schedule JSON occupies 1,543 bytes. This inspection read aggregates and sizes only, not its
@@ -32,10 +34,11 @@ runtime can also expose data.
   preferences are currently plaintext at rest.
 - PostgreSQL currently computes cross-user gaps from plaintext schedules inside a
   `SECURITY DEFINER` function.
-- Current RLS is enabled on all application tables. Schedule and preference tables do not force
-  RLS. The Security Advisor reports the expected `SECURITY DEFINER` warnings plus two tables with
-  intentionally no readable policy. Every definer function still requires explicit review during
-  replacement.
+- Current RLS is enabled on all application tables. Schedule and preference tables do not yet force
+  RLS because the additive migration is not applied. A 2026-08-11 Security Advisor refresh reports
+  the expected intentional `SECURITY DEFINER` warnings plus two tables with intentionally no
+  readable policy. The only Performance Advisor items are one low-value unindexed revoked-by FK
+  and two unused-index notices on the empty friendship table; these are not migration blockers.
 - The active production deployment is the merge of PR #55 on canonical branch `main`; CI is green.
 
 The single production row is treated as real until its owner explicitly classifies it otherwise.
@@ -131,6 +134,10 @@ hex representation at the boundary and otherwise uses `Uint8Array`/`ArrayBuffer`
 6. Sign-out deletes the signed-in user's local DEKs, device private key, local ciphertext, and
    decrypted state. Signing in again transparently bootstraps again.
 
+Cloud opt-in is persisted alongside the non-extractable key record only after a verified cloud
+save/load. Explicit cloud deletion changes it to disabled while retaining the current in-memory and
+encrypted local copy, so a later reload cannot silently resurrect deleted cloud ciphertext.
+
 If durable CryptoKey cloning is unavailable, Gapwise uses page-lifetime non-extractable keys and
 reports that secure persistent restore is unavailable rather than storing raw keys. It never puts a
 raw DEK in localStorage or sessionStorage.
@@ -159,7 +166,10 @@ operator copy is therefore a production cutover gate. End users do not handle re
 - New device/storage reset: one broker request, then direct ciphertext download and local decrypt.
 - Supabase/Vercel outage: keep valid local state and show a non-destructive sync error.
 - Concurrent cloud writes use an authenticated monotonically increasing revision and compare-and-
-  swap RPC; a stale client cannot silently overwrite a newer revision.
+  swap conditional PostgREST update plus a database trigger that requires exactly `old + 1`; a
+  stale client cannot silently overwrite a newer revision. A metadata-only preflight avoids
+  downloading ciphertext twice, and the final cloud value is always read, decrypted, and compared
+  before sync success is reported.
 
 The original ICS bytes, calculated routes, ordinary gap results, overlap history, and old payload
 versions are never uploaded.
@@ -204,13 +214,31 @@ Encrypted because the server does not need to query it:
 - residence choice/building and routing preferences;
 - the lossy availability capsule itself.
 
+## Browser and supply-chain boundary
+
+The application has no application-authored raw-HTML insertion sink. The unused shadcn chart helper
+that contained one was removed. Imported ICS fields, friend labels, route/building text, OAuth error
+parameters and cloud JSON are rendered through React text nodes after validation/sanitization.
+Client error telemetry receives only a fixed generic error, never the caught error value.
+
+The production CSP permits scripts and workers only from the application origin, allows network
+connections only to the exact Supabase project and OpenFreeMap tile origin, blocks frames, objects,
+media and framing ancestors, and includes HSTS, MIME sniffing, referrer and permissions policies.
+Inline styles remain allowed because the current React/MapLibre component stack applies runtime
+styles; inline scripts and `unsafe-eval` remain forbidden. If the Supabase project changes, both
+`vercel.json` and `public/_headers` must be updated deliberately.
+
+No cryptography dependency was added; Web Crypto provides AES-GCM, RSA-OAEP and randomness. GitHub
+Actions remain pinned to immutable commit SHAs, and no remote JavaScript is loaded.
+
 ## Staged migration and rollback
 
 1. Add encrypted tables/RPCs and application code without changing legacy reads or deleting data.
 2. Verify crypto, local restore, key bootstrap, RLS, common gaps, deletion, tamper failure, and a
    database-leak fixture with disposable accounts.
-3. After the operator backs up the KEK, migrate each legacy row outside PostgreSQL: read one row in
-   trusted tooling, encrypt, upload, decrypt/compare, and mark verified without logging plaintext.
+3. After the operator backs up the KEK, migrate each legacy row outside PostgreSQL through the
+   user-scoped application path or independently reviewed trusted tooling: read one row, encrypt,
+   upload, decrypt/compare, and mark verified without logging plaintext.
 4. Enable encrypted reads/writes only after every intended row verifies. Keep a rollback deployment
    and the legacy rows during the observation period.
 5. In a later destructive migration, after explicit production-data authorization, remove plaintext
@@ -219,6 +247,12 @@ Encrypted because the server does not need to query it:
 If any gate fails, production remains on the existing known-good architecture. No intermediate
 deployment may require an incomplete key system or delete plaintext before a verified replacement
 exists.
+
+Exact rollout, operator recovery and rollback steps are in
+[`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md). The measured free-tier
+model is in [`PRIVATE_CLOUD_CAPACITY.md`](PRIVATE_CLOUD_CAPACITY.md): 20,000 fully provisioned users
+fit with planning headroom, while the 500 MB database limit becomes the first real boundary near
+30,000 accounts.
 
 ## Current documentation anchors
 
