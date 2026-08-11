@@ -1,6 +1,6 @@
 # Supabase setup and security
 
-Gapwise supports GitHub OAuth and passwordless email magic links through Supabase Auth, PostgREST with Row Level Security, and one narrowly scoped Edge Function. Guest mode does not require Supabase.
+Gapwise supports GitHub OAuth and passwordless email magic links through Supabase Auth, PostgREST with Row Level Security, narrowly scoped database RPCs, and one account-deletion Edge Function. Guest mode does not require Supabase.
 
 ## Browser configuration
 
@@ -16,7 +16,62 @@ does not need. Both user tables:
 - restrict select, insert, update, and delete to `auth.uid() = user_id` (including `WITH CHECK` for writes);
 - revoke access from `anon` and grant only select, insert, update, and delete to `authenticated`.
 
-There are no `USING (true)` policies, public user-data grants, or security-definer functions. The current schema has two user-owned tables: `user_schedules` and `user_preferences`.
+There are no `USING (true)` policies or public user-data grants. `user_schedules` and
+`user_preferences` remain strictly owner-readable: accepted friends do not receive a cross-user
+table policy. The friend feature adds three public tables with RLS:
+
+- `friend_profiles`: a user-selected display label, visible only to its owner and current
+  pending/accepted connections;
+- `friendships`: a canonical pair with separate requester and recipient acceptance timestamps;
+- `friend_invites`: a 192-bit private-code hash with no browser-readable policy or grant.
+
+The friend mutation and overlap RPCs require `authenticated`, revoke default `PUBLIC`/`anon`
+execution, set an empty `search_path`, and derive the caller only from `auth.uid()`. Their
+`SECURITY DEFINER` scope is required for the unexposed invite-hash lookup and the derived
+cross-user calculation; it is never used to make a table directly readable.
+
+## Friend overlap privacy boundary
+
+`public.get_friend_gap_overlaps(term)` is the only cross-user schedule path. It locks and verifies
+an active friendship row with both acceptance timestamps and no revocation, then returns a fixed
+contract:
+
+- opaque friendship ID and the connected user's minimal display label;
+- weekday;
+- 30-minute-rounded start and end minutes;
+- at most three mutual windows per friend and term.
+
+It never returns meetings, course codes, activity types, sections, rooms, raw gap rows, either
+full timetable, or availability outside the intersection. Schedule normalization treats
+`courseCode + activityType` as the event-component key, so `LEC`, `TUT`, and `PRA` rows for the
+same course remain separate busy events. A small private rate-limit row stores only the caller and
+an aggregate count—never a friend identifier or result history. The RPC allows 30 refreshes per
+caller per rolling hour; repeated calls cannot change the fixed response contract.
+
+Friend connection does not provide an email/account directory. A user creates a single-use,
+24-hour private code and shares it out of band. Entering it always shows the same generic response,
+whether the code is valid, invalid, expired, used, or self-owned. A valid claim creates only a
+pending request; the code owner must separately accept it. This flow neither sends nor consumes an
+Auth magic link, so the two-emails-per-hour Auth limit is unrelated to friend requests.
+
+Either participant can decline, cancel, or remove a relationship. That transaction marks the row
+revoked, after which RLS hides it and the overlap RPC rejects it. A new connection requires a new
+private code and fresh two-party acceptance.
+
+The forward migration is
+`supabase/migrations/20260811002848_friend_timetable_overlap.sql`. Its scoped rollback is
+`supabase/rollbacks/20260811002848_friend_timetable_overlap.sql`; rollbacks are operator-run and
+are not part of normal `supabase db push` ordering.
+
+The pgTAP suite in `supabase/tests/database/friend_overlap_rls.test.sql` proves direct-query
+isolation, pending/declined/revoked denial, activity-type mismatch behavior, response minimization,
+and account-deletion cleanup. Run it against an isolated local database:
+
+```sh
+supabase db start
+supabase test db
+supabase db lint --local --level warning --fail-on error
+```
 
 ### Safe `source_filename` removal order
 
@@ -54,7 +109,13 @@ Use **Sign out** on shared devices. It clears the local browser auth session onl
 
 `supabase/functions/delete-account/index.ts` accepts only authenticated `POST` requests. It verifies the bearer token with Supabase, derives the ID from that verified user, and ignores all browser-supplied identity. The Admin API runs only inside the function. Deleting `auth.users` cascades to every current user-owned row.
 
-Deletion order is authentication user first with database cascades in the same database operation. A failure returns a generic error and the UI does not claim success. If infrastructure interrupts the request, retrying is safe: no cross-user identifier is accepted, and already-cascaded rows cannot become orphans.
+Deletion order is authentication user first with database cascades in the same database operation.
+Foreign keys from both friendship participants, request metadata, friend profiles, invite hashes,
+and the private rate-limit row all use `ON DELETE CASCADE`. Consequently a deleted account is
+removed from every other user's friend/request list in the same transaction, and no overlap or
+relationship history is retained. A failure returns a generic error and the UI does not claim
+success. If infrastructure interrupts the request, retrying is safe: no cross-user identifier is
+accepted, and already-cascaded rows cannot become orphans.
 
 The canonical production and local origins are source-controlled. Add any other
 exact trusted origins through the optional server-side secret (names only; never
@@ -88,7 +149,8 @@ Confirm a request without a bearer token is rejected, an origin outside `ALLOWED
 - Keep the service-role key confined to hosted server-side secrets.
 - Run Security Advisor and verify RLS remains enabled on every user-data table.
 - Exercise read/write/delete with two test users and verify neither can access the other's rows.
-- Re-run the account-deletion check whenever a user-owned table is added, and add a cascading foreign key.
+- Re-run the account-deletion and friend-overlap pgTAP checks whenever a user-owned or
+  relationship table is added, and add cascading foreign keys for every participant reference.
 
 ## Free-plan limitations
 

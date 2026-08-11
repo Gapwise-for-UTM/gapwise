@@ -1,3 +1,4 @@
+import type { User } from "@supabase/supabase-js";
 import {
   AlertTriangle,
   ArrowRight,
@@ -8,9 +9,12 @@ import {
   SlidersHorizontal,
   Sparkles,
   Utensils,
+  Users,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useMemo, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
+import { FriendOverlapPanel } from "@/features/friends/FriendOverlapPanel";
+import type { FriendGapOverlap } from "@/features/friends/types";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
 import { DEFAULT_GAP_PREFERENCES, sanitizeGapPreferences } from "@/features/gaps/preferences";
 import type { GapAction, GapPreferences, GapRecommendation } from "@/features/gaps/types";
@@ -20,7 +24,7 @@ import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { groupGapsByDay } from "@/lib/gaps";
-import type { Gap } from "@/lib/timetable-types";
+import type { Gap, Term } from "@/lib/timetable-types";
 import { formatCompactDuration, formatDuration, formatTime } from "@/lib/timetable-types";
 
 const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: string }> = {
@@ -382,11 +386,13 @@ const GapCard = memo(function GapCard({
   preferences,
   gapPreferences,
   planTransition,
+  friendOverlaps,
 }: {
   gap: Gap;
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   planTransition: TransitionPlanner;
+  friendOverlaps: FriendGapOverlap[];
 }) {
   const { route, assessment, residenceTrip } = useMemo(
     () => planGapAssessment(gap, preferences, gapPreferences, planTransition),
@@ -464,6 +470,23 @@ const GapCard = memo(function GapCard({
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selected.summary}</p>
         </div>
       </div>
+
+      {friendOverlaps.length > 0 ? (
+        <div className="mt-4 rounded-lg border border-accent/25 bg-accent/8 px-3 py-3">
+          <p className="flex items-center gap-2 text-xs font-semibold text-accent">
+            <Users className="h-3.5 w-3.5" aria-hidden="true" />
+            Mutual friend availability
+          </p>
+          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+            {friendOverlaps.map((overlap) => (
+              <li key={`${overlap.friendshipId}-${overlap.startMinute}-${overlap.endMinute}`}>
+                {overlap.friendDisplayName} · {formatTime(overlap.startMinute)}–
+                {formatTime(overlap.endMinute)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="mt-4 rounded-lg border border-border bg-secondary/25 px-3 py-3 text-sm">
         {showingHomeRoute ? (
@@ -583,26 +606,29 @@ export const GapPlan = memo(function GapPlan({
   gapPreferences,
   onGapPreferencesChange,
   planTransition,
+  user,
+  term,
 }: {
   gaps: Gap[];
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   onGapPreferencesChange: (next: GapPreferences) => void;
   planTransition: TransitionPlanner;
+  user: User | null;
+  term: Term;
 }) {
   const groups = useMemo(() => groupGapsByDay(gaps), [gaps]);
   const residence = selectedResidence(preferences);
-
-  if (groups.length === 0) {
-    return (
-      <div className="surface p-8 text-center">
-        <h3 className="text-lg font-semibold">No gaps in this term</h3>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Your classes run back to back, or you only have one meeting per day.
-        </p>
-      </div>
-    );
-  }
+  const [friendOverlapState, setFriendOverlapState] = useState<{
+    userId: string | null;
+    overlaps: FriendGapOverlap[];
+  }>({ userId: null, overlaps: [] });
+  const userId = user?.id ?? null;
+  const friendOverlaps = friendOverlapState.userId === userId ? friendOverlapState.overlaps : [];
+  const handleFriendOverlapsChange = useCallback(
+    (overlaps: FriendGapOverlap[]) => setFriendOverlapState({ userId, overlaps }),
+    [userId],
+  );
 
   return (
     <div className="space-y-6">
@@ -621,6 +647,22 @@ export const GapPlan = memo(function GapPlan({
         residenceName={residence?.name ?? null}
       />
 
+      <FriendOverlapPanel
+        key={userId ?? "guest"}
+        user={user}
+        term={term}
+        onOverlapsChange={handleFriendOverlapsChange}
+      />
+
+      {groups.length === 0 ? (
+        <div className="surface p-8 text-center">
+          <h3 className="text-lg font-semibold">No gaps in this term</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your classes run back to back, or you only have one meeting per day.
+          </p>
+        </div>
+      ) : null}
+
       {groups.map((group) => (
         <section key={group.weekday} aria-labelledby={`gaps-${group.weekday}`}>
           <h3 id={`gaps-${group.weekday}`} className="text-base font-medium tracking-tight">
@@ -637,6 +679,13 @@ export const GapPlan = memo(function GapPlan({
                 preferences={preferences}
                 gapPreferences={gapPreferences}
                 planTransition={planTransition}
+                friendOverlaps={friendOverlaps.filter(
+                  (overlap) =>
+                    overlap.term === gap.term &&
+                    overlap.weekday === gap.weekday &&
+                    overlap.startMinute >= gap.startTime &&
+                    overlap.endMinute <= gap.endTime,
+                )}
               />
             ))}
           </div>
