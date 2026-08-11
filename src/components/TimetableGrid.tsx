@@ -168,6 +168,10 @@ function MeetingCard({
         </div>
       ) : null}
       <div className="flex min-w-0 items-center gap-1.5">
+        <MapPin
+          className="card-pin h-3.5 w-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
         <span className="truncate text-xs font-extrabold tracking-[-0.01em] text-foreground">
           {meeting.courseCode}
         </span>
@@ -856,9 +860,13 @@ export const TimetableGrid = memo(function TimetableGrid({
                         aria-haspopup="dialog"
                         aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
                         data-activity={meeting.activityType}
-                        className="meeting-card w-full touch-manipulation rounded-xl p-3.5 text-left focus-visible:outline-none active:translate-y-0 active:scale-[0.99]"
+                        className="meeting-card group w-full touch-manipulation rounded-xl p-3.5 text-left focus-visible:outline-none active:translate-y-0 active:scale-[0.99]"
                       >
                         <div className="flex flex-wrap items-center gap-2">
+                          <MapPin
+                            className="card-pin h-4 w-4 shrink-0 text-muted-foreground"
+                            aria-hidden="true"
+                          />
                           <span className="text-sm font-extrabold tracking-[-0.01em] text-foreground">
                             {meeting.courseCode}
                           </span>

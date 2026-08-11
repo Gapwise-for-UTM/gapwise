@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap, MapGeoJSONFeature, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MAP_CONFIG } from "@/config/map";
-import { getCampusBuilding } from "@/data/utm/campus";
+import { CAMPUS_BUILDINGS, getCampusBuilding } from "@/data/utm/campus";
+import { UTM_BUILDINGS } from "@/data/utm/building-registry";
 import {
   resolveMapAnchor,
   type MapAnchorSegment,
@@ -29,6 +30,8 @@ type MapData = {
   selectedSegmentId: string | null;
   onSelectMeeting: (id: string) => void;
   onSelectSegment: (id: string) => void;
+  hoveredBuildingCode: string | null;
+  onHoverBuilding: (code: string | null) => void;
   home: MapHome | null;
   className?: string;
 };
@@ -39,6 +42,32 @@ type MapTheme = keyof typeof MAP_CONFIG.styleUrls;
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const FIT_BOUNDS_PADDING_PX = 56;
 const FIT_BOUNDS_MAX_ZOOM = 17;
+const ROUTE_DRAW_DURATION_MS = 1_180;
+const BUILDING_HOVER_DURATION_MS = 200;
+const MAP_BUILDING_HIT_RADIUS_PX = 160;
+const BUILDING_HIGHLIGHT_SOURCE_ID = "gapwise-building-highlight";
+const BUILDING_HIGHLIGHT_FILL_LAYER_ID = "gapwise-building-highlight-fill";
+const BUILDING_HIGHLIGHT_LINE_LAYER_ID = "gapwise-building-highlight-line";
+
+const BUILDING_CODE_BY_LABEL = new Map(
+  UTM_BUILDINGS.flatMap((building) =>
+    [building.code, building.name, ...(building.aliases ?? [])].map(
+      (label) => [normalizeBuildingLabel(label), building.code] as const,
+    ),
+  ),
+);
+
+function normalizeBuildingLabel(value: string) {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+function mapAccentColor(theme: MapTheme) {
+  return theme === "dark" ? "#60a5fa" : "#146bb8";
+}
+
+function emptyFeatureCollection() {
+  return { type: "FeatureCollection" as const, features: [] };
+}
 
 function supportsWebGl2(): boolean {
   try {
@@ -53,7 +82,40 @@ function getDocumentTheme(): MapTheme {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
-function routeFeatureCollection(data: MapData) {
+function partialRouteCoordinates(coordinates: [number, number][], progress: number) {
+  if (progress >= 1 || coordinates.length < 2) return coordinates;
+  const distances = coordinates.slice(1).map((coordinate, index) => {
+    const previous = coordinates[index]!;
+    return Math.hypot(coordinate[0] - previous[0], coordinate[1] - previous[1]);
+  });
+  const targetDistance = distances.reduce((total, distance) => total + distance, 0) * progress;
+  const visible: [number, number][] = [coordinates[0]!];
+  let coveredDistance = 0;
+
+  for (let index = 0; index < distances.length; index += 1) {
+    const distance = distances[index]!;
+    const next = coordinates[index + 1]!;
+    if (coveredDistance + distance <= targetDistance) {
+      visible.push(next);
+      coveredDistance += distance;
+      continue;
+    }
+
+    const previous = coordinates[index]!;
+    const remaining = Math.max(0, targetDistance - coveredDistance);
+    const ratio = distance === 0 ? 0 : remaining / distance;
+    visible.push([
+      previous[0] + (next[0] - previous[0]) * ratio,
+      previous[1] + (next[1] - previous[1]) * ratio,
+    ]);
+    break;
+  }
+
+  if (visible.length === 1) visible.push(visible[0]!);
+  return visible;
+}
+
+function routeFeatureCollection(data: MapData, progress = 1) {
   return {
     type: "FeatureCollection" as const,
     features: data.segments
@@ -66,10 +128,60 @@ function routeFeatureCollection(data: MapData) {
         },
         geometry: {
           type: "LineString" as const,
-          coordinates: segment.route.displayCoordinates,
+          coordinates: partialRouteCoordinates(segment.route.displayCoordinates, progress),
         },
       })),
   };
+}
+
+function routeGeometryKey(data: MapData) {
+  return data.segments
+    .map((segment) =>
+      [
+        segment.id,
+        ...segment.route.displayCoordinates.map((coordinate) => coordinate.join(",")),
+      ].join(":"),
+    )
+    .join("|");
+}
+
+function animateRouteDraw(
+  map: MapLibreMap,
+  source: GeoJSONSource,
+  key: string,
+  lastRouteKeyRef: MutableRefObject<string>,
+  animationFrameRef: MutableRefObject<number | null>,
+  latestDataRef: MutableRefObject<MapData>,
+) {
+  lastRouteKeyRef.current = key;
+
+  if (animationFrameRef.current !== null) {
+    cancelAnimationFrame(animationFrameRef.current);
+    animationFrameRef.current = null;
+  }
+  if (!key || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    source.setData(routeFeatureCollection(latestDataRef.current));
+    return;
+  }
+
+  source.setData(routeFeatureCollection(latestDataRef.current, 0));
+  const startedAt = performance.now();
+  const drawFrame = (now: number) => {
+    if (map.getSource("day-routes") !== source || routeGeometryKey(latestDataRef.current) !== key) {
+      animationFrameRef.current = null;
+      return;
+    }
+    const elapsed = Math.min(1, (now - startedAt) / ROUTE_DRAW_DURATION_MS);
+    const eased = 1 - (1 - elapsed) ** 3;
+    source.setData(routeFeatureCollection(latestDataRef.current, eased));
+
+    if (elapsed < 1) {
+      animationFrameRef.current = requestAnimationFrame(drawFrame);
+    } else {
+      animationFrameRef.current = null;
+    }
+  };
+  animationFrameRef.current = requestAnimationFrame(drawFrame);
 }
 
 function anchorSegments(data: MapData): MapAnchorSegment[] {
@@ -92,7 +204,7 @@ function residenceStopIds(data: MapData): string[] {
 
 function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
   const casingColor = theme === "dark" ? "#05070a" : "#f8fafc";
-  const routeColor = theme === "dark" ? "#60a5fa" : "#146bb8";
+  const routeColor = mapAccentColor(theme);
   const inactiveRouteColor = theme === "dark" ? "#57728d" : "#6d879f";
 
   map.addLayer({
@@ -117,6 +229,17 @@ function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
       "line-opacity": ["case", ["==", ["get", "selected"], true], 1, 0.68],
     },
   });
+}
+
+function buildingLayerIds(map: MapLibreMap) {
+  return (map.getStyle().layers ?? [])
+    .filter(
+      (layer) =>
+        "source-layer" in layer &&
+        layer["source-layer"] === "building" &&
+        (layer.type === "fill" || layer.type === "fill-extrusion"),
+    )
+    .map((layer) => layer.id);
 }
 
 function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
@@ -193,6 +316,161 @@ function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
   );
 }
 
+function ensureBuildingHighlightLayers(map: MapLibreMap, theme: MapTheme) {
+  if (!map.getSource(BUILDING_HIGHLIGHT_SOURCE_ID)) {
+    map.addSource(BUILDING_HIGHLIGHT_SOURCE_ID, {
+      type: "geojson",
+      data: emptyFeatureCollection(),
+    });
+  }
+
+  const firstSymbolLayerId = (map.getStyle().layers ?? []).find(
+    (layer) => layer.type === "symbol",
+  )?.id;
+  const accentColor = mapAccentColor(theme);
+
+  if (!map.getLayer(BUILDING_HIGHLIGHT_FILL_LAYER_ID)) {
+    map.addLayer(
+      {
+        id: BUILDING_HIGHLIGHT_FILL_LAYER_ID,
+        type: "fill",
+        source: BUILDING_HIGHLIGHT_SOURCE_ID,
+        paint: {
+          "fill-color": accentColor,
+          "fill-opacity": 0,
+          "fill-opacity-transition": { duration: BUILDING_HOVER_DURATION_MS, delay: 0 },
+        },
+      },
+      firstSymbolLayerId,
+    );
+  }
+
+  if (!map.getLayer(BUILDING_HIGHLIGHT_LINE_LAYER_ID)) {
+    map.addLayer(
+      {
+        id: BUILDING_HIGHLIGHT_LINE_LAYER_ID,
+        type: "line",
+        source: BUILDING_HIGHLIGHT_SOURCE_ID,
+        paint: {
+          "line-color": accentColor,
+          "line-width": 2.5,
+          "line-opacity": 0,
+          "line-opacity-transition": { duration: BUILDING_HOVER_DURATION_MS, delay: 0 },
+        },
+      },
+      firstSymbolLayerId,
+    );
+  }
+}
+
+function featureBuildingCode(feature: MapGeoJSONFeature): string | null {
+  const properties = feature.properties ?? {};
+  const labels = [
+    properties["ref"],
+    properties["name"],
+    properties["name_en"],
+    properties["name:en"],
+  ];
+
+  for (const label of labels) {
+    if (typeof label !== "string") continue;
+    const code = BUILDING_CODE_BY_LABEL.get(normalizeBuildingLabel(label));
+    if (code) return code;
+  }
+  return null;
+}
+
+function geometryDistanceSquared(geometry: MapGeoJSONFeature["geometry"], point: [number, number]) {
+  let nearest = Number.POSITIVE_INFINITY;
+
+  function visit(value: unknown) {
+    if (!Array.isArray(value)) return;
+    if (value.length >= 2 && typeof value[0] === "number" && typeof value[1] === "number") {
+      const x = value[0] - point[0];
+      const y = value[1] - point[1];
+      nearest = Math.min(nearest, x * x + y * y);
+      return;
+    }
+    for (const child of value) visit(child);
+  }
+
+  if ("coordinates" in geometry) visit(geometry.coordinates);
+  return nearest;
+}
+
+function findBuildingFeature(map: MapLibreMap, buildingCode: string) {
+  const building = getCampusBuilding(buildingCode);
+  const layers = buildingLayerIds(map);
+  if (!building || layers.length === 0) return null;
+
+  const point = map.project(building.navigationPoint);
+  const candidates = map
+    .queryRenderedFeatures(
+      [
+        [point.x - 64, point.y - 64],
+        [point.x + 64, point.y + 64],
+      ],
+      { layers },
+    )
+    .filter(
+      (feature) => feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon",
+    );
+  const namedMatch = candidates.find((feature) => featureBuildingCode(feature) === building.code);
+  if (namedMatch) return namedMatch;
+
+  return (
+    candidates.reduce<MapGeoJSONFeature | null>((nearest, feature) => {
+      if (!nearest) return feature;
+      return geometryDistanceSquared(feature.geometry, building.navigationPoint) <
+        geometryDistanceSquared(nearest.geometry, building.navigationPoint)
+        ? feature
+        : nearest;
+    }, null) ?? null
+  );
+}
+
+function syncBuildingHighlight(map: MapLibreMap, buildingCode: string | null) {
+  const source = map.getSource(BUILDING_HIGHLIGHT_SOURCE_ID) as GeoJSONSource | undefined;
+  if (!source) return;
+
+  const feature = buildingCode ? findBuildingFeature(map, buildingCode) : null;
+  if (feature) {
+    source.setData({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { buildingCode },
+          geometry: feature.geometry,
+        },
+      ],
+    });
+  }
+
+  const visible = Boolean(feature);
+  if (map.getLayer(BUILDING_HIGHLIGHT_FILL_LAYER_ID)) {
+    map.setPaintProperty(BUILDING_HIGHLIGHT_FILL_LAYER_ID, "fill-opacity", visible ? 0.3 : 0);
+  }
+  if (map.getLayer(BUILDING_HIGHLIGHT_LINE_LAYER_ID)) {
+    map.setPaintProperty(BUILDING_HIGHLIGHT_LINE_LAYER_ID, "line-opacity", visible ? 0.95 : 0);
+  }
+}
+
+function nearestCampusBuildingCode(map: MapLibreMap, point: { x: number; y: number }) {
+  let nearestCode: string | null = null;
+  let nearestDistance = MAP_BUILDING_HIT_RADIUS_PX ** 2;
+
+  for (const building of CAMPUS_BUILDINGS) {
+    const projected = map.project(building.navigationPoint);
+    const distance = (projected.x - point.x) ** 2 + (projected.y - point.y) ** 2;
+    if (distance >= nearestDistance) continue;
+    nearestCode = building.code;
+    nearestDistance = distance;
+  }
+
+  return nearestCode;
+}
+
 function getMarkerOffset(slot: number, total: number): [number, number] {
   if (total <= 1) return [0, 0];
   const row = Math.floor(slot / 3);
@@ -208,6 +486,9 @@ function syncMapData(
   data: MapData,
   markers: Marker[],
   theme: MapTheme,
+  lastRouteKeyRef: MutableRefObject<string>,
+  routeAnimationFrameRef: MutableRefObject<number | null>,
+  latestDataRef: MutableRefObject<MapData>,
 ) {
   for (const marker of markers) marker.remove();
   markers.length = 0;
@@ -243,6 +524,8 @@ function syncMapData(
     markerButton.title = `${meeting.courseCode} at ${building.code}`;
     markerButton.setAttribute("aria-label", `Select ${meeting.courseCode}, stop ${index + 1}`);
     markerButton.addEventListener("click", () => data.onSelectMeeting(meeting.id), { once: true });
+    markerButton.addEventListener("mouseenter", () => data.onHoverBuilding(building.code));
+    markerButton.addEventListener("mouseleave", () => data.onHoverBuilding(null));
     markers.push(
       new maplibregl.Marker({ element: markerButton, offset })
         .setLngLat(anchor.coordinate)
@@ -268,19 +551,35 @@ function syncMapData(
       homeMarker.title = `Home · ${data.home.label}`;
       homeMarker.setAttribute("role", "img");
       homeMarker.setAttribute("aria-label", `Home at ${data.home.label}`);
+      homeMarker.addEventListener("mouseenter", () => data.onHoverBuilding(homeBuilding.code));
+      homeMarker.addEventListener("mouseleave", () => data.onHoverBuilding(null));
       markers.push(
         new maplibregl.Marker({ element: homeMarker }).setLngLat(anchor.coordinate).addTo(map),
       );
     }
   }
 
-  const collection = routeFeatureCollection(data);
-  const source = map.getSource("day-routes") as GeoJSONSource | undefined;
-  if (source) {
-    source.setData(collection);
-  } else {
-    map.addSource("day-routes", { type: "geojson", data: collection });
+  const routeKey = routeGeometryKey(data);
+  const routeChanged = routeKey !== lastRouteKeyRef.current;
+  const shouldAnimate =
+    routeChanged &&
+    Boolean(routeKey) &&
+    !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let source = map.getSource("day-routes") as GeoJSONSource | undefined;
+  const sourceCreated = !source;
+  if (!source) {
+    map.addSource("day-routes", {
+      type: "geojson",
+      data: routeFeatureCollection(data, shouldAnimate ? 0 : 1),
+    });
     addRouteLayers(map, theme);
+    source = map.getSource("day-routes") as GeoJSONSource;
+  }
+
+  if (routeChanged) {
+    animateRouteDraw(map, source, routeKey, lastRouteKeyRef, routeAnimationFrameRef, latestDataRef);
+  } else if (sourceCreated || routeAnimationFrameRef.current === null) {
+    source.setData(routeFeatureCollection(data));
   }
 }
 
@@ -352,6 +651,8 @@ export function CampusMap({
   selectedSegmentId,
   onSelectMeeting,
   onSelectSegment,
+  hoveredBuildingCode,
+  onHoverBuilding,
   home,
   className = "",
 }: MapData) {
@@ -360,6 +661,8 @@ export function CampusMap({
   const maplibreRef = useRef<MapLibreModule | null>(null);
   const markersRef = useRef<Marker[]>([]);
   const lastFitKeyRef = useRef<string>("");
+  const lastRouteKeyRef = useRef<string>("");
+  const routeAnimationFrameRef = useRef<number | null>(null);
   const appliedThemeRef = useRef<MapTheme | null>(null);
   const [mapTheme, setMapTheme] = useState<MapTheme>(getDocumentTheme);
   const themeRef = useRef<MapTheme>(mapTheme);
@@ -372,6 +675,8 @@ export function CampusMap({
     selectedSegmentId,
     onSelectMeeting,
     onSelectSegment,
+    hoveredBuildingCode,
+    onHoverBuilding,
     home,
   });
 
@@ -384,12 +689,16 @@ export function CampusMap({
       selectedSegmentId,
       onSelectMeeting,
       onSelectSegment,
+      hoveredBuildingCode,
+      onHoverBuilding,
       home,
     };
   }, [
     home,
     mapTheme,
     meetings,
+    hoveredBuildingCode,
+    onHoverBuilding,
     onSelectMeeting,
     onSelectSegment,
     selectedMeetingId,
@@ -419,6 +728,7 @@ export function CampusMap({
     let loadTimeout: ReturnType<typeof setTimeout> | undefined;
     setStatus("loading");
     lastFitKeyRef.current = "";
+    lastRouteKeyRef.current = "";
 
     void import("maplibre-gl")
       .then((maplibregl) => {
@@ -450,6 +760,33 @@ export function CampusMap({
         collapseAttribution();
         map.on("styledata", collapseAttribution);
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+        let mapHoveredBuildingCode: string | null = null;
+        map.on("mousemove", (event) => {
+          if (!map.isStyleLoaded()) return;
+          const layers = buildingLayerIds(map);
+          const buildingFeatures =
+            layers.length > 0
+              ? map
+                  .queryRenderedFeatures(event.point, { layers })
+                  .filter(
+                    (feature) =>
+                      feature.geometry.type === "Polygon" ||
+                      feature.geometry.type === "MultiPolygon",
+                  )
+              : [];
+          const nextCode =
+            buildingFeatures.map(featureBuildingCode).find((code) => code !== null) ??
+            (buildingFeatures.length > 0 ? nearestCampusBuildingCode(map, event.point) : null);
+          if (nextCode === mapHoveredBuildingCode) return;
+          mapHoveredBuildingCode = nextCode;
+          map.getCanvas().style.cursor = nextCode ? "pointer" : "";
+          latestData.current.onHoverBuilding(nextCode);
+        });
+        map.getCanvas().addEventListener("mouseleave", () => {
+          mapHoveredBuildingCode = null;
+          map.getCanvas().style.cursor = "";
+          latestData.current.onHoverBuilding(null);
+        });
         map.on("error", () => {
           if (!disposed && !map.isStyleLoaded()) setStatus("error");
         });
@@ -458,7 +795,18 @@ export function CampusMap({
           ready = true;
           if (loadTimeout) clearTimeout(loadTimeout);
           styleCampusBuildings(map, themeRef.current);
-          syncMapData(map, maplibregl, latestData.current, markersRef.current, themeRef.current);
+          ensureBuildingHighlightLayers(map, themeRef.current);
+          syncMapData(
+            map,
+            maplibregl,
+            latestData.current,
+            markersRef.current,
+            themeRef.current,
+            lastRouteKeyRef,
+            routeAnimationFrameRef,
+            latestData,
+          );
+          syncBuildingHighlight(map, latestData.current.hoveredBuildingCode);
           if (!routeClickBound) {
             map.on("click", "day-routes-solid", (event) => {
               const id = event.features?.[0]?.properties?.["id"];
@@ -480,6 +828,10 @@ export function CampusMap({
     return () => {
       disposed = true;
       if (loadTimeout) clearTimeout(loadTimeout);
+      if (routeAnimationFrameRef.current !== null) {
+        cancelAnimationFrame(routeAnimationFrameRef.current);
+        routeAnimationFrameRef.current = null;
+      }
       for (const marker of markersRef.current) marker.remove();
       markersRef.current = [];
       mapRef.current?.remove();
@@ -501,7 +853,16 @@ export function CampusMap({
     const map = mapRef.current;
     const maplibregl = maplibreRef.current;
     if (map && maplibregl && map.isStyleLoaded()) {
-      syncMapData(map, maplibregl, latestData.current, markersRef.current, themeRef.current);
+      syncMapData(
+        map,
+        maplibregl,
+        latestData.current,
+        markersRef.current,
+        themeRef.current,
+        lastRouteKeyRef,
+        routeAnimationFrameRef,
+        latestData,
+      );
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
     }
   }, [
@@ -513,6 +874,11 @@ export function CampusMap({
     selectedSegmentId,
     segments,
   ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map?.isStyleLoaded()) syncBuildingHighlight(map, hoveredBuildingCode);
+  }, [hoveredBuildingCode]);
 
   return (
     <div

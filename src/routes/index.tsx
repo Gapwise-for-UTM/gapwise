@@ -48,6 +48,7 @@ import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import { chooseDefaultTerm } from "@/lib/calendar-awareness";
 import { findGaps } from "@/lib/gaps";
 import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
+import { emitClickSpark } from "@/lib/micro-interactions";
 import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
 import { deserializeSchedule } from "@/features/sync/schedule-serialization";
@@ -825,8 +826,11 @@ function Index() {
                       headerAction={
                         <button
                           type="button"
-                          onClick={() => setShowAddPersonal(true)}
-                          className="button-primary inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
+                          onClick={(event) => {
+                            emitClickSpark(event);
+                            setShowAddPersonal(true);
+                          }}
+                          className="button-primary click-spark inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
                         >
                           Add personal
                         </button>

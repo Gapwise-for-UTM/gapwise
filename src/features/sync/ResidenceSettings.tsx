@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
+import { emitClickSpark } from "@/lib/micro-interactions";
 import { sanitizeUserPreferences, type UserPreferences } from "./preferences";
 import { loadPreferences, savePreferences } from "./sync-service";
 
@@ -152,8 +153,11 @@ export function ResidenceSettings({
             <button
               type="button"
               disabled={busy}
-              onClick={() => void saveToCloud()}
-              className="button-primary inline-flex min-h-9 items-center gap-2 px-3 text-xs font-semibold disabled:opacity-50"
+              onClick={(event) => {
+                emitClickSpark(event);
+                void saveToCloud();
+              }}
+              className="button-primary click-spark inline-flex min-h-9 items-center gap-2 px-3 text-xs font-semibold disabled:opacity-50"
             >
               <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" /> Save to account
             </button>
