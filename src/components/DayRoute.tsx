@@ -67,6 +67,7 @@ export function DayRoute({
   const [weekday, setWeekday] = useState<Weekday>(initialDay);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
+  const [hoveredBuildingCode, setHoveredBuildingCode] = useState<string | null>(null);
   const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);
 
   const dayMeetings = useMemo(
@@ -129,6 +130,9 @@ export function DayRoute({
   const selectSegment = useCallback((id: string) => {
     setSelectedSegmentId(id);
     setSelectedMeetingId(null);
+  }, []);
+  const highlightBuilding = useCallback((code: string | null) => {
+    setHoveredBuildingCode(code);
   }, []);
   const selectedSegment = segments.find((segment) => segment.id === selectedSegmentId) ?? null;
 
@@ -279,6 +283,9 @@ export function DayRoute({
                 const segment = segments[index];
                 const selected = selectedMeetingId === meeting.id;
                 const homeStop = isResidenceMeeting(meeting);
+                const buildingHighlighted =
+                  meeting.buildingCode !== null &&
+                  meeting.buildingCode.toUpperCase() === hoveredBuildingCode;
                 const classNumber = homeStop
                   ? null
                   : routeStops.slice(0, index + 1).filter((stop) => !isResidenceMeeting(stop))
@@ -297,7 +304,15 @@ export function DayRoute({
                     <button
                       type="button"
                       onClick={() => selectMeeting(meeting.id)}
-                      className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                      onMouseEnter={() =>
+                        highlightBuilding(meeting.buildingCode?.toUpperCase() ?? null)
+                      }
+                      onMouseLeave={() => highlightBuilding(null)}
+                      onFocus={() => highlightBuilding(meeting.buildingCode?.toUpperCase() ?? null)}
+                      onBlur={() => highlightBuilding(null)}
+                      data-building-code={meeting.buildingCode ?? undefined}
+                      data-building-highlighted={buildingHighlighted}
+                      className={`route-stop-card w-full rounded-lg border p-3 text-left ${
                         selected
                           ? "border-accent/60 bg-accent/8"
                           : "border-border bg-card hover:bg-muted/60"
@@ -366,6 +381,8 @@ export function DayRoute({
               selectedSegmentId={selectedSegmentId}
               onSelectMeeting={selectMeeting}
               onSelectSegment={selectSegment}
+              hoveredBuildingCode={hoveredBuildingCode}
+              onHoverBuilding={highlightBuilding}
               home={mapHome}
               className="h-[30rem] lg:h-[36rem]"
             />

@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { CloudDownload, CloudUpload, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { Meeting } from "@/lib/timetable-types";
+import { emitClickSpark } from "@/lib/micro-interactions";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { deleteSchedule, loadSchedule, saveSchedule } from "./sync-service";
 import type { RestorationState } from "./restoration";
@@ -55,13 +56,14 @@ export function CloudSyncControls({
           <button
             type="button"
             disabled={!enabled || !meetings?.length || busy}
-            onClick={() =>
+            onClick={(event) => {
+              emitClickSpark(event);
               void run(async () => {
                 await saveSchedule(meetings!);
                 return "Normalized timetable synced.";
-              })
-            }
-            className="button-primary inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              });
+            }}
+            className="button-primary click-spark inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
             Sync timetable

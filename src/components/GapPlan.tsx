@@ -6,13 +6,14 @@ import {
   Clock,
   Coffee,
   Home,
+  MapPin,
   SlidersHorizontal,
   Sparkles,
   Utensils,
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FriendOverlapPanel } from "@/features/friends/FriendOverlapPanel";
 import type { FriendGapOverlap } from "@/features/friends/types";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
@@ -383,6 +384,63 @@ function actionChipLabel(recommendation: GapRecommendation) {
   }
 }
 
+function GapFillBar({
+  protectedMinutes,
+  freeMinutes,
+}: {
+  protectedMinutes: number;
+  freeMinutes: number;
+}) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  const totalMinutes = Math.max(1, protectedMinutes + freeMinutes);
+  const protectedPercent = (protectedMinutes / totalMinutes) * 100;
+  const freePercent = 100 - protectedPercent;
+
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    if (!("IntersectionObserver" in window)) {
+      setVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setVisible(true);
+        observer.disconnect();
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div className="mt-3">
+      <div className="mb-1.5 flex items-center justify-between gap-3 text-[0.68rem] font-medium text-muted-foreground">
+        <span>Eating · {formatCompactDuration(protectedMinutes)}</span>
+        <span>Free · {formatCompactDuration(freeMinutes)}</span>
+      </div>
+      <div
+        ref={barRef}
+        className="gap-fill-track"
+        data-visible={visible}
+        role="img"
+        aria-label={`${protectedMinutes} minutes protected for eating and ${freeMinutes} minutes of free time`}
+      >
+        <span className="gap-fill-section" style={{ width: `${protectedPercent}%` }}>
+          <span className="gap-fill-segment gap-fill-protected" />
+        </span>
+        <span className="gap-fill-section" style={{ width: `${freePercent}%` }}>
+          <span className="gap-fill-segment gap-fill-free" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const GapCard = memo(function GapCard({
   gap,
   preferences,
@@ -443,9 +501,14 @@ const GapCard = memo(function GapCard({
       ),
     ),
   ];
+  const protectedEatingMinutes = Math.min(
+    gapPreferences.mealDurationMinutes,
+    selected.activityMinutes,
+  );
+  const freeMinutes = Math.max(0, selected.activityMinutes - protectedEatingMinutes);
 
   return (
-    <article className="surface surface-interactive p-5 sm:p-6">
+    <article className="gap-card group surface surface-interactive p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-2 font-mono text-xs font-medium tabular-nums text-muted-foreground">
           <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -458,7 +521,7 @@ const GapCard = memo(function GapCard({
 
       <div className="mt-3 flex items-start gap-2.5">
         <span
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.style}`}
+          className={`gap-card-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.style}`}
         >
           <ActionIcon className="h-4 w-4" aria-hidden="true" />
         </span>
@@ -472,6 +535,10 @@ const GapCard = memo(function GapCard({
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selected.summary}</p>
         </div>
       </div>
+
+      {selected.action === "meal-window" ? (
+        <GapFillBar protectedMinutes={protectedEatingMinutes} freeMinutes={freeMinutes} />
+      ) : null}
 
       {friendOverlaps.length > 0 ? (
         <div className="mt-4 rounded-lg border border-accent/25 bg-accent/8 px-3 py-3">
@@ -672,10 +739,13 @@ export const GapPlan = memo(function GapPlan({
       />
 
       {groups.length === 0 ? (
-        <div className="surface p-8 text-center">
-          <h3 className="text-lg font-semibold">No gaps in this term</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your classes run back to back, or you only have one meeting per day.
+        <div className="surface flex flex-col items-center p-8 text-center">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-secondary/45">
+            <MapPin className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+          </span>
+          <h3 className="mt-4 text-lg font-semibold">No gaps today</h3>
+          <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+            Your classes are back to back, or there is only one class scheduled.
           </p>
         </div>
       ) : null}

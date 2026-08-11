@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { FileUp, Loader2, Sparkles } from "lucide-react";
+import { emitClickSpark } from "@/lib/micro-interactions";
 
 export function UploadPanel({
   onFile,
@@ -75,9 +76,12 @@ export function UploadPanel({
     <div className="mt-5 space-y-3">
       <button
         type="button"
-        onClick={() => inputRef.current?.click()}
+        onClick={(event) => {
+          emitClickSpark(event);
+          inputRef.current?.click();
+        }}
         disabled={loading}
-        className="button-primary inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold disabled:translate-y-0 disabled:opacity-60"
+        className="button-primary click-spark inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold disabled:translate-y-0 disabled:opacity-60"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
