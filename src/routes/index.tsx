@@ -720,7 +720,11 @@ function Index() {
             preferences={preferences}
             onPreferencesChange={updateUserPreferences}
           />
-          <AccountStatus user={user} loading={authLoading} />
+          <AccountStatus
+            user={user}
+            loading={authLoading}
+            onAccountDeleted={handleAccountDeleted}
+          />
         </MobileMoreSheet>
       </>
     );
