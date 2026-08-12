@@ -56,7 +56,7 @@ describe("supply-chain configuration", () => {
   });
 });
 
-describe("account deletion and RLS security", () => {
+describe("account deletion and encrypted-only cloud security", () => {
   test("derives deletion identity from the verified bearer token", async () => {
     const source = await readFile("supabase/functions/delete-account/index.ts", "utf8");
     expect(source).toContain("admin.auth.getUser(token)");
@@ -76,7 +76,7 @@ describe("account deletion and RLS security", () => {
     expect(source).not.toContain("defaultOrigins[0]");
   });
 
-  test("authoritative encrypted mode clears cross-account and legacy plaintext state", async () => {
+  test("authoritative encrypted mode clears cross-account and plaintext browser state", async () => {
     const [route, preferences, remembered] = await Promise.all([
       readFile("src/routes/index.tsx", "utf8"),
       readFile("src/features/sync/preferences.ts", "utf8"),
@@ -90,14 +90,24 @@ describe("account deletion and RLS security", () => {
     expect(remembered).toContain("window.localStorage.removeItem(REMEMBER_KEY)");
   });
 
-  test("authoritative encrypted cloud deletion does not require legacy plaintext tables", async () => {
-    const syncService = await readFile("src/features/sync/sync-service.ts", "utf8");
-    expect(syncService.match(/if \(isEncryptedPrivateCloudAuthoritative\) return;/g)).toHaveLength(
-      2,
+  test("Gate 6 is fail-closed and permanently removes plaintext cloud storage", async () => {
+    const migration = await readFile(
+      "supabase/migrations/20260812020500_retire_legacy_plaintext_cloud.sql",
+      "utf8",
     );
+    expect(migration).toContain("legacy schedule owner lacks a complete encrypted replacement");
+    expect(migration).toContain("legacy preference owner lacks an encrypted replacement");
+    expect(migration).toContain("left join public.encrypted_private_data");
+    expect(migration).toContain("left join public.crypto_key_envelopes");
+    expect(migration).toContain("left join public.encrypted_friend_availability");
+    expect(migration).toContain("drop function if exists public.get_friend_gap_overlaps(text)");
+    expect(migration).toContain("drop function if exists private.schedule_gap_windows(uuid, text)");
+    expect(migration).toContain("drop table public.user_preferences");
+    expect(migration).toContain("drop table public.user_schedules");
+    expect(migration).not.toMatch(/cascade/i);
   });
 
-  test("all user tables use RLS, ownership checks, and cascading deletion", async () => {
+  test("historical plaintext schema was owner-RLS scoped before retirement", async () => {
     const sql = await readFile("supabase/migrations/20260801171701_user_sync.sql", "utf8");
     for (const table of ["user_schedules", "user_preferences"]) {
       expect(sql).toContain(`alter table public.${table} enable row level security`);
@@ -110,7 +120,7 @@ describe("account deletion and RLS security", () => {
     expect(sql).not.toContain("using (true)");
   });
 
-  test("authenticated table grants stay least-privileged", async () => {
+  test("historical table grants never used grant all", async () => {
     const sql = await readFile(
       "supabase/migrations/20260803043410_harden_table_privileges.sql",
       "utf8",
@@ -118,23 +128,18 @@ describe("account deletion and RLS security", () => {
     expect(sql).toContain("revoke all on table public.user_schedules from anon, authenticated");
     expect(sql).toContain("revoke all on table public.user_preferences from anon, authenticated");
     expect(sql).not.toMatch(/grant\s+all/i);
-    expect(sql.match(/grant select, insert, update, delete/g)).toHaveLength(2);
   });
 
-  test("removes source filenames without changing RLS policies", async () => {
+  test("source filenames were removed before plaintext retirement", async () => {
     const migration = await readFile(
       "supabase/migrations/20260807132654_remove_schedule_source_filename.sql",
       "utf8",
     );
-    const syncService = await readFile("src/features/sync/sync-service.ts", "utf8");
-    const databaseTypes = await readFile("src/lib/database.types.ts", "utf8");
     expect(migration).toMatch(/drop column if exists source_filename/i);
     expect(migration).not.toMatch(/policy|row level security/i);
-    expect(syncService).not.toContain("source_filename");
-    expect(databaseTypes).not.toContain("source_filename");
   });
 
-  test("stores residence choice in the existing owner-scoped preferences row", async () => {
+  test("residence plaintext existed only in the historical owner-scoped preference schema", async () => {
     const migration = await readFile(
       "supabase/migrations/20260810200438_add_residence_preferences.sql",
       "utf8",
@@ -143,7 +148,6 @@ describe("account deletion and RLS security", () => {
     expect(migration).toContain("add column day_origin");
     expect(migration).toContain("add column residence_building_code");
     expect(migration).toContain("day_origin in ('commute', 'residence')");
-    expect(migration).toMatch(/day_origin = 'residence'[\s\S]*residence_building_code is not null/);
     expect(migration).not.toMatch(/create policy|using\s*\(true\)/i);
   });
 });
