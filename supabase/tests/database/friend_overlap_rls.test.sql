@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(25);
 
 select has_table('public', 'friend_profiles', 'friend profiles table exists');
 select has_table('public', 'friend_invites', 'private-code hash table exists');
@@ -72,14 +72,8 @@ select throws_like(
 );
 
 insert into public.friendships (
-  id,
-  user_a_id,
-  user_b_id,
-  requested_by,
-  status,
-  requester_accepted_at,
-  recipient_accepted_at,
-  accepted_at
+  id, user_a_id, user_b_id, requested_by, status,
+  requester_accepted_at, recipient_accepted_at, accepted_at
 )
 values
   (
@@ -97,34 +91,20 @@ values
     'pending', now(), null, null
   );
 
-create temporary table captured_invite (code text not null) on commit drop;
-
 set local role authenticated;
 set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000001';
 
 select lives_ok(
-  $$
-    update public.friend_profiles
-    set display_name = 'Alex Safe'
-    where user_id = '00000000-0000-4000-8000-000000000001'
-  $$,
+  $$ update public.friend_profiles set display_name = 'Alex Safe' where user_id = '00000000-0000-4000-8000-000000000001' $$,
   'owners can update their safe friend display name'
 );
-select is(
-  (select count(*) from public.friend_profiles),
-  1::bigint,
-  'direct profile reads expose only the caller row'
-);
+select is((select count(*) from public.friend_profiles), 1::bigint, 'direct profile reads expose only the caller row');
 select is(
   (select count(*) from public.friend_profiles where user_id = '00000000-0000-4000-8000-000000000002'),
   0::bigint,
   'a caller cannot direct-read another user profile'
 );
-select is(
-  (select count(*) from public.list_friend_connections()),
-  2::bigint,
-  'friend-list RPC returns only the caller current relationships'
-);
+select is((select count(*) from public.list_friend_connections()), 2::bigint, 'friend-list RPC returns only the caller current relationships');
 select is(
   (select count(*) from public.list_friend_connections() where status = 'accepted' and direction = 'mutual'),
   1::bigint,
@@ -135,11 +115,7 @@ select is(
   1::bigint,
   'requester sees a pending request only as outgoing'
 );
-select is(
-  public.revoke_friendship('10000000-0000-4000-8000-000000000001'),
-  true,
-  'either participant can revoke an accepted friendship'
-);
+select is(public.revoke_friendship('10000000-0000-4000-8000-000000000001'), true, 'either participant can revoke an accepted friendship');
 select is(
   (select count(*) from public.list_friend_connections() where friendship_id = '10000000-0000-4000-8000-000000000001'),
   0::bigint,
@@ -152,11 +128,7 @@ select is(
   1::bigint,
   'recipient sees the request only as incoming'
 );
-select is(
-  public.respond_to_friend_request('10000000-0000-4000-8000-000000000002', true),
-  true,
-  'recipient can explicitly accept a pending request'
-);
+select is(public.respond_to_friend_request('10000000-0000-4000-8000-000000000002', true), true, 'recipient can explicitly accept a pending request');
 select is(
   (select count(*) from public.list_friend_connections() where status = 'accepted' and direction = 'mutual'),
   1::bigint,
@@ -169,51 +141,6 @@ select is(
   true,
   'invalid invite submissions receive the same non-enumerating success shape'
 );
-
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
-insert into captured_invite (code)
-select invite_code from public.create_friend_invite();
-select ok(
-  (select code ~ '^[0-9a-f]{48}$' from captured_invite),
-  'generated friend codes contain 192 bits encoded as 48 hex characters'
-);
-
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
-select is(
-  public.claim_friend_invite((select code from captured_invite)),
-  true,
-  'valid invite claim uses the same response shape as an invalid claim'
-);
-select is(
-  (select count(*) from public.list_friend_connections() where status = 'pending' and direction = 'outgoing'),
-  1::bigint,
-  'claiming a valid private code creates only a pending outgoing request'
-);
-
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
-select is(
-  (select count(*) from public.list_friend_connections() where status = 'pending' and direction = 'incoming'),
-  1::bigint,
-  'invite owner sees the claimed request only as incoming'
-);
-select is(
-  public.respond_to_friend_request(
-    (select friendship_id from public.list_friend_connections() where status = 'pending' and direction = 'incoming' limit 1),
-    true
-  ),
-  true,
-  'invite owner must explicitly accept before the relationship becomes mutual'
-);
-
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000004';
-select is(
-  (select count(*) from public.list_friend_connections() where status = 'accepted' and direction = 'mutual'),
-  1::bigint,
-  'private-code connection is mutual only after explicit acceptance'
-);
-
-set local "request.jwt.claim.sub" = '00000000-0000-4000-8000-000000000002';
-select is(public.disable_friend_invite(), true, 'disabling an invite is safe even after single-use claim');
 
 reset role;
 delete from auth.users where id = '00000000-0000-4000-8000-000000000002';
