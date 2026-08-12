@@ -35,12 +35,7 @@ import {
 
 function MicrosoftIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="currentColor"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
       <path d="M2 2h9v9H2V2Zm11 0h9v9h-9V2ZM2 13h9v9H2v-9Zm11 0h9v9h-9v-9Z" />
     </svg>
   );
@@ -48,12 +43,7 @@ function MicrosoftIcon() {
 
 function GoogleIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="currentColor"
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
       <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.88 3.2-1.76 4.16-1.12 1.12-2.88 2.4-6.08 2.4-4.88 0-8.72-3.92-8.72-8.72s3.84-8.72 8.72-8.72c2.64 0 4.56 1.04 5.92 2.32l2.32-2.32C18.72 1.44 16.08 0 12.48 0 5.84 0 .24 5.44.24 12s5.6 12 12.24 12c3.6 0 6.32-1.2 8.48-3.44 2.16-2.16 2.8-5.2 2.8-7.68 0-.72-.08-1.36-.16-1.92h-11.28Z" />
     </svg>
   );
