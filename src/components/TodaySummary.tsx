@@ -6,58 +6,21 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useEffect, useMemo, useState } from "react";
-import { planGapAssessment } from "@/features/gaps/assess-gap";
+import { memo } from "react";
 import type { GapPreferences } from "@/features/gaps/types";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import type { TransitionPlanner } from "@/features/routing/transition";
-import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
 import {
-  calendarDateKey,
-  firstOccurrence,
-  meetingOccursOnDate,
-  nextOccurrence,
-  termStatus,
-} from "@/lib/calendar-awareness";
-import { calculateLeaveBy } from "@/lib/gaps";
-import type { Gap, Meeting, Term } from "@/lib/timetable-types";
-import { formatCompactDuration, formatTime, termForMonth, WEEKDAYS } from "@/lib/timetable-types";
-
-function minutesNow(date: Date) {
-  return date.getHours() * 60 + date.getMinutes();
-}
-
-function formatOccurrenceDate(date: Date) {
-  return new Intl.DateTimeFormat("en-CA", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(date);
-}
-
-function occurrenceLead(date: Date, meeting: Meeting, now: Date) {
-  const location = getLocationPresentation({ meeting }).label;
-  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-  if (calendarDateKey(date) === calendarDateKey(tomorrow)) {
-    return `Tomorrow starts at ${formatTime(meeting.startTime)} in ${location}`;
-  }
-  return `Next class: ${meeting.courseCode} · ${formatOccurrenceDate(date)} · ${formatTime(
-    meeting.startTime,
-  )} · ${location}`;
-}
-
-function routeMinutes(route: TransitionRoute) {
-  const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds;
-  return seconds === null ? null : Math.ceil(seconds / 60);
-}
-
-function routeCopy(from: Meeting, to: Meeting, route: TransitionRoute) {
-  const presentation = getLocationPresentation({ from, to, route });
-  const minutes = routeMinutes(route);
-  if (minutes === null || route.status === "same-room") return presentation.label;
-  return `~${minutes} min walk${route.status === "approximate" ? ` · ${presentation.label}` : ""}`;
-}
+  formatOccurrenceDate,
+  minutesNow,
+  occurrenceLead,
+  routeCopy,
+  routeMinutes,
+} from "@/features/today/today-state";
+import { useTodayState } from "@/features/today/use-today-state";
+import type { Meeting, Term } from "@/lib/timetable-types";
+import { formatCompactDuration, formatTime, WEEKDAYS } from "@/lib/timetable-types";
 
 export const TodaySummary = memo(function TodaySummary({
   meetings,
@@ -76,68 +39,13 @@ export const TodaySummary = memo(function TodaySummary({
   onOpenGapPlan: () => void;
   onOpenDayRoute: () => void;
 }) {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  const summary = useMemo(() => {
-    const selectedMeetings = meetings.filter((meeting) => meeting.term === selectedTerm);
-    const status = termStatus(meetings, selectedTerm, now);
-    const first = firstOccurrence(selectedMeetings);
-    if (status === "before" && first) return { kind: "before" as const, first };
-    if (status === "ended") {
-      return { kind: "ended" as const, next: nextOccurrence(meetings, now) };
-    }
-    if (status === "unknown" && termForMonth(now.getMonth() + 1) !== selectedTerm) {
-      return { kind: "dates-unavailable" as const };
-    }
-
-    const weekday = WEEKDAYS[now.getDay() - 1] ?? null;
-    const day = weekday
-      ? selectedMeetings
-          .filter((meeting) => meetingOccursOnDate(meeting, now))
-          .sort((a, b) => a.startTime - b.startTime)
-      : [];
-    const minute = minutesNow(now);
-    const current = day.find((meeting) => meeting.startTime <= minute && meeting.endTime > minute);
-    const previous = [...day].reverse().find((meeting) => meeting.endTime <= minute) ?? null;
-    const next = day.find((meeting) => meeting.startTime > minute) ?? null;
-
-    if (current) {
-      if (!next) return { kind: "in-class" as const, current, next: null };
-      const route = planTransition(current, next, preferences);
-      const travel = routeMinutes(route);
-      const leaveBy =
-        travel === null
-          ? null
-          : calculateLeaveBy(next.startTime, travel * 60, preferences.transitionBufferMinutes);
-      return { kind: "in-class" as const, current, next, route, leaveBy };
-    }
-
-    if (previous && next) {
-      const gap: Gap = {
-        id: `${selectedTerm}-${weekday}-${previous.id}-${next.id}`,
-        term: selectedTerm,
-        weekday: weekday!,
-        startTime: previous.endTime,
-        endTime: next.startTime,
-        durationMinutes: next.startTime - previous.endTime,
-        previous,
-        next,
-      };
-      const plan = planGapAssessment(gap, preferences, gapPreferences, planTransition);
-      return { kind: "gap" as const, gap, ...plan };
-    }
-
-    if (next) return { kind: "before-first" as const, next };
-    return {
-      kind: day.length > 0 ? ("done" as const) : ("no-classes" as const),
-      next: nextOccurrence(selectedMeetings, now),
-    };
-  }, [gapPreferences, meetings, now, planTransition, preferences, selectedTerm]);
+  const { now, state: summary } = useTodayState({
+    meetings,
+    selectedTerm,
+    preferences,
+    gapPreferences,
+    planTransition,
+  });
 
   let title: string;
   let detail: string | null = null;
@@ -176,7 +84,7 @@ export const TodaySummary = memo(function TodaySummary({
     case "in-class": {
       title = `Now: ${summary.current.courseCode}`;
       detail = `${getLocationPresentation({ meeting: summary.current }).label} · until ${formatTime(summary.current.endTime)}`;
-      if (summary.next) {
+      if (summary.next && summary.route) {
         const presentation = getLocationPresentation({
           from: summary.current,
           to: summary.next,
@@ -187,7 +95,7 @@ export const TodaySummary = memo(function TodaySummary({
           summary.current,
           summary.next,
           summary.route,
-        )}${summary.leaveBy === null ? "" : ` · leave by ${formatTime(summary.leaveBy)}`}`;
+        )}${summary.leaveBy === null || summary.leaveBy === undefined ? "" : ` · leave by ${formatTime(summary.leaveBy)}`}`;
       }
       break;
     }
