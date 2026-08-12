@@ -121,6 +121,18 @@ export function AccountStatus({
     }
   }
 
+  async function startOAuth(signIn: () => Promise<void>) {
+    if (busy) return;
+    setBusy(true);
+    setMessage(null);
+    try {
+      await signIn();
+    } catch {
+      setBusy(false);
+      setMessage("Sign-in failed. Please try again.");
+    }
+  }
+
   return (
     <div className="relative flex items-center gap-2" role="group" aria-label="Account">
       {loading ? (
@@ -225,11 +237,7 @@ export function AccountStatus({
               <div className="space-y-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    void signInWithMicrosoft().catch(() =>
-                      setMessage("Sign-in failed. Please try again."),
-                    )
-                  }
+                  onClick={() => void startOAuth(signInWithMicrosoft)}
                   disabled={busy}
                   className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
                 >
@@ -237,11 +245,7 @@ export function AccountStatus({
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    void signInWithGoogle().catch(() =>
-                      setMessage("Sign-in failed. Please try again."),
-                    )
-                  }
+                  onClick={() => void startOAuth(signInWithGoogle)}
                   disabled={busy}
                   className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
                 >
@@ -249,11 +253,7 @@ export function AccountStatus({
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    void signInWithGitHub().catch(() =>
-                      setMessage("Sign-in failed. Please try again."),
-                    )
-                  }
+                  onClick={() => void startOAuth(signInWithGitHub)}
                   disabled={busy}
                   className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
                 >
