@@ -1,47 +1,47 @@
 # Vercel deployment
 
-Import the repository, use Bun, run `bun run build`, and publish `dist`.
-`vercel.json` enforces `bun install --frozen-lockfile`, preserves client-side deep
-links, and supplies security headers. Vercel supports the Bun 1.x line; CI and
-local development use the repository's exact 1.3.14 pin.
+Gapwise production is deployed from GitHub `main` to Vercel. `vercel.json` pins the install/build commands, serves `dist`, defines the two Node function entry points, preserves SPA deep links, applies long-lived caching to hashed assets, and supplies the production security headers.
 
-Set only these browser-safe variables:
+## Browser-safe variables
+
+Expose only:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_PUBLISHABLE_KEY`
-- `VITE_PRIVATE_CLOUD_MODE` (`off` until the migration runbook authorizes another mode)
 
-Never configure a Supabase secret or legacy service-role key as a Vercel frontend
-or `VITE_` variable. Deploy the account-deletion Edge Function through Supabase.
-Its canonical production/local origins are source-controlled; add preview origins
-deliberately through `ALLOWED_ORIGINS` rather than using an unrestricted wildcard.
+Private cloud is permanently encrypted-only in source. There is no `VITE_PRIVATE_CLOUD_MODE` rollout variable.
 
-The `/api/key-broker` and `/api/common-gap` Node functions use only:
+Never configure a database password, OAuth secret, Supabase secret/service-role key, KEK, or raw DEK as a Vercel frontend variable or any `VITE_*` value.
 
-- the same public Supabase URL and publishable key needed to create a caller-scoped client;
-- the caller's verified bearer token;
-- server-only `GAPWISE_ACTIVE_KEK_VERSION` and `GAPWISE_KEK_V<n>` values.
+## Server-only private-cloud variables
 
-KEKs must be Vercel **Sensitive** variables and must never be exposed to the frontend. Vercel must
-not have a Supabase service-role/secret key. Generate a separate Preview KEK; never copy the
-production KEK to Preview. Production KEK creation is paused until the operator completes the
-offline recovery action in
-[`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
+The `/api/key-broker` and `/api/common-gap` Node functions use:
 
-`vercel.json` gives each function a ten-second ceiling. Both enforce same-origin JSON POST, strict
-8 KB request/response boundaries, exact schemas, verified Supabase JWT claims and generic errors.
-The SPA catch-all does not override filesystem `/api` routes.
+- the public Supabase URL and publishable key needed to create a caller-scoped client;
+- the caller's verified bearer token; and
+- server-only `GAPWISE_ACTIVE_KEK_VERSION` plus matching `GAPWISE_KEK_V<n>` Sensitive variables.
 
-Production verification:
+Production and Preview must never share a KEK. Vercel private-cloud functions must not receive a Supabase service-role credential. Keep an offline recovery copy of every active production KEK version before activation and follow [`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md) for recovery and rotation.
 
-1. Open `/` and a deep link directly.
-2. Confirm guest import works with Supabase variables absent.
-3. With mode `off`, sign in, explicitly sync, refresh and confirm the known-good legacy path.
-4. After the additive schema and preview-only KEK exist, use disposable users to verify encrypted
-   sync, local IndexedDB restore without a broker request, storage-reset bootstrap and common gap.
-5. Verify a routine edit calls no Vercel/Edge crypto function and makes only direct RLS ciphertext
-   requests; verify the metadata preflight does not return ciphertext twice.
-6. Open Day Route and confirm its code, worker, MapLibre tiles and markers load only then.
-7. Confirm CSP has no wildcard Supabase origin, `unsafe-eval`, frames or object source; verify HSTS,
-   the exact Supabase connection origin and OpenFreeMap still work without console violations.
-8. Delete a disposable account and verify both cloud cascades and local key/state cleanup.
+The account-deletion Edge Function is deployed through Supabase, not Vercel. Its production/local origins are exact and source-controlled; temporary Preview origins must be explicitly added and removed rather than replaced with an unrestricted wildcard.
+
+## Request boundary
+
+`vercel.json` gives each private-cloud function a ten-second ceiling. The API boundary enforces same-origin JSON POST, strict request/response size limits, fixed schemas, verified Supabase authentication, caller-scoped database access, and generic server errors.
+
+The production CSP permits the narrow WebAssembly compilation capability required by the lazy-loaded 3D model viewer through `'wasm-unsafe-eval'`; it does not enable general JavaScript `'unsafe-eval'`.
+
+## Production verification
+
+After a production deployment:
+
+1. Confirm the deployment is `READY`, targets `production`, and corresponds to the intended `main` commit.
+2. Open `/` and at least one deep link directly.
+3. Confirm guest import, timetable gaps, and bundled routing work without requiring signed-in cloud state.
+4. With a signed-in test context, verify encrypted restore, encrypted sync, same-device local restore, sign-out cleanup, and bounded friend overlap as appropriate for the change.
+5. Confirm ordinary timetable/gap/route use remains local-first and does not introduce unnecessary Vercel function calls.
+6. Confirm response headers retain the restrictive CSP, HSTS, `nosniff`, strict referrer policy, restrictive permissions policy, and frame denial.
+7. Review Vercel runtime errors after the deployment without logging private timetable data, ciphertext, tokens, or key material.
+8. For destructive account-deletion testing, use disposable data and verify both cloud cascades and local cleanup.
+
+Production plaintext timetable/settings storage and the legacy plaintext overlap implementation were retired in Gate 6. Do not reintroduce a plaintext fallback to recover from an outage; use the recovery procedures in [`OPERATIONS.md`](OPERATIONS.md) and the private-cloud runbook.

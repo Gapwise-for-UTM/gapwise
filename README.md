@@ -16,7 +16,7 @@ Gapwise exists because a free hour is only useful when travel time, buildings, a
 
 - The original `.ics` file never leaves the browser.
 - Campus route calculation uses a bundled path graph and makes no routing-provider request.
-- Cloud sync is optional. In the production private-cloud path, the browser encrypts the full private payload and a separate, deliberately lossy friend-availability capsule before either reaches Supabase.
+- Cloud sync is optional. The browser encrypts the full private payload and a separate, deliberately lossy friend-availability capsule before either reaches Supabase.
 - Supabase stores encrypted private payloads, encrypted availability capsules, key envelopes, authentication state, and the minimum relationship metadata needed by signed-in features.
 - The production Vercel key broker is inside the cryptographic trust boundary: it can unwrap per-user data-encryption keys under a server-held versioned KEK and re-wrap them to an authenticated device public key.
 - Friends receive at most three mutual rounded windows for a selected term. They never receive a timetable, capsule, arbitrary availability probe, course, room, building, or event label.
@@ -26,7 +26,7 @@ Gapwise exists because a free hour is only useful when travel time, buildings, a
 
 This is defense in depth against a database-only compromise, not a claim of end-to-end encryption or zero knowledge. Plaintext exists in the active browser, and the Vercel key broker is trusted with key unwrapping. The narrowly scoped common-gap server path decrypts only the deliberately lossy friend-availability capsules needed for an authorized overlap request.
 
-See the [privacy notice](PRIVACY.md), [security policy](SECURITY.md), [security architecture](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md), and [migration runbook](docs/PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
+See the [privacy notice](PRIVACY.md), [security policy](SECURITY.md), [security architecture](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md), and [migration/recovery runbook](docs/PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
 
 ## Key features
 
@@ -43,11 +43,11 @@ Outdoor paths cover the current mapped campus and every recognized academic/resi
 
 ## Private cloud sync and restoration
 
-In encrypted mode, the browser keeps non-extractable data keys and encrypted private records in IndexedDB when the platform supports durable `CryptoKey` cloning. A normal reload decrypts that local record without calling the key broker. After browser storage is cleared or on a new device, ordinary sign-in lets the narrow broker wrap the user's existing data keys to a new non-extractable device key; the browser then downloads ciphertext directly under Supabase Row Level Security and decrypts it locally. If durable key storage is unavailable, Gapwise uses page-lifetime non-extractable keys and does not persist raw key material.
+The browser keeps non-extractable data keys and encrypted private records in IndexedDB when the platform supports durable `CryptoKey` cloning. A normal reload decrypts that local record without calling the key broker. After browser storage is cleared or on a new device, ordinary sign-in lets the narrow broker wrap the user's existing data keys to a new non-extractable device key; the browser then downloads ciphertext directly under Supabase Row Level Security and decrypts it locally. If durable key storage is unavailable, Gapwise uses page-lifetime non-extractable keys and does not persist raw key material.
 
 Encrypted sync uses authenticated revisions and rejects stale writes rather than silently replacing a newer cloud value. It writes the encrypted local transaction first, so a Supabase or Vercel outage does not discard the valid local copy.
 
-GitHub or passwordless email sign-in is remembered in this browser using Supabase's persistent browser session until you sign out, the session expires, or browser storage is cleared. This is separate from **Remember on this device**, which controls only the parsed timetable in the legacy/local guest path. On a shared device, use **Sign out** from the account menu; it clears the signed-in user's local private state and auth session without deleting the cloud account.
+GitHub or passwordless email sign-in is remembered in this browser using Supabase's persistent browser session until you sign out, the session expires, or browser storage is cleared. This is separate from **Remember on this device**, which controls only local guest timetable persistence. On a shared device, use **Sign out** from the account menu; it clears the signed-in user's local private state and auth session without deleting the cloud account.
 
 ## Account and data deletion
 
@@ -67,9 +67,9 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-Never put a service-role key or server secret in a `VITE_` variable. Without these values, guest mode remains functional. See [architecture and operations](docs/OPERATIONS.md), [Supabase setup](docs/SUPABASE.md), [Vercel deployment](docs/VERCEL.md), and [Cloudflare Pages notes](docs/CLOUDFLARE_PAGES.md).
+Never put a service-role key or server secret in a `VITE_` variable. Without these values, guest mode remains functional. See [architecture and operations](docs/OPERATIONS.md), [Supabase setup](docs/SUPABASE.md), [Vercel deployment](docs/VERCEL.md), and the [static guest fallback notes](docs/CLOUDFLARE_PAGES.md).
 
-The private-cloud deployment uses server-only versioned KEKs on Vercel. Never generate, print, commit, paste, or expose those keys to browser configuration. Production and Preview must use separate KEKs. Follow the operator procedures in the [private-cloud migration runbook](docs/PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
+The private-cloud deployment uses server-only versioned KEKs on Vercel. Never generate, print, commit, paste, or expose those keys to browser configuration. Production and Preview must use separate KEKs. Follow the operator procedures in the [private-cloud migration/recovery runbook](docs/PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
 
 Measured free-tier capacity and scaling assumptions are documented in [PRIVATE_CLOUD_CAPACITY.md](docs/PRIVATE_CLOUD_CAPACITY.md).
 
@@ -102,9 +102,11 @@ Follow [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md) and the canonical survey
 
 ## Deployment
 
-Vite emits a static `dist/` directory compatible with Vercel and Cloudflare Pages. Deep-link rewrites are included. Deploy Supabase migrations and the deletion function separately using the steps in [`docs/SUPABASE.md`](docs/SUPABASE.md).
+Production is deployed from `main` to Vercel. `vercel.json` defines the build, same-origin private-cloud functions, SPA fallback, caching, and security headers. Supabase migrations and the deletion function are deployed separately using [`docs/SUPABASE.md`](docs/SUPABASE.md).
 
-Production private cloud is in authoritative encrypted mode. Legacy plaintext rollback rows are intentionally retained only through the explicit migration observation period; destructive cleanup remains a separately authorized Gate 6 operation in the migration runbook.
+Production is permanently encrypted-only. Gate 6 removed the legacy plaintext timetable/settings tables and plaintext overlap implementation; there is no deploy-time plaintext cloud fallback.
+
+For vendor portability and the free-for-students operating goal, the static Vite guest experience can also be hosted without a backend. That fallback does not provide the Vercel key-broker/common-gap private-cloud features unless equivalent same-origin server endpoints are implemented and reviewed.
 
 ## Current limitations and roadmap
 

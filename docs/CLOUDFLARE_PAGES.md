@@ -1,68 +1,49 @@
-# Cloudflare Pages deployment
+# Static guest-mode fallback
 
-Gapwise guest mode and the legacy cloud path are deployable as a client-only static Vite
-application. They need no Worker, Pages Function, KV, D1, paid map API, or other paid Cloudflare
-service. The encrypted private-cloud path is different: its key-broker and common-gap endpoints are
-Vercel Node functions. Do not enable `VITE_PRIVATE_CLOUD_MODE=shadow` or `encrypted` on a standalone
-Cloudflare Pages deployment unless those same-origin API routes have been deliberately implemented,
-reviewed, and verified on that platform.
+Gapwise's core timetable parsing, gap analysis, recommendations, and bundled campus routing are local-first and can be served as a static Vite application. This document exists as a vendor-portability/free-tier escape hatch, not as the production deployment guide.
 
-## Build settings
+Production uses Vercel because encrypted cloud sync and friend common-gap discovery require the reviewed same-origin `/api/key-broker` and `/api/common-gap` Node functions.
 
-Connect the repository in Cloudflare Pages and use:
+## What a static fallback supports
+
+A backend-free static deployment can support:
+
+- ACORN `.ics` import and parsing in the browser;
+- local timetable and personal-item use;
+- gap calculations and recommendations;
+- bundled UTM routing and OpenFreeMap tiles; and
+- local guest persistence supported by the browser.
+
+For the safest emergency/static fallback, omit the Supabase browser variables entirely so the build runs as guest-only.
+
+A standalone static host does **not** provide production encrypted cloud restore/sync or privacy-preserving friend common-gap requests unless equivalent same-origin server endpoints, KEK handling, authentication checks, and request boundaries are deliberately implemented and reviewed on that platform. Never copy a production Vercel KEK into frontend configuration.
+
+## Cloudflare Pages example
+
+If Cloudflare Pages is used for the guest-only fallback, a simple configuration is:
 
 ```text
-Production branch: development (or the branch you intentionally release)
+Production branch: main
 Build command: bun run build
 Build output directory: dist
 Root directory: /
 ```
 
-Cloudflare's current build image detects `bun.lock`. If a fixed toolchain is desired,
-set `BUN_VERSION` to the version used locally.
+`public/_redirects` supplies a static-host SPA fallback and `public/_headers` mirrors the restrictive browser/security headers used by production. These files are portability helpers; Vercel production uses `vercel.json` as its authoritative deployment configuration.
 
-`public/_redirects` supplies the SPA fallback:
-
-```text
-/* /index.html 200
-```
-
-`public/_headers` supplies a restrictive Content Security Policy and other security
-headers while allowing the isolated OpenFreeMap tile origin and optional Supabase
-project connections. Fonts use the local system stack and require no external origin.
-
-## Optional environment variables
-
-Guest mode requires no environment variables. To enable account and sync controls,
-set these for Production (and Preview only if desired):
-
-```text
-VITE_SUPABASE_URL
-VITE_SUPABASE_PUBLISHABLE_KEY
-VITE_PRIVATE_CLOUD_MODE=off
-```
-
-These values are compiled into the public client bundle, so only the browser-safe
-publishable/anon key is allowed. Never configure a service-role key.
-
-`GAPWISE_KEK_V<n>` is not a Pages variable. Never copy a production Vercel KEK into Cloudflare,
-into a `VITE_` variable, or into a static build. Production private-cloud activation is governed by
-[`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
-
-After the first deploy, add the final Pages origin to Supabase's allowed redirect URLs,
-GitHub OAuth configuration, and email magic-link redirect configuration as described in
-`docs/SUPABASE.md`.
+Do not set a retired private-cloud rollout flag. The application source is permanently encrypted-only, and the full signed-in cloud feature set depends on the reviewed server endpoints rather than a client mode switch.
 
 ## Verification
 
-Run locally before deploying:
+Before relying on a static fallback, run:
 
 ```sh
 bun install --frozen-lockfile
-bun test
 bun run typecheck
+bun run lint
+bun test
 bun run build
+bun run format:check
 ```
 
-Confirm `dist/index.html`, `dist/_redirects`, and `dist/_headers` exist. Test a deep-link
-refresh, guest import, map attribution, and—if configured—the GitHub and email magic-link sign-in round trips.
+Then verify deep-link refresh, guest import, timetable/gap behavior, routing, map attribution, and the expected absence of signed-in private-cloud functionality.
