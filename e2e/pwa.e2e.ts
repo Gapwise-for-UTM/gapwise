@@ -45,6 +45,11 @@ test("PWA metadata, service worker, and cached app shell are functional", async 
     .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker?.controller)))
     .toBe(true);
 
+  // Validate the online stage before deliberately taking the browser offline. Third-party
+  // resources may correctly fail while offline; the release gate below is the cached Gapwise
+  // shell itself remaining available and controlled by the service worker.
+  guard.assertClean();
+
   await context.setOffline(true);
   try {
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -55,6 +60,4 @@ test("PWA metadata, service worker, and cached app shell are functional", async 
   } finally {
     await context.setOffline(false);
   }
-
-  guard.assertClean();
 });
