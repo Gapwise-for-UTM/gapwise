@@ -3,6 +3,12 @@ import { expect, test } from "@playwright/test";
 import { expectLanding, isMobileProject, watchForAppFailures } from "./helpers";
 
 const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
+const twoTermFixturePath = path.join(
+  process.cwd(),
+  "tests",
+  "fixtures",
+  "sample-two-term-timetable.ics",
+);
 
 test("landing page is usable without an account", async ({ page }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
@@ -33,6 +39,26 @@ test("synthetic ACORN import reaches a usable timetable", async ({ page }, testI
       "true",
     );
   }
+
+  guard.assertClean();
+});
+
+test("two-term ACORN import switches between Fall and Winter", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "term-switch gate runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+
+  await page.locator("#ics-file").setInputFiles(twoTermFixturePath);
+  await expect(page.getByRole("heading", { name: "Your timetable" })).toBeVisible();
+
+  const terms = page.getByRole("group", { name: "Term" });
+  await expect(terms.getByRole("button", { name: "Fall" })).toBeVisible();
+  await expect(terms.getByRole("button", { name: "Winter" })).toBeVisible();
+  await terms.getByRole("button", { name: "Winter" }).click();
+  await expect(terms.getByRole("button", { name: "Winter" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText(/2 meetings in Winter/)).toBeVisible();
+  await expect(page.getByText("CSC148H5")).toBeVisible();
+  await expect(page.getByText("MAT136H5")).toBeVisible();
 
   guard.assertClean();
 });
@@ -90,6 +116,25 @@ test("mobile demo exposes the primary timetable and map navigation", async ({ pa
   await nav.getByRole("button", { name: "Map" }).click();
   await expect(page.getByText("Campus route")).toBeVisible();
   await expect(page.getByRole("button", { name: "Options" })).toBeVisible();
+  guard.assertClean();
+});
+
+test("calendar source bytes stay out of network request bodies", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "privacy network gate runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  const postBodies: string[] = [];
+  page.on("request", (request) => {
+    const body = request.postData();
+    if (body) postBodies.push(body);
+  });
+
+  await expectLanding(page);
+  await page.locator("#ics-file").setInputFiles(fixturePath);
+  await expect(page.getByRole("heading", { name: "Your timetable" })).toBeVisible();
+
+  expect(postBodies.join("\n")).not.toContain("BEGIN:VCALENDAR");
+  expect(postBodies.join("\n")).not.toContain("CSC108H5");
+  expect(postBodies.join("\n")).not.toContain("MAT102H5");
   guard.assertClean();
 });
 
