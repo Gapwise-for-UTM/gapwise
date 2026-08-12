@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, Github, LogOut, Trash2, UserRound, X } from "lucide-react";
+import { ChevronDown, GitBranch, LogOut, Trash2, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -273,7 +273,7 @@ export function AccountStatus({
                   disabled={busy}
                   className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
                 >
-                  <Github className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
+                  <GitBranch className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
                 </button>
               </div>
               <p className="mt-3 text-center text-xs text-muted-foreground">
