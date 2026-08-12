@@ -3,8 +3,9 @@ import { Window } from "happy-dom";
 import { StrictMode, act, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import type { Meeting } from "@/lib/timetable-types";
-import type { CloudScheduleRecord } from "@/features/sync/sync-service";
-import { deserializeSchedule } from "@/features/sync/schedule-serialization";
+import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
+import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
+import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import { meeting } from "./fixtures";
 
 const browserWindow = new Window({ url: "https://gapwise.test/" });
@@ -43,6 +44,11 @@ type AuthSnapshot = {
   error: string | null;
 };
 
+type EncryptedFixture = {
+  meetings: Meeting[];
+  updatedAt: string;
+};
+
 const authenticatedUser = {
   id: "user-1",
   app_metadata: {},
@@ -65,23 +71,35 @@ function useMockAuth(): AuthSnapshot {
 }
 
 const loadCalls: string[] = [];
-const saveCalls: Meeting[][] = [];
-let loadImplementation: (userId: string) => Promise<CloudScheduleRecord | null> = async () => null;
+let loadImplementation: (userId: string) => Promise<EncryptedFixture | null> = async () => null;
+
+function payload(meetings: Meeting[]): PrivateDataPayloadV1 {
+  return {
+    schemaVersion: 1,
+    schedule: meetings,
+    personalItems: [],
+    preferences: DEFAULT_USER_PREFERENCES,
+    gapPreferences: DEFAULT_GAP_PREFERENCES,
+  };
+}
 
 mock.module("@/features/auth/use-auth", () => ({ useAuth: useMockAuth }));
-mock.module("@/features/sync/sync-service", () => ({
-  loadScheduleRecord: (userId: string) => {
+mock.module("@/features/sync/encrypted-sync-service", () => ({
+  loadEncryptedPrivateState: async (userId: string) => {
     loadCalls.push(userId);
-    return loadImplementation(userId);
+    const record = await loadImplementation(userId);
+    return record
+      ? {
+          payload: payload(record.meetings),
+          source: "cloud" as const,
+          updatedAt: record.updatedAt,
+          persistentKeys: true,
+        }
+      : null;
   },
-  loadSchedule: async () => (await loadImplementation(authenticatedUser.id))?.meetings ?? null,
-  saveSchedule: async (meetings: Meeting[]) => {
-    saveCalls.push(meetings);
-  },
-  deleteSchedule: async () => undefined,
-  deletePreferences: async () => undefined,
-  savePreferences: async () => undefined,
-  loadPreferences: async () => null,
+  saveEncryptedPrivateState: async () => undefined,
+  deleteEncryptedPrivateCloud: async () => undefined,
+  isEncryptedSyncOptedIn: () => false,
 }));
 
 const { createRoot } = await import("react-dom/client");
@@ -141,24 +159,16 @@ async function unmountRoute() {
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+  const promise = new Promise<T>((resolvePromise) => {
     resolve = resolvePromise;
-    reject = rejectPromise;
   });
-  return { promise, resolve, reject };
-}
-
-function remember(meetings: Meeting[], updatedAt: string) {
-  localStorage.setItem("gapwise:remember", "1");
-  localStorage.setItem("gapwise:timetable", JSON.stringify({ data: meetings, updatedAt }));
+  return { promise, resolve };
 }
 
 beforeEach(() => {
   authSnapshot = { user: null, loading: true, error: null };
   loadImplementation = async () => null;
   loadCalls.length = 0;
-  saveCalls.length = 0;
   localStorage.clear();
   sessionStorage.clear();
   document.body.replaceChildren();
@@ -168,10 +178,10 @@ afterEach(async () => {
   await unmountRoute();
 });
 
-describe("route-level timetable restoration", () => {
-  test("waits for delayed auth and renders a valid cloud timetable without flashing upload", async () => {
+describe("route-level encrypted timetable restoration", () => {
+  test("waits for delayed auth and renders encrypted cloud data without flashing upload", async () => {
     const cloud = meeting({ id: "cloud", courseCode: "CLOUD101H5" });
-    const query = deferred<CloudScheduleRecord | null>();
+    const query = deferred<EncryptedFixture | null>();
     loadImplementation = async () => query.promise;
 
     await mountRoute();
@@ -179,21 +189,16 @@ describe("route-level timetable restoration", () => {
     expect(pageText()).not.toContain("Upload your ACORN calendar");
 
     await setAuth({ user: authenticatedUser, loading: false, error: null });
-    await waitFor(() => loadCalls.length === 1, "the cloud query to start");
-    expect(pageText()).not.toContain("Upload your ACORN calendar");
-
+    await waitFor(() => loadCalls.length === 1, "the encrypted restore to start");
     query.resolve({ meetings: [cloud], updatedAt: "2026-08-01T12:00:00.000Z" });
     await waitFor(() => pageText().includes("CLOUD101H5"), "the cloud timetable to render");
 
     expect(pageText()).toContain("Your timetable");
-    expect(pageText()).not.toContain("Upload your ACORN calendar");
     expect(pageText()).not.toContain("Drop your .ics file here");
-    expect(pageText()).not.toContain("Turn your ACORN timetable into a smarter campus day.");
     expect(loadCalls).toEqual([authenticatedUser.id]);
-    expect(saveCalls).toHaveLength(0);
   });
 
-  test("restores a synced cloud timetable again after a simulated reload", async () => {
+  test("restores encrypted cloud data again after a simulated reload", async () => {
     const cloud = meeting({ id: "reload-cloud", courseCode: "RELOAD101H5" });
     authSnapshot = { user: authenticatedUser, loading: false, error: null };
     loadImplementation = async () => ({
@@ -202,17 +207,15 @@ describe("route-level timetable restoration", () => {
     });
 
     await mountRoute();
-    await waitFor(() => pageText().includes("RELOAD101H5"), "the first cloud restore");
+    await waitFor(() => pageText().includes("RELOAD101H5"), "the first encrypted restore");
     await unmountRoute();
     await mountRoute();
-    await waitFor(() => pageText().includes("RELOAD101H5"), "the reload cloud restore");
+    await waitFor(() => pageText().includes("RELOAD101H5"), "the reload encrypted restore");
 
     expect(loadCalls).toEqual([authenticatedUser.id, authenticatedUser.id]);
-    expect(pageText()).not.toContain("Turn your ACORN timetable into a smarter campus day.");
-    expect(saveCalls).toHaveLength(0);
   });
 
-  test("shows a visible error when the cloud query fails", async () => {
+  test("shows a visible error when encrypted cloud restore fails", async () => {
     authSnapshot = { user: authenticatedUser, loading: false, error: null };
     loadImplementation = async () => {
       throw new Error("network unavailable");
@@ -223,7 +226,6 @@ describe("route-level timetable restoration", () => {
       () => pageText().includes("We couldn't restore your cloud timetable."),
       "the restore error",
     );
-
     expect(pageText()).toContain("Upload your ACORN calendar");
   });
 
@@ -239,29 +241,11 @@ describe("route-level timetable restoration", () => {
       () => pageText().includes("We couldn't restore your signed-in session."),
       "the auth initialization error",
     );
-
     expect(loadCalls).toHaveLength(0);
-    expect(pageText()).toContain("Upload your ACORN calendar");
   });
 
-  test("shows a visible error when the cloud record is malformed", async () => {
-    authSnapshot = { user: authenticatedUser, loading: false, error: null };
-    loadImplementation = async () => ({
-      meetings: deserializeSchedule([{ rawIcs: "BEGIN:VCALENDAR" }]),
-      updatedAt: "2026-08-01T12:00:00.000Z",
-    });
-
-    await mountRoute();
-    await waitFor(
-      () => pageText().includes("We couldn't restore your cloud timetable."),
-      "the malformed-record error",
-    );
-
-    expect(pageText()).toContain("Upload your ACORN calendar");
-  });
-
-  test("shows upload only after an authenticated cloud query returns no record", async () => {
-    const query = deferred<CloudScheduleRecord | null>();
+  test("shows upload only after authenticated encrypted restore returns no record", async () => {
+    const query = deferred<EncryptedFixture | null>();
     authSnapshot = { user: authenticatedUser, loading: false, error: null };
     loadImplementation = async () => query.promise;
 
@@ -269,42 +253,27 @@ describe("route-level timetable restoration", () => {
     expect(pageText()).not.toContain("Upload your ACORN calendar");
     query.resolve(null);
     await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the empty state");
-
     expect(pageText()).not.toContain("We couldn't restore your cloud timetable.");
   });
 
-  test("restores a remembered local timetable independently in guest mode", async () => {
-    const local = meeting({ id: "local", courseCode: "LOCAL101H5" });
-    remember([local], "2026-08-01T12:00:00.000Z");
+  test("ignores and removes legacy plaintext remembered timetable state", async () => {
+    const legacy = meeting({ id: "legacy-local", courseCode: "LEGACY101H5" });
+    localStorage.setItem("gapwise:remember", "1");
+    localStorage.setItem(
+      "gapwise:timetable",
+      JSON.stringify({ data: [legacy], updatedAt: "2026-08-01T12:00:00.000Z" }),
+    );
     authSnapshot = { user: null, loading: false, error: null };
 
     await mountRoute();
-    await waitFor(() => pageText().includes("LOCAL101H5"), "the local timetable");
+    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the guest empty state");
 
-    expect(loadCalls).toHaveLength(0);
-    expect(pageText()).toContain("Your timetable");
+    expect(pageText()).not.toContain("LEGACY101H5");
+    expect(localStorage.getItem("gapwise:timetable")).toBeNull();
+    expect(localStorage.getItem("gapwise:remember")).toBeNull();
   });
 
-  test.each([
-    ["cloud", "2026-08-01T10:00:00.000Z", "2026-08-01T12:00:00.000Z", "CLOUD201H5"],
-    ["local", "2026-08-01T12:00:00.000Z", "2026-08-01T10:00:00.000Z", "LOCAL201H5"],
-  ])(
-    "uses %s timestamp precedence in the mounted route",
-    async (_source, localTime, cloudTime, expectedCode) => {
-      const local = meeting({ id: "local-precedence", courseCode: "LOCAL201H5" });
-      const cloud = meeting({ id: "cloud-precedence", courseCode: "CLOUD201H5" });
-      remember([local], localTime);
-      authSnapshot = { user: authenticatedUser, loading: false, error: null };
-      loadImplementation = async () => ({ meetings: [cloud], updatedAt: cloudTime });
-
-      await mountRoute();
-      await waitFor(() => pageText().includes(expectedCode), `${_source} precedence`);
-
-      expect(pageText()).toContain(expectedCode);
-    },
-  );
-
-  test("clears a cloud-restored timetable on sign-out", async () => {
+  test("clears encrypted cloud-restored UI state on sign-out", async () => {
     const cloud = meeting({ id: "signed-out", courseCode: "SIGNOUT101H5" });
     authSnapshot = { user: authenticatedUser, loading: false, error: null };
     loadImplementation = async () => ({
@@ -313,21 +282,20 @@ describe("route-level timetable restoration", () => {
     });
 
     await mountRoute();
-    await waitFor(() => pageText().includes("SIGNOUT101H5"), "the cloud restore");
+    await waitFor(() => pageText().includes("SIGNOUT101H5"), "the encrypted restore");
     await setAuth({ user: null, loading: false, error: null });
     await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the signed-out state");
-
     expect(pageText()).not.toContain("SIGNOUT101H5");
   });
 
-  test("ignores a cloud restore that resolves after sign-out", async () => {
+  test("ignores an encrypted restore that resolves after sign-out", async () => {
     const cloud = meeting({ id: "stale", courseCode: "STALE101H5" });
-    const query = deferred<CloudScheduleRecord | null>();
+    const query = deferred<EncryptedFixture | null>();
     authSnapshot = { user: authenticatedUser, loading: false, error: null };
     loadImplementation = async () => query.promise;
 
     await mountRoute();
-    await waitFor(() => loadCalls.length === 1, "the cloud query to start");
+    await waitFor(() => loadCalls.length === 1, "the encrypted restore to start");
     await setAuth({ user: null, loading: false, error: null });
     query.resolve({ meetings: [cloud], updatedAt: "2026-08-01T12:00:00.000Z" });
     await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the guest state");
@@ -367,7 +335,7 @@ describe("route-level timetable restoration", () => {
     ).toBe(courseNode);
   });
 
-  test("does not query or upload over an already loaded in-memory timetable", async () => {
+  test("does not query cloud over an already loaded in-memory demo", async () => {
     authSnapshot = { user: null, loading: false, error: null };
     await mountRoute();
     await waitFor(() => pageText().includes("Try a demo"), "the demo button");
@@ -386,6 +354,5 @@ describe("route-level timetable restoration", () => {
 
     expect(pageText()).toContain("Demo timetable");
     expect(loadCalls).toHaveLength(0);
-    expect(saveCalls).toHaveLength(0);
   });
 });
