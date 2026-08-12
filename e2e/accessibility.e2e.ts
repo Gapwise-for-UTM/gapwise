@@ -18,10 +18,9 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
   ).toEqual([]);
 }
 
-test("core release journey has no serious or critical automatic a11y violations", async (
-  { page },
-  testInfo,
-) => {
+test("core release journey has no serious or critical automatic a11y violations", async ({
+  page,
+}, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "axe gate runs once in desktop Chromium");
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
