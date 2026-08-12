@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BubbleTabs } from "./BubbleTabs";
 import { CampusMap } from "./CampusMap";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
+import { MobileDayRoute } from "@/components/mobile/MobileDayRoute";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import {
   createResidenceMeeting,
@@ -22,6 +23,7 @@ import type { TransitionRoute } from "@/features/routing/types";
 import { loadPreferences, savePreferences } from "@/features/sync/sync-service";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
 import { formatDuration, formatTime, TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
@@ -57,6 +59,7 @@ export function DayRoute({
   user: User | null;
   planTransition: TransitionPlanner;
 }) {
+  const isMobile = useIsMobile();
   const availableTerms = useMemo(
     () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
     [meetings],
@@ -142,6 +145,19 @@ export function DayRoute({
     next.avoidStairs = next.mode === "step-free";
     next.preferIndoor = next.mode === "prefer-indoor";
     onPreferencesChange(next);
+  }
+
+  if (isMobile) {
+    return (
+      <MobileDayRoute
+        meetings={meetings}
+        term={term}
+        onTermChange={onTermChange}
+        preferences={preferences}
+        onPreferencesChange={onPreferencesChange}
+        planTransition={planTransition}
+      />
+    );
   }
 
   return (
