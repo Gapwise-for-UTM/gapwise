@@ -11,14 +11,7 @@ const container = document.getElementById("root");
 if (!container) throw new Error("Application root element is missing.");
 
 const router = getRouter();
-registerSW({
-  onOfflineReady() {
-    console.log("PWA offline ready");
-  },
-  onNeedRefresh() {
-    console.log("PWA update available");
-  },
-});
+registerSW();
 
 createRoot(container).render(
   <StrictMode>
