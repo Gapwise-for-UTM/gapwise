@@ -60,8 +60,12 @@ test("two-term ACORN import switches between Fall and Winter", async ({ page }, 
     "true",
   );
   await expect(page.getByText(/2 meetings in Winter/)).toBeVisible();
-  await expect(page.getByText("CSC148H5")).toBeVisible();
-  await expect(page.getByText("MAT136H5")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /View details for CSC148H5/ }).first(),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /View details for MAT136H5/ }).first(),
+  ).toBeVisible();
 
   guard.assertClean();
 });
