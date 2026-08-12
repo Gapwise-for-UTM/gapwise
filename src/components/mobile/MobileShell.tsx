@@ -36,10 +36,7 @@ export function MobileShell({
   children: ReactNode;
 }) {
   const [routeTargetId, setRouteTargetId] = useState<string | null>(null);
-  const routeTargetContext = useMemo(
-    () => ({ routeTargetId, setRouteTargetId }),
-    [routeTargetId],
-  );
+  const routeTargetContext = useMemo(() => ({ routeTargetId, setRouteTargetId }), [routeTargetId]);
 
   return (
     <MobileRouteTargetContext.Provider value={routeTargetContext}>
