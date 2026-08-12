@@ -12,12 +12,14 @@ const user = (values: Partial<User>): User => ({
   ...values,
 });
 
-describe("GitHub authentication", () => {
-  test("selects GitHub and redirects to the current origin", async () => {
+describe("OAuth authentication", () => {
+  test("selects the configured providers and redirects to the current origin", async () => {
     const source = await readFile("src/features/auth/auth-service.ts", "utf8");
     expect(source).toContain('provider: "github"');
+    expect(source).toContain('provider: "google"');
+    expect(source).toContain('provider: "azure"');
+    expect(source).toContain('scopes: "email"');
     expect(source).toContain("redirectTo: window.location.origin");
-    expect(source).not.toContain('provider: "google"');
   });
   test("uses the documented identity fallback order", () => {
     expect(
@@ -51,7 +53,7 @@ describe("GitHub authentication", () => {
         },
       },
     );
-    expect(message).toBe("GitHub sign-in failed: User cancelled");
+    expect(message).toBe("Sign-in failed: User cancelled");
     expect(replacement).toBe("/#top");
   });
 });
