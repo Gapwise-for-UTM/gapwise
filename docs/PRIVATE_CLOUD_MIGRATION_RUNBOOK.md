@@ -1,16 +1,17 @@
 # Private-cloud migration and KEK runbook
 
-This runbook is intentionally staged. Production remains on `VITE_PRIVATE_CLOUD_MODE=off` until
-every applicable gate is checked. The current production database contains one non-empty legacy
-schedule and one legacy preference row; both are treated as real.
+This runbook is intentionally staged. Production moved to `VITE_PRIVATE_CLOUD_MODE=encrypted` only
+after Gates 0–5 were exercised. The current production database still contains one non-empty legacy
+schedule and one legacy preference row as rollback material; both are treated as real until the
+separately authorized Gate 6 cleanup.
 
 ## Rollout modes
 
 | Mode        | Reads                                  | Writes                                            | Intended use                              |
 | ----------- | -------------------------------------- | ------------------------------------------------- | ----------------------------------------- |
-| `off`       | Legacy owner-RLS rows                  | Legacy rows only                                  | Current safe production default           |
-| `shadow`    | Legacy rows                            | Explicit sync writes legacy and encrypted records | Disposable-user and migration observation |
-| `encrypted` | Secure IndexedDB, then encrypted cloud | Encrypted records only                            | Final authoritative mode                  |
+| `off`       | Legacy owner-RLS rows                  | Legacy rows only                                  | Emergency rollback / pre-migration only   |
+| `shadow`    | Legacy rows                            | Explicit sync writes legacy and encrypted records | Migration observation only                |
+| `encrypted` | Secure IndexedDB, then encrypted cloud | Encrypted records only                            | Current authoritative production mode     |
 
 An invalid or missing flag becomes `off`. No mode ever uploads the original ICS file.
 
@@ -21,7 +22,8 @@ An invalid or missing flag becomes `off`. No mode ever uploads the original ICS 
    `remove_schedule_source_filename` is `20260807132654`; the repository now uses that exact
    version.
 3. Confirm production row counts and `pg_database_size` using aggregate queries only.
-4. Keep a rollback deployment at `off` and do not edit already-applied migration bodies.
+4. Keep a known rollback deployment available during migration observation and do not edit
+   already-applied migration bodies.
 
 ## Gate 1: additive database phase
 
@@ -40,20 +42,18 @@ Afterward verify:
 - RLS is enabled and forced;
 - `anon` has no table or function access;
 - `authenticated` cannot update key envelopes directly;
-- the two intended `SECURITY DEFINER` RPCs derive identity from `auth.uid()` and have no `PUBLIC`
+- the intended `SECURITY DEFINER` RPCs derive identity from `auth.uid()` and have no `PUBLIC`
   execution;
 - account deletion cascades to every new table;
 - Security and Performance Advisors contain no unexplained finding.
 
 Do not use a rollback script after encrypted users exist without first proving what data would be
-lost. The rollback is safe only while production remains `off` and the new tables contain no needed
-records.
+lost. The additive rollback is safe only before the new tables contain needed encrypted records.
 
-Production checkpoint (2026-08-11): Gate 1 is complete. Both migrations were applied after green
-application and isolated database-security CI. At that checkpoint, catalog checks confirmed RLS was
-enabled and forced, all new tables contained zero rows, and the one legacy schedule and preference
-row remained untouched. Production mode remained `off`; later preview proof populated encrypted
-rows without changing that production-mode setting.
+Production checkpoint (2026-08-11): Gate 1 is complete. Both encrypted migrations were applied
+after green application and isolated database-security CI. At that checkpoint, catalog checks
+confirmed RLS was enabled and forced, all new tables contained zero rows, and the one legacy schedule
+and preference row remained untouched.
 
 ## Gate 2: operator KEK recovery action — mandatory pause
 
@@ -80,7 +80,7 @@ the production KEK into a preview environment.
 Operational checkpoint (2026-08-11): the production v1 KEK recovery copy was stored before its
 Sensitive production Vercel variable was configured, and a separately generated Preview KEK was
 used for Preview testing. No KEK was placed in Supabase, browser configuration, repository files, or
-Vercel browser-exposed variables. Production `VITE_PRIVATE_CLOUD_MODE` remained `off`.
+Vercel browser-exposed variables.
 
 ## Gate 3: disposable end-to-end proof
 
@@ -110,8 +110,7 @@ and deleting the disposable account removed its auth-linked encrypted rows, key 
 profile, friendship/invite state, legacy rows and rate-limit state while the retained owner account
 remained intact. The owner's real timetable was restored after fixture testing. The isolated RLS and
 crypto suites cover cross-user access denial, ciphertext/nonce/AAD tampering, revision conflicts and
-fail-closed behavior. These results are evidence for the gate, not authorization to switch
-production to `encrypted`; any still-unperformed manual substep must be completed before Gate 5.
+fail-closed behavior.
 
 ## Gate 4: migrate the existing legacy row
 
@@ -126,6 +125,10 @@ verified. For the current single row, prefer a user-scoped migration through the
 4. Verify the decrypted canonical schedule and applicable preferences equal the legacy source
    without logging either representation.
 5. Record only owner-independent migration status/counts.
+
+Production checkpoint (2026-08-11): the existing owner's real timetable was migrated through the
+real application in `shadow` mode and the encrypted replacement was read back and verified before
+cutover. The legacy rows were intentionally retained as rollback material.
 
 If an operator tool is later required for users who cannot return, it must run on a trusted operator
 machine, process one row at a time, hold direct database credentials and the KEK only in memory,
@@ -142,8 +145,15 @@ proof is green:
 3. Verify local-first reload, new-device restore, edit/sync, friend common gap, cloud deletion,
    sign-out and account deletion.
 4. Observe errors, database size, egress, function invocations and active CPU. Roll back the
-   deployment/flag to `off` on any unexplained failure; legacy rows still exist.
+   deployment/flag to `off` on any unexplained migration failure while rollback rows still exist.
 5. Keep plaintext tables during an explicit observation period.
+
+Production checkpoint (2026-08-11): Gate 5 is complete. Production is authoritative `encrypted`.
+A fresh Incognito/new-device flow restored the real timetable through the production key broker;
+subsequent encrypted writes advanced the encrypted private revision while the legacy plaintext
+schedule timestamp remained unchanged. The post-hardening production deployment is `READY`, and the
+checked Vercel runtime window contained no unexplained errors. The legacy rows remain only for the
+explicit observation/rollback period.
 
 ## Gate 6: later destructive cleanup
 
@@ -151,6 +161,11 @@ This is a separate, explicitly authorized production change. Recount every legac
 intended replacement, verify rollback/recovery and obtain authorization before dropping plaintext
 columns/tables or the legacy overlap functions. Regenerate types and rerun pgTAP, advisors, secret
 scans, production browser checks and deletion proofs afterward.
+
+Latest aggregate precheck (2026-08-11): one legacy schedule, one legacy preference, one key envelope,
+one encrypted private row and one encrypted availability row remain; the encrypted private revision
+has advanced beyond the migration copy while the legacy schedule has not been rewritten. This is
+supporting evidence only and is not itself authorization to destroy rollback data.
 
 Never infer that a small row count means disposable data. Never use a database migration that has
 access to the Vercel KEK. Never retire a KEK version until every envelope has been rewrapped,
