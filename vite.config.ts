@@ -6,8 +6,8 @@ import { VitePWA } from "vite-plugin-pwa";
 import { lovableAssetsProxyPlugin } from "@lovable.dev/vite-tanstack-config";
 
 /**
- * Client-only build: routing, ICS parsing, route calculation, and Supabase calls all
- * run in the browser. `bun run build` emits a Cloudflare Pages-ready `dist/`.
+ * Client-only build: routing, ICS parsing, route calculation, and Supabase calls run in the
+ * browser. `bun run build` emits the static `dist/` deployed by Vercel.
  */
 export default defineConfig({
   plugins: [
@@ -24,24 +24,10 @@ export default defineConfig({
         navigateFallback: "/index.html",
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/(.*)\.tiles\.openstreetmap\.org\/.*$/,
+            urlPattern: /^https:\/\/tiles\.openfreemap\.org\/.*$/,
             handler: "NetworkOnly",
             options: {
-              cacheName: "osm-tiles",
-            },
-          },
-          {
-            urlPattern: /^https:\/\/(.*)\.tile\.openstreetmap\.org\/.*$/,
-            handler: "NetworkOnly",
-            options: {
-              cacheName: "osm-tiles",
-            },
-          },
-          {
-            urlPattern: /^https:\/\/(.*)\.mapbox\.com\/.*$/,
-            handler: "NetworkOnly",
-            options: {
-              cacheName: "mapbox-tiles",
+              cacheName: "openfreemap-tiles",
             },
           },
           {
