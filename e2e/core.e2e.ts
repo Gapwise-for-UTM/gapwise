@@ -55,7 +55,10 @@ test("two-term ACORN import switches between Fall and Winter", async ({ page }, 
   await expect(terms.getByRole("button", { name: "Fall" })).toBeVisible();
   await expect(terms.getByRole("button", { name: "Winter" })).toBeVisible();
   await terms.getByRole("button", { name: "Winter" }).click();
-  await expect(terms.getByRole("button", { name: "Winter" })).toHaveAttribute("aria-pressed", "true");
+  await expect(terms.getByRole("button", { name: "Winter" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(page.getByText(/2 meetings in Winter/)).toBeVisible();
   await expect(page.getByText("CSC148H5")).toBeVisible();
   await expect(page.getByText("MAT136H5")).toBeVisible();
