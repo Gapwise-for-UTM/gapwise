@@ -48,7 +48,9 @@ test("malformed calendar fails safely with a useful error", async ({ page }, tes
   });
 
   await expect(page.getByRole("alert")).toContainText("doesn't look like a calendar export");
-  await expect(page.getByRole("heading", { name: "Make every gap on campus count." })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
   guard.assertClean();
 });
 
@@ -106,6 +108,8 @@ test("guest import never writes plaintext timetable persistence", async ({ page 
   expect(stored).toEqual({ timetable: null, remember: null });
 
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Make every gap on campus count." })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
   guard.assertClean();
 });
