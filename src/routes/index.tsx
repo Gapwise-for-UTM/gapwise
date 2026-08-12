@@ -603,7 +603,6 @@ function Index() {
           setGapPreferences(DEFAULT_GAP_PREFERENCES);
           lastEncryptedFingerprint.current = null;
         }
-      }}
   }, []);
 
   const { now: todayNow, state: todayState } = useTodayState({
