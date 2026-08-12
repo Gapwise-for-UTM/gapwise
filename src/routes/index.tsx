@@ -21,6 +21,11 @@ import { TimetableGrid } from "@/components/TimetableGrid";
 import { TodaySummary } from "@/components/TodaySummary";
 import { UploadPanel } from "@/components/UploadPanel";
 import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
+import { MobileMoreSheet } from "@/components/mobile/MobileMoreSheet";
+import { MobileShell, type MobileTab } from "@/components/mobile/MobileShell";
+import { MobileToday } from "@/components/mobile/MobileToday";
+import { useTodayState } from "@/features/today/use-today-state";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { AccountStatus } from "@/features/auth/AccountStatus";
 import { useAuth } from "@/features/auth/use-auth";
@@ -149,6 +154,9 @@ function Index() {
     typeof window !== "undefined" && "onLine" in navigator ? navigator.onLine : true,
   );
   const [isScrolled, setIsScrolled] = useState(false);
+  const isMobile = useIsMobile();
+  const [mobileTab, setMobileTab] = useState<MobileTab>("today");
+  const [moreOpen, setMoreOpen] = useState(false);
   const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
   const latestMeetings = useRef<Meeting[] | null>(meetings);
   const mounted = useRef(false);
@@ -738,7 +746,12 @@ function Index() {
             <AccountStatus
               user={user}
               loading={authLoading}
-              onAccountDeleted={(clearLocal) => {
+              onAccountDeleted={handleAccountDeleted}
+            />
+          </div>
+        </div>
+      </header>
+      <PlaceholderRemoved onAccountDeleted={(clearLocal) => {
                 const retainedLocal = clearLocal
                   ? null
                   : loadRememberedRecord<Meeting[]>().record?.data;
