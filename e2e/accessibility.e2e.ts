@@ -1,8 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { expectLanding, watchForAppFailures } from "./helpers";
 
-async function expectNoSeriousAccessibilityViolations(page: Parameters<typeof AxeBuilder>[0]["page"]) {
+async function expectNoSeriousAccessibilityViolations(page: Page) {
   const results = await new AxeBuilder({ page }).analyze();
   const blocking = results.violations.filter(
     (violation) => violation.impact === "serious" || violation.impact === "critical",
