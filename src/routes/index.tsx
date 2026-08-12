@@ -580,6 +580,129 @@ function Index() {
   const openGapPlan = useCallback(() => showView("gaps"), [showView]);
   const openDayRoute = useCallback(() => showView("route"), [showView]);
 
+  const { now: todayNow, state: todayState } = useTodayState({
+    meetings: termMeetings,
+    selectedTerm: term,
+    preferences,
+    gapPreferences,
+    planTransition,
+  });
+
+  if (isMobile && meetings) {
+    return (
+      <>
+        <MobileShell
+          tab={mobileTab}
+          onTabChange={(nextTab) => {
+            setMobileTab(nextTab);
+            if (nextTab === "timetable") showView("timetable");
+            if (nextTab === "route") showView("route");
+            if (nextTab === "gaps") showView("gaps");
+          }}
+          onOpenMore={() => setMoreOpen(true)}
+          moreOpen={moreOpen}
+        >
+          <input
+            ref={replacementInputRef}
+            type="file"
+            accept=".ics,text/calendar"
+            hidden
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void handleFile(file);
+              event.target.value = "";
+            }}
+          />
+          {restorationMessage ? (
+            <p className="surface mb-4 p-4 text-sm text-muted-foreground">{restorationMessage}</p>
+          ) : null}
+          {mobileTab === "today" ? (
+            <MobileToday
+              state={todayState}
+              now={todayNow}
+              selectedTerm={term}
+              meetingCount={termMeetings.length}
+              gapCount={gaps.length}
+              isDemo={isDemo}
+              onOpenGapPlan={() => {
+                openGapPlan();
+                setMobileTab("gaps");
+              }}
+              onOpenDayRoute={() => {
+                openDayRoute();
+                setMobileTab("route");
+              }}
+            />
+          ) : null}
+          {mobileTab === "timetable" ? (
+            <TimetableGrid
+              meetings={termMeetings}
+              onRouteToMeeting={() => {
+                openDayRoute();
+                setMobileTab("route");
+              }}
+            />
+          ) : null}
+          {mobileTab === "gaps" ? (
+            <div className="dot-field">
+              <GapPlan
+                gaps={gaps}
+                preferences={preferences}
+                gapPreferences={gapPreferences}
+                onGapPreferencesChange={updateGapPreferences}
+                planTransition={planTransition}
+                user={user}
+                term={term}
+              />
+            </div>
+          ) : null}
+          {mobileTab === "route" ? (
+            <Suspense
+              fallback={
+                <div
+                  className="surface h-96 animate-pulse p-6 text-sm text-muted-foreground"
+                  role="status"
+                >
+                  Loading the route map…
+                </div>
+              }
+            >
+              <DayRoute
+                meetings={meetings}
+                term={term}
+                onTermChange={setTerm}
+                preferences={preferences}
+                onPreferencesChange={updateUserPreferences}
+                user={user}
+                planTransition={planTransition}
+              />
+            </Suspense>
+          ) : null}
+        </MobileShell>
+        <MobileMoreSheet
+          open={moreOpen}
+          onOpenChange={setMoreOpen}
+          loading={loading}
+          onUpdateTimetable={() => replacementInputRef.current?.click()}
+          onRemoveTimetable={() => {
+            if (window.confirm("Remove this timetable from this browser?")) {
+              setMoreOpen(false);
+              clearTimetable();
+            }
+          }}
+        >
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+          <ResidenceSettings
+            user={user}
+            preferences={preferences}
+            onPreferencesChange={updateUserPreferences}
+          />
+          <AccountStatus user={user} loading={authLoading} />
+        </MobileMoreSheet>
+      </>
+    );
+  }
+
   return (
     <div className="app-shell min-h-screen bg-background text-foreground">
       <header
