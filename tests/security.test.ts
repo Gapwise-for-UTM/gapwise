@@ -92,7 +92,9 @@ describe("account deletion and RLS security", () => {
 
   test("authoritative encrypted cloud deletion does not require legacy plaintext tables", async () => {
     const syncService = await readFile("src/features/sync/sync-service.ts", "utf8");
-    expect(syncService.match(/if \(isEncryptedPrivateCloudAuthoritative\) return;/g)).toHaveLength(2);
+    expect(syncService.match(/if \(isEncryptedPrivateCloudAuthoritative\) return;/g)).toHaveLength(
+      2,
+    );
   });
 
   test("all user tables use RLS, ownership checks, and cascading deletion", async () => {
