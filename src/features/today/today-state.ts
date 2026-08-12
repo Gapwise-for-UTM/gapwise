@@ -32,15 +32,15 @@ export type TodayState =
       kind: "in-class";
       current: Meeting;
       next: Meeting | null;
-      route?: TransitionRoute;
-      leaveBy?: number | null;
+      route?: TransitionRoute | undefined;
+      leaveBy?: number | null | undefined;
     }
   | {
       kind: "gap";
       gap: Gap;
       assessment: GapAssessment;
       route: TransitionRoute;
-      residenceTrip?: ResidenceTrip;
+      residenceTrip?: ResidenceTrip | undefined;
     }
   | { kind: "done"; next: TodayOccurrence | null }
   | { kind: "no-classes"; next: TodayOccurrence | null };
