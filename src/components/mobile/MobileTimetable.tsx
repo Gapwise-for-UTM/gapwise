@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState, type CSSProperties } from "react";
 import { ActivityBadge } from "@/components/TimetableGrid";
+import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
   Drawer,
   DrawerContent,
@@ -224,6 +225,7 @@ export function MobileTimetable({
 }) {
   const [selectedDay, setSelectedDay] = useState<Weekday>(() => initialDay(meetings));
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const { setRouteTargetId } = useMobileRouteTarget();
 
   const dayMeetings = useMemo(
     () =>
@@ -430,7 +432,10 @@ export function MobileTimetable({
       <MeetingDetailsSheet
         meeting={selectedMeeting}
         onClose={() => setSelectedMeeting(null)}
-        onRoute={onRouteToMeeting}
+        onRoute={(meeting) => {
+          setRouteTargetId(meeting.id);
+          onRouteToMeeting(meeting);
+        }}
         onEditPersonal={onEditPersonal}
         onDeletePersonal={onDeletePersonal}
       />
