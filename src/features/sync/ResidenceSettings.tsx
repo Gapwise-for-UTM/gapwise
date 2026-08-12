@@ -28,7 +28,9 @@ export function ResidenceSettings({
 
   function update(patch: Partial<UserPreferences>) {
     onPreferencesChange(sanitizeUserPreferences({ ...preferences, ...patch }));
-    setMessage(user ? "Updated. Encrypted sync will include this setting." : "Updated for this visit.");
+    setMessage(
+      user ? "Updated. Encrypted sync will include this setting." : "Updated for this visit.",
+    );
   }
 
   return (
