@@ -4,10 +4,6 @@ import { expectLanding, isMobileProject, watchForAppFailures } from "./helpers";
 
 const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
 
-function baseUrl(testInfo: Parameters<typeof test>[1] extends never ? never : never) {
-  return testInfo;
-}
-
 test("landing page is usable without an account", async ({ page }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await expectLanding(page);
