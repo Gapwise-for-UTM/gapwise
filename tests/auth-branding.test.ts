@@ -105,8 +105,8 @@ describe("branding metadata", () => {
 describe("production content security policy", () => {
   test("allows WebAssembly compilation without enabling JavaScript eval", async () => {
     const config = JSON.parse(await readFile("vercel.json", "utf8"));
-    const headers = config.headers?.flatMap((entry: { headers?: Array<{ key: string; value: string }> }) =>
-      entry.headers ?? [],
+    const headers = config.headers?.flatMap(
+      (entry: { headers?: Array<{ key: string; value: string }> }) => entry.headers ?? [],
     );
     const csp = headers.find((header: { key: string }) => header.key === "Content-Security-Policy")
       ?.value as string | undefined;
