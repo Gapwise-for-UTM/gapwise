@@ -14,6 +14,29 @@ export async function signInWithGitHub(): Promise<void> {
   if (error) throw error;
 }
 
+export async function signInWithGoogle(): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
+  if (error) throw error;
+}
+
+export async function signInWithMicrosoft(): Promise<void> {
+  const supabase = requireSupabaseClient();
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "azure",
+    options: {
+      scopes: "email",
+      redirectTo: window.location.origin,
+    },
+  });
+  if (error) throw error;
+}
+
 export async function requestEmailSignInLink(email: string): Promise<void> {
   const supabase = requireSupabaseClient();
   const normalizedEmail = email.trim().toLowerCase();
@@ -56,7 +79,7 @@ export function consumeOAuthError(
   if (!error) return null;
   for (const key of ["error", "error_code", "error_description"]) url.searchParams.delete(key);
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
-  return `GitHub sign-in failed: ${error.replace(/\+/g, " ")}`;
+  return `Sign-in failed: ${error.replace(/\+/g, " ")}`;
 }
 
 export async function completeLocalSignOut(

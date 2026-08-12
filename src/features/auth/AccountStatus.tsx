@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, Github, LogOut, Mail, Trash2, UserRound, X } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { ChevronDown, Github, LogOut, Trash2, UserRound, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,8 +27,9 @@ import {
   consumeOAuthError,
   deleteAccount,
   getAccountIdentity,
-  requestEmailSignInLink,
   signInWithGitHub,
+  signInWithGoogle,
+  signInWithMicrosoft,
   signOut,
 } from "./auth-service";
 
@@ -46,8 +47,6 @@ export function AccountStatus({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [clearLocal, setClearLocal] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
-  const [email, setEmail] = useState("");
-  const [emailSent, setEmailSent] = useState(false);
   const [cleanupUserId, setCleanupUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -117,22 +116,6 @@ export function AccountStatus({
       await signOut();
     } catch {
       setMessage("You're signed out on this device, but the server could not be reached.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function sendEmailLink(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (busy) return;
-    setBusy(true);
-    setMessage(null);
-    try {
-      await requestEmailSignInLink(email);
-      setEmailSent(true);
-      setMessage("Check your email and open the secure sign-in link.");
-    } catch {
-      setMessage("We couldn't send a sign-in link right now. Please wait and try again.");
     } finally {
       setBusy(false);
     }
@@ -228,9 +211,6 @@ export function AccountStatus({
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                   <h2 className="font-semibold">Sign in to sync</h2>
-                  <p className="text-xs text-muted-foreground">
-                    Guest mode remains available without an account.
-                  </p>
                 </div>
                 <button
                   type="button"
@@ -242,71 +222,47 @@ export function AccountStatus({
                 </button>
               </div>
 
-              <button
-                type="button"
-                onClick={() =>
-                  void signInWithGitHub().catch(() =>
-                    setMessage("GitHub sign-in failed. Please try again."),
-                  )
-                }
-                disabled={busy}
-                className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-              >
-                <Github className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
-              </button>
-
-              <div className="my-3 flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="h-px flex-1 bg-border" /> or{" "}
-                <span className="h-px flex-1 bg-border" />
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    void signInWithMicrosoft().catch(() =>
+                      setMessage("Sign-in failed. Please try again."),
+                    )
+                  }
+                  disabled={busy}
+                  className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+                >
+                  <UserRound className="h-4 w-4" aria-hidden="true" /> Continue with Microsoft
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void signInWithGoogle().catch(() =>
+                      setMessage("Sign-in failed. Please try again."),
+                    )
+                  }
+                  disabled={busy}
+                  className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+                >
+                  <UserRound className="h-4 w-4" aria-hidden="true" /> Continue with Google
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void signInWithGitHub().catch(() =>
+                      setMessage("Sign-in failed. Please try again."),
+                    )
+                  }
+                  disabled={busy}
+                  className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+                >
+                  <Github className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
+                </button>
               </div>
-
-              {emailSent ? (
-                <div className="space-y-3" role="status">
-                  <div className="rounded-lg border border-border bg-secondary/50 p-4">
-                    <p className="font-medium">Check your email</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      Open the secure sign-in link we sent to finish signing in.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => setEmailSent(false)}
-                    className="button-secondary min-h-11 w-full px-3 text-sm font-medium disabled:opacity-50"
-                  >
-                    Use a different email or resend
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={sendEmailLink} className="space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium" htmlFor="account-email">
-                      Email address
-                    </label>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      We’ll email you a secure, single-use sign-in link.
-                    </p>
-                  </div>
-                  <input
-                    id="account-email"
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    autoComplete="email"
-                    required
-                    disabled={busy}
-                    className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm"
-                  />
-                  <button
-                    type="submit"
-                    disabled={busy || !email.trim()}
-                    className="button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-                  >
-                    <Mail className="h-4 w-4" aria-hidden="true" />
-                    {busy ? "Sending…" : "Email me a sign-in link"}
-                  </button>
-                </form>
-              )}
+              <p className="mt-3 text-center text-xs text-muted-foreground">
+                You can keep using Gapwise without an account.
+              </p>
             </section>
           ) : null}
         </>
