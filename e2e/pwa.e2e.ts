@@ -38,12 +38,18 @@ test("PWA metadata, service worker, and cached app shell are functional", async 
   });
   expect(workerState).toBe("activated");
 
+  // The first load installs the worker. A second online navigation must be controlled
+  // before an offline navigation can prove the cached app shell is actually serving Gapwise.
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(() => Boolean(navigator.serviceWorker?.controller))).toBe(true);
+
   await context.setOffline(true);
   try {
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(
       page.getByRole("heading", { name: "Make every gap on campus count." }),
     ).toBeVisible();
+    await expect(page.evaluate(() => Boolean(navigator.serviceWorker?.controller))).resolves.toBe(true);
   } finally {
     await context.setOffline(false);
   }
