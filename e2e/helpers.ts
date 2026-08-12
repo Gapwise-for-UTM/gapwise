@@ -14,6 +14,13 @@ export function watchForAppFailures(page: Page, baseURL: string) {
 
   page.on("console", (message) => {
     if (message.type() !== "error") return;
+
+    // Browsers emit a generic console error for failed resource loads without
+    // including the URL. Response/request failure listeners below provide the
+    // actionable first-party URL instead and avoid treating third-party assets
+    // (or deliberately offline PWA requests) as app runtime exceptions.
+    if (message.text().startsWith("Failed to load resource:")) return;
+
     const location = message.location().url;
     if (!location || location.startsWith(appOrigin)) {
       failures.push(`console.error: ${message.text()}`);
@@ -22,9 +29,15 @@ export function watchForAppFailures(page: Page, baseURL: string) {
 
   page.on("response", (response) => {
     const url = new URL(response.url());
-    if (url.origin === appOrigin && response.status() >= 500) {
+    if (url.origin === appOrigin && response.status() >= 400) {
       failures.push(`HTTP ${response.status()}: ${url.pathname}`);
     }
+  });
+
+  page.on("requestfailed", (request) => {
+    const url = new URL(request.url());
+    if (url.origin !== appOrigin) return;
+    failures.push(`request failed: ${url.pathname} (${request.failure()?.errorText ?? "unknown"})`);
   });
 
   return {
