@@ -69,7 +69,9 @@ function MeetingDetailsSheet({
       : `From ${dateFormat.format(first)}`
     : "Dates unavailable";
   const canRoute =
-    meeting !== null && meetingLocationType(meeting) === "physical" && Boolean(meeting.buildingCode);
+    meeting !== null &&
+    meetingLocationType(meeting) === "physical" &&
+    Boolean(meeting.buildingCode);
   const isPersonal = meeting?.sectionCode === "PERSONAL";
 
   return (
@@ -306,9 +308,7 @@ export function MobileTimetable({
                 }`}
               >
                 <span>{DAY_SHORT[day]}</span>
-                <span className="mt-0.5 text-[0.62rem] font-medium opacity-70">
-                  {count || "–"}
-                </span>
+                <span className="mt-0.5 text-[0.62rem] font-medium opacity-70">{count || "–"}</span>
               </button>
             );
           })}
