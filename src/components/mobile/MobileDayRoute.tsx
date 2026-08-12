@@ -11,6 +11,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusMap } from "@/components/CampusMap";
 import { IndoorFloorViewer } from "@/components/IndoorFloorViewer";
+import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
   Drawer,
   DrawerContent,
@@ -256,7 +257,10 @@ function SegmentSummary({
         <ul className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
           {routeWarnings.map((warning) => (
             <li key={warning} className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+              <AlertTriangle
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
+                aria-hidden="true"
+              />
               {warning}
             </li>
           ))}
@@ -293,7 +297,6 @@ export function MobileDayRoute({
   preferences,
   onPreferencesChange,
   planTransition,
-  initialMeetingId = null,
 }: {
   meetings: Meeting[];
   term: Term;
@@ -301,16 +304,17 @@ export function MobileDayRoute({
   preferences: UserPreferences;
   onPreferencesChange: (preferences: UserPreferences) => void;
   planTransition: TransitionPlanner;
-  initialMeetingId?: string | null;
 }) {
+  const { routeTargetId, setRouteTargetId } = useMobileRouteTarget();
+  const [requestedMeetingId] = useState<string | null>(routeTargetId);
   const availableTerms = useMemo(
     () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
     [meetings],
   );
   const [weekday, setWeekday] = useState<Weekday>(() =>
-    defaultWeekday(meetings, term, initialMeetingId),
+    defaultWeekday(meetings, term, requestedMeetingId),
   );
-  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(initialMeetingId);
+  const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(requestedMeetingId);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
 
@@ -363,22 +367,28 @@ export function MobileDayRoute({
   );
 
   useEffect(() => {
-    if (!initialMeetingId) return;
-    const target = meetings.find((meeting) => meeting.id === initialMeetingId && meeting.term === term);
-    if (target) setWeekday(target.weekday);
-  }, [initialMeetingId, meetings, term]);
+    if (routeTargetId !== null) setRouteTargetId(null);
+  }, [routeTargetId, setRouteTargetId]);
 
   useEffect(() => {
-    const incoming = initialMeetingId
-      ? segments.find((segment) => segment.to.id === initialMeetingId)
+    if (!requestedMeetingId) return;
+    const target = meetings.find(
+      (meeting) => meeting.id === requestedMeetingId && meeting.term === term,
+    );
+    if (target) setWeekday(target.weekday);
+  }, [meetings, requestedMeetingId, term]);
+
+  useEffect(() => {
+    const incoming = requestedMeetingId
+      ? segments.find((segment) => segment.to.id === requestedMeetingId)
       : null;
     if (incoming) {
       setSelectedSegmentId(incoming.id);
       setSelectedMeetingId(null);
       return;
     }
-    const target = initialMeetingId
-      ? dayMeetings.find((meeting) => meeting.id === initialMeetingId)
+    const target = requestedMeetingId
+      ? dayMeetings.find((meeting) => meeting.id === requestedMeetingId)
       : null;
     if (target) {
       setSelectedMeetingId(target.id);
@@ -387,7 +397,7 @@ export function MobileDayRoute({
     }
     setSelectedMeetingId(dayMeetings[0]?.id ?? null);
     setSelectedSegmentId(segments[0]?.id ?? null);
-  }, [dayMeetings, initialMeetingId, segments]);
+  }, [dayMeetings, requestedMeetingId, segments]);
 
   const selectMeeting = useCallback((id: string) => {
     setSelectedMeetingId(id);
@@ -509,7 +519,10 @@ export function MobileDayRoute({
                     ) : (
                       <span className="truncate">{segment.from.courseCode}</span>
                     )}
-                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <ChevronRight
+                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
                     {isResidenceMeeting(segment.to) ? (
                       <Home className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                     ) : (
