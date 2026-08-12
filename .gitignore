@@ -19,6 +19,11 @@ dist-ssr
 .env.*
 !.env.example
 
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
