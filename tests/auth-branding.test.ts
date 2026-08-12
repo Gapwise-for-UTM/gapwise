@@ -65,7 +65,6 @@ describe("branding metadata", () => {
       display: "standalone",
       start_url: "/",
     });
-    const html = await readFile("index.html", "utf8");
     for (const path of [
       "logo-mark.svg",
       "favicon.svg",
@@ -78,8 +77,43 @@ describe("branding metadata", () => {
     ]) {
       await expect(readFile(`public/${path}`)).resolves.toBeTruthy();
     }
-    expect(html).toContain("Gapwise for UTM — Smarter Campus Gaps");
-    expect(html).toContain('rel="icon" href="/logo-mark.svg"');
-    expect(html).toContain('rel="manifest" href="/site.webmanifest"');
+  });
+
+  test("keeps static bootstrap metadata separate from router-owned page metadata", async () => {
+    const [html, rootRoute, indexRoute] = await Promise.all([
+      readFile("index.html", "utf8"),
+      readFile("src/routes/__root.tsx", "utf8"),
+      readFile("src/routes/index.tsx", "utf8"),
+    ]);
+
+    expect(html).toContain('<meta charset="UTF-8" />');
+    expect(html).toContain('name="viewport"');
+    expect(html).not.toContain('name="description"');
+    expect(html).not.toContain("<title>");
+    expect(html).not.toContain('rel="manifest"');
+
+    expect(rootRoute).not.toContain("styles.css?url");
+    expect(rootRoute).toContain('name: "mobile-web-app-capable"');
+    expect(rootRoute).toContain('name: "apple-mobile-web-app-capable"');
+    expect(rootRoute).toContain('rel: "manifest"');
+
+    expect(indexRoute).toContain('const TITLE = "Gapwise for UTM — Smarter Campus Gaps"');
+    expect(indexRoute).toContain('{ name: "description", content: DESCRIPTION }');
+  });
+});
+
+describe("production content security policy", () => {
+  test("allows WebAssembly compilation without enabling JavaScript eval", async () => {
+    const config = JSON.parse(await readFile("vercel.json", "utf8"));
+    const headers = config.headers?.flatMap((entry: { headers?: Array<{ key: string; value: string }> }) =>
+      entry.headers ?? [],
+    );
+    const csp = headers.find((header: { key: string }) => header.key === "Content-Security-Policy")
+      ?.value as string | undefined;
+
+    expect(csp).toContain("script-src 'self' 'wasm-unsafe-eval'");
+    expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).toContain("frame-ancestors 'none'");
+    expect(csp).toContain("object-src 'none'");
   });
 });
