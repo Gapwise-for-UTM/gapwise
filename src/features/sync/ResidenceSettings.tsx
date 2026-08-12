@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { Building2, CloudDownload, CloudUpload, Home, TrainFront } from "lucide-react";
+import { Building2, Home, TrainFront } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -10,10 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
-import { emitClickSpark } from "@/lib/micro-interactions";
-import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import { sanitizeUserPreferences, type UserPreferences } from "./preferences";
-import { loadPreferences, savePreferences } from "./sync-service";
 
 export function ResidenceSettings({
   user,
@@ -25,41 +22,13 @@ export function ResidenceSettings({
   onPreferencesChange: (preferences: UserPreferences) => void;
 }) {
   const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const selectedResidence = UTM_RESIDENCES.find(
     (building) => building.code === preferences.residenceBuildingCode,
   );
 
   function update(patch: Partial<UserPreferences>) {
     onPreferencesChange(sanitizeUserPreferences({ ...preferences, ...patch }));
-    setMessage("Saved on this device.");
-  }
-
-  async function saveToCloud() {
-    setBusy(true);
-    setMessage(null);
-    try {
-      await savePreferences(preferences);
-      setMessage("Home setting saved to your account.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Cloud save failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function loadFromCloud() {
-    setBusy(true);
-    setMessage(null);
-    try {
-      const value = await loadPreferences();
-      if (value) onPreferencesChange(value);
-      setMessage(value ? "Account settings loaded." : "No saved account settings yet.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Cloud load failed.");
-    } finally {
-      setBusy(false);
-    }
+    setMessage(user ? "Updated. Encrypted sync will include this setting." : "Updated for this visit.");
   }
 
   return (
@@ -149,37 +118,11 @@ export function ResidenceSettings({
           </label>
         ) : null}
 
-        {user && !isEncryptedPrivateCloudAuthoritative ? (
-          <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={(event) => {
-                emitClickSpark(event);
-                void saveToCloud();
-              }}
-              className="button-primary click-spark inline-flex min-h-9 items-center gap-2 px-3 text-xs font-semibold disabled:opacity-50"
-            >
-              <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" /> Save to account
-            </button>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void loadFromCloud()}
-              className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-xs font-semibold disabled:opacity-50"
-            >
-              <CloudDownload className="h-3.5 w-3.5" aria-hidden="true" /> Load account setting
-            </button>
-          </div>
-        ) : user ? (
-          <p className="border-t border-border pt-4 text-xs text-muted-foreground">
-            This private setting is included in encrypted private-data sync.
-          </p>
-        ) : (
-          <p className="border-t border-border pt-4 text-xs text-muted-foreground">
-            Stored only in this browser. Sign in if you want to sync it across devices.
-          </p>
-        )}
+        <p className="border-t border-border pt-4 text-xs text-muted-foreground">
+          {user
+            ? "This private setting is included in encrypted private-data sync."
+            : "Guest settings stay in this page session. Sign in to sync private settings across devices."}
+        </p>
         {message ? (
           <p className="text-xs text-muted-foreground" role="status">
             {message}
