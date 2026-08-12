@@ -22,8 +22,6 @@ updates:
           - patch
     commit-message:
       prefix: deps
-    labels:
-      - dependencies
 
   - package-ecosystem: github-actions
     directory: /
@@ -42,6 +40,3 @@ updates:
           - patch
     commit-message:
       prefix: ci
-    labels:
-      - dependencies
-      - github-actions
