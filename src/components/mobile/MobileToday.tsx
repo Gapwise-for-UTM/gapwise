@@ -7,6 +7,7 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
+import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import {
   formatOccurrenceDate,
@@ -192,10 +193,19 @@ export function MobileToday({
   onOpenGapPlan: () => void;
   onOpenDayRoute: () => void;
 }) {
+  const { setRouteTargetId } = useMobileRouteTarget();
   const { eyebrow, title, detail, rows } = present(state, now, selectedTerm);
   const canPlanGap = state.kind === "gap";
   const canOpenRoute =
     state.kind === "gap" || state.kind === "before-first" || state.kind === "in-class";
+  const routeTargetId =
+    state.kind === "gap"
+      ? state.gap.next.id
+      : state.kind === "before-first"
+        ? state.next.id
+        : state.kind === "in-class"
+          ? (state.next?.id ?? state.current.id)
+          : null;
 
   return (
     <div className="rise-in space-y-4">
@@ -246,7 +256,10 @@ export function MobileToday({
             {canOpenRoute ? (
               <button
                 type="button"
-                onClick={onOpenDayRoute}
+                onClick={() => {
+                  setRouteTargetId(routeTargetId);
+                  onOpenDayRoute();
+                }}
                 className={`inline-flex min-h-[2.875rem] items-center justify-center gap-2 px-4 text-sm font-semibold ${
                   canPlanGap ? "button-secondary" : "button-primary"
                 }`}
