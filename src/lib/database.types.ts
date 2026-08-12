@@ -1,4 +1,4 @@
-// Generated from the connected Supabase project, including the applied additive encrypted schema.
+// Generated from the connected Supabase project after Gate 6 plaintext retirement.
 // Regenerate after any later hosted schema change.
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -239,63 +239,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      user_preferences: {
-        Row: {
-          avoid_stairs: boolean;
-          day_origin: string;
-          prefer_indoor: boolean;
-          residence_building_code: string | null;
-          route_mode: string;
-          transition_buffer_minutes: number;
-          updated_at: string;
-          user_id: string;
-          walking_speed_mps: number;
-        };
-        Insert: {
-          avoid_stairs?: boolean;
-          day_origin?: string;
-          prefer_indoor?: boolean;
-          residence_building_code?: string | null;
-          route_mode?: string;
-          transition_buffer_minutes?: number;
-          updated_at?: string;
-          user_id: string;
-          walking_speed_mps?: number;
-        };
-        Update: {
-          avoid_stairs?: boolean;
-          day_origin?: string;
-          prefer_indoor?: boolean;
-          residence_building_code?: string | null;
-          route_mode?: string;
-          transition_buffer_minutes?: number;
-          updated_at?: string;
-          user_id?: string;
-          walking_speed_mps?: number;
-        };
-        Relationships: [];
-      };
-      user_schedules: {
-        Row: {
-          meetings: Json;
-          schema_version: number;
-          updated_at: string;
-          user_id: string;
-        };
-        Insert: {
-          meetings: Json;
-          schema_version?: number;
-          updated_at?: string;
-          user_id: string;
-        };
-        Update: {
-          meetings?: Json;
-          schema_version?: number;
-          updated_at?: string;
-          user_id?: string;
-        };
-        Relationships: [];
-      };
     };
     Views: {
       [_ in never]: never;
@@ -326,16 +269,6 @@ export type Database = {
           subject_id: string;
           wrap_nonce: string;
           wrapped_dek: string;
-        }[];
-      };
-      get_friend_gap_overlaps: {
-        Args: { p_term: string };
-        Returns: {
-          end_minute: number;
-          friend_display_name: string;
-          friendship_id: string;
-          start_minute: number;
-          weekday: string;
         }[];
       };
       list_friend_connections: {
@@ -482,7 +415,7 @@ export type CompositeTypes<
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    ? DefaultSchema["CompositeTypes"][DefaultSchemaTableNameOrOptions]
     : never;
 
 export const Constants = {
