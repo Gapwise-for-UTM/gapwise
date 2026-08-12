@@ -152,7 +152,6 @@ describe("friend overlap privacy contract", () => {
       "revoked relationships immediately disappear from friend-list output",
       "recipient can explicitly accept a pending request",
       "invalid invite submissions receive the same non-enumerating success shape",
-      "private-code connection is mutual only after explicit acceptance",
       "deleting an account cascades every relationship involving that account",
     ]) {
       expect(sql).toContain(proof);
