@@ -1,8 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import { requireSupabaseClient } from "@/lib/supabase";
-import { TERMS, WEEKDAYS, type Term, type Weekday } from "@/lib/timetable-types";
+import { WEEKDAYS, type Term, type Weekday } from "@/lib/timetable-types";
 import type { FriendConnection, FriendGapOverlap, FriendInvite } from "./types";
-import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import {
   AVAILABILITY_DAY_END,
   AVAILABILITY_DAY_START,
@@ -257,62 +256,32 @@ export async function revokeFriendship(friendshipId: string): Promise<void> {
 }
 
 export async function loadFriendGapOverlaps(term: Term): Promise<FriendGapOverlap[]> {
-  if (isEncryptedPrivateCloudAuthoritative) {
-    const supabase = requireSupabaseClient();
-    const [{ data, error }, allConnections] = await Promise.all([
-      supabase.auth.getSession(),
-      loadFriendConnections(),
-    ]);
-    if (error || !data.session) throw new Error("Sign in before checking common gaps.");
-    const connections = allConnections.filter(
-      (connection) => connection.status === "accepted" && connection.direction === "mutual",
-    );
-    if (connections.length > MAX_ENCRYPTED_GAP_CONNECTIONS) {
-      throw new Error(
-        `Common-gap refresh supports up to ${MAX_ENCRYPTED_GAP_CONNECTIONS} mutual friends at once.`,
-      );
-    }
-    const settled = await Promise.allSettled(
-      connections.map((connection) =>
-        loadEncryptedFriendGaps(connection, term, data.session.access_token),
-      ),
-    );
-    if (
-      settled.some(
-        (result) =>
-          result.status === "rejected" && result.reason instanceof FriendOverlapRateLimitError,
-      )
-    ) {
-      throw new FriendOverlapRateLimitError();
-    }
-    return settled.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
-  }
   const supabase = requireSupabaseClient();
-  const { data, error } = await supabase.rpc("get_friend_gap_overlaps", { p_term: term });
-  if (error?.code === "P0001") throw new FriendOverlapRateLimitError();
-  if (error) throw error;
-
-  return (data ?? []).flatMap((row) => {
-    if (
-      !TERMS.includes(term) ||
-      !WEEKDAYS.includes(row.weekday as Weekday) ||
-      !Number.isInteger(row.start_minute) ||
-      !Number.isInteger(row.end_minute) ||
-      row.start_minute < 0 ||
-      row.end_minute > 24 * 60 ||
-      row.end_minute <= row.start_minute
-    ) {
-      return [];
-    }
-    return [
-      {
-        friendshipId: row.friendship_id,
-        friendDisplayName: row.friend_display_name,
-        term,
-        weekday: row.weekday as Weekday,
-        startMinute: row.start_minute,
-        endMinute: row.end_minute,
-      } satisfies FriendGapOverlap,
-    ];
-  });
+  const [{ data, error }, allConnections] = await Promise.all([
+    supabase.auth.getSession(),
+    loadFriendConnections(),
+  ]);
+  if (error || !data.session) throw new Error("Sign in before checking common gaps.");
+  const connections = allConnections.filter(
+    (connection) => connection.status === "accepted" && connection.direction === "mutual",
+  );
+  if (connections.length > MAX_ENCRYPTED_GAP_CONNECTIONS) {
+    throw new Error(
+      `Common-gap refresh supports up to ${MAX_ENCRYPTED_GAP_CONNECTIONS} mutual friends at once.`,
+    );
+  }
+  const settled = await Promise.allSettled(
+    connections.map((connection) =>
+      loadEncryptedFriendGaps(connection, term, data.session.access_token),
+    ),
+  );
+  if (
+    settled.some(
+      (result) =>
+        result.status === "rejected" && result.reason instanceof FriendOverlapRateLimitError,
+    )
+  ) {
+    throw new FriendOverlapRateLimitError();
+  }
+  return settled.flatMap((result) => (result.status === "fulfilled" ? result.value : []));
 }
