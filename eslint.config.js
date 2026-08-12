@@ -19,7 +19,13 @@ export default tseslint.config(
       "react-refresh": reactRefresh,
     },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Keep the established hooks policy explicit. React Hooks 7.x adds a broader
+      // React Compiler ruleset to its recommended preset; adopt that separately.
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
+      // ESLint 10 newly recommends this core rule. Audit error-wrapping paths before
+      // enabling it so a dependency refresh does not alter runtime error semantics.
+      "preserve-caught-error": "off",
       "no-restricted-imports": [
         "error",
         {
