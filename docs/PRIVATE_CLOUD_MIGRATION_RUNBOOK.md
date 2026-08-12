@@ -7,11 +7,11 @@ separately authorized Gate 6 cleanup.
 
 ## Rollout modes
 
-| Mode        | Reads                                  | Writes                                            | Intended use                              |
-| ----------- | -------------------------------------- | ------------------------------------------------- | ----------------------------------------- |
-| `off`       | Legacy owner-RLS rows                  | Legacy rows only                                  | Emergency rollback / pre-migration only   |
-| `shadow`    | Legacy rows                            | Explicit sync writes legacy and encrypted records | Migration observation only                |
-| `encrypted` | Secure IndexedDB, then encrypted cloud | Encrypted records only                            | Current authoritative production mode     |
+| Mode        | Reads                                  | Writes                                            | Intended use                            |
+| ----------- | -------------------------------------- | ------------------------------------------------- | --------------------------------------- |
+| `off`       | Legacy owner-RLS rows                  | Legacy rows only                                  | Emergency rollback / pre-migration only |
+| `shadow`    | Legacy rows                            | Explicit sync writes legacy and encrypted records | Migration observation only              |
+| `encrypted` | Secure IndexedDB, then encrypted cloud | Encrypted records only                            | Current authoritative production mode   |
 
 An invalid or missing flag becomes `off`. No mode ever uploads the original ICS file.
 
