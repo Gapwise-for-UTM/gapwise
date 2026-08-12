@@ -2,24 +2,18 @@
 
 ## System shape
 
-Gapwise is a local-first React/Vite application. The browser parses an ACORN calendar, calculates
-timetable gaps, runs the deterministic UTM route graph, and encrypts private state before optional
-cloud synchronization. The original file, calculated gaps, and calculated routes do not leave the
-browser. GitHub OAuth and passwordless email links use Supabase Auth.
+Gapwise is a local-first React/Vite application. The browser parses an ACORN calendar, calculates timetable gaps, runs the deterministic UTM route graph, and encrypts private state before optional cloud synchronization. The original file, calculated gaps, and calculated routes do not leave the browser. GitHub OAuth and passwordless email links use Supabase Auth.
 
-Production is built from GitHub `main` by Vercel and served from
-`https://gapwise-utm.vercel.app`. Production private cloud is in authoritative `encrypted` mode.
-Pushing the connected branch also syncs the commit back to Lovable. Do not rebase, amend, squash,
-or force-push published history.
+Production is built from GitHub `main` by Vercel and served from `https://gapwise-utm.vercel.app`. Private cloud is permanently encrypted-only in source; the legacy plaintext cloud tables and overlap helpers have been retired.
 
-| Concern                                        | Owner                  | Notes                                                                    |
-| ---------------------------------------------- | ---------------------- | ------------------------------------------------------------------------ |
-| UI, parsing, gaps, routing, private encryption | Browser                | Guest mode is fully functional; normal private restore is local.         |
-| Auth, ciphertext, wrapped keys, relationships  | Supabase               | Owner RLS; no Vercel KEK in the database.                                |
-| Device key broker and common gap               | Vercel Functions       | Verified JWT, user-token RLS client, KEK; no service role.               |
-| Account deletion                               | Supabase Edge Function | JWT required; identity comes from the verified token.                    |
-| Static build and domains                       | Vercel                 | SPA fallback, exact CSP and security headers come from `vercel.json`.    |
-| Verification                                   | GitHub Actions         | App checks plus isolated PostgreSQL migrations, pgTAP and database lint. |
+| Concern | Owner | Notes |
+| --- | --- | --- |
+| UI, parsing, gaps, routing, private encryption | Browser | Guest mode works without Supabase; signed-in private cloud data is encrypted before storage. |
+| Auth, ciphertext, wrapped keys, relationships | Supabase | Owner RLS; no Vercel KEK in the database. |
+| Device key broker and common gap | Vercel Functions | Verified JWT, caller-scoped Supabase client, KEK; no service role. |
+| Account deletion | Supabase Edge Function | JWT required; identity comes from the verified token. |
+| Static build and domains | Vercel | SPA fallback, CSP and security headers come from repository configuration. |
+| Verification | GitHub Actions | App checks plus isolated PostgreSQL migrations, pgTAP and database lint. |
 
 ## Local setup
 
@@ -31,37 +25,17 @@ cp .env.example .env.local
 bun run dev
 ```
 
-`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are optional for guest mode.
-`VITE_PRIVATE_CLOUD_MODE` defaults to `off` for an unspecified environment; `shadow` and
-`encrypted` are controlled rollout values. Production is intentionally configured to `encrypted`.
-Never place a database password, GitHub OAuth secret, Supabase secret/service-role key, KEK or raw
-DEK in a `VITE_` variable.
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are optional for guest mode. There is no private-cloud rollout-mode variable anymore. Never place a database password, OAuth secret, Supabase secret/service-role key, KEK or raw DEK in a `VITE_` variable.
 
 ## Environment consistency
 
-Use the same public Supabase variable names for development, preview, and production. Verify
-presence and scope in Vercel without printing values. Private functions also require server-only
-`GAPWISE_ACTIVE_KEK_VERSION` and matching `GAPWISE_KEK_V<n>` Sensitive variables. Preview and
-production must never share a KEK. Preview authentication also requires its exact callback origin to
-be present in Supabase Auth redirect URLs; add deliberate preview origins only when previews need
-sign-in. Keep the production Site URL on the canonical Gapwise domain and allow local development at
-`http://localhost:8080` and `http://127.0.0.1:8080`.
+Use the same public Supabase variable names for development, preview and production. Private functions require server-only `GAPWISE_ACTIVE_KEK_VERSION` plus matching `GAPWISE_KEK_V<n>` Sensitive variables. Preview and production must never share a KEK. Verify names and scopes without printing values.
 
-The repository pins Bun 1.3.14 for contributors and CI. Vercel currently supports
-the Bun `1.x` line rather than an exact patch selector, so its platform patch can
-temporarily lag. `bun install --frozen-lockfile` is required in every environment
-to prevent dependency drift. Node 24.x documents the Vercel project runtime
-expectation even though the current output is static.
+Keep the production Site URL and redirect allowlists exact. Preview authentication should be enabled only for explicitly trusted preview origins. The production account-deletion Edge Function uses exact-origin CORS; temporary preview origins must be removed immediately after disposable testing.
 
 ## Database and Edge Functions
 
-Apply migrations in filename order. Never edit an already-applied migration to
-change production; add a new migration instead. For the legacy `source_filename`
-removal, deploy and verify the compatible frontend first, then apply the migration;
-for additive schema changes, verify compatibility before deployment. See `docs/SUPABASE.md` for
-exact sequences. Private-cloud migration and any destructive plaintext cleanup must follow
-[`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md); generic commands below
-are not authorization for destructive production changes.
+Apply migrations in filename order. Never edit an already-applied migration; add a new migration instead.
 
 ```sh
 supabase db push
@@ -69,10 +43,9 @@ supabase gen types typescript --linked > src/lib/database.types.ts
 supabase functions deploy delete-account
 ```
 
-Review generated type changes before committing. Hosted Edge Functions provide
-the Supabase URL and administrative key environment; `ALLOWED_ORIGINS` can add
-exact trusted origins beyond the source-controlled production and local defaults.
-Keep JWT verification enabled for `delete-account`.
+Review generated type changes before committing. Keep JWT verification enabled for `delete-account`. The hosted Edge Function owns its administrative Supabase credential; Vercel private-cloud functions must not receive a service-role key.
+
+The completed private-cloud migration and KEK recovery/rotation procedures are documented in [`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
 
 ## Verification
 
@@ -80,73 +53,48 @@ Run the same gates as CI:
 
 ```sh
 bun install --frozen-lockfile
-bun run format
+bun run typecheck
 bun run lint
 bun test
 bun run build
-bun run typecheck
 bun run format:check
-bun audit
 ```
 
-Then serve the production output and check desktop and narrow mobile widths:
+For database changes also run the isolated Supabase suite:
 
-1. Load `/` directly and confirm the split-screen hero has no horizontal scroll.
-2. Try the demo, all three view tabs, both terms, and a full refresh.
-3. Upload a valid, malformed, oversized, and duplicate-containing calendar.
-4. Open Day Route and verify a worker asset, vector tiles, glyphs, markers, and
-   written fallback directions load without console errors.
-5. Block the map provider and verify a visible error plus **Retry map** replaces
-   the silent rectangle.
-6. With disposable accounts in encrypted Preview, verify initial sync, same-device local restore
-   without a broker request, storage-reset/new-device restore, stale-write rejection, common-gap
-   minimization, cloud deletion without resurrection, sign-out and account deletion.
-7. Inspect localStorage, sessionStorage, IndexedDB, network bodies and built assets for secret
-   fixtures; verify non-extractable keys and no plaintext timetable persistence.
-8. Confirm production response headers, the canonical domain, GitHub commit SHA,
-   and successful Vercel deployment.
-9. Use [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) before an announcement or larger beta.
+```sh
+supabase db start
+supabase test db
+supabase db lint --local --level warning --fail-on error
+```
 
-## Production monitoring on free plans
+After a production deployment verify the canonical domain, intended GitHub commit, response security headers, Vercel runtime errors, Supabase advisors, fresh-device encrypted restore, same-device local restore, sign-out cleanup, bounded common-gap behavior and account deletion with disposable data where destructive testing is required.
 
-Keep monitoring deliberately lightweight and privacy-preserving:
+Use [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) before an announcement or larger beta.
 
-- review Vercel runtime errors and function status codes after deployments and periodically during a beta;
-- monitor Vercel function invocations/transfer and Supabase database size/egress before raising social limits;
+## Production monitoring
+
+Keep monitoring lightweight and privacy-preserving:
+
+- review Vercel runtime errors and function status codes after deployments;
+- monitor Vercel function invocations/transfer and Supabase database size/egress;
 - review Supabase Security and Performance Advisors after migrations;
-- watch encrypted revision health with aggregate queries only—never dump production ciphertext or plaintext;
-- do not add polling, background location tracking, or a paid monitoring dependency merely for launch;
-- keep friend-overlap refreshes bounded, cached/deduplicated in the client, and manually refreshable.
+- watch encrypted revision health with aggregate queries only;
+- never dump production ciphertext, timetable plaintext, keys, tokens, emails or relationship contents to logs/analytics;
+- do not add polling or background location tracking merely for monitoring.
 
 ## Troubleshooting
 
-- **Blank map:** confirm WebGL 2, then inspect the MapLibre worker request before
-  blaming CSP or OpenFreeMap. MapLibre 6's worker must be emitted through Vite;
-  `CampusMap.tsx` imports it with `?worker&url`. A missing worker stalls before
-  tile requests begin.
-- **Map error state:** check the worker, style, TileJSON, sprite, glyph, and `.pbf`
-  responses. The route timeline remains the accessible fallback.
-- **Sign-in returns an error:** compare the browser origin with Supabase's Site URL
-  and redirect allowlist. For GitHub, also verify the provider callback; for email,
-  verify the magic-link template and delivery settings. Never loosen the allowlist to
-  an unrestricted wildcard.
-- **Cloud controls are disabled:** verify both public Vite variables exist for the
-  current environment. Guest parsing and routing should still work.
-- **Private-cloud API returns 503:** do not weaken the crypto path; verify KEK variable names and
-  scopes without printing values. Never add a Supabase service-role key to Vercel.
-- **Encrypted conflict:** do not overwrite or delete the local record. Reload the verified cloud
-  version or reconcile on the originating device; revision failures are intentional stale-write
-  protection.
-- **Direct route is a 404:** confirm the Vercel rewrite and `public/_redirects`
-  still send SPA paths to `index.html`.
-- **Schema mismatch:** compare `supabase migration list`, repository filenames,
-  live RLS policies, and regenerated `database.types.ts` before writing data.
+- **Blank map:** confirm WebGL 2 and inspect MapLibre worker/style/tile requests. The written route remains the accessible fallback.
+- **Sign-in error:** compare the browser origin with Supabase Site URL and exact redirect allowlist. Never use unrestricted wildcards.
+- **Cloud controls disabled:** verify the public Supabase variables exist. Guest parsing/routing should still work.
+- **Private-cloud API 503:** verify server-only KEK variable names/scopes without revealing values. Never add a Supabase service-role key to Vercel.
+- **Encrypted conflict:** keep the valid local record; revision failures are intentional stale-write protection.
+- **Direct route 404:** confirm the Vercel SPA rewrite remains configured.
+- **Schema mismatch:** compare migration history, live RLS/privileges and regenerated database types before writing data.
 
 ## Security expectations
 
-Treat calendar files, OAuth query parameters, browser storage, cloud JSON, device public keys and
-map responses as untrusted. Keep size/count limits, validate every decrypted payload, rely on RLS
-rather than client filters, and grant browser roles only the table operations they use. Do not log
-timetable contents, capsules, tokens, keys, emails or raw production records. Account deletion and
-database-leak testing must use disposable accounts. Capacity assumptions and alert thresholds are
-documented in [`PRIVATE_CLOUD_CAPACITY.md`](PRIVATE_CLOUD_CAPACITY.md).
+Treat calendar files, OAuth parameters, browser storage, cloud JSON, device public keys and map responses as untrusted. Keep size/count limits, validate decrypted payloads, rely on RLS rather than client filters and grant browser roles only the operations they use.
+
+Gapwise is defense in depth, not E2EE or zero knowledge. A malicious same-origin deployment, compromised browser/device, stolen authenticated session or sufficiently broad simultaneous Supabase/Vercel compromise can expose data in memory or through the trusted key-broker boundary.
