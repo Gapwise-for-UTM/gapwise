@@ -20,7 +20,7 @@ jobs:
           bun-version: 1.3.14
       - name: Align ESLint 10 toolchain
         run: |
-          bun add --dev @eslint/js@10.8.1 eslint-plugin-react-hooks@7.1.1 typescript-eslint@8.65.0
+          bun add --dev @eslint/js@10.0.1 eslint-plugin-react-hooks@7.1.1 typescript-eslint@8.65.0
           bun install --frozen-lockfile
           bun run lint
       - name: Commit generated manifest and lockfile
