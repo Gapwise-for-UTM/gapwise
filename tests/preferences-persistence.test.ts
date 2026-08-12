@@ -11,14 +11,29 @@ const storage = {
   setItem: (_key: string, value: string) => {
     stored = value;
   },
+  removeItem: () => {
+    stored = null;
+  },
 };
 
-describe("local route preference persistence", () => {
+describe("legacy plaintext route preference persistence", () => {
   beforeEach(() => {
     stored = null;
   });
 
-  test("survives reload-style reads for guest residence settings", () => {
+  test("is ignored and cleared in encrypted-only production", () => {
+    stored = JSON.stringify({
+      ...DEFAULT_USER_PREFERENCES,
+      dayOrigin: "residence",
+      residenceBuildingCode: "RIH",
+      walkingSpeedMps: 1.5,
+    });
+
+    expect(loadLocalUserPreferences(storage)).toEqual(DEFAULT_USER_PREFERENCES);
+    expect(stored).toBeNull();
+  });
+
+  test("does not create new plaintext preference records", () => {
     saveLocalUserPreferences(
       {
         ...DEFAULT_USER_PREFERENCES,
@@ -28,16 +43,6 @@ describe("local route preference persistence", () => {
       },
       storage,
     );
-
-    expect(loadLocalUserPreferences(storage)).toMatchObject({
-      dayOrigin: "residence",
-      residenceBuildingCode: "RIH",
-      walkingSpeedMps: 1.5,
-    });
-  });
-
-  test("falls back safely when browser storage is malformed", () => {
-    stored = "not-json";
-    expect(loadLocalUserPreferences(storage)).toEqual(DEFAULT_USER_PREFERENCES);
+    expect(stored).toBeNull();
   });
 });
