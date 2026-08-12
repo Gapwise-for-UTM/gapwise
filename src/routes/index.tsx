@@ -588,6 +588,24 @@ function Index() {
   const openGapPlan = useCallback(() => showView("gaps"), [showView]);
   const openDayRoute = useCallback(() => showView("route"), [showView]);
 
+  const handleAccountDeleted = useCallback((clearLocal: boolean) => {
+        const retainedLocal = clearLocal
+          ? null
+          : loadRememberedRecord<Meeting[]>().record?.data;
+        setMeetings(retainedLocal?.length ? retainedLocal : null);
+        latestMeetings.current = retainedLocal?.length ? retainedLocal : null;
+        restoredSource.current = retainedLocal?.length ? "local" : "none";
+        setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
+        setRestorationMessage(null);
+        if (isEncryptedPrivateCloudAuthoritative) {
+          setPersonalItems([]);
+          setPreferences(DEFAULT_USER_PREFERENCES);
+          setGapPreferences(DEFAULT_GAP_PREFERENCES);
+          lastEncryptedFingerprint.current = null;
+        }
+      }}
+  }, []);
+
   const { now: todayNow, state: todayState } = useTodayState({
     meetings: termMeetings,
     selectedTerm: term,
@@ -747,26 +765,6 @@ function Index() {
               user={user}
               loading={authLoading}
               onAccountDeleted={handleAccountDeleted}
-            />
-          </div>
-        </div>
-      </header>
-      <PlaceholderRemoved onAccountDeleted={(clearLocal) => {
-                const retainedLocal = clearLocal
-                  ? null
-                  : loadRememberedRecord<Meeting[]>().record?.data;
-                setMeetings(retainedLocal?.length ? retainedLocal : null);
-                latestMeetings.current = retainedLocal?.length ? retainedLocal : null;
-                restoredSource.current = retainedLocal?.length ? "local" : "none";
-                setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
-                setRestorationMessage(null);
-                if (isEncryptedPrivateCloudAuthoritative) {
-                  setPersonalItems([]);
-                  setPreferences(DEFAULT_USER_PREFERENCES);
-                  setGapPreferences(DEFAULT_GAP_PREFERENCES);
-                  lastEncryptedFingerprint.current = null;
-                }
-              }}
             />
           </div>
         </div>
