@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { expectLanding, watchForAppFailures } from "./helpers";
 
-test("PWA metadata, service worker, and cached app shell are functional", async (
-  { page, context },
-  testInfo,
-) => {
+test("PWA metadata, service worker, and cached app shell are functional", async ({
+  page,
+  context,
+}, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "PWA gate runs once in Chromium");
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
@@ -41,7 +41,9 @@ test("PWA metadata, service worker, and cached app shell are functional", async 
   await context.setOffline(true);
   try {
     await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(page.getByRole("heading", { name: "Make every gap on campus count." })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Make every gap on campus count." }),
+    ).toBeVisible();
   } finally {
     await context.setOffline(false);
   }
