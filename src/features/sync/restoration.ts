@@ -1,6 +1,6 @@
 import type { Meeting } from "@/lib/timetable-types";
 import type { RememberedRecord } from "@/hooks/use-preferences";
-import type { CloudScheduleRecord } from "./sync-service";
+import type { CloudScheduleRecord } from "./cloud-restoration";
 
 export type RestorationState =
   | "idle"
