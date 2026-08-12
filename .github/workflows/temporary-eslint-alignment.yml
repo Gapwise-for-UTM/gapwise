@@ -21,13 +21,23 @@ jobs:
       - name: Align ESLint 10 toolchain
         run: |
           bun add --dev @eslint/js@10.0.1 eslint-plugin-react-hooks@7.1.1 typescript-eslint@8.65.0
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('eslint.config.js')
+          text = path.read_text()
+          old = '      ...reactHooks.configs.recommended.rules,\n'
+          new = '''      // Keep the established hooks policy explicit. React Hooks 7.x adds a broader\n      // React Compiler ruleset to its recommended preset; adopt that separately.\n      "react-hooks/rules-of-hooks": "error",\n      "react-hooks/exhaustive-deps": "warn",\n      // ESLint 10 newly recommends this core rule. Audit error-wrapping paths before\n      // enabling it so a dependency refresh does not alter runtime error semantics.\n      "preserve-caught-error": "off",\n'''
+          if old not in text:
+              raise SystemExit('Expected react-hooks recommended rule spread was not found')
+          path.write_text(text.replace(old, new))
+          PY
           bun install --frozen-lockfile
           bun run lint
-      - name: Commit generated manifest and lockfile
+      - name: Commit generated alignment
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json bun.lock
+          git add package.json bun.lock eslint.config.js
           if git diff --cached --quiet; then
             echo "No ESLint alignment changes to commit."
             exit 0
