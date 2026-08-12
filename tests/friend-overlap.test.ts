@@ -116,7 +116,7 @@ describe("friend overlap privacy contract", () => {
     ).toThrow("malformed");
   });
 
-  test("migration exposes a fixed derived overlap payload", async () => {
+  test("historical migration exposed only a fixed derived overlap payload", async () => {
     const sql = await readFile(
       "supabase/migrations/20260811002848_friend_timetable_overlap.sql",
       "utf8",
@@ -143,15 +143,17 @@ describe("friend overlap privacy contract", () => {
     expect(overlapFunction).toContain("* 30 as end_minute");
   });
 
-  test("RLS test suite exercises bypass, consent, revocation, mismatch, and deletion", async () => {
+  test("current RLS suite exercises consent, non-enumeration, revocation, and deletion", async () => {
     const sql = await readFile("supabase/tests/database/friend_overlap_rls.test.sql", "utf8");
     for (const proof of [
-      "crafted direct query cannot read an accepted friend schedule",
-      "pending friend receives no overlap result",
-      "same-course LEC/TUT mismatch",
-      "revocation immediately removes all overlap visibility",
-      "account deletion removes every pending, accepted, and revoked relationship",
-      "former friends see no relationship trace after account deletion",
+      "authenticated clients cannot read participant Auth UUIDs directly",
+      "a caller cannot direct-read another user profile",
+      "accepted relationships are reported as mutual",
+      "revoked relationships immediately disappear from friend-list output",
+      "recipient can explicitly accept a pending request",
+      "invalid invite submissions receive the same non-enumerating success shape",
+      "private-code connection is mutual only after explicit acceptance",
+      "deleting an account cascades every relationship involving that account",
     ]) {
       expect(sql).toContain(proof);
     }
@@ -176,7 +178,7 @@ describe("friend overlap privacy contract", () => {
     expect(service).toContain('.rpc("list_friend_connections")');
   });
 
-  test("rollback removes only friend-overlap objects", async () => {
+  test("historical rollback removes only friend-overlap objects", async () => {
     const rollback = await readFile(
       "supabase/rollbacks/20260811002848_friend_timetable_overlap.sql",
       "utf8",
