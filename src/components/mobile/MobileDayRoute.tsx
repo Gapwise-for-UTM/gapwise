@@ -62,8 +62,9 @@ function defaultWeekday(meetings: Meeting[], term: Term, targetId: string | null
     return today;
   }
   return (
-    WEEKDAYS.find((day) => meetings.some((meeting) => meeting.term === term && meeting.weekday === day)) ??
-    "Monday"
+    WEEKDAYS.find((day) =>
+      meetings.some((meeting) => meeting.term === term && meeting.weekday === day),
+    ) ?? "Monday"
   );
 }
 
@@ -156,6 +157,26 @@ function RouteOptionsDrawer({
   );
 }
 
+function Metric({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Clock3;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-background/40 p-3">
+      <p className="flex items-center gap-1 text-[0.65rem] text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+        {label}
+      </p>
+      <p className="mt-1 text-xs font-semibold tabular-nums text-foreground">{value}</p>
+    </div>
+  );
+}
+
 function SegmentSummary({
   segment,
   preferences,
@@ -174,7 +195,7 @@ function SegmentSummary({
     );
   }
 
-  const route = segment.route;
+  const { route } = segment;
   const presentation = getLocationPresentation({ from: segment.from, to: segment.to, route });
   const fromLocation = getLocationPresentation({ meeting: segment.from });
   const toLocation = getLocationPresentation({ meeting: segment.to });
@@ -250,9 +271,7 @@ function SegmentSummary({
         </div>
       )}
 
-      {presentation.detail ? (
-        <p className="mt-3 text-xs leading-5 text-muted-foreground">{presentation.detail}</p>
-      ) : null}
+      <p className="mt-3 text-xs leading-5 text-muted-foreground">{presentation.detail}</p>
       {routeWarnings.length > 0 ? (
         <ul className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
           {routeWarnings.map((warning) => (
@@ -267,26 +286,6 @@ function SegmentSummary({
         </ul>
       ) : null}
     </section>
-  );
-}
-
-function Metric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Clock3;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-background/40 p-3">
-      <dt className="flex items-center gap-1 text-[0.65rem] text-muted-foreground">
-        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-        {label}
-      </dt>
-      <dd className="mt-1 text-xs font-semibold tabular-nums text-foreground">{value}</dd>
-    </div>
   );
 }
 
@@ -307,10 +306,6 @@ export function MobileDayRoute({
 }) {
   const { routeTargetId, setRouteTargetId } = useMobileRouteTarget();
   const [requestedMeetingId] = useState<string | null>(routeTargetId);
-  const availableTerms = useMemo(
-    () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
-    [meetings],
-  );
   const [weekday, setWeekday] = useState<Weekday>(() =>
     defaultWeekday(meetings, term, requestedMeetingId),
   );
@@ -318,6 +313,10 @@ export function MobileDayRoute({
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
 
+  const availableTerms = useMemo(
+    () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
+    [meetings],
+  );
   const dayMeetings = useMemo(
     () =>
       meetings
@@ -419,8 +418,8 @@ export function MobileDayRoute({
               {weekday}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {dayMeetings.length} {dayMeetings.length === 1 ? "class" : "classes"} · {segments.length}{" "}
-              {segments.length === 1 ? "transition" : "transitions"}
+              {dayMeetings.length} {dayMeetings.length === 1 ? "class" : "classes"} ·{" "}
+              {segments.length} {segments.length === 1 ? "transition" : "transitions"}
             </p>
           </div>
           <button
@@ -508,9 +507,7 @@ export function MobileDayRoute({
                   type="button"
                   onClick={() => selectSegment(segment.id)}
                   className={`min-h-14 min-w-[13.5rem] snap-start rounded-xl border px-3 py-2.5 text-left ${
-                    active
-                      ? "border-accent/50 bg-accent/10"
-                      : "border-border bg-card/70"
+                    active ? "border-accent/50 bg-accent/10" : "border-border bg-card/70"
                   }`}
                 >
                   <span className="flex items-center gap-2 text-xs font-semibold">
