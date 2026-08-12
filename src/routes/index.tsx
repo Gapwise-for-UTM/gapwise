@@ -589,20 +589,18 @@ function Index() {
   const openDayRoute = useCallback(() => showView("route"), [showView]);
 
   const handleAccountDeleted = useCallback((clearLocal: boolean) => {
-        const retainedLocal = clearLocal
-          ? null
-          : loadRememberedRecord<Meeting[]>().record?.data;
-        setMeetings(retainedLocal?.length ? retainedLocal : null);
-        latestMeetings.current = retainedLocal?.length ? retainedLocal : null;
-        restoredSource.current = retainedLocal?.length ? "local" : "none";
-        setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
-        setRestorationMessage(null);
-        if (isEncryptedPrivateCloudAuthoritative) {
-          setPersonalItems([]);
-          setPreferences(DEFAULT_USER_PREFERENCES);
-          setGapPreferences(DEFAULT_GAP_PREFERENCES);
-          lastEncryptedFingerprint.current = null;
-        }
+    const retainedLocal = clearLocal ? null : loadRememberedRecord<Meeting[]>().record?.data;
+    setMeetings(retainedLocal?.length ? retainedLocal : null);
+    latestMeetings.current = retainedLocal?.length ? retainedLocal : null;
+    restoredSource.current = retainedLocal?.length ? "local" : "none";
+    setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
+    setRestorationMessage(null);
+    if (isEncryptedPrivateCloudAuthoritative) {
+      setPersonalItems([]);
+      setPreferences(DEFAULT_USER_PREFERENCES);
+      setGapPreferences(DEFAULT_GAP_PREFERENCES);
+      lastEncryptedFingerprint.current = null;
+    }
   }, []);
 
   const { now: todayNow, state: todayState } = useTodayState({
