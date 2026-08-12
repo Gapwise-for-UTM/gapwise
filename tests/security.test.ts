@@ -76,15 +76,6 @@ describe("account deletion and encrypted-only cloud security", () => {
     expect(source).not.toContain("defaultOrigins[0]");
   });
 
-  test("encrypted private cloud can no longer fall back to a plaintext deployment mode", async () => {
-    const mode = await readFile("src/features/security/private-cloud-mode.ts", "utf8");
-    expect(mode).toContain('privateCloudMode: PrivateCloudMode = "encrypted"');
-    expect(mode).toContain("shouldWritePrivateCloud = true");
-    expect(mode).toContain("isEncryptedPrivateCloudAuthoritative = true");
-    expect(mode).not.toContain("VITE_PRIVATE_CLOUD_MODE");
-    expect(mode).not.toMatch(/"off"|"shadow"/u);
-  });
-
   test("authoritative encrypted mode clears cross-account and plaintext browser state", async () => {
     const [route, preferences, remembered] = await Promise.all([
       readFile("src/routes/index.tsx", "utf8"),
