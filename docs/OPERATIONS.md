@@ -3,15 +3,14 @@
 ## System shape
 
 Gapwise is a local-first React/Vite application. The browser parses an ACORN calendar, calculates
-timetable gaps, runs the deterministic UTM route graph, and—in the staged private-cloud
-architecture—encrypts private state before cloud synchronization. The original file, calculated
-gaps, and calculated routes do not leave the browser. GitHub OAuth and passwordless email links use
-Supabase Auth.
+timetable gaps, runs the deterministic UTM route graph, and encrypts private state before optional
+cloud synchronization. The original file, calculated gaps, and calculated routes do not leave the
+browser. GitHub OAuth and passwordless email links use Supabase Auth.
 
 Production is built from GitHub `main` by Vercel and served from
-`https://campus-gap-finder.vercel.app`. Pushing the connected branch also syncs
-the commit back to Lovable. Do not rebase, amend, squash, or force-push published
-history.
+`https://gapwise-utm.vercel.app`. Production private cloud is in authoritative `encrypted` mode.
+Pushing the connected branch also syncs the commit back to Lovable. Do not rebase, amend, squash,
+or force-push published history.
 
 | Concern                                        | Owner                  | Notes                                                                    |
 | ---------------------------------------------- | ---------------------- | ------------------------------------------------------------------------ |
@@ -33,7 +32,8 @@ bun run dev
 ```
 
 `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` are optional for guest mode.
-`VITE_PRIVATE_CLOUD_MODE` defaults to `off`; `shadow` and `encrypted` are controlled rollout values.
+`VITE_PRIVATE_CLOUD_MODE` defaults to `off` for an unspecified environment; `shadow` and
+`encrypted` are controlled rollout values. Production is intentionally configured to `encrypted`.
 Never place a database password, GitHub OAuth secret, Supabase secret/service-role key, KEK or raw
 DEK in a `VITE_` variable.
 
@@ -41,11 +41,10 @@ DEK in a `VITE_` variable.
 
 Use the same public Supabase variable names for development, preview, and production. Verify
 presence and scope in Vercel without printing values. Private functions also require server-only
-`GAPWISE_ACTIVE_KEK_VERSION` and matching `GAPWISE_KEK_V<n>` Sensitive variables, but only after
-the operator recovery gate. Preview and production must never share a KEK. Preview authentication also
-requires its exact callback origin to be present in Supabase Auth redirect URLs;
-add deliberate preview patterns only when previews need sign-in. Keep the
-production Site URL on the canonical Vercel domain and allow local development at
+`GAPWISE_ACTIVE_KEK_VERSION` and matching `GAPWISE_KEK_V<n>` Sensitive variables. Preview and
+production must never share a KEK. Preview authentication also requires its exact callback origin to
+be present in Supabase Auth redirect URLs; add deliberate preview origins only when previews need
+sign-in. Keep the production Site URL on the canonical Gapwise domain and allow local development at
 `http://localhost:8080` and `http://127.0.0.1:8080`.
 
 The repository pins Bun 1.3.14 for contributors and CI. Vercel currently supports
@@ -59,10 +58,10 @@ expectation even though the current output is static.
 Apply migrations in filename order. Never edit an already-applied migration to
 change production; add a new migration instead. For the legacy `source_filename`
 removal, deploy and verify the compatible frontend first, then apply the migration;
-for the additive residence-preference columns, apply the migration before the new
-frontend. See `docs/SUPABASE.md` for both exact sequences. The encrypted migrations are additive
-and must follow [`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md); the
-generic commands below are not authorization for production cutover.
+for additive schema changes, verify compatibility before deployment. See `docs/SUPABASE.md` for
+exact sequences. Private-cloud migration and any destructive plaintext cleanup must follow
+[`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md); generic commands below
+are not authorization for destructive production changes.
 
 ```sh
 supabase db push
@@ -106,6 +105,18 @@ Then serve the production output and check desktop and narrow mobile widths:
    fixtures; verify non-extractable keys and no plaintext timetable persistence.
 8. Confirm production response headers, the canonical domain, GitHub commit SHA,
    and successful Vercel deployment.
+9. Use [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) before an announcement or larger beta.
+
+## Production monitoring on free plans
+
+Keep monitoring deliberately lightweight and privacy-preserving:
+
+- review Vercel runtime errors and function status codes after deployments and periodically during a beta;
+- monitor Vercel function invocations/transfer and Supabase database size/egress before raising social limits;
+- review Supabase Security and Performance Advisors after migrations;
+- watch encrypted revision health with aggregate queries only—never dump production ciphertext or plaintext;
+- do not add polling, background location tracking, or a paid monitoring dependency merely for launch;
+- keep friend-overlap refreshes bounded, cached/deduplicated in the client, and manually refreshable.
 
 ## Troubleshooting
 
@@ -121,7 +132,7 @@ Then serve the production output and check desktop and narrow mobile widths:
   an unrestricted wildcard.
 - **Cloud controls are disabled:** verify both public Vite variables exist for the
   current environment. Guest parsing and routing should still work.
-- **Private-cloud API returns 503:** keep the rollout mode `off`; verify KEK variable names and
+- **Private-cloud API returns 503:** do not weaken the crypto path; verify KEK variable names and
   scopes without printing values. Never add a Supabase service-role key to Vercel.
 - **Encrypted conflict:** do not overwrite or delete the local record. Reload the verified cloud
   version or reconcile on the originating device; revision failures are intentional stale-write
