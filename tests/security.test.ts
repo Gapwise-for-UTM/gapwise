@@ -90,6 +90,13 @@ describe("account deletion and RLS security", () => {
     expect(remembered).toContain("window.localStorage.removeItem(REMEMBER_KEY)");
   });
 
+  test("authoritative encrypted cloud deletion does not require legacy plaintext tables", async () => {
+    const syncService = await readFile("src/features/sync/sync-service.ts", "utf8");
+    expect(syncService.match(/if \(isEncryptedPrivateCloudAuthoritative\) return;/g)).toHaveLength(
+      2,
+    );
+  });
+
   test("all user tables use RLS, ownership checks, and cascading deletion", async () => {
     const sql = await readFile("supabase/migrations/20260801171701_user_sync.sql", "utf8");
     for (const table of ["user_schedules", "user_preferences"]) {

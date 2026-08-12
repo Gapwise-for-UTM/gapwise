@@ -141,7 +141,9 @@ export function CloudSyncControls({
             type="button"
             disabled={!enabled || busy}
             onClick={() => {
-              const label = "synced encrypted private data, legacy timetable, and preferences";
+              const label = isEncryptedPrivateCloudAuthoritative
+                ? "synced encrypted private data"
+                : "synced encrypted private data, legacy timetable, and preferences";
               if (!window.confirm(`Delete your ${label} from your account?`)) return;
               void run(async () => {
                 const results = await Promise.allSettled([

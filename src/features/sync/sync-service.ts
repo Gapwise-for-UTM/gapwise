@@ -59,6 +59,7 @@ export async function loadSchedule(): Promise<Meeting[] | null> {
 }
 
 export async function deleteSchedule(): Promise<void> {
+  if (isEncryptedPrivateCloudAuthoritative) return;
   const supabase = requireSupabaseClient();
   const userId = await currentUserId();
   const { error } = await supabase.from("user_schedules").delete().eq("user_id", userId);
@@ -66,6 +67,7 @@ export async function deleteSchedule(): Promise<void> {
 }
 
 export async function deletePreferences(): Promise<void> {
+  if (isEncryptedPrivateCloudAuthoritative) return;
   const supabase = requireSupabaseClient();
   const userId = await currentUserId();
   const { error } = await supabase.from("user_preferences").delete().eq("user_id", userId);
