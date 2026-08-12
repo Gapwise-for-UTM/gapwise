@@ -23,6 +23,7 @@ import { UploadPanel } from "@/components/UploadPanel";
 import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
 import { MobileMoreSheet } from "@/components/mobile/MobileMoreSheet";
 import { MobileShell, type MobileTab } from "@/components/mobile/MobileShell";
+import { MobileTimetable } from "@/components/mobile/MobileTimetable";
 import { MobileToday } from "@/components/mobile/MobileToday";
 import { useTodayState } from "@/features/today/use-today-state";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -386,10 +387,8 @@ function Index() {
     return () => window.clearTimeout(timeout);
   }, [authenticatedUserId, gapPreferences, isDemo, isOnline, meetings, personalItems, preferences]);
 
-  // Combine academic meetings with personal items for planning/visualization
   const termMeetings = useMemo(() => {
     const academic = (meetings ?? []).filter((m) => m.term === term);
-    // convert fixed personal items in the selected term into meeting-like objects for display
     const personalAsMeetings = personalItems
       .filter((p) => p.term === term && p.flexibility.kind === "fixed")
       .map((p) => ({
@@ -437,7 +436,6 @@ function Index() {
     [meetings, personalItems, term],
   );
 
-  // helper to persist personal items
   const persistPersonal = (next: typeof personalItems) => {
     setPersonalItems(next);
     try {
@@ -658,12 +656,30 @@ function Index() {
             />
           ) : null}
           {mobileTab === "timetable" ? (
-            <TimetableGrid
+            <MobileTimetable
               meetings={termMeetings}
+              term={term}
+              terms={terms}
+              gaps={gaps}
+              onTermChange={setTerm}
+              onOpenGapPlan={() => {
+                openGapPlan();
+                setMobileTab("gaps");
+              }}
               onRouteToMeeting={() => {
                 openDayRoute();
                 setMobileTab("route");
               }}
+              onAddPersonal={() => {
+                setEditingPersonal(null);
+                setShowAddPersonal(true);
+              }}
+              onEditPersonal={(id) => {
+                const item = personalItems.find((personal) => personal.id === id) ?? null;
+                setEditingPersonal(item);
+                setShowAddPersonal(true);
+              }}
+              onDeletePersonal={deletePersonal}
             />
           ) : null}
           {mobileTab === "gaps" ? (
@@ -726,6 +742,15 @@ function Index() {
             onAccountDeleted={handleAccountDeleted}
           />
         </MobileMoreSheet>
+        <PersonalItemForm
+          open={showAddPersonal}
+          onOpenChange={(open) => {
+            setShowAddPersonal(open);
+            if (!open) setEditingPersonal(null);
+          }}
+          initial={editingPersonal}
+          onSave={addOrUpdatePersonal}
+        />
       </>
     );
   }
