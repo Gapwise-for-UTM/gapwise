@@ -22,7 +22,7 @@ export default defineConfig({
     baseURL,
     serviceWorkers: "allow",
     screenshot: "only-on-failure",
-    trace: "retain-on-failure",
+    trace: process.env.CI ? "on-first-retry" : "retain-on-failure",
   },
   projects: [
     {
