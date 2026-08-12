@@ -36,7 +36,9 @@ export function watchForAppFailures(page: Page, baseURL: string) {
 
 export async function expectLanding(page: Page) {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Make every gap on campus count." })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "Try a demo" })).toBeVisible();
   await expect(page.locator("#ics-file")).toHaveCount(1);
 }
