@@ -116,6 +116,13 @@ function deserializeMeeting(value: unknown): Meeting | null {
   }
   if (recurrenceIntervalWeeks !== undefined) {
     meeting.recurrenceIntervalWeeks = recurrenceIntervalWeeks as number;
+  } else if (
+    isRecord(dateRange) &&
+    (dateRange["endDate"] === null || dateRange["endDate"] !== dateRange["startDate"])
+  ) {
+    // v1.0.0 normalized multi-date ACORN exports as weekly schedules before
+    // persisting an explicit interval. New unsupported rules are single-date.
+    meeting.recurrenceIntervalWeeks = 1;
   }
   return meeting;
 }

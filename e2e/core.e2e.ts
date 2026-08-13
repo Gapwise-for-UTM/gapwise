@@ -115,10 +115,13 @@ test("mobile term switching selects a scheduled weekday", async ({ page }, testI
     ),
   });
   await page.getByRole("button", { name: "Timetable" }).click();
-  await expect(page.getByRole("heading", { name: "Monday" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Monday", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Winter" }).click();
   await expect(page.getByRole("heading", { name: "Friday" })).toBeVisible();
   await expect(page.getByText("CSC148H5")).toBeVisible();
+  await page.getByRole("group", { name: "Weekday" }).getByRole("button", { name: /^Mon/ }).click();
+  await expect(page.getByRole("heading", { name: "Monday", exact: true })).toBeVisible();
+  await expect(page.getByText("Nothing scheduled in Winter")).toBeVisible();
   guard.assertClean();
 });
 

@@ -17,7 +17,7 @@ describe("UTM monument asset", () => {
   test("contains one plaque label layer", async () => {
     const names = (await modelJson()).nodes?.map((node) => node.name ?? "") ?? [];
 
-    expect(names).toContain("plaque_label");
+    expect(names.filter((name) => name === "plaque_label")).toHaveLength(1);
     expect(names).not.toContain("UTM Plaque Lettering Front");
   });
 });

@@ -228,10 +228,12 @@ export function MobileTimetable({
   const { setRouteTargetId } = useMobileRouteTarget();
 
   useEffect(() => {
-    if (!meetings.some((meeting) => meeting.weekday === selectedDay)) {
-      setSelectedDay(initialDay(meetings));
-    }
-  }, [meetings, selectedDay]);
+    setSelectedDay((currentDay) =>
+      meetings.some((meeting) => meeting.weekday === currentDay)
+        ? currentDay
+        : initialDay(meetings),
+    );
+  }, [meetings]);
 
   const dayMeetings = useMemo(
     () =>

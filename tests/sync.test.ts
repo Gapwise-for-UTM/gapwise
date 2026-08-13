@@ -38,6 +38,15 @@ describe("guest-safe cloud services", () => {
     expect(deserializeSchedule([meeting()])).toEqual([meeting()]);
   });
 
+  test("migrates v1.0.0 multi-date schedules to explicit weekly recurrence", () => {
+    const legacy = meeting({
+      dateRange: { startDate: "2026-09-07", endDate: "2026-12-07" },
+    });
+    const [restored] = deserializeSchedule([legacy]);
+
+    expect(restored?.recurrenceIntervalWeeks).toBe(1);
+  });
+
   test("uses safe user preference defaults", () => {
     expect(sanitizeUserPreferences(undefined)).toEqual(DEFAULT_USER_PREFERENCES);
     expect(sanitizeUserPreferences({ walkingSpeedMps: 99 }).walkingSpeedMps).toBe(1.35);
