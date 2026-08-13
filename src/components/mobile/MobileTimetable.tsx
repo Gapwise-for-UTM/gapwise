@@ -247,7 +247,7 @@ export function MobileTimetable({
 
   return (
     <div className="rise-in space-y-4">
-      <section className="surface overflow-hidden p-4">
+      <section className="today-signal surface overflow-hidden p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="eyebrow text-accent">Day timetable</p>
@@ -282,7 +282,7 @@ export function MobileTimetable({
                 aria-pressed={term === item}
                 className={`min-h-10 rounded-lg px-3 text-sm font-semibold transition-colors ${
                   term === item
-                    ? "bg-accent text-accent-foreground shadow-sm"
+                    ? "bg-primary text-primary-foreground shadow-[var(--accent-glow)]"
                     : "text-muted-foreground"
                 }`}
               >
@@ -292,7 +292,11 @@ export function MobileTimetable({
           </div>
         ) : null}
 
-        <div className="mt-4 grid grid-cols-5 gap-1" role="tablist" aria-label="Weekday">
+        <div
+          className="mobile-day-tabs mt-4 grid grid-cols-5 gap-1"
+          role="tablist"
+          aria-label="Weekday"
+        >
           {WEEKDAYS.map((day) => {
             const active = day === selectedDay;
             const count = meetings.filter((meeting) => meeting.weekday === day).length;
@@ -303,7 +307,7 @@ export function MobileTimetable({
                 role="tab"
                 aria-selected={active}
                 onClick={() => setSelectedDay(day)}
-                className={`flex min-h-12 flex-col items-center justify-center rounded-lg border px-1 text-xs font-semibold transition-colors ${
+                className={`mobile-day-tab flex min-h-12 flex-col items-center justify-center rounded-lg border px-1 text-xs font-semibold ${
                   active
                     ? "border-accent/45 bg-accent/12 text-accent"
                     : "border-transparent text-muted-foreground"
@@ -318,8 +322,8 @@ export function MobileTimetable({
       </section>
 
       {dayMeetings.length === 0 ? (
-        <section className="surface flex min-h-52 flex-col items-center justify-center p-8 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-accent/20 bg-accent/8 text-accent">
+        <section className="empty-state surface flex min-h-52 flex-col items-center justify-center p-8 text-center">
+          <span className="empty-state-icon flex h-11 w-11 items-center justify-center rounded-xl border border-accent/20 bg-accent/8 text-accent">
             <CalendarDays className="h-5 w-5" aria-hidden="true" />
           </span>
           <h2 className="mt-4 font-display text-lg font-semibold">Your {selectedDay} is clear</h2>
@@ -404,14 +408,14 @@ export function MobileTimetable({
                         <button
                           type="button"
                           onClick={onOpenGapPlan}
-                          className="min-w-0 flex-1 rounded-xl border border-dashed border-accent/25 bg-accent/[0.035] px-4 py-3 text-left transition-colors active:bg-accent/10"
+                          className="mobile-gap-card min-w-0 flex-1 rounded-xl border border-dashed px-4 py-3 text-left transition-colors active:bg-gap/10"
                         >
                           <div className="flex items-center gap-2">
-                            <Sparkles className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                            <Sparkles className="h-3.5 w-3.5 text-gap" aria-hidden="true" />
                             <span className="text-xs font-semibold text-foreground">
                               {formatCompactDuration(gap.durationMinutes)} gap
                             </span>
-                            <span className="ml-auto text-[0.68rem] font-semibold text-accent">
+                            <span className="ml-auto text-[0.68rem] font-semibold text-gap">
                               View gap plan
                             </span>
                           </div>

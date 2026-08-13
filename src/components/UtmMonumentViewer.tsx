@@ -14,6 +14,7 @@ export function UtmMonumentViewer({
   decorative = false,
 }: UtmMonumentViewerProps) {
   const [viewerLoaded, setViewerLoaded] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -28,6 +29,14 @@ export function UtmMonumentViewer({
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
 
   const initialOrbit = "0deg 70deg 120%";
@@ -68,6 +77,9 @@ export function UtmMonumentViewer({
           loading="eager"
           reveal="auto"
           camera-controls
+          auto-rotate={reducedMotion ? undefined : true}
+          auto-rotate-delay="5000"
+          rotation-per-second="4deg"
           camera-orbit={initialOrbit}
           min-camera-orbit="auto 50deg 105%"
           max-camera-orbit="auto 88deg 220%"

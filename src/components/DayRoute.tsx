@@ -162,7 +162,7 @@ export function DayRoute({
 
   return (
     <div className="space-y-5">
-      <section className="surface p-5" aria-labelledby="route-preferences-title">
+      <section className="today-signal surface p-5" aria-labelledby="route-preferences-title">
         <div className="grid gap-5 lg:grid-cols-[0.9fr_1.5fr]">
           <div>
             <p className="eyebrow text-muted-foreground">Term and day</p>
@@ -188,7 +188,10 @@ export function DayRoute({
             />
           </div>
           <div>
-            <h2 id="route-preferences-title" className="text-sm font-medium">
+            <h2
+              id="route-preferences-title"
+              className="font-display text-base font-semibold tracking-tight"
+            >
               Route preferences
             </h2>
             <div className="mt-2 grid gap-3 sm:grid-cols-3">
@@ -288,15 +291,20 @@ export function DayRoute({
       </section>
 
       {dayMeetings.length === 0 ? (
-        <div className="surface p-8 text-center">
-          <h2 className="text-lg font-semibold">No classes on {weekday}</h2>
+        <div className="empty-state surface p-8 text-center">
+          <h2 className="font-display text-xl font-semibold tracking-tight">
+            No classes on {weekday}
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">Choose another weekday or term.</p>
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.65fr)]">
           <section className="surface p-5" aria-labelledby="day-timeline-title">
             <p className="eyebrow text-accent">Day sequence</p>
-            <h2 id="day-timeline-title" className="mt-2 text-lg font-medium tracking-tight">
+            <h2
+              id="day-timeline-title"
+              className="mt-2 font-display text-xl font-medium tracking-[-0.03em]"
+            >
               {weekday} timeline
             </h2>
             <ol className="mt-3 space-y-3">

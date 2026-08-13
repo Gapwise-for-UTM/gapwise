@@ -49,3 +49,21 @@ test("core release journey has no serious or critical automatic a11y violations"
 
   guard.assertClean();
 });
+
+test("dark and light themes preserve automatic accessibility checks", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "theme accessibility gate runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  await expectLanding(page);
+  const darkToggle = page.getByRole("button", { name: "Switch to dark mode" });
+  if (await darkToggle.isVisible()) await darkToggle.click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await expectNoSeriousAccessibilityViolations(page);
+
+  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+  await expectNoSeriousAccessibilityViolations(page);
+  guard.assertClean();
+});

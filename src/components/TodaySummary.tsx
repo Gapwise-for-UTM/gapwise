@@ -148,7 +148,10 @@ export const TodaySummary = memo(function TodaySummary({
     summary.kind === "gap" || summary.kind === "before-first" || summary.kind === "in-class";
 
   return (
-    <section className="surface mb-6 mt-6 overflow-hidden p-5 sm:p-6" aria-labelledby="today-title">
+    <section
+      className="today-signal surface mb-6 mt-6 overflow-hidden p-5 sm:p-6"
+      aria-labelledby="today-title"
+    >
       <h2
         id="today-title"
         className="flex items-center gap-2 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground"

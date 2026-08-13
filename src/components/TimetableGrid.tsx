@@ -22,9 +22,10 @@ import {
   termStatus,
 } from "@/lib/calendar-awareness";
 import { detectConflicts, moveItem, resizeItem, snapToIncrement } from "@/lib/personal-scheduler";
-import type { ActivityType, Meeting } from "@/lib/timetable-types";
+import type { ActivityType, Gap, Meeting } from "@/lib/timetable-types";
 import type { PersonalItem } from "@/lib/personal-types";
 import {
+  formatCompactDuration,
   formatTime,
   locationLabel,
   meetingLocationType,
@@ -58,7 +59,13 @@ export function ActivityBadge({ type }: { type: ActivityType }) {
   );
 }
 
-function CalendarLegend({ activityTypes }: { activityTypes: ActivityType[] }) {
+function CalendarLegend({
+  activityTypes,
+  gapCount,
+}: {
+  activityTypes: ActivityType[];
+  gapCount: number;
+}) {
   return (
     <div
       className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
@@ -75,6 +82,11 @@ function CalendarLegend({ activityTypes }: { activityTypes: ActivityType[] }) {
           {ACTIVITY_LABELS[type]}
         </span>
       ))}
+      {gapCount > 0 ? (
+        <span className="gap-legend">
+          {gapCount} detected {gapCount === 1 ? "gap" : "gaps"}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -351,6 +363,7 @@ function MeetingDetailsDialog({
 
 export const TimetableGrid = memo(function TimetableGrid({
   meetings,
+  gaps,
   onRouteToMeeting,
   onEditPersonal,
   onDeletePersonal,
@@ -360,6 +373,7 @@ export const TimetableGrid = memo(function TimetableGrid({
   headerAction,
 }: {
   meetings: Meeting[];
+  gaps: Gap[];
   onRouteToMeeting?: (meeting: Meeting) => void;
   onEditPersonal?: (meetingId: string) => void;
   onDeletePersonal?: (meetingId: string) => void;
@@ -416,22 +430,30 @@ export const TimetableGrid = memo(function TimetableGrid({
       ),
     [meetings],
   );
+  const gapsByDay = useMemo(
+    () => new Map(WEEKDAYS.map((day) => [day, gaps.filter((gap) => gap.weekday === day)])),
+    [gaps],
+  );
 
   return (
     <div>
       <div className="mb-4 flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/8 text-accent">
+          <span className="timetable-toolbar-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
             <CalendarDays className="h-4 w-4" aria-hidden="true" />
           </span>
           <div>
-            <p className="text-sm font-medium text-foreground">Week at a glance</p>
-            <p className="text-xs text-muted-foreground">Select a class to view its details</p>
+            <p className="font-display text-base font-semibold tracking-tight text-foreground">
+              Week at a glance
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Classes stay solid; usable time between them glows in mint
+            </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {headerAction}
-          <CalendarLegend activityTypes={visibleActivityTypes} />
+          <CalendarLegend activityTypes={visibleActivityTypes} gapCount={gaps.length} />
           {scale.compactableHours.size > 0 ? (
             <button
               type="button"
@@ -447,8 +469,8 @@ export const TimetableGrid = memo(function TimetableGrid({
 
       {/* Desktop grid */}
       <div className="hidden md:block">
-        <div className="surface overflow-hidden bg-card">
-          <div className="grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border bg-card">
+        <div className="timetable-shell surface overflow-hidden bg-card">
+          <div className="timetable-day-header grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border">
             <div className="flex items-center px-2.5 py-3 text-xs font-semibold text-muted-foreground">
               Time
             </div>
@@ -458,7 +480,7 @@ export const TimetableGrid = memo(function TimetableGrid({
               return (
                 <div
                   key={day}
-                  className={`flex min-w-0 items-center justify-between gap-1 border-l border-border px-2.5 py-3 ${isToday ? "bg-accent/8" : ""}`}
+                  className={`flex min-w-0 items-center justify-between gap-1 border-l border-border px-2.5 py-3.5 ${isToday ? "bg-accent/8" : ""}`}
                 >
                   <span className="truncate text-xs font-bold text-foreground">{day}</span>
                   <span
@@ -504,7 +526,7 @@ export const TimetableGrid = memo(function TimetableGrid({
                 <div
                   key={day}
                   data-weekday={day}
-                  className={`relative border-l border-border ${
+                  className={`weekday-column relative border-l border-border ${
                     termIsCurrent && day === currentDay ? "bg-accent/[0.035]" : ""
                   }`}
                   onPointerDown={(e) => {
@@ -583,6 +605,29 @@ export const TimetableGrid = memo(function TimetableGrid({
                       }
                     />
                   ))}
+
+                  {gapsByDay.get(day)?.map((gap) => {
+                    const top = scale.minuteToTop(gap.startTime);
+                    const height = Math.max(
+                      12,
+                      scale.minuteToTop(gap.endTime) - scale.minuteToTop(gap.startTime),
+                    );
+                    return (
+                      <div
+                        key={gap.id}
+                        className="gap-window pointer-events-none"
+                        data-testid="gap-window"
+                        aria-hidden="true"
+                        style={{ top, height }}
+                      >
+                        {height >= 28 ? (
+                          <span className="gap-window-label">
+                            {formatCompactDuration(gap.durationMinutes)} gap
+                          </span>
+                        ) : null}
+                      </div>
+                    );
+                  })}
 
                   {showCurrentTime && day === currentDay ? (
                     <div

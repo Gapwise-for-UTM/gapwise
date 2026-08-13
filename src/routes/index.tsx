@@ -768,17 +768,14 @@ function Index() {
           <a
             href="/"
             aria-label="Gapwise for UTM home"
-            className="group flex min-w-0 items-center gap-3"
+            className="brand-lockup group flex min-w-0 items-center gap-3"
           >
-            <img
-              src="/logo-mark.svg"
-              alt=""
-              aria-hidden="true"
-              className="h-7 w-7 shrink-0 transition-transform duration-300 group-hover:scale-105"
-            />
+            <span className="brand-mark-shell">
+              <img src="/logo-mark.svg" alt="" aria-hidden="true" />
+            </span>
             <div className="min-w-0">
-              <p className="truncate font-display text-base font-semibold tracking-[-0.025em]">
-                Gapwise <span className="text-accent">for UTM</span>
+              <p className="flex items-center gap-2 truncate font-display text-base font-semibold tracking-[-0.035em]">
+                Gapwise <span className="brand-utm-pill">UTM</span>
               </p>
             </div>
           </a>
@@ -812,37 +809,37 @@ function Index() {
         ) : !meetings ? (
           <>
             <div className="landing-bento rise-in">
-              <section className="bento-cell hero-surface flex min-h-[24rem] flex-col p-7 text-hero-foreground sm:p-10 lg:col-span-7 lg:min-h-[26rem] lg:p-12">
+              <section className="bento-cell bento-hero flex flex-col p-7 text-hero-foreground sm:p-11 lg:col-span-7 lg:p-14">
                 <div className="flex flex-wrap items-center gap-3">
-                  <p className="inline-flex w-fit items-center gap-2 rounded-lg border border-hero-accent/25 bg-hero-muted/35 px-3 py-1.5">
+                  <p className="hero-kicker">
                     <ShieldCheck className="h-3.5 w-3.5 text-hero-accent" aria-hidden="true" />
                     <span className="eyebrow">Private by design</span>
                   </p>
-                  <span className="eyebrow text-hero-foreground/45">UTM campus utility</span>
+                  <span className="eyebrow text-hero-foreground/52">Built for UTM</span>
                 </div>
 
-                <h1 className="mt-10 max-w-[13ch] text-balance font-display text-[2.65rem] font-medium leading-[0.98] tracking-[-0.055em] sm:text-[4.15rem]">
-                  Make every gap on campus count.
+                <h1 className="hero-title mt-12 font-display sm:mt-14">
+                  Make every <span className="hero-word">gap</span> on campus count.
                 </h1>
 
-                <p className="mt-6 max-w-[34rem] text-[0.95rem] leading-7 text-hero-foreground/68 sm:text-base">
+                <p className="relative mt-7 max-w-[35rem] text-[0.96rem] leading-7 text-hero-foreground/70 sm:text-[1.05rem] sm:leading-8">
                   Turn your ACORN export into a precise weekly timetable, useful gap plan, and
                   route-aware guide for moving across UTM.
                 </p>
 
-                <div className="mt-auto grid gap-3 pt-10 text-xs text-hero-foreground/58 sm:grid-cols-2">
-                  <p className="flex items-center gap-2 border-t border-hero-foreground/10 pt-3">
-                    <span className="h-1.5 w-1.5 rounded-full bg-hero-accent" aria-hidden="true" />
+                <div className="hero-proof relative mt-auto pt-12 text-xs text-hero-foreground/62">
+                  <p className="flex items-center gap-2.5">
+                    <span className="hero-proof-dot" aria-hidden="true" />
                     Original .ics files never leave your device
                   </p>
-                  <p className="flex items-center gap-2 border-t border-hero-foreground/10 pt-3">
-                    <span className="h-1.5 w-1.5 rounded-full bg-hero-accent" aria-hidden="true" />
-                    Built around the UTM campus
+                  <p className="flex items-center gap-2.5">
+                    <span className="hero-proof-dot" aria-hidden="true" />
+                    Campus-aware routes, room to room
                   </p>
                 </div>
               </section>
 
-              <section className="bento-cell flex flex-col justify-center p-6 sm:p-8 lg:col-span-5 lg:row-span-2 lg:p-10">
+              <section className="bento-cell upload-card flex flex-col justify-center p-6 sm:p-9 lg:col-span-5 lg:row-span-2 lg:p-11">
                 <div className="mx-auto w-full max-w-md">
                   {!isOnline ? (
                     <div className="glass-panel mb-6 rounded-xl p-5 text-left text-foreground">
@@ -869,7 +866,7 @@ function Index() {
                 </div>
               </section>
 
-              <section className="bento-cell min-h-[17rem] p-5 sm:p-6 lg:col-span-7">
+              <section className="bento-cell landmark-card min-h-[18rem] p-5 sm:p-7 lg:col-span-7">
                 <div className="grid h-full gap-5 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(0,1.3fr)] sm:items-center">
                   <div className="relative z-10">
                     <p className="eyebrow text-accent">A familiar landmark</p>
@@ -885,10 +882,7 @@ function Index() {
                     </p>
                   </div>
                   <div>
-                    <UtmMonumentViewer
-                      compact
-                      className="border-accent/20 bg-hero-muted/25 bg-none"
-                    />
+                    <UtmMonumentViewer compact className="model-stage bg-none" />
                     <p className="mt-2 text-center text-[0.68rem] text-muted-foreground">
                       Drag to rotate · scroll or pinch to zoom
                     </p>
@@ -906,7 +900,7 @@ function Index() {
                       i === 0 ? "lg:col-span-5" : i === 1 ? "lg:col-span-4" : "lg:col-span-3"
                     }`}
                   >
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-accent/20 bg-accent/8 text-accent">
+                    <span className="step-icon-shell">
                       <StepIcon className="h-4 w-4" aria-hidden="true" />
                     </span>
                     <h2 className="mt-7 max-w-[18rem] font-display text-base font-medium tracking-tight">
@@ -959,7 +953,7 @@ function Index() {
                 <p className="eyebrow text-muted-foreground">
                   {isDemo ? "Sample data" : "Campus day plan"}
                 </p>
-                <h1 className="mt-1.5 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+                <h1 className="mt-1.5 font-display text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
                   {isDemo ? "Demo timetable" : "Your timetable"}
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -1067,8 +1061,8 @@ function Index() {
 
             <div className="mt-6">
               {termMeetings.length === 0 ? (
-                <div className="surface flex flex-col items-center p-10 text-center sm:p-14">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary">
+                <div className="empty-state surface flex flex-col items-center p-10 text-center sm:p-14">
+                  <span className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8">
                     <CalendarRange className="h-6 w-6 text-accent" aria-hidden="true" />
                   </span>
                   <h2 className="mt-5 font-display text-lg font-semibold tracking-tight">
@@ -1084,6 +1078,7 @@ function Index() {
                   <div hidden={view !== "timetable"}>
                     <TimetableGrid
                       meetings={termMeetings}
+                      gaps={gaps}
                       headerAction={
                         <button
                           type="button"
@@ -1217,7 +1212,7 @@ function Index() {
         )}
         {restorationMessage ? (
           <div
-            className="glass-panel fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-lg px-4 py-3 text-sm"
+            className="status-toast glass-panel fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-3 text-sm"
             role="status"
           >
             <span>{restorationMessage}</span>
