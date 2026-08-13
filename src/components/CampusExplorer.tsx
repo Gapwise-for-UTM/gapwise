@@ -1,6 +1,6 @@
 import { DoorOpen, MapPin, Search, ShieldCheck, X } from "lucide-react";
-import { useMemo, useState } from "react";
-import { CampusMap, type CampusMapProps } from "./CampusMap";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { CampusMap, type CampusMapProps, type MapFocusPadding } from "./CampusMap";
 import {
   getBuildingExplorerDetails,
   searchCampusBuildings,
@@ -39,11 +39,64 @@ export function CampusExplorer({
 }: CampusExplorerProps) {
   const [query, setQuery] = useState("");
   const [roomResult, setRoomResult] = useState<BuildingSearchResult | null>(null);
+  const [activeEntranceId, setActiveEntranceId] = useState<string | null>(null);
+  const [focusPadding, setFocusPadding] = useState<MapFocusPadding>({
+    top: 76,
+    right: 24,
+    bottom: 24,
+    left: 24,
+  });
+  const explorerRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const results = useMemo(() => searchCampusBuildings(query), [query]);
   const details = useMemo(
     () => getBuildingExplorerDetails(selectedBuildingCode),
     [selectedBuildingCode],
   );
+
+  useEffect(() => {
+    setActiveEntranceId(null);
+  }, [selectedBuildingCode]);
+
+  useEffect(() => {
+    const explorer = explorerRef.current;
+    if (!explorer) return;
+    const update = () => {
+      const bounds = explorer.getBoundingClientRect();
+      const searchBounds = searchRef.current?.getBoundingClientRect();
+      const cardBounds = cardRef.current?.getBoundingClientRect();
+      const narrow = bounds.width < 640;
+      const next: MapFocusPadding = {
+        top: searchBounds ? Math.max(24, searchBounds.bottom - bounds.top + 14) : 24,
+        right: 24,
+        bottom: 24,
+        left: 24,
+      };
+      if (cardBounds) {
+        if (narrow) next.bottom = Math.max(24, bounds.bottom - cardBounds.top + 14);
+        else next.left = Math.max(24, cardBounds.right - bounds.left + 16);
+      }
+      setFocusPadding((current) =>
+        current.top === next.top &&
+        current.right === next.right &&
+        current.bottom === next.bottom &&
+        current.left === next.left
+          ? current
+          : next,
+      );
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(explorer);
+    if (searchRef.current) observer.observe(searchRef.current);
+    if (cardRef.current) observer.observe(cardRef.current);
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [details]);
 
   function selectResult(result: BuildingSearchResult) {
     setQuery("");
@@ -63,14 +116,20 @@ export function CampusExplorer({
   }
 
   return (
-    <div className="campus-explorer relative">
+    <div ref={explorerRef} className="campus-explorer relative">
       <CampusMap
         {...mapProps}
         selectedBuildingCode={selectedBuildingCode}
         onSelectBuilding={selectFromMap}
+        activeEntranceId={activeEntranceId}
+        onActiveEntranceChange={setActiveEntranceId}
+        focusPadding={focusPadding}
       />
 
-      <div className="campus-explorer-search absolute left-3 top-3 z-20 w-[min(22rem,calc(100%-5.75rem))]">
+      <div
+        ref={searchRef}
+        className="campus-explorer-search absolute left-3 top-3 z-20 w-[min(22rem,calc(100%-5.75rem))]"
+      >
         <label htmlFor="campus-building-search" className="sr-only">
           Search UTM buildings
         </label>
@@ -148,7 +207,8 @@ export function CampusExplorer({
 
       {details ? (
         <section
-          className="campus-building-card absolute left-3 top-[4.75rem] z-10 max-h-[calc(100%-5.5rem)] w-[min(23rem,calc(100%-1.5rem))] overflow-y-auto rounded-xl border border-border bg-popover/96 p-4 text-popover-foreground shadow-xl backdrop-blur"
+          ref={cardRef}
+          className="campus-building-card absolute bottom-3 left-3 right-3 z-10 max-h-[46%] overflow-y-auto rounded-xl border border-border bg-popover/96 p-4 text-popover-foreground shadow-xl backdrop-blur sm:bottom-auto sm:right-auto sm:top-[4.75rem] sm:max-h-[calc(100%-5.5rem)] sm:w-[min(23rem,calc(100%-1.5rem))]"
           aria-labelledby="selected-building-title"
         >
           <div className="flex items-start justify-between gap-3">
@@ -190,22 +250,16 @@ export function CampusExplorer({
             </div>
           ) : null}
 
-          <dl className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded-lg border border-border bg-background/50 p-2.5">
-              <dt className="flex items-center gap-1.5 text-muted-foreground">
-                <DoorOpen className="h-3.5 w-3.5" aria-hidden="true" /> Entrances
-              </dt>
-              <dd className="mt-1 font-semibold">{details.campus.entrances.length} mapped</dd>
-            </div>
-            <div className="rounded-lg border border-border bg-background/50 p-2.5">
-              <dt className="flex items-center gap-1.5 text-muted-foreground">
-                <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" /> Confidence
-              </dt>
-              <dd className="mt-1 font-semibold">
-                {confidenceLabel(details.verifiedEntrances, details.inferredApproaches)}
-              </dd>
-            </div>
-          </dl>
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background/50 p-2.5 text-xs">
+            <DoorOpen className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+            <span className="font-semibold">
+              {details.campus.entrances.length} mapped entrances
+            </span>
+            <span className="ml-auto flex items-center gap-1 text-muted-foreground">
+              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+              {confidenceLabel(details.verifiedEntrances, details.inferredApproaches)}
+            </span>
+          </div>
 
           <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
@@ -215,23 +269,50 @@ export function CampusExplorer({
             </span>
           </p>
 
-          <ul className="mt-3 space-y-2 border-t border-border pt-3 text-xs">
-            {details.campus.entrances.map((entrance) => (
-              <li key={entrance.id}>
-                <p className="font-semibold">{entrance.label}</p>
-                <p className="text-muted-foreground">
-                  {entrance.kind === "entrance" ? "Mapped entrance" : "Mapped approach"} ·{" "}
-                  {entrance.accessibility === "accessible"
-                    ? "Accessibility marked accessible"
-                    : entrance.accessibility === "not_accessible"
-                      ? "Marked not accessible"
-                      : "Accessibility unknown"}
-                </p>
-                {entrance.notes ? (
-                  <p className="mt-0.5 leading-5 text-muted-foreground">{entrance.notes}</p>
-                ) : null}
-              </li>
-            ))}
+          <ul
+            className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs"
+            aria-label="Mapped entrances"
+          >
+            {details.campus.entrances.map((entrance) => {
+              const active = entrance.id === activeEntranceId;
+              return (
+                <li key={entrance.id}>
+                  <button
+                    type="button"
+                    onMouseEnter={() => setActiveEntranceId(entrance.id)}
+                    onMouseLeave={() => setActiveEntranceId(null)}
+                    onFocus={() => setActiveEntranceId(entrance.id)}
+                    onBlur={() => setActiveEntranceId(null)}
+                    onClick={() => setActiveEntranceId(entrance.id)}
+                    className={`w-full rounded-lg border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
+                      active
+                        ? "border-accent/60 bg-accent/10"
+                        : "border-transparent hover:bg-secondary"
+                    }`}
+                  >
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="font-semibold">{entrance.label}</span>
+                      <span className="shrink-0 text-[0.68rem] font-semibold text-muted-foreground">
+                        {entrance.accessibility === "accessible"
+                          ? "Accessible"
+                          : entrance.accessibility === "not_accessible"
+                            ? "Not accessible"
+                            : "Access unknown"}
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-muted-foreground">
+                      {entrance.kind === "entrance" ? "Mapped entrance" : "Mapped approach"}
+                      {entrance.metadata.verificationStatus === "inferred" ? " · inferred" : ""}
+                    </span>
+                    {entrance.notes ? (
+                      <span className="mt-0.5 block leading-5 text-muted-foreground">
+                        {entrance.notes}
+                      </span>
+                    ) : null}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}
