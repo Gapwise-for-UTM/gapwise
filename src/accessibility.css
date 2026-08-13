@@ -1,14 +1,14 @@
 /*
  * Accessibility-specific primary action states.
- * The original primary token renders too light for 14px near-white button text,
- * so keep the same hue while darkening the action surface enough for WCAG AA.
+ * Use explicit, tested surfaces so primary action text stays above WCAG AA
+ * contrast regardless of browser color-mix interpolation differences.
  */
 .button-primary {
-  background: color-mix(in oklab, var(--color-primary) 84%, black 16%);
+  background: #496f91;
 }
 
 .button-primary:hover {
-  background: color-mix(in oklab, var(--color-primary) 88%, black 12%);
+  background: #3f6484;
 }
 
 .button-primary:disabled {
