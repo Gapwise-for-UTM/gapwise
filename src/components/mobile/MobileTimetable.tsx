@@ -294,7 +294,7 @@ export function MobileTimetable({
 
         <div
           className="mobile-day-tabs mt-4 grid grid-cols-5 gap-1"
-          role="tablist"
+          role="group"
           aria-label="Weekday"
         >
           {WEEKDAYS.map((day) => {
@@ -304,8 +304,7 @@ export function MobileTimetable({
               <button
                 key={day}
                 type="button"
-                role="tab"
-                aria-selected={active}
+                aria-pressed={active}
                 onClick={() => setSelectedDay(day)}
                 className={`mobile-day-tab flex min-h-12 flex-col items-center justify-center rounded-lg border px-1 text-xs font-semibold ${
                   active
@@ -415,7 +414,7 @@ export function MobileTimetable({
                             <span className="text-xs font-semibold text-foreground">
                               {formatCompactDuration(gap.durationMinutes)} gap
                             </span>
-                            <span className="ml-auto text-[0.68rem] font-semibold text-gap">
+                            <span className="ml-auto text-[0.68rem] font-semibold text-gap-text">
                               View gap plan
                             </span>
                           </div>

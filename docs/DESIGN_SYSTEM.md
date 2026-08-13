@@ -5,7 +5,7 @@ Gapwise uses a dark-first “campus after dark” visual language. Route blue id
 ## Foundations
 
 - **Typography:** Geist Variable for display and interface text; Geist Mono Variable for times, labels, and compact metadata.
-- **Spacing:** a 4 px base grid through `--space-1` to `--space-12` in `src/styles.css`.
+- **Spacing:** a 4 px base grid exposed as `--space-1` through `--space-6`, then `--space-8`, `--space-10`, and `--space-12` in `src/styles.css`.
 - **Shape:** `--radius` is the base radius. Controls use `lg`/`xl`; product surfaces use `2xl`/`3xl`.
 - **Motion:** `--motion-fast`, `--motion-base`, and `--motion-slow` use the shared `--ease-standard` or `--ease-out` curves. Motion must remain meaningful and respect `prefers-reduced-motion`.
 

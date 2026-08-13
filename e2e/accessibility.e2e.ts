@@ -22,6 +22,13 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
   ).toEqual([]);
 }
 
+async function expectMonumentReady(page: Page) {
+  await expect(page.locator("figure[data-model-ready]")).toHaveAttribute(
+    "data-model-ready",
+    "true",
+  );
+}
+
 test("core release journey has no serious or critical automatic a11y violations", async ({
   page,
 }, testInfo) => {
@@ -29,6 +36,7 @@ test("core release journey has no serious or critical automatic a11y violations"
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
   await expectLanding(page);
+  await expectMonumentReady(page);
   await expectNoSeriousAccessibilityViolations(page);
 
   await page.getByRole("button", { name: "Try a demo" }).click();
@@ -60,10 +68,23 @@ test("dark and light themes preserve automatic accessibility checks", async ({
   const darkToggle = page.getByRole("button", { name: "Switch to dark mode" });
   if (await darkToggle.isVisible()) await darkToggle.click();
   await expect(page.locator("html")).toHaveClass(/dark/);
+  await expectMonumentReady(page);
   await expectNoSeriousAccessibilityViolations(page);
 
   await page.getByRole("button", { name: "Switch to light mode" }).click();
   await expect(page.locator("html")).not.toHaveClass(/dark/);
+  await expectMonumentReady(page);
   await expectNoSeriousAccessibilityViolations(page);
+  guard.assertClean();
+});
+
+test("reduced motion disables monument auto rotation", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "reduced-motion gate runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await expectLanding(page);
+  await expectMonumentReady(page);
+  await expect(page.locator("model-viewer")).not.toHaveAttribute("auto-rotate", "");
   guard.assertClean();
 });

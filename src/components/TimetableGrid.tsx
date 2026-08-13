@@ -70,7 +70,7 @@ function CalendarLegend({
     <div
       className="flex flex-wrap items-center gap-x-3 gap-y-1.5"
       role="group"
-      aria-label="Class components"
+      aria-label="Timetable legend"
     >
       {activityTypes.map((type) => (
         <span key={type} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
