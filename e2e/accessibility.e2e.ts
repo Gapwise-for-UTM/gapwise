@@ -33,6 +33,9 @@ test("core release journey has no serious or critical automatic a11y violations"
 
   await page.getByRole("button", { name: "Try a demo" }).click();
   await expect(page.getByRole("heading", { name: "Demo timetable" })).toBeVisible();
+  // The timetable shell becomes visible before demo initialization finishes.
+  // Scan the stable interactive state rather than the brief disabled/loading transition.
+  await expect(page.getByRole("button", { name: "Update timetable" })).toBeEnabled();
   await expectNoSeriousAccessibilityViolations(page);
 
   const viewMode = page.getByRole("group", { name: "View mode" });
