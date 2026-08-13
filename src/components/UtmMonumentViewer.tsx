@@ -1,6 +1,10 @@
-import { useEffect, useState, type ElementType } from "react";
+import { useEffect, useRef, useState, type ElementType } from "react";
 
 const ModelViewer = "model-viewer" as ElementType;
+
+type ModelViewerElement = HTMLElement & {
+  loaded?: boolean;
+};
 
 type UtmMonumentViewerProps = {
   className?: string;
@@ -14,6 +18,9 @@ export function UtmMonumentViewer({
   decorative = false,
 }: UtmMonumentViewerProps) {
   const [viewerLoaded, setViewerLoaded] = useState(false);
+  const [modelReady, setModelReady] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const viewerRef = useRef<ModelViewerElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -28,6 +35,29 @@ export function UtmMonumentViewer({
     return () => {
       mounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (!viewerLoaded) return;
+    const viewer = viewerRef.current;
+    if (!viewer) return;
+
+    const markReady = () => setModelReady(true);
+    if (viewer.loaded) {
+      markReady();
+      return;
+    }
+
+    viewer.addEventListener("load", markReady);
+    return () => viewer.removeEventListener("load", markReady);
+  }, [viewerLoaded]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
   }, []);
 
   const initialOrbit = "0deg 70deg 120%";
@@ -50,6 +80,7 @@ export function UtmMonumentViewer({
         compact ? "h-44 sm:h-52" : "h-72 sm:h-80 lg:h-[23rem]",
         className,
       ].join(" ")}
+      data-model-ready={modelReady ? "true" : "false"}
       aria-label={decorative ? undefined : "Interactive model of the UTM entrance monument"}
       aria-hidden={decorative || undefined}
     >
@@ -63,11 +94,15 @@ export function UtmMonumentViewer({
 
       {viewerLoaded ? (
         <ModelViewer
+          ref={viewerRef}
           src="/models/utm-entrance-monument.glb?v=plaque-lettering-5"
           alt="A detailed three-dimensional reconstruction of the University of Toronto Mississauga entrance monument"
           loading="eager"
           reveal="auto"
           camera-controls
+          auto-rotate={reducedMotion ? undefined : true}
+          auto-rotate-delay="5000"
+          rotation-per-second="4deg"
           camera-orbit={initialOrbit}
           min-camera-orbit="auto 50deg 105%"
           max-camera-orbit="auto 88deg 220%"

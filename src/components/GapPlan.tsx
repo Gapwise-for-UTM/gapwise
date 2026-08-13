@@ -716,10 +716,12 @@ export const GapPlan = memo(function GapPlan({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 px-1 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow text-accent">Between classes</p>
-          <h2 className="mt-2 text-xl font-medium tracking-tight">Plan around your day</h2>
+          <h2 className="mt-2 font-display text-2xl font-medium tracking-[-0.04em]">
+            Plan around your day
+          </h2>
         </div>
         <p className="max-w-md text-sm leading-6 text-muted-foreground">
           Suggestions account for walking time, setup, pack-up, and your next class.
@@ -739,8 +741,8 @@ export const GapPlan = memo(function GapPlan({
       />
 
       {groups.length === 0 ? (
-        <div className="surface flex flex-col items-center p-8 text-center">
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-secondary/45">
+        <div className="empty-state surface flex flex-col items-center p-8 text-center">
+          <span className="empty-state-icon flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-secondary/45">
             <MapPin className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
           </span>
           <h3 className="mt-4 text-lg font-semibold">No gaps today</h3>
@@ -752,7 +754,10 @@ export const GapPlan = memo(function GapPlan({
 
       {groups.map((group) => (
         <section key={group.weekday} aria-labelledby={`gaps-${group.weekday}`}>
-          <h3 id={`gaps-${group.weekday}`} className="text-base font-medium tracking-tight">
+          <h3
+            id={`gaps-${group.weekday}`}
+            className="font-display text-lg font-medium tracking-[-0.025em]"
+          >
             {group.weekday}
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {group.gaps.length} gap{group.gaps.length === 1 ? "" : "s"}

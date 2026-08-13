@@ -42,18 +42,21 @@ export function UploadPanel({
           const file = e.dataTransfer.files?.[0];
           if (file && !loading) onFile(file);
         }}
-        className={`group relative w-full cursor-pointer overflow-hidden rounded-xl border border-dashed p-7 text-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 sm:p-9 ${
+        data-dragging={dragging ? "true" : "false"}
+        className={`upload-dropzone group relative w-full cursor-pointer overflow-hidden border border-dashed p-7 text-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 sm:p-9 ${
           dragging
             ? "scale-[1.01] border-accent bg-accent/8 shadow-[var(--accent-glow)]"
             : "border-input bg-muted/30 hover:border-accent/60 hover:bg-secondary/45"
         }`}
       >
-        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg border border-accent/20 bg-accent/8 transition-transform duration-200 group-hover:-translate-y-0.5">
+        <span className="upload-orbit mx-auto flex items-center justify-center transition-transform duration-200 group-hover:-translate-y-0.5">
           <FileUp className="h-5 w-5 text-accent" aria-hidden="true" />
         </span>
 
-        <span className="mt-4 block text-sm font-medium">Drop your .ics file here</span>
-        <span id="ics-file-help" className="mt-1.5 block text-xs text-muted-foreground">
+        <span className="mt-5 block font-display text-[0.95rem] font-semibold tracking-tight">
+          {dragging ? "Release to build your timetable" : "Drop your .ics file here"}
+        </span>
+        <span id="ics-file-help" className="mt-1.5 block text-xs leading-5 text-muted-foreground">
           Choose from your device · 2 MB maximum
         </span>
       </button>
@@ -83,6 +86,7 @@ export function UploadPanel({
         }}
         disabled={loading}
         className="button-primary click-spark inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold disabled:translate-y-0 disabled:opacity-60"
+        aria-live="polite"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -101,7 +105,7 @@ export function UploadPanel({
         Try a demo
       </button>
 
-      <div className="flex items-start gap-3 rounded-lg border border-border bg-secondary/25 p-3">
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-surface-low/55 p-3.5">
         <input
           id="remember"
           name="remember"
@@ -133,7 +137,10 @@ export function UploadPanel({
     return (
       <section aria-labelledby="upload-heading">
         <p className="eyebrow text-accent">Start with ACORN</p>
-        <h2 id="upload-heading" className="mt-2 font-display text-2xl font-medium tracking-tight">
+        <h2
+          id="upload-heading"
+          className="mt-2 font-display text-[1.65rem] font-medium tracking-[-0.035em]"
+        >
           Upload your ACORN calendar
         </h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">

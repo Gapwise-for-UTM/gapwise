@@ -94,6 +94,12 @@ test("desktop demo moves between timetable, gaps, and route", async ({ page }, t
 
   await page.getByRole("button", { name: "Try a demo" }).click();
   await expect(page.getByRole("heading", { name: "Demo timetable" })).toBeVisible();
+  await expect(
+    page.getByText("Classes stay solid; usable time between them glows in mint"),
+  ).toBeVisible();
+  const visibleGapWindows = page.getByTestId("gap-window");
+  await expect(visibleGapWindows.first()).toBeVisible();
+  expect(await visibleGapWindows.count()).toBeGreaterThan(0);
 
   const viewMode = page.getByRole("group", { name: "View mode" });
   await viewMode.getByRole("button", { name: "Gap plan" }).click();
