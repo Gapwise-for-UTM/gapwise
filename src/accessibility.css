@@ -1,0 +1,8 @@
+/*
+ * Accessibility-specific interaction states.
+ * Keep disabled primary actions visibly inactive without lowering text contrast.
+ */
+.button-primary:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
