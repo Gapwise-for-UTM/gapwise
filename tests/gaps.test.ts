@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { calculateGapTiming, calculateLeaveBy } from "@/lib/gaps";
+import { calculateGapTiming, calculateLeaveBy, findGaps } from "@/lib/gaps";
 import type { RouteResult } from "@/features/routing/types";
+import { meeting } from "./fixtures";
 
 const route: RouteResult = {
   nodes: [],
@@ -32,6 +33,35 @@ describe("gap route timing", () => {
       usableMinutes: 45,
       bufferMinutes: 15,
       fallback: true,
+    });
+  });
+
+  test("uses the latest occupied end after nested and overlapping meetings", () => {
+    const outer = meeting({ id: "outer", startTime: 9 * 60, endTime: 12 * 60 });
+    const nested = meeting({ id: "nested", startTime: 10 * 60, endTime: 11 * 60 });
+    const next = meeting({ id: "next", startTime: 13 * 60, endTime: 14 * 60 });
+
+    expect(findGaps([outer, nested, next], "Fall")).toEqual([
+      expect.objectContaining({
+        startTime: 12 * 60,
+        endTime: 13 * 60,
+        durationMinutes: 60,
+        previous: outer,
+        next,
+      }),
+    ]);
+  });
+
+  test("keeps the meeting that extends an overlapping occupied interval as context", () => {
+    const first = meeting({ id: "first", startTime: 9 * 60, endTime: 11 * 60 });
+    const extending = meeting({ id: "extending", startTime: 10 * 60, endTime: 12 * 60 });
+    const next = meeting({ id: "next", startTime: 13 * 60, endTime: 14 * 60 });
+
+    expect(findGaps([first, extending, next], "Fall")[0]).toMatchObject({
+      startTime: 12 * 60,
+      durationMinutes: 60,
+      previous: extending,
+      next,
     });
   });
 });

@@ -38,7 +38,7 @@ User-owned encrypted tables use forced RLS. Browser roles receive only the table
 
 Security Advisor intentionally reports some `SECURITY DEFINER` functions as callable by `authenticated`; these are the documented public RPC boundary, not accidental grants. It also reports no-policy notices on tables intentionally inaccessible by direct browser policy. These findings are reviewed rather than silenced by weakening the design.
 
-Gapwise uses GitHub OAuth and passwordless email magic links; it does not add an email/password flow merely to clear Supabase's leaked-password advisory.
+Gapwise uses Microsoft, Google, and GitHub OAuth. It does not offer passwordless email links or an email/password flow merely to clear Supabase's leaked-password advisory.
 
 ## Encrypted private cloud
 

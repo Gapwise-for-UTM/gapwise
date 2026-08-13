@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { IcsParseError, MAX_ICS_EVENTS, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
+import { meetingOccursOnDate } from "@/lib/calendar-awareness";
 import { locationLabel } from "@/lib/timetable-types";
 
 function event(
@@ -86,6 +87,23 @@ describe("untrusted ICS parsing", () => {
     );
 
     expect(result.meetings[0]?.dateRange?.endDate).toBeNull();
+  });
+
+  test("does not turn an unsupported monthly rule into weekly classes", () => {
+    const result = parseIcs(
+      calendar([
+        event("monthly", "CSC108H5 LEC 0101", {
+          recurrence: ["RRULE:FREQ=MONTHLY;BYDAY=MO;UNTIL=20261207T140000Z"],
+        }),
+      ]),
+    );
+    const parsed = result.meetings[0]!;
+
+    expect(parsed.dateRange).toEqual({ startDate: "2026-09-07", endDate: "2026-09-07" });
+    expect(parsed.recurrenceIntervalWeeks).toBeUndefined();
+    expect(meetingOccursOnDate(parsed, new Date(2026, 8, 7, 12))).toBe(true);
+    expect(meetingOccursOnDate(parsed, new Date(2026, 8, 14, 12))).toBe(false);
+    expect(result.warnings.join(" ")).toContain("only its first occurrence is shown");
   });
 
   test.each([

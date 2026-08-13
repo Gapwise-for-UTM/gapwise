@@ -1,7 +1,6 @@
 import { useRef, useState } from "react";
 import { FileUp, Loader2, Sparkles } from "lucide-react";
 import { emitClickSpark } from "@/lib/micro-interactions";
-import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 export function UploadPanel({
   onFile,
@@ -10,6 +9,7 @@ export function UploadPanel({
   error,
   remember,
   onRememberChange,
+  rememberAvailable = true,
   variant = "card",
 }: {
   onFile: (file: File) => void;
@@ -18,6 +18,7 @@ export function UploadPanel({
   error: string | null;
   remember: boolean;
   onRememberChange: (value: boolean) => void;
+  rememberAvailable?: boolean;
   variant?: "card" | "hero";
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -110,15 +111,15 @@ export function UploadPanel({
           id="remember"
           name="remember"
           type="checkbox"
-          checked={isEncryptedPrivateCloudAuthoritative ? false : remember}
-          disabled={isEncryptedPrivateCloudAuthoritative}
+          checked={rememberAvailable && remember}
+          disabled={!rememberAvailable}
           onChange={(e) => onRememberChange(e.target.checked)}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-55"
         />
         <label htmlFor="remember" className="text-xs leading-5 text-muted-foreground">
-          {isEncryptedPrivateCloudAuthoritative
-            ? "Secure device restore becomes available after sign-in and encrypted private-data sync."
-            : "Remember on this device — keeps the parsed timetable in this browser's local storage only. Off by default."}
+          {rememberAvailable
+            ? "Remember on this device — stores only an encrypted timetable copy in this browser. Off by default."
+            : "Signed-in device restore is managed by encrypted private-data sync."}
         </label>
       </div>
 

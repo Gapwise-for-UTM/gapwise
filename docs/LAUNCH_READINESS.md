@@ -28,7 +28,7 @@ Gate 6 is complete. The legacy plaintext `user_schedules` and `user_preferences`
 - [x] Latest production Vercel deployment is `READY` and corresponds to the intended `main` commit.
 - [x] Production has no unexplained Vercel runtime errors in the final observation window.
 - [x] Production response headers retain the restrictive CSP, HSTS, `nosniff`, referrer policy, permissions policy, and frame denial.
-- [x] Supabase Security Advisor findings were reviewed. Remaining notices are understood design choices: private rate-limit tables intentionally have no browser policies; authenticated `SECURITY DEFINER` RPCs are narrow caller-facing capabilities covered by authorization tests; leaked-password protection is not part of the deployed GitHub OAuth/passwordless-email authentication path.
+- [x] Supabase Security Advisor findings were reviewed. Remaining notices are understood design choices: private rate-limit tables intentionally have no browser policies; authenticated `SECURITY DEFINER` RPCs are narrow caller-facing capabilities covered by authorization tests; leaked-password protection is not part of the deployed Microsoft/Google/GitHub OAuth authentication path.
 - [x] Supabase Performance Advisor findings were reviewed. The remaining unused friendship-index notices are low-signal on the current small dataset and are retained until real usage justifies removal.
 - [x] Production database migration state matches the encrypted-only repository architecture.
 - [x] Gate 6 permanently removed intentional plaintext timetable/settings cloud storage and the plaintext overlap implementation after the fail-closed replacement precheck.

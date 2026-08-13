@@ -116,7 +116,7 @@
   --shadow-lift: 0 1px 0 oklch(1 0 0 / 72%) inset, 0 24px 56px -32px oklch(0.18 0.05 255 / 42%);
   --shadow-panel: 0 1px 0 oklch(1 0 0 / 82%) inset, 0 30px 80px -52px oklch(0.18 0.05 255 / 34%);
   --accent-glow: 0 0 0 1px oklch(0.5 0.16 250 / 28%), 0 12px 34px -18px oklch(0.5 0.16 250 / 48%);
-  --gap-glow: 0 14px 34px -22px oklch(0.66 0.15 145 / 42%);
+  --gap-glow: 0 14px 34px -22px oklch(0.66 0.15 235 / 42%);
   --font-heading: "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Geist Variable", "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-code: "Geist Mono Variable", "Geist Mono", ui-monospace, monospace;
@@ -147,11 +147,11 @@
   --hero-muted: oklch(0.91 0.018 250);
   --hero-accent: oklch(0.52 0.17 252);
   --lec: oklch(0.5 0.15 252);
-  --tut: oklch(0.54 0.12 188);
+  --tut: oklch(0.54 0.14 225);
   --pra: oklch(0.53 0.14 302);
-  --gap: oklch(0.58 0.15 145);
-  --gap-text: oklch(0.37 0.12 145);
-  --gap-foreground: oklch(0.16 0.04 145);
+  --gap: oklch(0.58 0.17 235);
+  --gap-text: oklch(0.39 0.14 240);
+  --gap-foreground: oklch(0.16 0.04 240);
   --meeting-card-tint: 17%;
   --meeting-card-tint-end: 5%;
   --meeting-card-hover-tint: 24%;
@@ -180,7 +180,7 @@
   --shadow-lift: 0 1px 0 oklch(1 0 0 / 6%) inset, 0 28px 68px -36px oklch(0 0 0 / 92%);
   --shadow-panel: 0 1px 0 oklch(1 0 0 / 7%) inset, 0 36px 96px -52px oklch(0 0 0 / 96%);
   --accent-glow: 0 0 0 1px oklch(0.69 0.16 252 / 34%), 0 14px 40px -18px oklch(0.59 0.2 252 / 72%);
-  --gap-glow: 0 18px 42px -24px oklch(0.76 0.16 145 / 48%);
+  --gap-glow: 0 18px 42px -24px oklch(0.76 0.16 235 / 48%);
   --background: oklch(0.078 0.014 265);
 
   --foreground: oklch(0.955 0.005 255);
@@ -208,11 +208,11 @@
   --hero-muted: oklch(0.158 0.035 258);
   --hero-accent: oklch(0.74 0.15 250);
   --lec: oklch(0.72 0.14 252);
-  --tut: oklch(0.77 0.13 188);
+  --tut: oklch(0.77 0.13 225);
   --pra: oklch(0.74 0.14 302);
-  --gap: oklch(0.79 0.16 145);
-  --gap-text: oklch(0.79 0.16 145);
-  --gap-foreground: oklch(0.14 0.04 145);
+  --gap: oklch(0.79 0.15 235);
+  --gap-text: oklch(0.81 0.14 235);
+  --gap-foreground: oklch(0.14 0.04 240);
   --meeting-card-tint: 11%;
   --meeting-card-tint-end: 0%;
   --meeting-card-hover-tint: 17%;
@@ -244,6 +244,10 @@
   html {
     color-scheme: light;
     background: var(--color-background);
+    scroll-behavior: smooth;
+    --parallax-far: 0px;
+    --parallax-field: 0px;
+    --parallax-glow: 0px;
   }
 
   html.dark {
@@ -280,6 +284,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --parallax-far: 0px !important;
+    --parallax-field: 0px !important;
+    --parallax-glow: 0px !important;
+  }
+
   *,
   *::before,
   *::after {
@@ -989,7 +999,7 @@
 /*
  * Gapwise visual language
  * -----------------------
- * Campus-after-dark surfaces, route-blue actions, and mint gap signals.
+ * Campus-after-dark surfaces, route-blue actions, and electric-blue gap signals.
  * These classes are intentionally product-level primitives: they keep the
  * landing, timetable, route, auth, and mobile shells visually in sync.
  */
@@ -997,6 +1007,7 @@
   .app-shell {
     position: relative;
     isolation: isolate;
+    overflow-x: clip;
     background-color: var(--color-background);
     background-image:
       radial-gradient(
@@ -1014,7 +1025,7 @@
   .app-shell::before {
     content: "";
     position: fixed;
-    inset: 0;
+    inset: -8vh 0;
     z-index: -2;
     pointer-events: none;
     opacity: 0.34;
@@ -1025,6 +1036,30 @@
     );
     background-size: 5px 5px;
     mask-image: linear-gradient(to bottom, black, transparent 74%);
+    transform: translate3d(0, var(--parallax-far), 0);
+    will-change: transform;
+  }
+
+  .app-shell::after {
+    content: "";
+    position: fixed;
+    inset: -16rem -12rem auto;
+    z-index: -1;
+    height: 42rem;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        32rem 22rem at 24% 35%,
+        color-mix(in oklab, var(--color-accent) 7%, transparent),
+        transparent 72%
+      ),
+      radial-gradient(
+        34rem 24rem at 78% 20%,
+        color-mix(in oklab, var(--color-gap) 5%, transparent),
+        transparent 74%
+      );
+    transform: translate3d(0, var(--parallax-glow), 0);
+    will-change: transform;
   }
 
   .app-nav {
@@ -1127,11 +1162,17 @@
   }
 
   .topography-field {
-    inset: -8rem max(-18vw, -14rem) auto;
-    height: min(62rem, 88vh);
-    opacity: 0.52;
-    mask-image: linear-gradient(to bottom, black 0%, black 52%, transparent 93%);
+    inset: auto;
+    top: -8rem;
+    left: 50%;
+    width: max(100vw, 88rem);
+    height: min(68rem, 92vh);
+    opacity: 0.46;
+    mask-image: radial-gradient(ellipse 72% 68% at 50% 32%, black 0%, black 56%, transparent 91%);
+    background-repeat: no-repeat;
     filter: saturate(115%);
+    transform: translate3d(-50%, var(--parallax-field), 0);
+    will-change: transform;
   }
 
   .landing-bento {
@@ -1247,22 +1288,8 @@
   }
 
   .hero-word {
-    position: relative;
     display: inline-block;
     color: var(--color-hero-accent);
-  }
-
-  .hero-word::after {
-    content: "";
-    position: absolute;
-    right: 0.08em;
-    bottom: -0.04em;
-    left: 0.08em;
-    height: 0.06em;
-    border-radius: 999px;
-    background: linear-gradient(90deg, var(--color-hero-accent), var(--color-gap));
-    box-shadow: 0 0 18px color-mix(in oklab, var(--color-hero-accent) 40%, transparent);
-    transform: rotate(-1.5deg);
   }
 
   .hero-proof {

@@ -1,6 +1,6 @@
 # Gapwise visual system
 
-Gapwise uses a dark-first “campus after dark” visual language. Route blue identifies navigation and primary actions; mint identifies time the student can reclaim. The system is intentionally small enough to maintain without a design-tool dependency.
+Gapwise uses a dark-first “campus after dark” visual language. Deep route blue identifies navigation and primary actions; brighter electric blue identifies time the student can reclaim. The system is intentionally small enough to maintain without a design-tool dependency.
 
 ## Foundations
 
@@ -14,7 +14,7 @@ Gapwise uses a dark-first “campus after dark” visual language. Route blue id
 - `background`, `surface-low`, `card`, `surface-high`: page-to-elevated surface progression.
 - `primary`: high-contrast action fill.
 - `accent`: route, focus, and interactive emphasis.
-- `gap`: detected usable time. Do not use mint as a generic success color; it is the core product signal.
+- `gap`: detected usable time. Its brighter blue is reserved for the core product signal rather than generic success states.
 - `lec`, `tut`, `pra`: timetable activity categories.
 - `muted-foreground`: secondary copy; never reduce opacity on interactive text to create hierarchy.
 

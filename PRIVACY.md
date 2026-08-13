@@ -1,6 +1,6 @@
 # Gapwise Privacy Notice
 
-_Last updated: 2026-08-11_
+_Last updated: 2026-08-13_
 
 Gapwise for UTM is an independent student project. It is not affiliated with, endorsed by, or an official service of the University of Toronto.
 
@@ -15,7 +15,7 @@ This notice describes the data handling of the public Gapwise application at `ga
 
 ## Optional signed-in cloud features
 
-If you sign in with GitHub or a passwordless email link, Supabase processes the authentication account and browser session required for that feature.
+If you sign in with Microsoft, Google, or GitHub OAuth, Supabase and the selected identity provider process the authentication account and browser session required for that feature.
 
 If you explicitly enable private cloud sync, Gapwise encrypts the private timetable/settings payload in the browser before it is written to Supabase. Supabase stores ciphertext, cryptographic metadata, and the minimum account/relationship metadata required to provide the feature.
 
@@ -35,7 +35,7 @@ Friend overlap uses a separate encrypted, deliberately lossy availability capsul
 
 Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and performance measurements. Timetable contents and authentication tokens are not intentionally sent to those analytics products.
 
-Vercel, Supabase, GitHub (when GitHub sign-in is used), and the user's email provider (when passwordless email sign-in is used) may process technical or account information as independent service providers under their own policies.
+Vercel, Supabase, Microsoft, Google, and GitHub may process technical or account information as independent service providers when their respective hosting, authentication, or operational services are used.
 
 Gapwise does not sell personal data and does not contain advertising.
 

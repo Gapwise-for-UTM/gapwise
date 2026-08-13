@@ -23,6 +23,7 @@ import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
+import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
 import {
   consumeOAuthError,
   deleteAccount,
@@ -87,6 +88,7 @@ export function AccountStatus({
         }
       }
       if (clearLocal) clearRememberedTimetable();
+      if (deletedUserId) setCloudRestoreSuppressed(deletedUserId, false);
       onAccountDeleted(clearLocal);
       await signOut().catch(() => undefined);
       setDeleteOpen(false);

@@ -100,12 +100,20 @@ function calendarDates(properties: ICAL.Property[]): string[] {
     .map(calendarDate);
 }
 
-function recurrenceMetadata(vevent: ICAL.Component, start: ICAL.Time) {
+function recurrenceMetadata(vevent: ICAL.Component, start: ICAL.Time, weekly: boolean) {
   const rules = vevent
     .getAllProperties("rrule")
     .map((property) => property.getFirstValue())
     .filter((value): value is ICAL.Recur => value instanceof ICAL.Recur);
   const recurrenceDates = calendarDates(vevent.getAllProperties("rdate"));
+  if (!weekly) {
+    const firstDate = calendarDate(start);
+    return {
+      dateRange: { startDate: firstDate, endDate: firstDate },
+      excludedDates: [] as string[],
+      recurrenceIntervalWeeks: undefined,
+    };
+  }
   let endDate: string | null;
   if (rules.length === 0 && recurrenceDates.length === 0) {
     endDate = calendarDate(start);
@@ -121,7 +129,7 @@ function recurrenceMetadata(vevent: ICAL.Component, start: ICAL.Time) {
   return {
     dateRange: { startDate: calendarDate(start), endDate },
     excludedDates: [...new Set(calendarDates(vevent.getAllProperties("exdate")))].sort(),
-    recurrenceIntervalWeeks: rules.find((rule) => rule.freq === "WEEKLY")?.interval ?? undefined,
+    recurrenceIntervalWeeks: rules.find((rule) => rule.freq === "WEEKLY")?.interval ?? 1,
   };
 }
 
@@ -229,19 +237,31 @@ export function parseIcs(text: string): ParsedTimetable {
       );
     }
 
-    const hasRrule = vevent.getAllProperties("rrule").length > 0;
-    const days = weekdaysFor(event, startWeekday);
+    const rules = vevent.getAllProperties("rrule");
+    const hasRrule = rules.length > 0;
+    const frequencies = rules
+      .map((rule) => (rule.getFirstValue() as { freq?: string } | null)?.freq)
+      .filter((frequency): frequency is string => Boolean(frequency));
+    const supportsWeeklyRecurrence =
+      hasRrule &&
+      frequencies.length === rules.length &&
+      frequencies.every((freq) => freq === "WEEKLY");
+    const days = supportsWeeklyRecurrence
+      ? weekdaysFor(event, startWeekday)
+      : startWeekday
+        ? [startWeekday]
+        : [];
     if (hasRrule) {
-      const freq = (vevent.getFirstPropertyValue("rrule") as { freq?: string } | null)?.freq;
-      if (freq && freq !== "WEEKLY") {
+      const freq = frequencies[0];
+      if (!supportsWeeklyRecurrence) {
         warnings.add(
-          `${courseCode} ${activityType} repeats in a pattern we don't fully support (${freq.toLowerCase()}); it is shown on its first weekday only.`,
+          `${courseCode} ${activityType} repeats in an unsupported pattern${freq ? ` (${freq.toLowerCase()})` : ""}; only its first occurrence is shown.`,
         );
       }
     }
 
     const term = termForMonth(start.month);
-    const recurrence = recurrenceMetadata(vevent, start);
+    const recurrence = recurrenceMetadata(vevent, start, supportsWeeklyRecurrence);
 
     for (const weekday of days) {
       const meeting: Meeting = {

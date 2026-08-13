@@ -86,7 +86,7 @@ type DeviceKeyBundle = {
   subjectId: string;
 };
 
-type StoreSelection = { persistent: boolean; store: SecurityStore };
+export type StoreSelection = { persistent: boolean; store: SecurityStore };
 
 let storeSelectionPromise: Promise<StoreSelection> | null = null;
 const optedInUsers = new Set<string>();
@@ -157,7 +157,7 @@ export function parseDeviceKeyBundle(value: unknown): DeviceKeyBundle {
   };
 }
 
-async function securityStore(): Promise<StoreSelection> {
+export async function securityStore(): Promise<StoreSelection> {
   storeSelectionPromise ??= (async () => {
     try {
       const store = await createIndexedDbSecurityStore();
