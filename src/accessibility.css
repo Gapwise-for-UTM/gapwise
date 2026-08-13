@@ -1,17 +1,28 @@
 /*
- * Accessibility-specific primary action states.
- * Use explicit, tested surfaces so primary action text stays above WCAG AA
- * contrast regardless of browser color-mix interpolation differences.
+ * Accessibility-specific interaction states.
+ *
+ * Primary actions keep their normal design-system colors. Disabled primary
+ * actions stay fully opaque so their text contrast is not reduced.
+ *
+ * The general `rise-in` entrance originally animated opacity from 0 to 1.
+ * That made otherwise accessible controls temporarily fail contrast while the
+ * entire section was translucent. Preserve the same 500 ms upward motion from
+ * the existing utility, but swap in transform-only keyframes here.
  */
-.button-primary {
-  background: #496f91;
-}
-
-.button-primary:hover {
-  background: #3f6484;
-}
-
 .button-primary:disabled {
   cursor: not-allowed;
   opacity: 1;
+}
+
+@keyframes gapwise-rise-in-motion {
+  from {
+    transform: translateY(14px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.rise-in {
+  animation-name: gapwise-rise-in-motion;
 }
