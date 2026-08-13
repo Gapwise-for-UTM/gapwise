@@ -1,7 +1,16 @@
 /*
- * Accessibility-specific interaction states.
- * Keep disabled primary actions visibly inactive without lowering text contrast.
+ * Accessibility-specific primary action states.
+ * The original primary token renders too light for 14px near-white button text,
+ * so keep the same hue while darkening the action surface enough for WCAG AA.
  */
+.button-primary {
+  background: color-mix(in oklab, var(--color-primary) 84%, black 16%);
+}
+
+.button-primary:hover {
+  background: color-mix(in oklab, var(--color-primary) 88%, black 12%);
+}
+
 .button-primary:disabled {
   cursor: not-allowed;
   opacity: 1;
