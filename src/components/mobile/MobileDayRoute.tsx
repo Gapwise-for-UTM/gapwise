@@ -9,7 +9,7 @@ import {
   Settings2,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CampusMap } from "@/components/CampusMap";
+import { CampusExplorer } from "@/components/CampusExplorer";
 import { IndoorFloorViewer } from "@/components/IndoorFloorViewer";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
@@ -37,6 +37,10 @@ type DaySegment = {
   to: Meeting;
   route: TransitionRoute;
 };
+
+const EMPTY_MEETINGS: Meeting[] = [];
+const EMPTY_SEGMENTS: DaySegment[] = [];
+const ignoreMapSelection = () => undefined;
 
 const DAY_SHORT: Record<Weekday, string> = {
   Monday: "Mon",
@@ -296,6 +300,8 @@ export function MobileDayRoute({
   preferences,
   onPreferencesChange,
   planTransition,
+  selectedBuildingCode,
+  onSelectBuilding,
 }: {
   meetings: Meeting[];
   term: Term;
@@ -303,6 +309,8 @@ export function MobileDayRoute({
   preferences: UserPreferences;
   onPreferencesChange: (preferences: UserPreferences) => void;
   planTransition: TransitionPlanner;
+  selectedBuildingCode: string | null;
+  onSelectBuilding: (code: string | null) => void;
 }) {
   const { routeTargetId, setRouteTargetId } = useMobileRouteTarget();
   const [requestedMeetingId] = useState<string | null>(routeTargetId);
@@ -398,15 +406,53 @@ export function MobileDayRoute({
     setSelectedSegmentId(segments[0]?.id ?? null);
   }, [dayMeetings, requestedMeetingId, segments]);
 
-  const selectMeeting = useCallback((id: string) => {
-    setSelectedMeetingId(id);
-    setSelectedSegmentId(null);
-  }, []);
-  const selectSegment = useCallback((id: string) => {
-    setSelectedSegmentId(id);
-    setSelectedMeetingId(null);
-  }, []);
+  const selectMeeting = useCallback(
+    (id: string) => {
+      setSelectedMeetingId(id);
+      setSelectedSegmentId(null);
+      if (selectedBuildingCode) onSelectBuilding(null);
+    },
+    [onSelectBuilding, selectedBuildingCode],
+  );
+  const selectSegment = useCallback(
+    (id: string) => {
+      setSelectedSegmentId(id);
+      setSelectedMeetingId(null);
+      if (selectedBuildingCode) onSelectBuilding(null);
+    },
+    [onSelectBuilding, selectedBuildingCode],
+  );
   const selectedSegment = segments.find((segment) => segment.id === selectedSegmentId) ?? null;
+
+  if (meetings.length === 0) {
+    return (
+      <div className="rise-in space-y-3">
+        <section className="surface p-4">
+          <p className="eyebrow text-accent">UTM campus explorer</p>
+          <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-[-0.035em]">
+            Explore campus
+          </h1>
+          <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+            Search or tap a mapped building. No timetable is required.
+          </p>
+        </section>
+        <CampusExplorer
+          meetings={EMPTY_MEETINGS}
+          segments={EMPTY_SEGMENTS}
+          selectedMeetingId={null}
+          selectedSegmentId={null}
+          onSelectMeeting={ignoreMapSelection}
+          onSelectSegment={ignoreMapSelection}
+          hoveredBuildingCode={null}
+          onHoverBuilding={ignoreMapSelection}
+          selectedBuildingCode={selectedBuildingCode}
+          onSelectBuilding={onSelectBuilding}
+          home={null}
+          className="h-[62dvh] min-h-[26rem] max-h-[38rem]"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="rise-in space-y-3">
@@ -472,14 +518,32 @@ export function MobileDayRoute({
       </section>
 
       {dayMeetings.length === 0 ? (
-        <section className="surface p-8 text-center">
-          <RouteIcon className="mx-auto h-6 w-6 text-accent" aria-hidden="true" />
-          <h2 className="mt-3 font-display text-lg font-semibold">No classes on {weekday}</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">Choose another weekday or term.</p>
-        </section>
+        <>
+          <section className="surface p-6 text-center">
+            <RouteIcon className="mx-auto h-6 w-6 text-accent" aria-hidden="true" />
+            <h2 className="mt-3 font-display text-lg font-semibold">No classes on {weekday}</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Choose another weekday, or keep exploring the campus map.
+            </p>
+          </section>
+          <CampusExplorer
+            meetings={EMPTY_MEETINGS}
+            segments={EMPTY_SEGMENTS}
+            selectedMeetingId={null}
+            selectedSegmentId={null}
+            onSelectMeeting={ignoreMapSelection}
+            onSelectSegment={ignoreMapSelection}
+            hoveredBuildingCode={null}
+            onHoverBuilding={ignoreMapSelection}
+            selectedBuildingCode={selectedBuildingCode}
+            onSelectBuilding={onSelectBuilding}
+            home={null}
+            className="h-[55dvh] min-h-[23rem] max-h-[32rem]"
+          />
+        </>
       ) : (
         <>
-          <CampusMap
+          <CampusExplorer
             meetings={dayMeetings}
             segments={segments}
             selectedMeetingId={selectedMeetingId}
@@ -487,7 +551,9 @@ export function MobileDayRoute({
             onSelectMeeting={selectMeeting}
             onSelectSegment={selectSegment}
             hoveredBuildingCode={null}
-            onHoverBuilding={() => undefined}
+            onHoverBuilding={ignoreMapSelection}
+            selectedBuildingCode={selectedBuildingCode}
+            onSelectBuilding={onSelectBuilding}
             home={mapHome}
             className="h-[45dvh] min-h-[20rem] max-h-[30rem]"
           />

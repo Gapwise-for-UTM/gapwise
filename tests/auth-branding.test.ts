@@ -91,7 +91,7 @@ describe("branding metadata", () => {
     const [html, rootRoute, indexRoute] = await Promise.all([
       readFile("index.html", "utf8"),
       readFile("src/routes/__root.tsx", "utf8"),
-      readFile("src/routes/index.tsx", "utf8"),
+      readFile("src/routes/_app.index.tsx", "utf8"),
     ]);
 
     expect(html).toContain('<meta charset="UTF-8" />');
@@ -105,7 +105,7 @@ describe("branding metadata", () => {
     expect(rootRoute).toContain('name: "apple-mobile-web-app-capable"');
     expect(rootRoute).toContain('rel: "manifest"');
 
-    expect(indexRoute).toContain('const TITLE = "Gapwise for UTM — Smarter Campus Gaps"');
+    expect(indexRoute).toContain('const TITLE = "Gapwise for UTM"');
     expect(indexRoute).toContain('{ name: "description", content: DESCRIPTION }');
   });
 });

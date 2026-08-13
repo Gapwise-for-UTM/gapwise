@@ -1,4 +1,5 @@
 import { CalendarClock, LayoutGrid, MapPinned, Menu } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 export type MobileTab = "today" | "timetable" | "route" | "gaps";
@@ -17,20 +18,23 @@ export function useMobileRouteTarget() {
 }
 
 const NAV_ITEMS = [
-  { tab: "today" as MobileTab, label: "Today", icon: CalendarClock },
-  { tab: "timetable" as MobileTab, label: "Timetable", icon: LayoutGrid },
-  { tab: "route" as MobileTab, label: "Map", icon: MapPinned },
+  { tab: "today" as MobileTab, to: "/today" as const, label: "Today", icon: CalendarClock },
+  {
+    tab: "timetable" as MobileTab,
+    to: "/timetable" as const,
+    label: "Timetable",
+    icon: LayoutGrid,
+  },
+  { tab: "route" as MobileTab, to: "/route" as const, label: "Map", icon: MapPinned },
 ];
 
 export function MobileShell({
   tab,
-  onTabChange,
   onOpenMore,
   moreOpen,
   children,
 }: {
   tab: MobileTab;
-  onTabChange: (tab: MobileTab) => void;
   onOpenMore: () => void;
   moreOpen: boolean;
   children: ReactNode;
@@ -66,11 +70,10 @@ export function MobileShell({
               const active = tab === item.tab || (item.tab === "timetable" && tab === "gaps");
               return (
                 <li key={item.tab}>
-                  <button
-                    type="button"
+                  <Link
+                    to={item.to}
                     onClick={() => {
                       if (item.tab === "route") setRouteTargetId(null);
-                      onTabChange(item.tab);
                     }}
                     aria-current={active ? "page" : undefined}
                     className={`mobile-nav-item flex min-h-[3.5rem] w-full flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold ${
@@ -79,7 +82,7 @@ export function MobileShell({
                   >
                     <Icon className="h-5 w-5" aria-hidden="true" />
                     {item.label}
-                  </button>
+                  </Link>
                 </li>
               );
             })}

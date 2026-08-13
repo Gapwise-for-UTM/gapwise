@@ -14,6 +14,7 @@ export function MobileMoreSheet({
   loading,
   onUpdateTimetable,
   onRemoveTimetable,
+  canRemove = true,
   children,
 }: {
   open: boolean;
@@ -21,6 +22,7 @@ export function MobileMoreSheet({
   loading: boolean;
   onUpdateTimetable: () => void;
   onRemoveTimetable: () => void;
+  canRemove?: boolean;
   /** Existing account, theme, and residence controls, rendered unchanged. */
   children: ReactNode;
 }) {
@@ -47,14 +49,16 @@ export function MobileMoreSheet({
               <Upload className="h-4 w-4" aria-hidden="true" />
               {loading ? "Updating…" : "Update timetable"}
             </button>
-            <button
-              type="button"
-              onClick={onRemoveTimetable}
-              className="button-secondary inline-flex min-h-[2.875rem] w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Remove timetable
-            </button>
+            {canRemove ? (
+              <button
+                type="button"
+                onClick={onRemoveTimetable}
+                className="button-secondary inline-flex min-h-[2.875rem] w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+                Remove timetable
+              </button>
+            ) : null}
           </div>
           <p className="text-center font-mono text-[0.6rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
             Independent student project · Not affiliated with U of T

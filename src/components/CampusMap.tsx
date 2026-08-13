@@ -23,7 +23,7 @@ type MapSegment = {
 
 type MapHome = { buildingCode: string; label: string };
 
-type MapData = {
+export type CampusMapProps = {
   meetings: Meeting[];
   segments: MapSegment[];
   selectedMeetingId: string | null;
@@ -32,9 +32,13 @@ type MapData = {
   onSelectSegment: (id: string) => void;
   hoveredBuildingCode: string | null;
   onHoverBuilding: (code: string | null) => void;
+  selectedBuildingCode: string | null;
+  onSelectBuilding: (code: string) => void;
   home: MapHome | null;
   className?: string;
 };
+
+type MapData = Omit<CampusMapProps, "className">;
 
 type MapLibreModule = typeof import("maplibre-gl");
 type MapStatus = "loading" | "ready" | "error" | "unsupported";
@@ -45,9 +49,16 @@ const FIT_BOUNDS_MAX_ZOOM = 17;
 const ROUTE_DRAW_DURATION_MS = 1_180;
 const BUILDING_HOVER_DURATION_MS = 200;
 const MAP_BUILDING_HIT_RADIUS_PX = 160;
-const BUILDING_HIGHLIGHT_SOURCE_ID = "gapwise-building-highlight";
-const BUILDING_HIGHLIGHT_FILL_LAYER_ID = "gapwise-building-highlight-fill";
-const BUILDING_HIGHLIGHT_LINE_LAYER_ID = "gapwise-building-highlight-line";
+// A basemap polygon was hit but its label was not recognized; match its nearest registry point.
+const BUILDING_POLYGON_FALLBACK_RADIUS_PX = 160;
+// Allow a forgiving tap immediately outside a rendered building polygon.
+const BUILDING_NEARBY_TAP_RADIUS_PX = 28;
+const BUILDING_HOVER_SOURCE_ID = "gapwise-building-hover";
+const BUILDING_HOVER_FILL_LAYER_ID = "gapwise-building-hover-fill";
+const BUILDING_HOVER_LINE_LAYER_ID = "gapwise-building-hover-line";
+const BUILDING_SELECTED_SOURCE_ID = "gapwise-building-selected";
+const BUILDING_SELECTED_FILL_LAYER_ID = "gapwise-building-selected-fill";
+const BUILDING_SELECTED_LINE_LAYER_ID = "gapwise-building-selected-line";
 
 const BUILDING_CODE_BY_LABEL = new Map(
   UTM_BUILDINGS.flatMap((building) =>
@@ -317,50 +328,70 @@ function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
 }
 
 function ensureBuildingHighlightLayers(map: MapLibreMap, theme: MapTheme) {
-  if (!map.getSource(BUILDING_HIGHLIGHT_SOURCE_ID)) {
-    map.addSource(BUILDING_HIGHLIGHT_SOURCE_ID, {
-      type: "geojson",
-      data: emptyFeatureCollection(),
-    });
-  }
-
   const firstSymbolLayerId = (map.getStyle().layers ?? []).find(
     (layer) => layer.type === "symbol",
   )?.id;
   const accentColor = mapAccentColor(theme);
 
-  if (!map.getLayer(BUILDING_HIGHLIGHT_FILL_LAYER_ID)) {
-    map.addLayer(
-      {
-        id: BUILDING_HIGHLIGHT_FILL_LAYER_ID,
-        type: "fill",
-        source: BUILDING_HIGHLIGHT_SOURCE_ID,
-        paint: {
-          "fill-color": accentColor,
-          "fill-opacity": 0,
-          "fill-opacity-transition": { duration: BUILDING_HOVER_DURATION_MS, delay: 0 },
+  function ensureLayers({
+    sourceId,
+    fillLayerId,
+    lineLayerId,
+    lineWidth,
+  }: {
+    sourceId: string;
+    fillLayerId: string;
+    lineLayerId: string;
+    lineWidth: number;
+  }) {
+    if (!map.getSource(sourceId)) {
+      map.addSource(sourceId, { type: "geojson", data: emptyFeatureCollection() });
+    }
+    if (!map.getLayer(fillLayerId)) {
+      map.addLayer(
+        {
+          id: fillLayerId,
+          type: "fill",
+          source: sourceId,
+          paint: {
+            "fill-color": accentColor,
+            "fill-opacity": 0,
+            "fill-opacity-transition": { duration: BUILDING_HOVER_DURATION_MS, delay: 0 },
+          },
         },
-      },
-      firstSymbolLayerId,
-    );
+        firstSymbolLayerId,
+      );
+    }
+    if (!map.getLayer(lineLayerId)) {
+      map.addLayer(
+        {
+          id: lineLayerId,
+          type: "line",
+          source: sourceId,
+          paint: {
+            "line-color": accentColor,
+            "line-width": lineWidth,
+            "line-opacity": 0,
+            "line-opacity-transition": { duration: BUILDING_HOVER_DURATION_MS, delay: 0 },
+          },
+        },
+        firstSymbolLayerId,
+      );
+    }
   }
 
-  if (!map.getLayer(BUILDING_HIGHLIGHT_LINE_LAYER_ID)) {
-    map.addLayer(
-      {
-        id: BUILDING_HIGHLIGHT_LINE_LAYER_ID,
-        type: "line",
-        source: BUILDING_HIGHLIGHT_SOURCE_ID,
-        paint: {
-          "line-color": accentColor,
-          "line-width": 2.5,
-          "line-opacity": 0,
-          "line-opacity-transition": { duration: BUILDING_HOVER_DURATION_MS, delay: 0 },
-        },
-      },
-      firstSymbolLayerId,
-    );
-  }
+  ensureLayers({
+    sourceId: BUILDING_HOVER_SOURCE_ID,
+    fillLayerId: BUILDING_HOVER_FILL_LAYER_ID,
+    lineLayerId: BUILDING_HOVER_LINE_LAYER_ID,
+    lineWidth: 1.75,
+  });
+  ensureLayers({
+    sourceId: BUILDING_SELECTED_SOURCE_ID,
+    fillLayerId: BUILDING_SELECTED_FILL_LAYER_ID,
+    lineLayerId: BUILDING_SELECTED_LINE_LAYER_ID,
+    lineWidth: 3.25,
+  });
 }
 
 function featureBuildingCode(feature: MapGeoJSONFeature): string | null {
@@ -429,8 +460,17 @@ function findBuildingFeature(map: MapLibreMap, buildingCode: string) {
   );
 }
 
-function syncBuildingHighlight(map: MapLibreMap, buildingCode: string | null) {
-  const source = map.getSource(BUILDING_HIGHLIGHT_SOURCE_ID) as GeoJSONSource | undefined;
+function syncBuildingHighlight(
+  map: MapLibreMap,
+  buildingCode: string | null,
+  kind: "hover" | "selected",
+) {
+  const sourceId = kind === "selected" ? BUILDING_SELECTED_SOURCE_ID : BUILDING_HOVER_SOURCE_ID;
+  const fillLayerId =
+    kind === "selected" ? BUILDING_SELECTED_FILL_LAYER_ID : BUILDING_HOVER_FILL_LAYER_ID;
+  const lineLayerId =
+    kind === "selected" ? BUILDING_SELECTED_LINE_LAYER_ID : BUILDING_HOVER_LINE_LAYER_ID;
+  const source = map.getSource(sourceId) as GeoJSONSource | undefined;
   if (!source) return;
 
   const feature = buildingCode ? findBuildingFeature(map, buildingCode) : null;
@@ -448,17 +488,29 @@ function syncBuildingHighlight(map: MapLibreMap, buildingCode: string | null) {
   }
 
   const visible = Boolean(feature);
-  if (map.getLayer(BUILDING_HIGHLIGHT_FILL_LAYER_ID)) {
-    map.setPaintProperty(BUILDING_HIGHLIGHT_FILL_LAYER_ID, "fill-opacity", visible ? 0.3 : 0);
+  if (map.getLayer(fillLayerId)) {
+    map.setPaintProperty(
+      fillLayerId,
+      "fill-opacity",
+      visible ? (kind === "selected" ? 0.36 : 0.16) : 0,
+    );
   }
-  if (map.getLayer(BUILDING_HIGHLIGHT_LINE_LAYER_ID)) {
-    map.setPaintProperty(BUILDING_HIGHLIGHT_LINE_LAYER_ID, "line-opacity", visible ? 0.95 : 0);
+  if (map.getLayer(lineLayerId)) {
+    map.setPaintProperty(
+      lineLayerId,
+      "line-opacity",
+      visible ? (kind === "selected" ? 1 : 0.7) : 0,
+    );
   }
 }
 
-function nearestCampusBuildingCode(map: MapLibreMap, point: { x: number; y: number }) {
+function nearestCampusBuildingCode(
+  map: MapLibreMap,
+  point: { x: number; y: number },
+  radius = MAP_BUILDING_HIT_RADIUS_PX,
+) {
   let nearestCode: string | null = null;
-  let nearestDistance = MAP_BUILDING_HIT_RADIUS_PX ** 2;
+  let nearestDistance = radius ** 2;
 
   for (const building of CAMPUS_BUILDINGS) {
     const projected = map.project(building.navigationPoint);
@@ -523,7 +575,10 @@ function syncMapData(
     markerButton.textContent = String(index + 1);
     markerButton.title = `${meeting.courseCode} at ${building.code}`;
     markerButton.setAttribute("aria-label", `Select ${meeting.courseCode}, stop ${index + 1}`);
-    markerButton.addEventListener("click", () => data.onSelectMeeting(meeting.id), { once: true });
+    markerButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      data.onSelectMeeting(meeting.id);
+    });
     markerButton.addEventListener("mouseenter", () => data.onHoverBuilding(building.code));
     markerButton.addEventListener("mouseleave", () => data.onHoverBuilding(null));
     markers.push(
@@ -621,15 +676,17 @@ function maybeFitBounds(
   maplibregl: MapLibreModule,
   data: MapData,
   lastFitKeyRef: MutableRefObject<string>,
+  allowAutomaticFit = true,
 ) {
+  if (!allowAutomaticFit) return false;
   const points = collectBoundsPoints(data);
-  if (points.length === 0) return;
+  if (points.length === 0) return false;
 
   const key = points
     .map((point) => point.join(","))
     .sort()
     .join("|");
-  if (key === lastFitKeyRef.current) return;
+  if (key === lastFitKeyRef.current) return false;
   lastFitKeyRef.current = key;
 
   const [first, ...rest] = points;
@@ -640,7 +697,27 @@ function maybeFitBounds(
   map.fitBounds(bounds, {
     padding: FIT_BOUNDS_PADDING_PX,
     maxZoom: FIT_BOUNDS_MAX_ZOOM,
-    duration: 500,
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500,
+  });
+  return true;
+}
+
+function focusBuilding(map: MapLibreMap, buildingCode: string) {
+  const building = getCampusBuilding(buildingCode);
+  if (!building) return false;
+  map.easeTo({
+    center: building.navigationPoint,
+    zoom: Math.max(map.getZoom(), 17.15),
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 550,
+  });
+  return true;
+}
+
+function showCampusOverview(map: MapLibreMap) {
+  map.easeTo({
+    center: MAP_CONFIG.campusCenter,
+    zoom: MAP_CONFIG.initialZoom,
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500,
   });
 }
 
@@ -653,14 +730,18 @@ export function CampusMap({
   onSelectSegment,
   hoveredBuildingCode,
   onHoverBuilding,
+  selectedBuildingCode,
+  onSelectBuilding,
   home,
   className = "",
-}: MapData) {
+}: CampusMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const maplibreRef = useRef<MapLibreModule | null>(null);
   const markersRef = useRef<Marker[]>([]);
   const lastFitKeyRef = useRef<string>("");
+  const userHasMovedRef = useRef(false);
+  const lastFocusedBuildingRef = useRef<string | null>(null);
   const lastRouteKeyRef = useRef<string>("");
   const routeAnimationFrameRef = useRef<number | null>(null);
   const appliedThemeRef = useRef<MapTheme | null>(null);
@@ -677,6 +758,8 @@ export function CampusMap({
     onSelectSegment,
     hoveredBuildingCode,
     onHoverBuilding,
+    selectedBuildingCode,
+    onSelectBuilding,
     home,
   });
 
@@ -691,6 +774,8 @@ export function CampusMap({
       onSelectSegment,
       hoveredBuildingCode,
       onHoverBuilding,
+      selectedBuildingCode,
+      onSelectBuilding,
       home,
     };
   }, [
@@ -701,8 +786,10 @@ export function CampusMap({
     onHoverBuilding,
     onSelectMeeting,
     onSelectSegment,
+    onSelectBuilding,
     selectedMeetingId,
     selectedSegmentId,
+    selectedBuildingCode,
     segments,
   ]);
 
@@ -729,6 +816,8 @@ export function CampusMap({
     setStatus("loading");
     lastFitKeyRef.current = "";
     lastRouteKeyRef.current = "";
+    userHasMovedRef.current = false;
+    lastFocusedBuildingRef.current = null;
 
     void import("maplibre-gl")
       .then((maplibregl) => {
@@ -760,6 +849,12 @@ export function CampusMap({
         collapseAttribution();
         map.on("styledata", collapseAttribution);
         map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+        map.on("dragstart", (event) => {
+          if (event.originalEvent) userHasMovedRef.current = true;
+        });
+        map.on("zoomstart", (event) => {
+          if (event.originalEvent) userHasMovedRef.current = true;
+        });
         let mapHoveredBuildingCode: string | null = null;
         map.on("mousemove", (event) => {
           if (!map.isStyleLoaded()) return;
@@ -787,6 +882,36 @@ export function CampusMap({
           map.getCanvas().style.cursor = "";
           latestData.current.onHoverBuilding(null);
         });
+        map.on("click", (event) => {
+          if (!map.isStyleLoaded()) return;
+          if (
+            map.getLayer("day-routes-solid") &&
+            map.queryRenderedFeatures(event.point, { layers: ["day-routes-solid"] }).length > 0
+          ) {
+            return;
+          }
+          const layers = buildingLayerIds(map);
+          const features =
+            layers.length > 0
+              ? map
+                  .queryRenderedFeatures(event.point, { layers })
+                  .filter(
+                    (feature) =>
+                      feature.geometry.type === "Polygon" ||
+                      feature.geometry.type === "MultiPolygon",
+                  )
+              : [];
+          const code =
+            features.map(featureBuildingCode).find((candidate) => candidate !== null) ??
+            nearestCampusBuildingCode(
+              map,
+              event.point,
+              features.length > 0
+                ? BUILDING_POLYGON_FALLBACK_RADIUS_PX
+                : BUILDING_NEARBY_TAP_RADIUS_PX,
+            );
+          if (code) latestData.current.onSelectBuilding(code);
+        });
         map.on("error", () => {
           if (!disposed && !map.isStyleLoaded()) setStatus("error");
         });
@@ -806,7 +931,8 @@ export function CampusMap({
             routeAnimationFrameRef,
             latestData,
           );
-          syncBuildingHighlight(map, latestData.current.hoveredBuildingCode);
+          syncBuildingHighlight(map, latestData.current.hoveredBuildingCode, "hover");
+          syncBuildingHighlight(map, latestData.current.selectedBuildingCode, "selected");
           if (!routeClickBound) {
             map.on("click", "day-routes-solid", (event) => {
               const id = event.features?.[0]?.properties?.["id"];
@@ -814,7 +940,23 @@ export function CampusMap({
             });
             routeClickBound = true;
           }
-          maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
+          const selectedBuilding = latestData.current.selectedBuildingCode;
+          if (
+            selectedBuilding &&
+            selectedBuilding !== lastFocusedBuildingRef.current &&
+            focusBuilding(map, selectedBuilding)
+          ) {
+            lastFocusedBuildingRef.current = selectedBuilding;
+            userHasMovedRef.current = true;
+          } else {
+            maybeFitBounds(
+              map,
+              maplibregl,
+              latestData.current,
+              lastFitKeyRef,
+              !userHasMovedRef.current,
+            );
+          }
           setStatus("ready");
         });
         loadTimeout = setTimeout(() => {
@@ -863,7 +1005,7 @@ export function CampusMap({
         routeAnimationFrameRef,
         latestData,
       );
-      maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef);
+      maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef, !userHasMovedRef.current);
     }
   }, [
     home,
@@ -877,8 +1019,39 @@ export function CampusMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map?.isStyleLoaded()) syncBuildingHighlight(map, hoveredBuildingCode);
+    if (map?.isStyleLoaded()) syncBuildingHighlight(map, hoveredBuildingCode, "hover");
   }, [hoveredBuildingCode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    syncBuildingHighlight(map, selectedBuildingCode, "selected");
+    if (
+      selectedBuildingCode &&
+      selectedBuildingCode !== lastFocusedBuildingRef.current &&
+      focusBuilding(map, selectedBuildingCode)
+    ) {
+      lastFocusedBuildingRef.current = selectedBuildingCode;
+      userHasMovedRef.current = true;
+    }
+    if (!selectedBuildingCode) lastFocusedBuildingRef.current = null;
+  }, [selectedBuildingCode]);
+
+  const hasRouteContent =
+    meetings.some((meeting) => getCampusBuilding(meeting.buildingCode)) ||
+    segments.some((segment) => segment.route.displayCoordinates.length > 0) ||
+    Boolean(home && getCampusBuilding(home.buildingCode));
+
+  function resetCamera() {
+    const map = mapRef.current;
+    const maplibregl = maplibreRef.current;
+    if (!map || !maplibregl || !map.isStyleLoaded()) return;
+    userHasMovedRef.current = false;
+    lastFitKeyRef.current = "";
+    if (!maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef)) {
+      showCampusOverview(map);
+    }
+  }
 
   return (
     <div
@@ -888,8 +1061,18 @@ export function CampusMap({
         ref={containerRef}
         className="h-full w-full"
         role="region"
-        aria-label="Interactive map of the selected class day"
+        aria-label="Interactive map of the University of Toronto Mississauga campus"
       />
+      {status === "ready" ? (
+        <button
+          type="button"
+          onClick={resetCamera}
+          className="button-secondary absolute right-3 top-[5.75rem] z-10 min-h-10 rounded-lg px-3 text-xs font-semibold shadow-lg"
+          aria-label={hasRouteContent ? "Fit the active day route" : "Return to campus overview"}
+        >
+          {hasRouteContent ? "Fit route" : "Campus overview"}
+        </button>
+      ) : null}
       {status === "loading" ? (
         <div
           className="pointer-events-none absolute inset-0 grid place-items-center bg-muted/90 px-6 text-center text-sm text-muted-foreground"

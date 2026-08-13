@@ -91,7 +91,7 @@ describe("large timetable regressions", () => {
   test("keeps Day Route and MapLibre out of the initial bundle path", async () => {
     const [entry, route, map] = await Promise.all([
       readFile("src/main.tsx", "utf8"),
-      readFile("src/routes/index.tsx", "utf8"),
+      readFile("src/routes/_app.tsx", "utf8"),
       readFile("src/components/CampusMap.tsx", "utf8"),
     ]);
 

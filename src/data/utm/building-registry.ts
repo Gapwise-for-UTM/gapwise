@@ -194,3 +194,8 @@ export function getRecognizedBuilding(code: string): BuildingConfiguration | nul
   const normalized = code.trim().toUpperCase();
   return UTM_BUILDINGS.find((building) => building.code === normalized) ?? null;
 }
+
+export function normalizePublicBuildingCode(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  return getRecognizedBuilding(value)?.code ?? null;
+}

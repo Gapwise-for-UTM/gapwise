@@ -28,13 +28,31 @@ test("PWA metadata, service worker, and cached app shell are functional", async 
 
   const workerState = await page.evaluate(async () => {
     if (!("serviceWorker" in navigator)) return "unsupported";
-    const timeout = new Promise<string>((resolve) =>
-      window.setTimeout(() => resolve("timeout"), 10_000),
-    );
-    const ready = navigator.serviceWorker.ready.then(
-      (registration) => registration.active?.state ?? "missing-active-worker",
-    );
-    return Promise.race([ready, timeout]);
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 10_000)),
+    ]);
+    if (!registration) return "timeout";
+
+    const worker = registration.active;
+    if (!worker) return "missing-active-worker";
+    if (worker.state === "activated") return worker.state;
+
+    return new Promise<string>((resolve) => {
+      const finish = (state: string) => {
+        worker.removeEventListener("statechange", onStateChange);
+        window.clearTimeout(timeout);
+        resolve(state);
+      };
+      const onStateChange = () => {
+        if (worker.state === "activated" || worker.state === "redundant") {
+          finish(worker.state);
+        }
+      };
+      const timeout = window.setTimeout(() => finish(`timeout:${worker.state}`), 10_000);
+      worker.addEventListener("statechange", onStateChange);
+      onStateChange();
+    });
   });
   expect(workerState).toBe("activated");
 

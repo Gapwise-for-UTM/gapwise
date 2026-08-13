@@ -902,6 +902,30 @@
   display: inline-block;
 }
 
+.campus-explorer-search,
+.campus-building-card {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--color-accent) 42%, transparent) transparent;
+}
+
+.campus-building-card {
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 7%, transparent),
+    0 24px 55px -30px oklch(0 0 0 / 82%);
+}
+
+@media (max-width: 639px) {
+  .campus-building-card {
+    top: auto;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-height: 44%;
+    padding: 0.875rem;
+  }
+}
+
 /* Keep MapLibre controls visually native to Gapwise without obscuring the map. */
 .campus-map .maplibregl-ctrl-group {
   overflow: hidden;

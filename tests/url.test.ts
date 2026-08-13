@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFile } from "node:fs/promises";
 import { removeBareHash } from "@/lib/url";
 
 describe("URL canonicalization", () => {
@@ -50,5 +51,25 @@ describe("URL canonicalization", () => {
       ),
     ).toBe(false);
     expect(replacements).toBe(0);
+  });
+});
+
+describe("first-class route deployment fallbacks", () => {
+  test("keeps Vercel and Workbox navigation fallbacks on the app shell", async () => {
+    const [vercelSource, viteSource, routeTree] = await Promise.all([
+      readFile("vercel.json", "utf8"),
+      readFile("vite.config.ts", "utf8"),
+      readFile("src/routeTree.gen.ts", "utf8"),
+    ]);
+    const vercel = JSON.parse(vercelSource) as {
+      rewrites?: Array<{ source: string; destination: string }>;
+    };
+
+    expect(vercel.rewrites).toContainEqual({ source: "/(.*)", destination: "/index.html" });
+    expect(viteSource).toContain('navigateFallback: "/index.html"');
+    for (const path of ["/", "/today", "/timetable", "/gaps", "/route"]) {
+      expect(routeTree).toContain(`'${path}'`);
+    }
+    expect(routeTree).not.toContain("HashHistory");
   });
 });

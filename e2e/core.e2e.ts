@@ -63,6 +63,153 @@ test("path navigation, refresh, and browser history use the SPA fallback", async
   guard.assertClean();
 });
 
+test("first-class product URLs load directly with intentional empty states", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "route entry coverage runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  const routes = [
+    {
+      path: "/timetable",
+      title: "Timetable — Gapwise for UTM",
+      heading: "Add your timetable",
+    },
+    {
+      path: "/gaps",
+      title: "Gap Plan — Gapwise for UTM",
+      heading: "Add a timetable to plan your gaps",
+    },
+    {
+      path: "/today",
+      title: "Today — Gapwise for UTM",
+      heading: "Add a timetable to see today",
+    },
+    {
+      path: "/route",
+      title: "Campus Route — Gapwise for UTM",
+      heading: "Find your way around campus",
+    },
+  ] as const;
+
+  for (const route of routes) {
+    const response = await page.goto(route.path);
+    expect(response?.status()).toBe(200);
+    await expect(page).toHaveTitle(route.title);
+    await expect(page.getByRole("heading", { name: route.heading })).toBeVisible();
+    expect(new URL(page.url()).hash).toBe("");
+  }
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Find your way around campus" })).toBeVisible();
+  expect(new URL(page.url()).pathname.replace(/\/$/, "")).toBe("/route");
+  guard.assertClean();
+});
+
+test("route-driven navigation preserves a loaded timetable through history", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "history state coverage runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+
+  await page.getByRole("button", { name: "Try a demo" }).click();
+  await expect(page).toHaveURL(/\/timetable$/);
+  await expect(page.getByRole("heading", { name: "Demo timetable" })).toBeVisible();
+
+  const viewMode = page.getByRole("group", { name: "View mode" });
+  await viewMode.getByRole("button", { name: "Gap plan" }).click();
+  await expect(page).toHaveURL(/\/gaps$/);
+  await expect(viewMode.getByRole("button", { name: "Gap plan" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await viewMode.getByRole("button", { name: "Day route" }).click();
+  await expect(page).toHaveURL(/\/route\/?$/);
+  await expect(viewMode.getByRole("button", { name: "Day route" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/gaps$/);
+  await expect(viewMode.getByRole("button", { name: "Gap plan" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByText("DEM101H5").first()).toBeAttached();
+
+  await page.goForward();
+  await expect(page).toHaveURL(/\/route\/?$/);
+  await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Gapwise for UTM home" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/route\/?$/);
+  await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
+  guard.assertClean();
+});
+
+test("campus explorer supports public building deep links and local search", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "map explorer coverage runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  await page.goto("/route?building=MN");
+  await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toBeVisible();
+  await expect(page.getByText("Verified mapped entrance data")).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
+
+  await page.getByRole("button", { name: "Close Maanjiwe nendamowinan details" }).click();
+  await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toHaveCount(0);
+  await expect.poll(() => new URL(page.url()).searchParams.has("building")).toBe(false);
+
+  const search = page.getByRole("searchbox", { name: "Search UTM buildings" });
+  await search.fill("Deerfield");
+  await expect(page.getByRole("button", { name: /DH Deerfield Hall/ })).toBeVisible();
+  await search.press("Enter");
+  await expect(page.getByRole("heading", { name: "Deerfield Hall" })).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("building")).toBe("DH");
+
+  await search.fill("MN 3120");
+  await search.press("Enter");
+  await expect(page.getByText("MN 3120 · Floor 3")).toBeVisible();
+  await expect(page.getByText(/Exact indoor room routing is not mapped/)).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
+
+  await page.goto("/route?building=NOT_A_BUILDING");
+  await expect(page.getByRole("heading", { name: "Find your way around campus" })).toBeVisible();
+  await expect(page.locator(".campus-building-card")).toHaveCount(0);
+  guard.assertClean();
+});
+
+test("tapping recognized map geometry selects a building without a timetable", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "pointer map coverage runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  await page.goto("/route?building=MN");
+  await expect(page.getByRole("button", { name: "Return to campus overview" })).toBeVisible();
+  await page.getByRole("button", { name: "Close Maanjiwe nendamowinan details" }).click();
+  const map = page.getByRole("region", {
+    name: "Interactive map of the University of Toronto Mississauga campus",
+  });
+  const bounds = await map.boundingBox();
+  expect(bounds).not.toBeNull();
+  if (!bounds) throw new Error("Campus map bounds are unavailable.");
+  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toBeVisible();
+  expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
+  guard.assertClean();
+});
+
 test("the selected color theme persists across reloads", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "theme persistence gate runs once");
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
@@ -84,7 +231,7 @@ test("synthetic ACORN import reaches a usable timetable", async ({ page }, testI
 
   if (isMobileProject(testInfo.project.name)) {
     await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible();
-    await page.getByRole("button", { name: "Timetable" }).click();
+    await page.getByRole("link", { name: "Timetable" }).click();
     await expect(page.getByText("Day timetable")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Monday" })).toBeVisible();
     await expect(page.getByText("CSC108H5")).toBeVisible();
@@ -160,7 +307,7 @@ test("mobile term switching selects a scheduled weekday", async ({ page }, testI
       ].join("\r\n"),
     ),
   });
-  await page.getByRole("button", { name: "Timetable" }).click();
+  await page.getByRole("link", { name: "Timetable" }).click();
   await expect(page.getByRole("heading", { name: "Monday", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Winter" }).click();
   await expect(page.getByRole("heading", { name: "Friday" })).toBeVisible();
@@ -178,7 +325,7 @@ test("mobile weekday buttons expose native keyboard selection state", async ({
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await expectLanding(page);
   await page.getByRole("button", { name: "Try a demo" }).click();
-  await page.getByRole("button", { name: "Timetable" }).click();
+  await page.getByRole("link", { name: "Timetable" }).click();
 
   const weekdays = page.getByRole("group", { name: "Weekday" });
   const monday = weekdays.getByRole("button", { name: /^Mon/ });
@@ -240,17 +387,35 @@ test("mobile demo exposes the primary timetable and map navigation", async ({ pa
   await page.getByRole("button", { name: "Try a demo" }).click();
   const nav = page.getByRole("navigation", { name: "Main" });
   await expect(nav).toBeVisible();
-  await expect(nav.getByRole("button", { name: "Today" })).toBeVisible();
-  await expect(nav.getByRole("button", { name: "Timetable" })).toBeVisible();
-  await expect(nav.getByRole("button", { name: "Map" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Today" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Timetable" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Map" })).toBeVisible();
   await expect(nav.getByRole("button", { name: "More" })).toBeVisible();
 
-  await nav.getByRole("button", { name: "Timetable" }).click();
+  await nav.getByRole("link", { name: "Timetable" }).click();
   await expect(page.getByText("Day timetable")).toBeVisible();
 
-  await nav.getByRole("button", { name: "Map" }).click();
+  await nav.getByRole("link", { name: "Map" }).click();
   await expect(page.getByText("Campus route")).toBeVisible();
   await expect(page.getByRole("button", { name: "Options" })).toBeVisible();
+  guard.assertClean();
+});
+
+test("mobile campus explorer keeps building details dismissible", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "mobile map explorer runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  await page.goto("/route?building=MN");
+  await expect(page.getByRole("heading", { name: "Explore campus" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toBeVisible();
+  await expect(
+    page.getByRole("region", {
+      name: "Interactive map of the University of Toronto Mississauga campus",
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Close Maanjiwe nendamowinan details" }).click();
+  await expect(page.locator(".campus-building-card")).toHaveCount(0);
+  await expect(page.getByRole("searchbox", { name: "Search UTM buildings" })).toBeVisible();
   guard.assertClean();
 });
 
@@ -288,9 +453,8 @@ test("guest import never writes plaintext timetable persistence", async ({ page 
   expect(stored).toEqual({ timetable: null, remember: null });
 
   await page.reload();
-  await expect(
-    page.getByRole("heading", { name: "Make every gap on campus count." }),
-  ).toBeVisible();
+  await expect(page).toHaveURL(/\/timetable$/);
+  await expect(page.getByRole("heading", { name: "Add your timetable" })).toBeVisible();
   guard.assertClean();
 });
 
@@ -318,11 +482,11 @@ test("guest encrypted device restore survives reload and can be removed", async 
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Remove timetable" }).click();
-  await expect(
-    page.getByRole("heading", { name: "Make every gap on campus count." }),
-  ).toBeVisible();
-  await expect(page.locator("#ics-file")).toHaveCount(1);
+  await expect(page.getByRole("heading", { name: "Add your timetable" })).toBeVisible();
+  await expect(page.locator("#product-ics-file")).toHaveCount(1);
   await page.reload();
+  await expect(page.getByRole("heading", { name: "Add your timetable" })).toBeVisible();
+  await page.goto("/");
   await expectLanding(page);
   guard.assertClean();
 });

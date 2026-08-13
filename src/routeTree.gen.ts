@@ -9,50 +9,152 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppIndexRouteImport } from './routes/_app.index'
+import { Route as AppGapsRouteImport } from './routes/_app.gaps'
+import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
+import { Route as AppTodayRouteImport } from './routes/_app.today'
+import { Route as AppRouteIndexRouteImport } from './routes/_app/route/index'
 
-const IndexRoute = IndexRouteImport.update({
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGapsRoute = AppGapsRouteImport.update({
+  id: '/gaps',
+  path: '/gaps',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTimetableRoute = AppTimetableRouteImport.update({
+  id: '/timetable',
+  path: '/timetable',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTodayRoute = AppTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
+  id: '/route/',
+  path: '/route/',
+  getParentRoute: () => AppRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AppIndexRoute
+  '/gaps': typeof AppGapsRoute
+  '/timetable': typeof AppTimetableRoute
+  '/today': typeof AppTodayRoute
+  '/route/': typeof AppRouteIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/gaps': typeof AppGapsRoute
+  '/timetable': typeof AppTimetableRoute
+  '/today': typeof AppTodayRoute
+  '/': typeof AppIndexRoute
+  '/route': typeof AppRouteIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/gaps': typeof AppGapsRoute
+  '/_app/timetable': typeof AppTimetableRoute
+  '/_app/today': typeof AppTodayRoute
+  '/_app/': typeof AppIndexRoute
+  '/_app/route/': typeof AppRouteIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/gaps' | '/timetable' | '/today' | '/route/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/gaps' | '/timetable' | '/today' | '/' | '/route'
+  id:
+    | '__root__'
+    | '/_app'
+    | '/_app/gaps'
+    | '/_app/timetable'
+    | '/_app/today'
+    | '/_app/'
+    | '/_app/route/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/': {
+      id: '/_app/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AppIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/gaps': {
+      id: '/_app/gaps'
+      path: '/gaps'
+      fullPath: '/gaps'
+      preLoaderRoute: typeof AppGapsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/timetable': {
+      id: '/_app/timetable'
+      path: '/timetable'
+      fullPath: '/timetable'
+      preLoaderRoute: typeof AppTimetableRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/today': {
+      id: '/_app/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof AppTodayRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/route/': {
+      id: '/_app/route/'
+      path: '/route'
+      fullPath: '/route/'
+      preLoaderRoute: typeof AppRouteIndexRouteImport
+      parentRoute: typeof AppRoute
     }
   }
 }
 
+interface AppRouteChildren {
+  AppGapsRoute: typeof AppGapsRoute
+  AppTimetableRoute: typeof AppTimetableRoute
+  AppTodayRoute: typeof AppTodayRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppRouteIndexRoute: typeof AppRouteIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppGapsRoute: AppGapsRoute,
+  AppTimetableRoute: AppTimetableRoute,
+  AppTodayRoute: AppTodayRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppRouteIndexRoute: AppRouteIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
