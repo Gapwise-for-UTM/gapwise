@@ -800,6 +800,7 @@ function AppLayout() {
         to: "/route",
         search: code ? { building: code } : {},
         replace: destination === "route",
+        resetScroll: false,
       });
     },
     [destination, navigate, selectedBuildingCode],
