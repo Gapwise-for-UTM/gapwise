@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Meeting } from "@/lib/timetable-types";
+import { campusAccessPointForMeeting } from "./campus-day";
 import { resolveMeetingLocation, type LocationStatus } from "./location-resolver";
 import type { TransitionRoute } from "./types";
 
@@ -45,6 +46,15 @@ const UNRESOLVED_PRESENTATIONS: Record<Exclude<LocationStatus, "known">, Locatio
 };
 
 function meetingPresentation(meeting: Meeting): LocationPresentation {
+  const accessPoint = campusAccessPointForMeeting(meeting);
+  if (accessPoint) {
+    return {
+      status: "known",
+      label: accessPoint.label,
+      detail: "Verified campus arrival point.",
+      icon: MapPin,
+    };
+  }
   const resolution = resolveMeetingLocation(meeting);
   if (resolution.status !== "known") return UNRESOLVED_PRESENTATIONS[resolution.status];
 
@@ -62,8 +72,8 @@ export function getLocationPresentation(input: LocationPresentationInput): Locat
   if ("meeting" in input) return meetingPresentation(input.meeting);
 
   const endpointStatuses = [
-    resolveMeetingLocation(input.from).status,
-    resolveMeetingLocation(input.to).status,
+    campusAccessPointForMeeting(input.from) ? "known" : resolveMeetingLocation(input.from).status,
+    campusAccessPointForMeeting(input.to) ? "known" : resolveMeetingLocation(input.to).status,
   ];
   for (const status of ["tba", "unknown", "online"] as const) {
     if (endpointStatuses.includes(status)) return UNRESOLVED_PRESENTATIONS[status];

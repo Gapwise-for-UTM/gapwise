@@ -9,6 +9,8 @@ export type MapPoint = {
 const MAX_ACCURACY_METERS = 75;
 const MAX_NETWORK_DISTANCE_METERS = 110;
 type Coordinate = [number, number];
+type CompiledCampusRegion = { hull: Coordinate[]; nodes: Coordinate[] };
+const compiledRegions = new WeakMap<RoutingGraph, CompiledCampusRegion>();
 
 function cross(origin: Coordinate, a: Coordinate, b: Coordinate) {
   return (a[0] - origin[0]) * (b[1] - origin[1]) - (a[1] - origin[1]) * (b[0] - origin[0]);
@@ -17,7 +19,8 @@ function cross(origin: Coordinate, a: Coordinate, b: Coordinate) {
 function convexHull(points: Coordinate[]): Coordinate[] {
   const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const unique = sorted.filter(
-    (point, index) => index === 0 || point[0] !== sorted[index - 1]![0] || point[1] !== sorted[index - 1]![1],
+    (point, index) =>
+      index === 0 || point[0] !== sorted[index - 1]![0] || point[1] !== sorted[index - 1]![1],
   );
   if (unique.length <= 2) return unique;
   const lower: Coordinate[] = [];
@@ -66,19 +69,29 @@ export function isPointConfidentlyInsideCampus(point: MapPoint, graph: RoutingGr
   if (
     !Number.isFinite(point.longitude) ||
     !Number.isFinite(point.latitude) ||
+    point.longitude < -180 ||
+    point.longitude > 180 ||
+    point.latitude < -90 ||
+    point.latitude > 90 ||
     !Number.isFinite(point.accuracyMeters) ||
     point.accuracyMeters < 0 ||
     point.accuracyMeters > MAX_ACCURACY_METERS
   ) {
     return false;
   }
-  const nodes: Coordinate[] = graph.nodes.flatMap((node) =>
-    typeof node.longitude === "number" && typeof node.latitude === "number"
-      ? [[node.longitude, node.latitude] as Coordinate]
-      : [],
-  );
+  let region = compiledRegions.get(graph);
+  if (!region) {
+    const nodes: Coordinate[] = graph.nodes.flatMap((node) =>
+      typeof node.longitude === "number" && typeof node.latitude === "number"
+        ? [[node.longitude, node.latitude] as Coordinate]
+        : [],
+    );
+    region = { hull: convexHull(nodes), nodes };
+    compiledRegions.set(graph, region);
+  }
+  const { hull, nodes } = region;
   if (nodes.length < 3) return false;
   const coordinate: Coordinate = [point.longitude, point.latitude];
-  if (!pointInPolygon(coordinate, convexHull(nodes))) return false;
+  if (!pointInPolygon(coordinate, hull)) return false;
   return nodes.some((node) => distanceMeters(coordinate, node) <= MAX_NETWORK_DISTANCE_METERS);
 }

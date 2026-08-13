@@ -1,6 +1,7 @@
 import { ROUTING_DEFAULTS } from "@/config/routing";
 import { getCampusBuilding } from "@/data/utm/campus";
 import type { Meeting } from "@/lib/timetable-types";
+import { campusAccessPointForMeeting, isCampusAccessMeeting } from "./campus-day";
 import { resolveMeetingLocation } from "./location-resolver";
 import { findRoute } from "./engine";
 import type { RoutePreferences, RoutingGraph, RoutingNode, TransitionRoute } from "./types";
@@ -59,26 +60,54 @@ export function planMeetingTransition(
   graph: RoutingGraph,
   preferences: RoutePreferences,
 ): TransitionRoute {
-  const origin = resolveMeetingLocation(from);
-  const destination = resolveMeetingLocation(to);
-  const locationWarnings = [origin.warning, destination.warning].filter(
+  const originAccessPoint = campusAccessPointForMeeting(from);
+  const destinationAccessPoint = campusAccessPointForMeeting(to);
+  if (
+    (isCampusAccessMeeting(from) && !originAccessPoint) ||
+    (isCampusAccessMeeting(to) && !destinationAccessPoint)
+  ) {
+    return locationUnavailable("The configured campus arrival point is no longer available.");
+  }
+  const origin = originAccessPoint ? null : resolveMeetingLocation(from);
+  const destination = destinationAccessPoint ? null : resolveMeetingLocation(to);
+  const locationWarnings = [origin?.warning, destination?.warning].filter(
     (warning): warning is string => Boolean(warning),
   );
-  if (origin.status !== "known" || destination.status !== "known") {
+  if ((origin && origin.status !== "known") || (destination && destination.status !== "known")) {
     return locationUnavailable(
       "A physical route cannot be generated for an online, TBA, or unknown location.",
       locationWarnings,
     );
   }
-  if (!origin.buildingCode || !destination.buildingCode) {
+  if (
+    (!originAccessPoint && !origin?.buildingCode) ||
+    (!destinationAccessPoint && !destination?.buildingCode)
+  ) {
     return locationUnavailable("A building code is required to calculate this transition.");
   }
 
-  const sameBuilding = origin.buildingCode === destination.buildingCode;
+  const accessNode = (point: typeof originAccessPoint) =>
+    point?.routingNodeId
+      ? (graph.nodes.find((node) => node.id === point.routingNodeId) ?? null)
+      : null;
+  const originAccessNode = accessNode(originAccessPoint);
+  const destinationAccessNode = accessNode(destinationAccessPoint);
+  const disconnectedAccessPoint =
+    (originAccessPoint && !originAccessNode ? originAccessPoint : null) ??
+    (destinationAccessPoint && !destinationAccessNode ? destinationAccessPoint : null);
+  if (disconnectedAccessPoint) {
+    return locationUnavailable(
+      `${disconnectedAccessPoint.label}'s verified walking connection is not yet mapped.`,
+      ["Gapwise will not substitute a straight-line walking route."],
+    );
+  }
+
+  const sameBuilding =
+    Boolean(origin?.buildingCode) && origin?.buildingCode === destination?.buildingCode;
   const sameRoom =
     sameBuilding &&
-    Boolean(origin.room) &&
-    origin.room?.toUpperCase() === destination.room?.toUpperCase();
+    Boolean(origin?.room) &&
+    origin?.room?.toUpperCase() === destination?.room?.toUpperCase();
   if (sameRoom) {
     return {
       status: "same-room",
@@ -101,15 +130,29 @@ export function planMeetingTransition(
     };
   }
 
-  const originRoom = findRoomNode(graph, origin.buildingCode, origin.room);
-  const destinationRoom = findRoomNode(graph, destination.buildingCode, destination.room);
-  const originEntrances = findEntranceNodes(graph, origin.buildingCode);
-  const destinationEntrances = findEntranceNodes(graph, destination.buildingCode);
-  const starts = originRoom ? [originRoom] : originEntrances;
-  const ends = destinationRoom ? [destinationRoom] : destinationEntrances;
+  const originRoom = origin?.buildingCode
+    ? findRoomNode(graph, origin.buildingCode, origin.room)
+    : null;
+  const destinationRoom = destination?.buildingCode
+    ? findRoomNode(graph, destination.buildingCode, destination.room)
+    : null;
+  const originEntrances = origin?.buildingCode ? findEntranceNodes(graph, origin.buildingCode) : [];
+  const destinationEntrances = destination?.buildingCode
+    ? findEntranceNodes(graph, destination.buildingCode)
+    : [];
+  const starts = originAccessNode
+    ? [originAccessNode]
+    : originRoom
+      ? [originRoom]
+      : originEntrances;
+  const ends = destinationAccessNode
+    ? [destinationAccessNode]
+    : destinationRoom
+      ? [destinationRoom]
+      : destinationEntrances;
 
   if (sameBuilding && (!originRoom || !destinationRoom)) {
-    return locationUnavailable(`Indoor room routing not yet mapped for ${origin.buildingCode}.`, [
+    return locationUnavailable(`Indoor room routing not yet mapped for ${origin?.buildingCode}.`, [
       "The app will not guess an indoor hallway route.",
     ]);
   }
@@ -147,9 +190,15 @@ export function planMeetingTransition(
         .map((node) => [node.longitude, node.latitude] as [number, number]);
       const indoorComplete = Boolean(originRoom && destinationRoom);
       const warnings = [...result.warnings];
-      if (!originRoom && getCampusBuilding(origin.buildingCode)?.category !== "residence")
-        warnings.push(`Indoor room routing not yet mapped for ${origin.buildingCode}.`);
       if (
+        origin?.buildingCode &&
+        !originRoom &&
+        getCampusBuilding(origin.buildingCode)?.category !== "residence"
+      ) {
+        warnings.push(`Indoor room routing not yet mapped for ${origin.buildingCode}.`);
+      }
+      if (
+        destination?.buildingCode &&
         !destinationRoom &&
         getCampusBuilding(destination.buildingCode)?.category !== "residence"
       ) {
@@ -175,8 +224,16 @@ export function planMeetingTransition(
     }
   }
 
-  const fromBuilding = getCampusBuilding(origin.buildingCode);
-  const toBuilding = getCampusBuilding(destination.buildingCode);
+  const accessPoint = originAccessPoint ?? destinationAccessPoint;
+  if (accessPoint) {
+    return locationUnavailable(
+      `${accessPoint.label}'s verified walking connection is not yet mapped to this destination.`,
+      ["Gapwise will not substitute a straight-line walking route."],
+    );
+  }
+
+  const fromBuilding = getCampusBuilding(origin!.buildingCode);
+  const toBuilding = getCampusBuilding(destination!.buildingCode);
   if (!fromBuilding || !toBuilding) {
     return locationUnavailable(
       "Verified map coordinates are unavailable for one or both buildings.",
@@ -199,8 +256,8 @@ export function planMeetingTransition(
     result: null,
     displayCoordinates: [],
     warnings: [
-      `Indoor room routing not yet mapped for ${origin.buildingCode}.`,
-      `Indoor room routing not yet mapped for ${destination.buildingCode}.`,
+      `Indoor room routing not yet mapped for ${origin!.buildingCode}.`,
+      `Indoor room routing not yet mapped for ${destination!.buildingCode}.`,
       "Distance and time remain approximate; the map can show an OpenStreetMap pedestrian route when available.",
       "no path is drawn",
     ],

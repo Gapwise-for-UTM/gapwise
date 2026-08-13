@@ -878,7 +878,7 @@
     0 10px 24px -8px color-mix(in oklab, var(--color-accent) 70%, transparent);
 }
 
-.map-home-marker {
+.map-day-anchor-marker {
   display: inline-flex;
   width: 2.35rem;
   height: 2.35rem;
@@ -898,8 +898,32 @@
   backdrop-filter: blur(10px) saturate(120%);
 }
 
-.map-home-marker > span {
+.map-day-anchor-marker.is-transit {
+  border-radius: 9999px;
+}
+
+.map-day-anchor-marker.is-parking {
+  border-radius: 0.55rem;
+}
+
+.map-day-anchor-marker.is-pickup {
+  border-style: dashed;
+  border-radius: 9999px;
+}
+
+.map-day-anchor-marker > span {
   display: inline-block;
+}
+
+.map-user-location-marker {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 3px solid white;
+  border-radius: 9999px;
+  background: #1677d2;
+  box-shadow:
+    0 0 0 2px color-mix(in oklab, #1677d2 65%, transparent),
+    0 5px 16px -4px oklch(0 0 0 / 62%);
 }
 
 .campus-explorer-search,

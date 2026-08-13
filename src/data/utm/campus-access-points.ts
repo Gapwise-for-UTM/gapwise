@@ -5,8 +5,11 @@ export type CampusAccessPoint = {
   kind: CampusAccessKind;
   label: string;
   coordinates: [number, number];
+  /** Explicit pedestrian graph node reviewed for this arrival point. */
+  routingNodeId: string | null;
   sourceLabel: string;
   sourceUrl: string;
+  routingSourceUrl: string | null;
 };
 
 /**
@@ -20,32 +23,40 @@ export const CAMPUS_ACCESS_POINTS: CampusAccessPoint[] = [
     kind: "transit",
     label: "UTM Bus Station (MiWay)",
     coordinates: [-79.66346, 43.54786],
+    routingNodeId: "osm-node-1312578308",
     sourceLabel: "OpenStreetMap node 898495160",
     sourceUrl: "https://www.openstreetmap.org/node/898495160",
+    routingSourceUrl: "https://www.openstreetmap.org/node/1312578308",
   },
   {
     id: "utm-shuttle-instructional-centre",
     kind: "transit",
     label: "UTM Shuttle — Instructional Centre",
     coordinates: [-79.66396, 43.55184],
+    routingNodeId: "osm-node-10307805904",
     sourceLabel: "UTM Shuttle / OpenStreetMap node 2383651236",
     sourceUrl: "https://www.openstreetmap.org/node/2383651236",
+    routingSourceUrl: "https://www.openstreetmap.org/node/10307805904",
   },
   {
     id: "parking-p8",
     kind: "parking",
     label: "Parking Lot P8",
     coordinates: [-79.65891, 43.54746],
+    routingNodeId: "osm-node-9395639383",
     sourceLabel: "UTM Parking / OpenStreetMap",
-    sourceUrl: "https://www.utm.utoronto.ca/parking/",
+    sourceUrl: "https://www.utm.utoronto.ca/parking/parking-campus/parking-map",
+    routingSourceUrl: "https://www.openstreetmap.org/node/9395639383",
   },
   {
     id: "parking-p9",
     kind: "parking",
     label: "Parking Lot P9",
     coordinates: [-79.66123, 43.55019],
+    routingNodeId: "osm-node-10307745013",
     sourceLabel: "UTM Parking / OpenStreetMap",
-    sourceUrl: "https://www.utm.utoronto.ca/parking/",
+    sourceUrl: "https://www.utm.utoronto.ca/parking/parking-campus/parking-map",
+    routingSourceUrl: "https://www.openstreetmap.org/node/10307745013",
   },
 ];
 

@@ -6,7 +6,10 @@ import { CRYPTO_VERSION, KEY_VERSION } from "@/features/security/crypto-context"
 import { bytesToBase64Url, bytesToByteaHex } from "@/features/security/encoding";
 import { generateDataEncryptionKey } from "@/features/security/envelope-crypto";
 import { sealAvailabilityCapsule, sealPrivateData } from "@/features/security/local-records";
-import { createPrivateDataPayload } from "@/features/security/private-data";
+import {
+  createPrivateDataPayload,
+  validatePrivateDataPayload,
+} from "@/features/security/private-data";
 import { createMemorySecurityStore, type StoredDataKeys } from "@/features/security/security-store";
 import {
   encryptedRevisionConflicts,
@@ -42,6 +45,25 @@ async function keys(): Promise<StoredDataKeys> {
 }
 
 describe("encrypted client sync boundary", () => {
+  test("restores encrypted preferences created before campus arrival fields existed", () => {
+    const current = createPrivateDataPayload({
+      schedule: [meeting()],
+      personalItems: [],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+    });
+    const {
+      commuteMode: _commuteMode,
+      campusAccessPointId: _accessPoint,
+      ...legacyPreferences
+    } = current.preferences;
+    const restored = validatePrivateDataPayload({
+      ...current,
+      preferences: legacyPreferences,
+    });
+    expect(restored.preferences).toEqual(DEFAULT_USER_PREFERENCES);
+  });
+
   test("restores a complete private payload from local non-extractable keys without networking", async () => {
     const store = createMemorySecurityStore();
     const dataKeys = await keys();

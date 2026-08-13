@@ -1,5 +1,6 @@
 import { DEFAULT_ROUTE_PREFERENCES, sanitizeRoutePreferences } from "@/config/routing";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
+import { getCampusAccessPoint, type CampusAccessKind } from "@/data/utm/campus-access-points";
 import type { RoutePreferences } from "@/features/routing/types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
@@ -10,6 +11,8 @@ export type UserPreferences = RoutePreferences & {
   preferIndoor: boolean;
   dayOrigin: DayOrigin;
   residenceBuildingCode: string | null;
+  commuteMode: CampusAccessKind | null;
+  campusAccessPointId: string | null;
 };
 
 const LOCAL_PREFERENCES_KEY = "gapwise:user-preferences:v1";
@@ -22,6 +25,8 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   preferIndoor: false,
   dayOrigin: "commute",
   residenceBuildingCode: null,
+  commuteMode: null,
+  campusAccessPointId: null,
 };
 
 export function sanitizeUserPreferences(
@@ -33,12 +38,24 @@ export function sanitizeUserPreferences(
     requestedResidence && RESIDENCE_CODES.has(requestedResidence) ? requestedResidence : null;
   const dayOrigin =
     value?.dayOrigin === "residence" && residenceBuildingCode ? "residence" : "commute";
+  const commuteMode =
+    dayOrigin === "commute" &&
+    (value?.commuteMode === "transit" ||
+      value?.commuteMode === "parking" ||
+      value?.commuteMode === "pickup")
+      ? value.commuteMode
+      : null;
+  const requestedAccessPoint = getCampusAccessPoint(value?.campusAccessPointId ?? null);
+  const campusAccessPointId =
+    commuteMode && requestedAccessPoint?.kind === commuteMode ? requestedAccessPoint.id : null;
   return {
     ...route,
     avoidStairs: value?.avoidStairs === true || route.mode === "step-free",
     preferIndoor: value?.preferIndoor === true || route.mode === "prefer-indoor",
     dayOrigin,
     residenceBuildingCode: dayOrigin === "residence" ? residenceBuildingCode : null,
+    commuteMode,
+    campusAccessPointId,
   };
 }
 

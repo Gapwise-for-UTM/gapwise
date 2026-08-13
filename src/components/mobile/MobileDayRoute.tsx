@@ -1,12 +1,16 @@
 import {
   AlertTriangle,
+  BusFront,
+  CarFront,
   ChevronRight,
   Clock3,
   Footprints,
   Home,
   LocateFixed,
+  MapPin,
   Route as RouteIcon,
   Settings2,
+  type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusExplorer } from "@/components/CampusExplorer";
@@ -21,10 +25,12 @@ import {
 } from "@/components/ui/drawer";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import {
-  createResidenceMeeting,
-  isResidenceMeeting,
-  selectedResidence,
-} from "@/features/routing/residence";
+  campusDayAnchorPresentation,
+  createCampusDayRouteStops,
+  isCampusDayAnchorMeeting,
+  selectedCampusDayAnchor,
+  type CampusDayAnchor,
+} from "@/features/routing/campus-day";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
@@ -56,6 +62,20 @@ function secondsLabel(seconds: number): string {
 
 function distanceLabel(meters: number): string {
   return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
+}
+
+function anchorIcon(kind: CampusDayAnchor["kind"]): LucideIcon {
+  if (kind === "residence") return Home;
+  if (kind === "transit") return BusFront;
+  if (kind === "parking") return CarFront;
+  return MapPin;
+}
+
+function departureMetricLabel(kind: CampusDayAnchor["kind"]) {
+  if (kind === "residence") return "Head home";
+  if (kind === "parking") return "Return to car";
+  if (kind === "transit") return "To transit";
+  return "To pick-up";
 }
 
 function defaultWeekday(meetings: Meeting[], term: Term, targetId: string | null): Weekday {
@@ -203,17 +223,17 @@ function SegmentSummary({
   const presentation = getLocationPresentation({ from: segment.from, to: segment.to, route });
   const fromLocation = getLocationPresentation({ meeting: segment.from });
   const toLocation = getLocationPresentation({ meeting: segment.to });
-  const fromResidence = isResidenceMeeting(segment.from) ? selectedResidence(preferences) : null;
-  const toResidence = isResidenceMeeting(segment.to) ? selectedResidence(preferences) : null;
-  const fromLabel = fromResidence?.name ?? fromLocation.label;
-  const toLabel = toResidence?.name ?? toLocation.label;
+  const fromAnchor = campusDayAnchorPresentation(segment.from);
+  const toAnchor = campusDayAnchorPresentation(segment.to);
+  const fromLabel = fromAnchor?.label ?? fromLocation.label;
+  const toLabel = toAnchor?.label ?? toLocation.label;
   const StatusIcon = presentation.icon;
   const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds;
   const distance = route.result?.totalDistanceMeters ?? route.approximateDistanceMeters;
   const departure =
     seconds === null
       ? null
-      : toResidence
+      : toAnchor
         ? segment.from.endTime
         : Math.max(
             0,
@@ -269,7 +289,7 @@ function SegmentSummary({
           />
           <Metric
             icon={LocateFixed}
-            label={toResidence ? "Head home" : "Leave by"}
+            label={toAnchor ? departureMetricLabel(toAnchor.kind) : "Leave by"}
             value={formatTime(departure)}
           />
         </div>
@@ -332,33 +352,11 @@ export function MobileDayRoute({
         .sort((a, b) => a.startTime - b.startTime),
     [meetings, term, weekday],
   );
-  const residence = selectedResidence(preferences);
-  const mapHome = useMemo(
-    () => (residence ? { buildingCode: residence.code, label: residence.name } : null),
-    [residence],
+  const dayAnchor = useMemo(() => selectedCampusDayAnchor(preferences), [preferences]);
+  const routeStops = useMemo(
+    () => createCampusDayRouteStops(dayMeetings, preferences, term, weekday),
+    [dayMeetings, preferences, term, weekday],
   );
-  const routeStops = useMemo(() => {
-    if (!residence || dayMeetings.length === 0) return dayMeetings;
-    const first = dayMeetings[0]!;
-    const last = dayMeetings[dayMeetings.length - 1]!;
-    return [
-      createResidenceMeeting({
-        buildingCode: residence.code,
-        term,
-        weekday,
-        time: first.startTime,
-        position: "start",
-      }),
-      ...dayMeetings,
-      createResidenceMeeting({
-        buildingCode: residence.code,
-        term,
-        weekday,
-        time: last.endTime,
-        position: "end",
-      }),
-    ];
-  }, [dayMeetings, residence, term, weekday]);
   const segments = useMemo<DaySegment[]>(
     () =>
       routeStops.slice(0, -1).map((from, index) => {
@@ -447,7 +445,7 @@ export function MobileDayRoute({
           onHoverBuilding={ignoreMapSelection}
           selectedBuildingCode={selectedBuildingCode}
           onSelectBuilding={onSelectBuilding}
-          home={null}
+          dayAnchor={null}
           className="h-[62dvh] min-h-[26rem] max-h-[38rem]"
         />
       </div>
@@ -537,7 +535,7 @@ export function MobileDayRoute({
             onHoverBuilding={ignoreMapSelection}
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
-            home={null}
+            dayAnchor={null}
             className="h-[55dvh] min-h-[23rem] max-h-[32rem]"
           />
         </>
@@ -554,7 +552,7 @@ export function MobileDayRoute({
             onHoverBuilding={ignoreMapSelection}
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
-            home={mapHome}
+            dayAnchor={dayAnchor}
             className="h-[45dvh] min-h-[20rem] max-h-[30rem]"
           />
 
@@ -566,6 +564,10 @@ export function MobileDayRoute({
                 route: segment.route,
               });
               const active = segment.id === selectedSegmentId;
+              const fromAnchor = campusDayAnchorPresentation(segment.from);
+              const toAnchor = campusDayAnchorPresentation(segment.to);
+              const FromAnchorIcon = fromAnchor ? anchorIcon(fromAnchor.kind) : null;
+              const ToAnchorIcon = toAnchor ? anchorIcon(toAnchor.kind) : null;
               return (
                 <button
                   key={segment.id}
@@ -576,8 +578,8 @@ export function MobileDayRoute({
                   }`}
                 >
                   <span className="flex items-center gap-2 text-xs font-semibold">
-                    {isResidenceMeeting(segment.from) ? (
-                      <Home className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                    {FromAnchorIcon ? (
+                      <FromAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                     ) : (
                       <span className="truncate">{segment.from.courseCode}</span>
                     )}
@@ -585,8 +587,8 @@ export function MobileDayRoute({
                       className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
                       aria-hidden="true"
                     />
-                    {isResidenceMeeting(segment.to) ? (
-                      <Home className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                    {ToAnchorIcon ? (
+                      <ToAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                     ) : (
                       <span className="truncate">{segment.to.courseCode}</span>
                     )}
@@ -602,8 +604,8 @@ export function MobileDayRoute({
           <SegmentSummary segment={selectedSegment} preferences={preferences} />
 
           {selectedSegment &&
-          !isResidenceMeeting(selectedSegment.from) &&
-          !isResidenceMeeting(selectedSegment.to) ? (
+          !isCampusDayAnchorMeeting(selectedSegment.from) &&
+          !isCampusDayAnchorMeeting(selectedSegment.to) ? (
             <IndoorFloorViewer
               key={selectedSegment.id}
               route={selectedSegment.route}
