@@ -13,7 +13,7 @@ Production is built from GitHub `main` by Vercel and served from `https://gapwis
 | Device key broker and common gap               | Vercel Functions       | Verified JWT, caller-scoped Supabase client, KEK; no service role.                           |
 | Account deletion                               | Supabase Edge Function | JWT required; identity comes from the verified token.                                        |
 | Static build and domains                       | Vercel                 | SPA fallback, CSP and security headers come from repository configuration.                   |
-| Verification                                   | GitHub Actions         | App checks plus isolated PostgreSQL migrations, pgTAP and database lint.                     |
+| Verification                                   | GitHub Actions         | App checks, browser E2E, accessibility, PWA, and isolated PostgreSQL security checks.        |
 
 ## Local setup
 
@@ -49,7 +49,7 @@ The completed private-cloud migration and KEK recovery/rotation procedures are d
 
 ## Verification
 
-Run the same gates as CI:
+Run the same application gates as CI:
 
 ```sh
 bun install --frozen-lockfile
@@ -58,7 +58,11 @@ bun run lint
 bun test
 bun run build
 bun run format:check
+bunx playwright install chromium webkit
+bun run test:e2e
 ```
+
+The Playwright release suite covers Chromium and WebKit at desktop and phone-sized viewports, including import, timetable, gap/route navigation, malformed input, privacy persistence, PWA/offline-shell behavior, and automated accessibility checks.
 
 For database changes also run the isolated Supabase suite:
 
@@ -70,7 +74,7 @@ supabase db lint --local --level warning --fail-on error
 
 After a production deployment verify the canonical domain, intended GitHub commit, response security headers, Vercel runtime errors, Supabase advisors, fresh-device encrypted restore, same-device local restore, sign-out cleanup, bounded common-gap behavior and account deletion with disposable data where destructive testing is required.
 
-Use [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) before an announcement or larger beta.
+Use [`LAUNCH_READINESS.md`](LAUNCH_READINESS.md) before a stable release or major announcement.
 
 ## Production monitoring
 
