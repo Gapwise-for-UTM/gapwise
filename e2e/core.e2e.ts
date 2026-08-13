@@ -17,6 +17,52 @@ test("landing page is usable without an account", async ({ page }, testInfo) => 
   guard.assertClean();
 });
 
+test("bare fragments are removed without enabling hash routing", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "URL behavior gate runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  await page.goto("/#");
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
+  await expect.poll(() => page.url().endsWith("#")).toBe(false);
+
+  await page.evaluate(() => {
+    window.location.hash = "";
+  });
+  await expect.poll(() => page.url().endsWith("#")).toBe(false);
+  expect(new URL(page.url()).pathname).toBe("/");
+  guard.assertClean();
+});
+
+test("path navigation, refresh, and browser history use the SPA fallback", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "URL behavior gate runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  const response = await page.goto("/url-behavior-check");
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Go home" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe("/");
+  expect(new URL(page.url()).hash).toBe("");
+
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+  await page.goForward();
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
+  guard.assertClean();
+});
+
 test("the selected color theme persists across reloads", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "theme persistence gate runs once");
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));

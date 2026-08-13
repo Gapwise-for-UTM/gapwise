@@ -1,10 +1,15 @@
 import type { User } from "@supabase/supabase-js";
-import { getSupabaseClient, requireSupabaseClient } from "@/lib/supabase";
+import {
+  assertCanPersistAuthRedirect,
+  getSupabaseClient,
+  requireSupabaseClient,
+} from "@/lib/supabase";
 import { authStore } from "./auth-store";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 
 export async function signInWithGitHub(): Promise<void> {
   const supabase = requireSupabaseClient();
+  assertCanPersistAuthRedirect();
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
@@ -16,6 +21,7 @@ export async function signInWithGitHub(): Promise<void> {
 
 export async function signInWithGoogle(): Promise<void> {
   const supabase = requireSupabaseClient();
+  assertCanPersistAuthRedirect();
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -27,6 +33,7 @@ export async function signInWithGoogle(): Promise<void> {
 
 export async function signInWithMicrosoft(): Promise<void> {
   const supabase = requireSupabaseClient();
+  assertCanPersistAuthRedirect();
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "azure",
     options: {
@@ -39,6 +46,7 @@ export async function signInWithMicrosoft(): Promise<void> {
 
 export async function requestEmailSignInLink(email: string): Promise<void> {
   const supabase = requireSupabaseClient();
+  assertCanPersistAuthRedirect();
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) throw new Error("Enter an email address.");
 

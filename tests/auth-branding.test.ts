@@ -13,13 +13,19 @@ const user = (values: Partial<User>): User => ({
 });
 
 describe("OAuth authentication", () => {
-  test("selects the configured providers and redirects to the current origin", async () => {
-    const source = await readFile("src/features/auth/auth-service.ts", "utf8");
-    expect(source).toContain('provider: "github"');
-    expect(source).toContain('provider: "google"');
-    expect(source).toContain('provider: "azure"');
-    expect(source).toContain('scopes: "email"');
-    expect(source).toContain("redirectTo: window.location.origin");
+  test("selects the configured providers and uses fragment-free PKCE callbacks", async () => {
+    const [serviceSource, clientSource] = await Promise.all([
+      readFile("src/features/auth/auth-service.ts", "utf8"),
+      readFile("src/lib/supabase.ts", "utf8"),
+    ]);
+    expect(serviceSource).toContain('provider: "github"');
+    expect(serviceSource).toContain('provider: "google"');
+    expect(serviceSource).toContain('provider: "azure"');
+    expect(serviceSource).toContain('scopes: "email"');
+    expect(serviceSource).toContain("redirectTo: window.location.origin");
+    expect(serviceSource).toContain("assertCanPersistAuthRedirect()");
+    expect(clientSource).toContain("detectSessionInUrl: true");
+    expect(clientSource).toContain('flowType: "pkce"');
   });
   test("uses the documented identity fallback order", () => {
     expect(
