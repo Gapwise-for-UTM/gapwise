@@ -7,10 +7,7 @@ export function isMobileProject(projectName: string) {
 export function watchForAppFailures(page: Page, baseURL: string) {
   const failures: string[] = [];
   const appOrigin = new URL(baseURL).origin;
-  const ignoredLocalInstrumentationPaths = [
-    "/_vercel/insights/",
-    "/_vercel/speed-insights/",
-  ];
+  const ignoredLocalInstrumentationPaths = ["/_vercel/insights/", "/_vercel/speed-insights/"];
 
   const isIgnoredLocalInstrumentationRequest = (url: URL) =>
     url.origin === appOrigin &&
