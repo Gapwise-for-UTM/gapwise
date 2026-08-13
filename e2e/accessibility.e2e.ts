@@ -12,7 +12,11 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
       id: violation.id,
       impact: violation.impact,
       description: violation.description,
-      targets: violation.nodes.map((node) => node.target),
+      nodes: violation.nodes.map((node) => ({
+        target: node.target,
+        html: node.html,
+        failureSummary: node.failureSummary,
+      })),
     })),
     "serious or critical axe violations",
   ).toEqual([]);
