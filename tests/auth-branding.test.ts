@@ -115,6 +115,8 @@ describe("production content security policy", () => {
 
     expect(csp).toContain("script-src 'self' 'wasm-unsafe-eval'");
     expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).toContain("connect-src 'self' blob:");
+    expect(csp).not.toContain("connect-src *");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
   });
