@@ -10,7 +10,7 @@ These notes are prepared for the stable `v1.0.0` release and are published only 
 - Gap detection and deterministic recommendations that account for transition time and user preferences.
 - UTM campus routing with verified graph data where available, route preferences, indoor transitions, and accessible written route context.
 - Optional accounts through Microsoft, Google, and GitHub via Supabase Auth.
-- Browser-side encryption for private cloud timetable/settings data, wrapped per-user keys, and separately encrypted friend-availability data.
+- When a signed-in user explicitly opts into encrypted sync, normalized timetable/settings payloads are encrypted in the browser before cloud storage; per-user keys are wrapped separately, and friend-availability data is encrypted independently.
 - Privacy-bounded friend overlap that shares only a few rounded common windows rather than either user's timetable.
 - Guest mode, responsive desktop/mobile UI, dark/light themes, and installable PWA support.
 
