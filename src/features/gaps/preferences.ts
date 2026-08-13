@@ -2,6 +2,7 @@ import type { GapPreferences, RiskTolerance } from "./types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 const STORAGE_KEY = "gapwise-gap-preferences-v2";
+type BrowserStorage = Pick<Storage, "getItem" | "removeItem">;
 
 export const DEFAULT_GAP_PREFERENCES: GapPreferences = {
   setupMinutes: 4,
@@ -89,10 +90,19 @@ export function sanitizeGapPreferences(value: Partial<GapPreferences> | null | u
   } satisfies GapPreferences;
 }
 
-export function loadGapPreferences(): GapPreferences {
-  if (typeof window === "undefined") return DEFAULT_GAP_PREFERENCES;
+export function loadGapPreferences(storage?: BrowserStorage): GapPreferences {
+  if (typeof window === "undefined" && !storage) return DEFAULT_GAP_PREFERENCES;
+  const selected = storage ?? window.localStorage;
+  if (isEncryptedPrivateCloudAuthoritative) {
+    try {
+      selected.removeItem(STORAGE_KEY);
+    } catch {
+      // Fail closed even when legacy browser storage cannot be cleaned up.
+    }
+    return DEFAULT_GAP_PREFERENCES;
+  }
   try {
-    const stored = window.localStorage.getItem(STORAGE_KEY);
+    const stored = selected.getItem(STORAGE_KEY);
     if (!stored) return DEFAULT_GAP_PREFERENCES;
     return sanitizeGapPreferences(JSON.parse(stored) as Partial<GapPreferences>);
   } catch {

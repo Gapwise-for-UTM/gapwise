@@ -202,7 +202,10 @@ function Index() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const setOnline = () => setIsOnline(true);
+    const setOnline = () => {
+      lastEncryptedFingerprint.current = null;
+      setIsOnline(true);
+    };
     const setOffline = () => setIsOnline(false);
     window.addEventListener("online", setOnline);
     window.addEventListener("offline", setOffline);
@@ -363,7 +366,6 @@ function Index() {
       !authenticatedUserId ||
       meetings === null ||
       isDemo ||
-      !isOnline ||
       !isEncryptedSyncOptedIn(authenticatedUserId)
     ) {
       return;
@@ -375,6 +377,7 @@ function Index() {
       lastEncryptedFingerprint.current = fingerprint;
       void saveEncryptedPrivateState(authenticatedUserId, input, {
         requireExistingOptIn: true,
+        localOnly: !isOnline,
       }).catch(() => {
         if (lastEncryptedFingerprint.current === fingerprint) {
           lastEncryptedFingerprint.current = null;

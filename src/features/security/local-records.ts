@@ -9,10 +9,11 @@ import {
   validateAvailabilityCapsule,
   type AvailabilityCapsuleV1,
 } from "./availability-capsule";
+import { utf8 } from "./encoding";
 import { validatePrivateDataPayload, type PrivateDataPayloadV1 } from "./private-data";
 import type { StoredCapsuleRecord, StoredDataKeys, StoredPrivateRecord } from "./security-store";
 
-const MAX_PRIVATE_DATA_PLAINTEXT_BYTES = 256 * 1024;
+export const MAX_PRIVATE_DATA_PLAINTEXT_BYTES = 256 * 1024;
 
 function uuid(): string {
   return crypto.randomUUID();
@@ -34,6 +35,9 @@ export async function sealPrivateData(input: {
 }): Promise<StoredPrivateRecord> {
   requireRevision(input.revision);
   if (input.keys.userId !== input.userId) throw new Error("Encryption key owner mismatch.");
+  if (utf8(JSON.stringify(input.payload)).byteLength > MAX_PRIVATE_DATA_PLAINTEXT_BYTES) {
+    throw new Error("Private data payload is too large.");
+  }
   const recordId = input.recordId ?? uuid();
   const encrypted = await encryptJsonRecord(input.keys.privateData.key, input.payload, {
     cryptoVersion: CRYPTO_VERSION,

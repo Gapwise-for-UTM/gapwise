@@ -64,7 +64,7 @@ describe("persistent Supabase auth storage", () => {
     let sessionRemovalCalls = 0;
     await expect(
       completeLocalSignOut(
-        async () => {
+        () => {
           throw cleanupError;
         },
         async () => {
@@ -73,6 +73,25 @@ describe("persistent Supabase auth storage", () => {
       ),
     ).rejects.toBe(cleanupError);
     expect(sessionRemovalCalls).toBe(1);
+  });
+
+  test("starts local session removal without waiting for private cleanup", async () => {
+    let finishCleanup!: () => void;
+    let sessionRemoved = false;
+    const signOut = completeLocalSignOut(
+      () =>
+        new Promise<void>((resolve) => {
+          finishCleanup = resolve;
+        }),
+      async () => {
+        sessionRemoved = true;
+      },
+    );
+
+    await Promise.resolve();
+    expect(sessionRemoved).toBe(true);
+    finishCleanup();
+    await signOut;
   });
 
   test("preserves falsy cleanup rejection values", async () => {
@@ -129,6 +148,37 @@ describe("persistent Supabase auth storage", () => {
     expect(storage.getItem("session")).toBe("active");
     expect(() => storage.removeItem("session")).not.toThrow();
     expect(storage.getItem("session")).toBeNull();
+  });
+
+  test("invalidates a readable durable session when direct removal is blocked", () => {
+    const values = new Map([["session", "active"]]);
+    const persistent = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: () => {
+        throw new Error("removal blocked");
+      },
+    };
+
+    const storage = createSafeAuthStorage(persistent);
+    expect(() => storage.removeItem("session")).not.toThrow();
+    expect(createSafeAuthStorage(persistent).getItem("session")).toBeNull();
+  });
+
+  test("reports sign-out failure when a readable durable session cannot be invalidated", () => {
+    const persistent = {
+      getItem: () => "active",
+      setItem: () => {
+        throw new Error("write blocked");
+      },
+      removeItem: () => {
+        throw new Error("removal blocked");
+      },
+    };
+
+    expect(() => createSafeAuthStorage(persistent).removeItem("session")).toThrow(
+      "removal blocked",
+    );
   });
 
   test("treats malformed and invalid expired sessions as signed out without leaking tokens", async () => {

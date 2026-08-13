@@ -4,6 +4,7 @@ import { deriveAvailabilityCapsule } from "@/features/security/availability-caps
 import { CRYPTO_VERSION, KEY_VERSION } from "@/features/security/crypto-context";
 import { generateDataEncryptionKey } from "@/features/security/envelope-crypto";
 import {
+  MAX_PRIVATE_DATA_PLAINTEXT_BYTES,
   openAvailabilityCapsule,
   openPrivateData,
   sealAvailabilityCapsule,
@@ -103,6 +104,25 @@ describe("encrypted local-first records", () => {
     const otherKeys = await dataKeys(USER_B, SUBJECT_B);
     await expect(openPrivateData(otherKeys, { ...record, userId: USER_B })).rejects.toThrow(
       "context mismatch",
+    );
+  });
+
+  test("rejects an oversized private payload before creating a replacement record", async () => {
+    const keys = await dataKeys();
+    const payload = createPrivateDataPayload({
+      schedule: [
+        meeting({
+          courseCode: "ZZZ999H5",
+          courseName: "x".repeat(MAX_PRIVATE_DATA_PLAINTEXT_BYTES),
+        }),
+      ],
+      personalItems: [],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+    });
+
+    await expect(sealPrivateData({ userId: USER_A, keys, payload, revision: 1 })).rejects.toThrow(
+      "too large",
     );
   });
 

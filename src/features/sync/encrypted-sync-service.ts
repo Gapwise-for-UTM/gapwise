@@ -642,6 +642,7 @@ async function writeCapsuleRecord(
 async function saveEncryptedPrivateStateNow(
   userId: string,
   input: PrivateCloudState,
+  localOnly = false,
 ): Promise<PrivateCloudRestoration> {
   await sessionForUser(userId);
   const payload = createPrivateDataPayload(input);
@@ -681,6 +682,15 @@ async function saveEncryptedPrivateStateNow(
     }),
   ]);
   await selection.store.putEncryptedRecords(localPrivate, localCapsule);
+
+  if (localOnly) {
+    return {
+      payload,
+      source: "secure-local",
+      updatedAt: localUpdatedAt,
+      persistentKeys: selection.persistent,
+    };
+  }
 
   // The encrypted local transaction completes before any cloud read/write. A
   // network failure therefore never discards the user's current in-browser state.
@@ -771,7 +781,7 @@ async function saveEncryptedPrivateStateNow(
 export function saveEncryptedPrivateState(
   userId: string,
   input: PrivateCloudState,
-  options: { requireExistingOptIn?: boolean } = {},
+  options: { requireExistingOptIn?: boolean; localOnly?: boolean } = {},
 ): Promise<PrivateCloudRestoration> {
   if (deletingCloudUsers.has(userId)) {
     return Promise.reject(new Error("Encrypted cloud deletion is in progress."));
@@ -782,7 +792,7 @@ export function saveEncryptedPrivateState(
   const previous = saveQueues.get(userId) ?? Promise.resolve();
   const next = previous
     .catch(() => undefined)
-    .then(() => saveEncryptedPrivateStateNow(userId, input));
+    .then(() => saveEncryptedPrivateStateNow(userId, input, options.localOnly === true));
   saveQueues.set(userId, next);
   const cleanup = () => {
     if (saveQueues.get(userId) === next) saveQueues.delete(userId);

@@ -4,6 +4,8 @@ import {
   loadLocalUserPreferences,
   saveLocalUserPreferences,
 } from "@/features/sync/preferences";
+import { DEFAULT_GAP_PREFERENCES, loadGapPreferences } from "@/features/gaps/preferences";
+import { loadPersonalItems } from "@/features/personal/persistence";
 
 let stored: string | null = null;
 const storage = {
@@ -43,6 +45,26 @@ describe("legacy plaintext route preference persistence", () => {
       },
       storage,
     );
+    expect(stored).toBeNull();
+  });
+
+  test("ignores and clears legacy plaintext personal items", () => {
+    stored = JSON.stringify([
+      {
+        id: "legacy-private-item",
+        title: "Private appointment",
+        notes: "must not cross browser users",
+      },
+    ]);
+
+    expect(loadPersonalItems(storage)).toEqual([]);
+    expect(stored).toBeNull();
+  });
+
+  test("ignores and clears legacy plaintext gap preferences", () => {
+    stored = JSON.stringify({ willingToLeaveCampus: true, oneWayHomeCommuteMinutes: 90 });
+
+    expect(loadGapPreferences(storage)).toEqual(DEFAULT_GAP_PREFERENCES);
     expect(stored).toBeNull();
   });
 });
