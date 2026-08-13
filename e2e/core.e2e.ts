@@ -197,14 +197,20 @@ test("tapping recognized map geometry selects a building without a timetable", a
 
   await page.goto("/route?building=MN");
   await expect(page.getByRole("button", { name: "Return to campus overview" })).toBeVisible();
+
+  const entranceMarker = page.locator(".map-entrance-marker").first();
+  await expect(entranceMarker).toBeVisible();
+  const entranceBounds = await entranceMarker.boundingBox();
+  expect(entranceBounds).not.toBeNull();
+  if (!entranceBounds) throw new Error("Mapped entrance bounds are unavailable.");
+  const buildingPoint = {
+    x: entranceBounds.x + entranceBounds.width / 2,
+    y: entranceBounds.y + entranceBounds.height / 2,
+  };
+
   await page.getByRole("button", { name: "Close Maanjiwe nendamowinan details" }).click();
-  const map = page.getByRole("region", {
-    name: "Interactive map of the University of Toronto Mississauga campus",
-  });
-  const bounds = await map.boundingBox();
-  expect(bounds).not.toBeNull();
-  if (!bounds) throw new Error("Campus map bounds are unavailable.");
-  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
+  await expect(entranceMarker).toHaveCount(0);
+  await page.mouse.click(buildingPoint.x, buildingPoint.y);
   await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
   guard.assertClean();
