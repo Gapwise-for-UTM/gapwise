@@ -46,12 +46,7 @@ import {
   saveLocalUserPreferences,
   type UserPreferences,
 } from "@/features/sync/preferences";
-import {
-  loadRememberedRecord,
-  saveRemembered,
-  useIntroDismissed,
-  useTheme,
-} from "@/hooks/use-preferences";
+import { loadRememberedRecord, useIntroDismissed, useTheme } from "@/hooks/use-preferences";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import { chooseDefaultTerm } from "@/lib/calendar-awareness";
 import { findGaps } from "@/lib/gaps";
@@ -59,15 +54,25 @@ import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
 import { emitClickSpark } from "@/lib/micro-interactions";
 import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
-import { deserializeSchedule } from "@/features/sync/schedule-serialization";
 import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import {
+  clearPrivateCloudLocalUser,
   isEncryptedSyncOptedIn,
   saveEncryptedPrivateState,
 } from "@/features/sync/encrypted-sync-service";
+import {
+  clearGuestTimetable,
+  loadGuestTimetable,
+  saveGuestTimetable,
+  type GuestTimetableRestoration,
+} from "@/features/security/guest-timetable";
+import {
+  isCloudRestoreSuppressed,
+  setCloudRestoreSuppressed,
+} from "@/features/sync/restore-preference";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -126,22 +131,7 @@ function Index() {
   const [editingPersonal, setEditingPersonal] = useState<
     import("@/lib/personal-types").PersonalItem | null
   >(null);
-  const [localRecord] = useState(() => {
-    if (typeof window === "undefined") return null;
-    const stored = loadRememberedRecord<unknown>();
-    if (!stored.record) return { remember: stored.remember, record: null };
-    try {
-      return {
-        remember: stored.remember,
-        record: {
-          data: deserializeSchedule(stored.record.data),
-          updatedAt: stored.record.updatedAt,
-        },
-      };
-    } catch {
-      return { remember: stored.remember, record: null };
-    }
-  });
+  const [guestRestoration, setGuestRestoration] = useState<GuestTimetableRestoration | null>(null);
   const [restoration, setRestoration] = useState<RestorationState>("waiting-for-auth");
   const [restorationMessage, setRestorationMessage] = useState<string | null>(null);
   const [personalItems, setPersonalItems] = useState<import("@/lib/personal-types").PersonalItem[]>(
@@ -194,10 +184,36 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    const updateScrollState = () => setIsScrolled(window.scrollY > 10);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setIsScrolled(window.scrollY > 10);
+      return;
+    }
+    let frame = 0;
+    let previousScrolled = false;
+    const updateScrollState = () => {
+      frame = 0;
+      const scrollY = Math.min(window.scrollY, 4_000);
+      document.documentElement.style.setProperty("--parallax-far", `${scrollY * -0.012}px`);
+      document.documentElement.style.setProperty("--parallax-field", `${scrollY * -0.035}px`);
+      document.documentElement.style.setProperty("--parallax-glow", `${scrollY * 0.008}px`);
+      const nextScrolled = scrollY > 10;
+      if (nextScrolled !== previousScrolled) {
+        previousScrolled = nextScrolled;
+        setIsScrolled(nextScrolled);
+      }
+    };
+    const requestUpdate = () => {
+      if (!frame) frame = window.requestAnimationFrame(updateScrollState);
+    };
     updateScrollState();
-    window.addEventListener("scroll", updateScrollState, { passive: true });
-    return () => window.removeEventListener("scroll", updateScrollState);
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", requestUpdate);
+      if (frame) window.cancelAnimationFrame(frame);
+      document.documentElement.style.removeProperty("--parallax-far");
+      document.documentElement.style.removeProperty("--parallax-field");
+      document.documentElement.style.removeProperty("--parallax-glow");
+    };
   }, []);
 
   useEffect(() => {
@@ -216,16 +232,32 @@ function Index() {
   }, []);
 
   useEffect(() => {
-    setRemember(localRecord?.remember ?? false);
-  }, [localRecord]);
+    // Remove retired plaintext storage before checking the encrypted guest record.
+    loadRememberedRecord<unknown>();
+    let active = true;
+    void loadGuestTimetable()
+      .then((record) => {
+        if (!active) return;
+        setGuestRestoration(record);
+        setRemember(record.remember);
+      })
+      .catch(() => {
+        if (!active) return;
+        setGuestRestoration({ remember: false, meetings: null, updatedAt: null });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
-    if (authLoading) {
+    if (authLoading || guestRestoration === null) {
       setRestoration("waiting-for-auth");
       return;
     }
     const userId = authenticatedUserId;
     if (!userId) {
+      const returningFromAccount = previousUser.current !== null;
       cloudRestoration.cancel(previousUser.current);
       requestVersion.current += 1;
       requestedUser.current = null;
@@ -245,9 +277,15 @@ function Index() {
         }
       }
       previousUser.current = null;
+      const guestRecord = guestRestoration.meetings
+        ? {
+            data: guestRestoration.meetings,
+            updatedAt: guestRestoration.updatedAt,
+          }
+        : null;
       const choice = chooseRestoration(
         restoredSource.current === "memory" ? currentMeetings : null,
-        localRecord?.record ?? null,
+        guestRecord,
         null,
       );
       if (choice.meetings && choice.source !== "memory") {
@@ -256,11 +294,13 @@ function Index() {
       }
       restoredSource.current = choice.source;
       setRestoration(authError ? "failed" : choice.state);
-      setRestorationMessage(
-        authError
-          ? "We couldn't restore your signed-in session. Cloud restore is unavailable."
-          : null,
-      );
+      if (authError) {
+        setRestorationMessage(
+          "We couldn't restore your signed-in session. Cloud restore is unavailable.",
+        );
+      } else if (returningFromAccount) {
+        setRestorationMessage(null);
+      }
       return;
     }
 
@@ -284,6 +324,15 @@ function Index() {
       previousUser.current = userId;
     }
 
+    if (isCloudRestoreSuppressed(userId)) {
+      requestedUser.current = userId;
+      setRestoration("no-cloud-data");
+      setRestorationMessage(
+        "Automatic cloud restore is paused on this browser. Use Load private data when you want it back.",
+      );
+      return;
+    }
+
     if (latestMeetings.current?.length && restoredSource.current === "memory") {
       setRestoration("restored-memory");
       return;
@@ -303,11 +352,7 @@ function Index() {
         )
           return;
         const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
-        const legacyLocal =
-          isEncryptedPrivateCloudAuthoritative && cloud?.privateData
-            ? null
-            : (localRecord?.record ?? null);
-        const choice = chooseRestoration(memory, legacyLocal, cloud);
+        const choice = chooseRestoration(memory, null, cloud);
         if (choice.meetings && choice.source !== "memory") {
           latestMeetings.current = choice.meetings;
           setMeetings(choice.meetings);
@@ -334,7 +379,7 @@ function Index() {
         )
           return;
         const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
-        const choice = chooseRestoration(memory, localRecord?.record ?? null, null);
+        const choice = chooseRestoration(memory, null, null);
         if (choice.meetings && choice.source !== "memory") {
           latestMeetings.current = choice.meetings;
           setMeetings(choice.meetings);
@@ -345,7 +390,7 @@ function Index() {
           "We couldn't restore your cloud timetable. Your local timetable is unchanged.",
         );
       });
-  }, [applyPrivateData, authLoading, authError, authenticatedUserId, localRecord]);
+  }, [applyPrivateData, authLoading, authError, authenticatedUserId, guestRestoration]);
 
   const terms = useMemo(() => {
     if (!meetings) return [] as Term[];
@@ -481,6 +526,21 @@ function Index() {
     try {
       const text = await file.text();
       const result = parseIcs(text);
+      let persistenceWarning: string | null = null;
+      if (remember && !authenticatedUserId) {
+        try {
+          await saveGuestTimetable(result.meetings);
+          setGuestRestoration({
+            remember: true,
+            meetings: result.meetings,
+            updatedAt: new Date().toISOString(),
+          });
+        } catch {
+          setRemember(false);
+          persistenceWarning =
+            "This browser could not keep an encrypted device copy. Your open timetable is unchanged.";
+        }
+      }
       setMeetings(result.meetings);
       latestMeetings.current = result.meetings;
       restoredSource.current = "memory";
@@ -500,14 +560,14 @@ function Index() {
           changed ? `${changed} updated` : null,
         ].filter(Boolean);
         setRestorationMessage(
-          `Timetable updated · ${changes.length ? changes.join(" · ") : "no meeting changes"}`,
+          persistenceWarning ??
+            `Timetable updated · ${changes.length ? changes.join(" · ") : "no meeting changes"}`,
         );
       } else {
-        setRestorationMessage(null);
+        setRestorationMessage(persistenceWarning);
       }
       setWarnings(result.warnings);
       setIsDemo(false);
-      saveRemembered(remember, remember ? result.meetings : null);
     } catch (err) {
       const message =
         err instanceof IcsParseError
@@ -538,7 +598,7 @@ function Index() {
     setIsDemo(true);
   }
 
-  function clearTimetable() {
+  function clearTimetableView() {
     setMeetings(null);
     latestMeetings.current = null;
     restoredSource.current = "none";
@@ -547,7 +607,37 @@ function Index() {
     setWarnings([]);
     setError(null);
     setIsDemo(false);
-    saveRemembered(remember, null);
+  }
+
+  async function removeTimetableFromBrowser() {
+    try {
+      if (authenticatedUserId) {
+        await clearPrivateCloudLocalUser(authenticatedUserId);
+        setCloudRestoreSuppressed(authenticatedUserId, true);
+      } else {
+        await clearGuestTimetable();
+        setGuestRestoration({ remember: false, meetings: null, updatedAt: null });
+        setRemember(false);
+      }
+      clearTimetableView();
+    } catch {
+      setRestorationMessage(
+        "This browser could not clear its encrypted local copy, so the timetable was left in place.",
+      );
+    }
+  }
+
+  function confirmRemoveTimetable() {
+    const cloudNote = authenticatedUserId
+      ? " Your encrypted cloud copy will remain available from Load private data."
+      : "";
+    if (
+      window.confirm(
+        `Remove this timetable and its encrypted local copy from this browser?${cloudNote}`,
+      )
+    ) {
+      void removeTimetableFromBrowser();
+    }
   }
 
   function loadCloudTimetable(cloudMeetings: Meeting[]) {
@@ -556,12 +646,13 @@ function Index() {
     setWarnings([]);
     setError(null);
     setIsDemo(false);
-    saveRemembered(remember, remember ? cloudMeetings : null);
+    if (authenticatedUserId) setCloudRestoreSuppressed(authenticatedUserId, false);
     restoredSource.current = "cloud";
     setRestoration("restored-cloud");
   }
 
   function loadPrivateData(payload: PrivateDataPayloadV1) {
+    if (authenticatedUserId) setCloudRestoreSuppressed(authenticatedUserId, false);
     applyPrivateData(payload);
     restoredSource.current = "cloud";
     setRestoration("restored-cloud");
@@ -570,7 +661,27 @@ function Index() {
 
   function handleRemember(value: boolean) {
     setRemember(value);
-    saveRemembered(value, value && !isDemo ? meetings : null);
+    if (authenticatedUserId) return;
+    setRestorationMessage(
+      value ? "Setting up encrypted device restore…" : "Removing the encrypted device copy…",
+    );
+    void (value ? saveGuestTimetable(isDemo ? null : meetings) : clearGuestTimetable())
+      .then(() => {
+        setGuestRestoration({
+          remember: value,
+          meetings: value && !isDemo ? meetings : null,
+          updatedAt: value && meetings && !isDemo ? new Date().toISOString() : null,
+        });
+        setRestorationMessage(
+          value
+            ? "Encrypted device restore is on for this browser."
+            : "Encrypted device restore is off and its local copy was removed.",
+        );
+      })
+      .catch(() => {
+        setRemember(!value);
+        setRestorationMessage("Secure device storage is unavailable in this browser.");
+      });
   }
 
   function updateGapPreferences(next: GapPreferences) {
@@ -589,12 +700,11 @@ function Index() {
   const openGapPlan = useCallback(() => showView("gaps"), [showView]);
   const openDayRoute = useCallback(() => showView("route"), [showView]);
 
-  const handleAccountDeleted = useCallback((clearLocal: boolean) => {
-    const retainedLocal = clearLocal ? null : loadRememberedRecord<Meeting[]>().record?.data;
-    setMeetings(retainedLocal?.length ? retainedLocal : null);
-    latestMeetings.current = retainedLocal?.length ? retainedLocal : null;
-    restoredSource.current = retainedLocal?.length ? "local" : "none";
-    setRestoration(retainedLocal?.length ? "restored-local" : "no-cloud-data");
+  const handleAccountDeleted = useCallback((_clearLocal: boolean) => {
+    setMeetings(null);
+    latestMeetings.current = null;
+    restoredSource.current = "none";
+    setRestoration("no-cloud-data");
     setRestorationMessage(null);
     if (isEncryptedPrivateCloudAuthoritative) {
       setPersonalItems([]);
@@ -727,10 +837,8 @@ function Index() {
           loading={loading}
           onUpdateTimetable={() => replacementInputRef.current?.click()}
           onRemoveTimetable={() => {
-            if (window.confirm("Remove this timetable from this browser?")) {
-              setMoreOpen(false);
-              clearTimetable();
-            }
+            setMoreOpen(false);
+            confirmRemoveTimetable();
           }}
         >
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -800,7 +908,8 @@ function Index() {
         className={`mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 ${!meetings ? "landing-stage" : ""}`}
       >
         {!meetings ? <div className="topography-field" aria-hidden="true" /> : null}
-        {(authLoading || restoration === "checking-cloud") && !meetings ? (
+        {(authLoading || guestRestoration === null || restoration === "checking-cloud") &&
+        !meetings ? (
           <div className="py-16" role="status" aria-live="polite">
             <div className="h-4 w-36 animate-pulse rounded bg-muted" />
             <div className="mt-4 h-24 max-w-xl animate-pulse rounded-xl bg-muted" />
@@ -859,6 +968,7 @@ function Index() {
                     error={error}
                     remember={remember}
                     onRememberChange={handleRemember}
+                    rememberAvailable={!authenticatedUserId}
                   />
                   <p className="mt-8 border-t border-border pt-5 text-center font-mono text-[0.625rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
                     Independent student project · Not affiliated with U of T
@@ -983,10 +1093,7 @@ function Index() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm("Remove this timetable from this browser?"))
-                      clearTimetable();
-                  }}
+                  onClick={confirmRemoveTimetable}
                   aria-label="Remove timetable"
                   title="Remove timetable"
                   className="button-secondary inline-flex h-10 w-10 items-center justify-center text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"

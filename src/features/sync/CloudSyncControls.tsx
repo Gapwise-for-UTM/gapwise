@@ -14,6 +14,7 @@ import {
 } from "./encrypted-sync-service";
 import type { UserPreferences } from "./preferences";
 import type { RestorationState } from "./restoration";
+import { setCloudRestoreSuppressed } from "./restore-preference";
 
 export function CloudSyncControls({
   user,
@@ -81,6 +82,7 @@ export function CloudSyncControls({
                   preferences,
                   gapPreferences,
                 });
+                setCloudRestoreSuppressed(user!.id, false);
                 return result.persistentKeys
                   ? "Private data encrypted, synced, and verified."
                   : "Private data encrypted and synced. Secure restore is available only while this page stays open on this browser.";
@@ -98,6 +100,7 @@ export function CloudSyncControls({
               void run(async () => {
                 const restored = await loadEncryptedPrivateState(user!.id, undefined, true);
                 if (!restored) return "No encrypted cloud data was found.";
+                setCloudRestoreSuppressed(user!.id, false);
                 onLoadPrivate(restored.payload);
                 return "Encrypted private data loaded into this browser.";
               })

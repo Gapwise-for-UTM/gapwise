@@ -45,7 +45,7 @@ export interface Meeting {
   dateRange?: MeetingDateRange;
   /** Dates explicitly omitted by EXDATE, in YYYY-MM-DD form. */
   excludedDates?: string[];
-  /** Weekly RRULE interval. Older saved schedules are treated as weekly when ranges repeat. */
+  /** Weekly RRULE interval. Its presence is the explicit signal that this meeting repeats. */
   recurrenceIntervalWeeks?: number;
 }
 

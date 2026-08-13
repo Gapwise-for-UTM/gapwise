@@ -59,15 +59,20 @@ export function findGaps(meetings: Meeting[], term: Term): Gap[] {
   for (const weekday of WEEKDAYS) {
     const day = meetings
       .filter((m) => m.term === term && m.weekday === weekday)
-      .sort((a, b) => a.startTime - b.startTime);
+      .sort((a, b) => a.startTime - b.startTime || b.endTime - a.endTime);
 
-    for (let i = 0; i < day.length - 1; i += 1) {
-      const previous = day[i]!;
-      const next = day[i + 1]!;
-      // skip overlapping / nested meetings
-      if (next.startTime <= previous.endTime) continue;
+    let previous = day[0];
+    for (let i = 1; previous && i < day.length; i += 1) {
+      const next = day[i]!;
+      if (next.startTime <= previous.endTime) {
+        if (next.endTime > previous.endTime) previous = next;
+        continue;
+      }
       const durationMinutes = next.startTime - previous.endTime;
-      if (durationMinutes < 5) continue;
+      if (durationMinutes < 5) {
+        previous = next;
+        continue;
+      }
       gaps.push({
         id: `${term}-${weekday}-${previous.id}-${next.id}`,
         term,
@@ -78,6 +83,7 @@ export function findGaps(meetings: Meeting[], term: Term): Gap[] {
         previous,
         next,
       });
+      previous = next;
     }
   }
   return gaps;

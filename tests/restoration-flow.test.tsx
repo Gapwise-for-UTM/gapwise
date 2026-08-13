@@ -76,6 +76,7 @@ const saveCalls: Array<{
   userId: string;
   options: { requireExistingOptIn?: boolean; localOnly?: boolean };
 }> = [];
+const clearLocalCalls: string[] = [];
 let syncOptedIn = false;
 
 function payload(meetings: Meeting[]): PrivateDataPayloadV1 {
@@ -110,7 +111,15 @@ mock.module("@/features/sync/encrypted-sync-service", () => ({
     saveCalls.push({ userId, options });
   },
   deleteEncryptedPrivateCloud: async () => undefined,
+  clearPrivateCloudLocalUser: async (userId: string) => {
+    clearLocalCalls.push(userId);
+  },
   isEncryptedSyncOptedIn: () => syncOptedIn,
+}));
+mock.module("@/features/security/guest-timetable", () => ({
+  loadGuestTimetable: async () => ({ remember: false, meetings: null, updatedAt: null }),
+  saveGuestTimetable: async () => undefined,
+  clearGuestTimetable: async () => undefined,
 }));
 
 const { createRoot } = await import("react-dom/client");
@@ -181,11 +190,13 @@ beforeEach(() => {
   loadImplementation = async () => null;
   loadCalls.length = 0;
   saveCalls.length = 0;
+  clearLocalCalls.length = 0;
   syncOptedIn = false;
   Object.defineProperty(browserWindow.navigator, "onLine", { configurable: true, value: true });
   localStorage.clear();
   sessionStorage.clear();
   document.body.replaceChildren();
+  browserWindow.confirm = () => true;
 });
 
 afterEach(async () => {
@@ -269,6 +280,33 @@ describe("route-level encrypted timetable restoration", () => {
     await waitFor(() => pageText().includes("RELOAD101H5"), "the reload encrypted restore");
 
     expect(loadCalls).toEqual([authenticatedUser.id, authenticatedUser.id]);
+  });
+
+  test("removes signed-in encrypted local state and suppresses automatic cloud restore", async () => {
+    const cloud = meeting({ id: "remove-local", courseCode: "REMOVE101H5" });
+    authSnapshot = { user: authenticatedUser, loading: false, error: null };
+    loadImplementation = async () => ({
+      meetings: [cloud],
+      updatedAt: "2026-08-01T12:00:00.000Z",
+    });
+
+    await mountRoute();
+    await waitFor(() => pageText().includes("REMOVE101H5"), "the encrypted restore");
+    const removeButton = container?.querySelector<HTMLButtonElement>(
+      'button[aria-label="Remove timetable"]',
+    );
+    expect(removeButton).not.toBeNull();
+    await act(async () =>
+      removeButton?.dispatchEvent(new browserWindow.MouseEvent("click", { bubbles: true })),
+    );
+    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "local removal");
+    expect(clearLocalCalls).toEqual([authenticatedUser.id]);
+
+    await unmountRoute();
+    await mountRoute();
+    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "suppressed reload");
+    expect(pageText()).not.toContain("REMOVE101H5");
+    expect(loadCalls).toEqual([authenticatedUser.id]);
   });
 
   test("shows a visible error when encrypted cloud restore fails", async () => {

@@ -860,7 +860,8 @@ def main() -> None:
         stone_material
     )
 
-    add_plaque_lettering()
+    # The source model already contains the photographed plaque label. Preserve
+    # that single layer instead of adding a second text mesh over it.
 
     export_glb()
 

@@ -452,13 +452,12 @@ export function MobileDayRoute({
           </div>
         ) : null}
 
-        <div className="mt-3 grid grid-cols-5 gap-1" role="tablist" aria-label="Route weekday">
+        <div className="mt-3 grid grid-cols-5 gap-1" role="group" aria-label="Route weekday">
           {WEEKDAYS.map((day) => (
             <button
               key={day}
               type="button"
-              role="tab"
-              aria-selected={weekday === day}
+              aria-pressed={weekday === day}
               onClick={() => setWeekday(day)}
               className={`min-h-11 rounded-lg text-xs font-semibold ${
                 weekday === day

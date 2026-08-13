@@ -8,7 +8,7 @@ import {
   Plus,
   Sparkles,
 } from "lucide-react";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { ActivityBadge } from "@/components/TimetableGrid";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
@@ -226,6 +226,14 @@ export function MobileTimetable({
   const [selectedDay, setSelectedDay] = useState<Weekday>(() => initialDay(meetings));
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const { setRouteTargetId } = useMobileRouteTarget();
+
+  useEffect(() => {
+    setSelectedDay((currentDay) =>
+      meetings.some((meeting) => meeting.weekday === currentDay)
+        ? currentDay
+        : initialDay(meetings),
+    );
+  }, [meetings]);
 
   const dayMeetings = useMemo(
     () =>

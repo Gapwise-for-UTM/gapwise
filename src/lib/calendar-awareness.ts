@@ -38,9 +38,7 @@ function weekStartUtc(date: Date): number {
 }
 
 function repeats(meeting: Meeting): boolean {
-  if (meeting.recurrenceIntervalWeeks !== undefined) return true;
-  const range = meeting.dateRange;
-  return Boolean(range && (range.endDate === null || range.endDate > range.startDate));
+  return meeting.recurrenceIntervalWeeks !== undefined;
 }
 
 export function meetingOccursOnDate(meeting: Meeting, date: Date): boolean {
