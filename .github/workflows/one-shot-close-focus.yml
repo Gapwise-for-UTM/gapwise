@@ -1,0 +1,84 @@
+name: One-shot map close focus fix
+
+on:
+  push:
+    branches:
+      - feat/campus-map-explorer
+    paths:
+      - .github/workflows/one-shot-close-focus.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/campus-map-explorer
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@v2
+      - name: Apply close-selection camera fix
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          p = Path('src/components/CampusMap.tsx')
+          s = p.read_text()
+          old = '''  const userHasMovedRef = useRef(false);
+  const lastFocusedBuildingRef = useRef<string | null>(null);
+  const lastRouteKeyRef = useRef<string>("");'''
+          new = '''  const userHasMovedRef = useRef(false);
+  const lastFocusedBuildingRef = useRef<string | null>(null);
+  const previousSelectedBuildingRef = useRef<string | null>(selectedBuildingCode);
+  const lastRouteKeyRef = useRef<string>("");'''
+          if s.count(old) != 1:
+              raise RuntimeError(f'ref anchor count: {s.count(old)}')
+          s = s.replace(old, new, 1)
+          old = '''    if (
+      selectedBuildingCode &&
+      nextFocusKey !== lastFocusedBuildingRef.current &&
+      focusBuilding(map, maplibregl, selectedBuildingCode, focusPadding)
+    ) {
+      lastFocusedBuildingRef.current = nextFocusKey;
+      userHasMovedRef.current = true;
+    }
+    if (!selectedBuildingCode) lastFocusedBuildingRef.current = null;
+  }, [focusPadding, onActiveEntranceChange, selectedBuildingCode]);'''
+          new = '''    const previousSelectedBuilding = previousSelectedBuildingRef.current;
+    if (
+      selectedBuildingCode &&
+      nextFocusKey !== lastFocusedBuildingRef.current &&
+      focusBuilding(map, maplibregl, selectedBuildingCode, focusPadding)
+    ) {
+      lastFocusedBuildingRef.current = nextFocusKey;
+      userHasMovedRef.current = true;
+    } else if (!selectedBuildingCode && previousSelectedBuilding) {
+      focusBuilding(map, maplibregl, previousSelectedBuilding, {
+        top: 48,
+        right: 48,
+        bottom: 48,
+        left: 48,
+      });
+      lastFocusedBuildingRef.current = null;
+    }
+    previousSelectedBuildingRef.current = selectedBuildingCode;
+  }, [focusPadding, onActiveEntranceChange, selectedBuildingCode]);'''
+          if s.count(old) != 1:
+              raise RuntimeError(f'effect anchor count: {s.count(old)}')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Install
+        run: bun install --frozen-lockfile
+      - name: Format and typecheck
+        run: |
+          bunx prettier --write src/components/CampusMap.tsx
+          bun run typecheck
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/CampusMap.tsx
+          git commit -m "fix(map): recenter building after closing explorer"
+          git push origin HEAD:feat/campus-map-explorer
