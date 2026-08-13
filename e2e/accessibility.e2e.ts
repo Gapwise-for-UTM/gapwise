@@ -85,6 +85,6 @@ test("reduced motion disables monument auto rotation", async ({ page }, testInfo
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expectLanding(page);
   await expectMonumentReady(page);
-  await expect(page.locator("model-viewer")).not.toHaveAttribute("auto-rotate", "");
+  await expect(page.locator("model-viewer")).not.toHaveAttribute("auto-rotate");
   guard.assertClean();
 });
