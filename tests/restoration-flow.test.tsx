@@ -72,6 +72,11 @@ function useMockAuth(): AuthSnapshot {
 
 const loadCalls: string[] = [];
 let loadImplementation: (userId: string) => Promise<EncryptedFixture | null> = async () => null;
+const saveCalls: Array<{
+  userId: string;
+  options: { requireExistingOptIn?: boolean; localOnly?: boolean };
+}> = [];
+let syncOptedIn = false;
 
 function payload(meetings: Meeting[]): PrivateDataPayloadV1 {
   return {
@@ -97,9 +102,15 @@ mock.module("@/features/sync/encrypted-sync-service", () => ({
         }
       : null;
   },
-  saveEncryptedPrivateState: async () => undefined,
+  saveEncryptedPrivateState: async (
+    userId: string,
+    _input: unknown,
+    options: { requireExistingOptIn?: boolean; localOnly?: boolean },
+  ) => {
+    saveCalls.push({ userId, options });
+  },
   deleteEncryptedPrivateCloud: async () => undefined,
-  isEncryptedSyncOptedIn: () => false,
+  isEncryptedSyncOptedIn: () => syncOptedIn,
 }));
 
 const { createRoot } = await import("react-dom/client");
@@ -169,6 +180,9 @@ beforeEach(() => {
   authSnapshot = { user: null, loading: true, error: null };
   loadImplementation = async () => null;
   loadCalls.length = 0;
+  saveCalls.length = 0;
+  syncOptedIn = false;
+  Object.defineProperty(browserWindow.navigator, "onLine", { configurable: true, value: true });
   localStorage.clear();
   sessionStorage.clear();
   document.body.replaceChildren();
@@ -179,6 +193,48 @@ afterEach(async () => {
 });
 
 describe("route-level encrypted timetable restoration", () => {
+  test("persists an opted-in timetable edit locally while offline", async () => {
+    authSnapshot = { user: authenticatedUser, loading: false, error: null };
+    syncOptedIn = true;
+    Object.defineProperty(browserWindow.navigator, "onLine", { configurable: true, value: false });
+    await mountRoute();
+    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the empty state");
+
+    const input = container?.querySelector<HTMLInputElement>("#ics-file");
+    expect(input).not.toBeNull();
+    if (!input) throw new Error("The timetable file input was not rendered.");
+    const file = new browserWindow.File(
+      [
+        [
+          "BEGIN:VCALENDAR",
+          "VERSION:2.0",
+          "BEGIN:VEVENT",
+          "UID:offline-edit",
+          "DTSTART:20260907T090000",
+          "DTEND:20260907T100000",
+          "SUMMARY:CSC108H5 LEC 0101",
+          "DESCRIPTION:Introduction to Computer Programming",
+          "LOCATION:MN 1210",
+          "END:VEVENT",
+          "END:VCALENDAR",
+        ].join("\r\n"),
+      ],
+      "offline.ics",
+      { type: "text/calendar" },
+    );
+    Object.defineProperty(input, "files", { configurable: true, value: [file] });
+    await act(async () => input.dispatchEvent(new Event("change", { bubbles: true })));
+    await waitFor(() => pageText().includes("CSC108H5"), "the imported timetable");
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 800)));
+
+    expect(saveCalls).toEqual([
+      {
+        userId: authenticatedUser.id,
+        options: { requireExistingOptIn: true, localOnly: true },
+      },
+    ]);
+  });
+
   test("waits for delayed auth and renders encrypted cloud data without flashing upload", async () => {
     const cloud = meeting({ id: "cloud", courseCode: "CLOUD101H5" });
     const query = deferred<EncryptedFixture | null>();

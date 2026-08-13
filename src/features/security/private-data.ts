@@ -199,7 +199,7 @@ export function createPrivateDataPayload(input: {
   }
   return {
     schemaVersion: PRIVATE_DATA_SCHEMA_VERSION,
-    schedule: serializeSchedule(input.schedule),
+    schedule: deserializeSchedule(serializeSchedule(input.schedule)),
     personalItems: input.personalItems.map(validatePersonalItem),
     preferences: requireCanonicalPreferences(input.preferences),
     gapPreferences: requireCanonicalGapPreferences(input.gapPreferences),

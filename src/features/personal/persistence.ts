@@ -2,11 +2,21 @@ import { PersonalItem } from "@/lib/personal-types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 
 const STORAGE_KEY = "gapwise:personal:v1";
+type BrowserStorage = Pick<Storage, "getItem" | "removeItem">;
 
-export function loadPersonalItems(): PersonalItem[] {
-  if (typeof window === "undefined") return [];
+export function loadPersonalItems(storage?: BrowserStorage): PersonalItem[] {
+  if (typeof window === "undefined" && !storage) return [];
+  const selected = storage ?? window.localStorage;
+  if (isEncryptedPrivateCloudAuthoritative) {
+    try {
+      selected.removeItem(STORAGE_KEY);
+    } catch {
+      // Fail closed even when legacy browser storage cannot be cleaned up.
+    }
+    return [];
+  }
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = selected.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as PersonalItem[];
     return parsed;

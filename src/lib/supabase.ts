@@ -28,14 +28,20 @@ export function createSafeAuthStorage(
   persistentStorage: BrowserStorage | null,
   memory = new Map<string, string>(),
 ): StorageAdapter {
+  const durableKeys = new Set<string>();
   return {
     getItem(key) {
       if (persistentStorage) {
         try {
           const value = persistentStorage.getItem(key);
-          if (value === null) memory.delete(key);
-          else memory.set(key, value);
-          return value;
+          if (value === null || value === "") {
+            memory.delete(key);
+            durableKeys.delete(key);
+          } else {
+            memory.set(key, value);
+            durableKeys.add(key);
+          }
+          return value || null;
         } catch {
           // Fall through to the in-memory session when storage is blocked mid-session.
         }
@@ -47,6 +53,7 @@ export function createSafeAuthStorage(
       if (persistentStorage) {
         try {
           persistentStorage.setItem(key, value);
+          durableKeys.add(key);
         } catch {
           // The active tab remains usable, but the session will be nonpersistent.
         }
@@ -57,8 +64,26 @@ export function createSafeAuthStorage(
       if (persistentStorage) {
         try {
           persistentStorage.removeItem(key);
-        } catch {
-          // Memory has still been cleared, so this page is signed out safely.
+          durableKeys.delete(key);
+        } catch (removalError) {
+          try {
+            persistentStorage.setItem(key, "");
+            if (persistentStorage.getItem(key) === "") {
+              durableKeys.delete(key);
+              return;
+            }
+          } catch {
+            // Report a readable durable session that could not be invalidated.
+          }
+          try {
+            if (persistentStorage.getItem(key) === null) {
+              durableKeys.delete(key);
+              return;
+            }
+          } catch {
+            if (!durableKeys.has(key)) return;
+          }
+          throw removalError;
         }
       }
     },

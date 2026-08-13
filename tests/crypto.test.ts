@@ -122,6 +122,17 @@ describe("versioned private-data encryption", () => {
     ).toThrow("personal item cap");
   });
 
+  test("rejects outgoing schedules that the restore schema cannot reopen", () => {
+    expect(() =>
+      createPrivateDataPayload({
+        schedule: [meeting({ recurrenceIntervalWeeks: 53 })],
+        personalItems: [],
+        preferences: DEFAULT_USER_PREFERENCES,
+        gapPreferences: DEFAULT_GAP_PREFERENCES,
+      }),
+    ).toThrow("unsupported meeting record");
+  });
+
   test("roundtrips schedule, private settings, and custom events", async () => {
     const key = await generateDataEncryptionKey();
     const payload = createPrivateDataPayload({
