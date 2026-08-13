@@ -10,6 +10,7 @@ type StorageAdapter = {
 };
 
 type BrowserStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
+const AUTH_STORAGE_PROBE_KEY = "gapwise:auth-storage-probe";
 
 const viteEnv = (
   import.meta as ImportMeta & {
@@ -90,23 +91,56 @@ export function createSafeAuthStorage(
   };
 }
 
+export function selectDurableAuthStorage(
+  candidates: ReadonlyArray<BrowserStorage | null>,
+): BrowserStorage | null {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    let durable: boolean;
+    try {
+      candidate.setItem(AUTH_STORAGE_PROBE_KEY, "1");
+      durable = candidate.getItem(AUTH_STORAGE_PROBE_KEY) === "1";
+      candidate.removeItem(AUTH_STORAGE_PROBE_KEY);
+      durable = durable && candidate.getItem(AUTH_STORAGE_PROBE_KEY) === null;
+    } catch {
+      durable = false;
+    } finally {
+      try {
+        candidate.removeItem(AUTH_STORAGE_PROBE_KEY);
+      } catch {
+        // An unusable candidate is ignored in favor of the next browser store.
+      }
+    }
+    if (durable) return candidate;
+  }
+  return null;
+}
+
 function persistentBrowserStorage(): BrowserStorage | null {
   if (typeof window === "undefined") return null;
+  const candidates: Array<BrowserStorage | null> = [];
   try {
-    return window.localStorage;
+    candidates.push(window.localStorage);
   } catch {
-    return null;
+    candidates.push(null);
   }
+  try {
+    candidates.push(window.sessionStorage);
+  } catch {
+    candidates.push(null);
+  }
+  return selectDurableAuthStorage(candidates);
 }
 
 let client: SupabaseClient<Database> | null = null;
 let configurationError: string | null = null;
+const authStorage = url && publishableKey ? persistentBrowserStorage() : null;
 
 if (url && publishableKey) {
   try {
     client = createClient<Database>(url, publishableKey, {
       auth: {
-        storage: createSafeAuthStorage(persistentBrowserStorage()),
+        storage: createSafeAuthStorage(authStorage),
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
@@ -119,6 +153,7 @@ if (url && publishableKey) {
 }
 
 export const isSupabaseConfigured = client !== null;
+export const canPersistAuthRedirect = authStorage !== null;
 export const supabaseConfigurationNotice = isSupabaseConfigured
   ? null
   : (configurationError ??
@@ -137,4 +172,10 @@ export class SupabaseUnavailableError extends Error {
 export function requireSupabaseClient(): SupabaseClient<Database> {
   if (!client) throw new SupabaseUnavailableError();
   return client;
+}
+
+export function assertCanPersistAuthRedirect(available = canPersistAuthRedirect): void {
+  if (!available) {
+    throw new Error("Sign-in requires writable local or session browser storage.");
+  }
 }

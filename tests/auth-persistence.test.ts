@@ -2,7 +2,11 @@ import { describe, expect, test } from "bun:test";
 import { createClient, type AuthChangeEvent, type Session, type User } from "@supabase/supabase-js";
 import { completeLocalSignOut } from "@/features/auth/auth-service";
 import { createAuthStore, type AuthClient } from "@/features/auth/auth-store";
-import { createSafeAuthStorage } from "@/lib/supabase";
+import {
+  assertCanPersistAuthRedirect,
+  createSafeAuthStorage,
+  selectDurableAuthStorage,
+} from "@/lib/supabase";
 
 const STORAGE_KEY = "sb-example-auth-token";
 
@@ -59,6 +63,27 @@ function clientWithStorage(
 }
 
 describe("persistent Supabase auth storage", () => {
+  test("uses session storage when local storage cannot preserve a PKCE verifier", () => {
+    const blockedStorage = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+      removeItem: () => {
+        throw new Error("blocked");
+      },
+    };
+    const sessionStorage = new MapStorage();
+
+    expect(selectDurableAuthStorage([blockedStorage, sessionStorage])).toBe(sessionStorage);
+    expect(selectDurableAuthStorage([blockedStorage])).toBeNull();
+    expect(() => assertCanPersistAuthRedirect(false)).toThrow(
+      "Sign-in requires writable local or session browser storage.",
+    );
+  });
+
   test("attempts local session removal even when private-state cleanup fails", async () => {
     const cleanupError = new Error("cleanup failed");
     let sessionRemovalCalls = 0;

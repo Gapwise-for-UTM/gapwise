@@ -23,6 +23,7 @@ describe("OAuth authentication", () => {
     expect(serviceSource).toContain('provider: "azure"');
     expect(serviceSource).toContain('scopes: "email"');
     expect(serviceSource).toContain("redirectTo: window.location.origin");
+    expect(serviceSource).toContain("assertCanPersistAuthRedirect()");
     expect(clientSource).toContain("detectSessionInUrl: true");
     expect(clientSource).toContain('flowType: "pkce"');
   });
