@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BubbleTabs } from "./BubbleTabs";
-import { CampusMap } from "./CampusMap";
+import { CampusExplorer } from "./CampusExplorer";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
 import { MobileDayRoute } from "@/components/mobile/MobileDayRoute";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
@@ -34,6 +34,10 @@ type DaySegment = {
   route: TransitionRoute;
 };
 
+const EMPTY_MEETINGS: Meeting[] = [];
+const EMPTY_SEGMENTS: DaySegment[] = [];
+const ignoreMapSelection = () => undefined;
+
 function secondsLabel(seconds: number): string {
   return formatDuration(Math.max(1, Math.ceil(seconds / 60)));
 }
@@ -50,6 +54,8 @@ export function DayRoute({
   onPreferencesChange,
   user,
   planTransition,
+  selectedBuildingCode,
+  onSelectBuilding,
 }: {
   meetings: Meeting[];
   term: Term;
@@ -58,6 +64,8 @@ export function DayRoute({
   onPreferencesChange: (preferences: UserPreferences) => void;
   user: User | null;
   planTransition: TransitionPlanner;
+  selectedBuildingCode: string | null;
+  onSelectBuilding: (code: string | null) => void;
 }) {
   const isMobile = useIsMobile();
   const availableTerms = useMemo(
@@ -127,14 +135,22 @@ export function DayRoute({
     setSelectedSegmentId(segments[0]?.id ?? null);
   }, [dayMeetings, segments]);
 
-  const selectMeeting = useCallback((id: string) => {
-    setSelectedMeetingId(id);
-    setSelectedSegmentId(null);
-  }, []);
-  const selectSegment = useCallback((id: string) => {
-    setSelectedSegmentId(id);
-    setSelectedMeetingId(null);
-  }, []);
+  const selectMeeting = useCallback(
+    (id: string) => {
+      setSelectedMeetingId(id);
+      setSelectedSegmentId(null);
+      onSelectBuilding(null);
+    },
+    [onSelectBuilding],
+  );
+  const selectSegment = useCallback(
+    (id: string) => {
+      setSelectedSegmentId(id);
+      setSelectedMeetingId(null);
+      onSelectBuilding(null);
+    },
+    [onSelectBuilding],
+  );
   const highlightBuilding = useCallback((code: string | null) => {
     setHoveredBuildingCode(code);
   }, []);
@@ -156,6 +172,27 @@ export function DayRoute({
         preferences={preferences}
         onPreferencesChange={onPreferencesChange}
         planTransition={planTransition}
+        selectedBuildingCode={selectedBuildingCode}
+        onSelectBuilding={onSelectBuilding}
+      />
+    );
+  }
+
+  if (meetings.length === 0) {
+    return (
+      <CampusExplorer
+        meetings={EMPTY_MEETINGS}
+        segments={EMPTY_SEGMENTS}
+        selectedMeetingId={null}
+        selectedSegmentId={null}
+        onSelectMeeting={ignoreMapSelection}
+        onSelectSegment={ignoreMapSelection}
+        hoveredBuildingCode={hoveredBuildingCode}
+        onHoverBuilding={highlightBuilding}
+        selectedBuildingCode={selectedBuildingCode}
+        onSelectBuilding={onSelectBuilding}
+        home={null}
+        className="h-[calc(100dvh-13rem)] min-h-[32rem] max-h-[42rem]"
       />
     );
   }
@@ -291,11 +328,29 @@ export function DayRoute({
       </section>
 
       {dayMeetings.length === 0 ? (
-        <div className="empty-state surface p-8 text-center">
-          <h2 className="font-display text-xl font-semibold tracking-tight">
-            No classes on {weekday}
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">Choose another weekday or term.</p>
+        <div className="space-y-3">
+          <div className="empty-state surface p-6 text-center">
+            <h2 className="font-display text-xl font-semibold tracking-tight">
+              No classes on {weekday}
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Choose another weekday, or keep exploring the campus map.
+            </p>
+          </div>
+          <CampusExplorer
+            meetings={EMPTY_MEETINGS}
+            segments={EMPTY_SEGMENTS}
+            selectedMeetingId={null}
+            selectedSegmentId={null}
+            onSelectMeeting={ignoreMapSelection}
+            onSelectSegment={ignoreMapSelection}
+            hoveredBuildingCode={hoveredBuildingCode}
+            onHoverBuilding={highlightBuilding}
+            selectedBuildingCode={selectedBuildingCode}
+            onSelectBuilding={onSelectBuilding}
+            home={null}
+            className="h-[30rem] lg:h-[36rem]"
+          />
         </div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.65fr)]">
@@ -403,7 +458,7 @@ export function DayRoute({
           </section>
 
           <div className="space-y-3">
-            <CampusMap
+            <CampusExplorer
               meetings={dayMeetings}
               segments={segments}
               selectedMeetingId={selectedMeetingId}
@@ -412,6 +467,8 @@ export function DayRoute({
               onSelectSegment={selectSegment}
               hoveredBuildingCode={hoveredBuildingCode}
               onHoverBuilding={highlightBuilding}
+              selectedBuildingCode={selectedBuildingCode}
+              onSelectBuilding={onSelectBuilding}
               home={mapHome}
               className="h-[30rem] lg:h-[36rem]"
             />

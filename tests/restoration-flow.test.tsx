@@ -35,6 +35,7 @@ Object.assign(browserGlobals, {
   getComputedStyle: browserWindow.getComputedStyle.bind(browserWindow),
   requestAnimationFrame: browserWindow.requestAnimationFrame.bind(browserWindow),
   cancelAnimationFrame: browserWindow.cancelAnimationFrame.bind(browserWindow),
+  scrollTo: () => undefined,
   IS_REACT_ACT_ENVIRONMENT: true,
 });
 
@@ -123,12 +124,12 @@ mock.module("@/features/security/guest-timetable", () => ({
 }));
 
 const { createRoot } = await import("react-dom/client");
-const { Route } = await import("@/routes/index");
-const Index = Route.options.component;
-if (!Index) throw new Error("The index route component is not configured.");
+const { RouterProvider, createMemoryHistory } = await import("@tanstack/react-router");
+const { getRouter } = await import("@/router");
 
 let root: ReturnType<typeof createRoot> | null = null;
 let container: HTMLDivElement | null = null;
+let testRouter: ReturnType<typeof getRouter> | null = null;
 
 function pageText() {
   return container?.textContent ?? "";
@@ -155,16 +156,18 @@ async function setAuth(snapshot: AuthSnapshot) {
   });
 }
 
-async function mountRoute() {
+async function mountRoute(initialEntry = "/") {
   container = document.createElement("div") as HTMLDivElement;
   document.body.append(container);
   root = createRoot(container);
+  testRouter = getRouter(createMemoryHistory({ initialEntries: [initialEntry] }));
   await act(async () => {
     root!.render(
       <StrictMode>
-        <Index />
+        <RouterProvider router={testRouter!} />
       </StrictMode>,
     );
+    await testRouter!.load();
   });
 }
 
@@ -173,6 +176,7 @@ async function unmountRoute() {
     await act(async () => root?.unmount());
     root = null;
   }
+  testRouter = null;
   container?.remove();
   container = null;
 }
@@ -299,7 +303,7 @@ describe("route-level encrypted timetable restoration", () => {
     await act(async () =>
       removeButton?.dispatchEvent(new browserWindow.MouseEvent("click", { bubbles: true })),
     );
-    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "local removal");
+    await waitFor(() => pageText().includes("Add your timetable"), "local removal");
     expect(clearLocalCalls).toEqual([authenticatedUser.id]);
 
     await unmountRoute();
@@ -378,7 +382,7 @@ describe("route-level encrypted timetable restoration", () => {
     await mountRoute();
     await waitFor(() => pageText().includes("SIGNOUT101H5"), "the encrypted restore");
     await setAuth({ user: null, loading: false, error: null });
-    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the signed-out state");
+    await waitFor(() => pageText().includes("Add your timetable"), "the signed-out state");
     expect(pageText()).not.toContain("SIGNOUT101H5");
   });
 

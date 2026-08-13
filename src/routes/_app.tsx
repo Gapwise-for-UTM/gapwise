@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarRange,
+  CalendarClock,
   Download,
   FileCheck2,
   LayoutGrid,
@@ -73,26 +74,35 @@ import {
   isCloudRestoreSuppressed,
   setCloudRestoreSuppressed,
 } from "@/features/sync/restore-preference";
+import { getRecognizedBuilding } from "@/data/utm/building-registry";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
 );
+const EMPTY_MEETINGS: Meeting[] = [];
 
-const TITLE = "Gapwise for UTM — Smarter Campus Gaps";
-const DESCRIPTION =
-  "An independent student project for finding useful UTM timetable gaps and campus routes, with private browser parsing and optional cloud sync.";
-
-export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: TITLE },
-      { name: "description", content: DESCRIPTION },
-      { property: "og:title", content: TITLE },
-      { property: "og:description", content: DESCRIPTION },
-    ],
-  }),
-  component: Index,
+export const Route = createFileRoute("/_app")({
+  component: AppLayout,
 });
+
+type AppDestination = "home" | MobileTab;
+
+const DESTINATION_PATHS = {
+  home: "/",
+  today: "/today",
+  timetable: "/timetable",
+  gaps: "/gaps",
+  route: "/route",
+} as const satisfies Record<AppDestination, string>;
+
+function destinationFromPath(pathname: string): AppDestination {
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (normalized === "/today") return "today";
+  if (normalized === "/timetable") return "timetable";
+  if (normalized === "/gaps") return "gaps";
+  if (normalized === "/route") return "route";
+  return "home";
+}
 
 const STEPS = [
   {
@@ -112,7 +122,72 @@ const STEPS = [
   },
 ];
 
-function Index() {
+function ProductEmptyState({
+  destination,
+  loading,
+  onImport,
+  onDemo,
+}: {
+  destination: Exclude<AppDestination, "home" | "route">;
+  loading: boolean;
+  onImport: () => void;
+  onDemo: () => void;
+}) {
+  const title =
+    destination === "gaps"
+      ? "Add a timetable to plan your gaps"
+      : destination === "today"
+        ? "Add a timetable to see today"
+        : "Add your timetable";
+  const description =
+    destination === "gaps"
+      ? "Gapwise needs your class times to identify useful windows between meetings."
+      : destination === "today"
+        ? "Import your ACORN calendar to see the next class, current gap, and leave-by guidance."
+        : "Import your ACORN calendar to build a private weekly view on this device.";
+
+  return (
+    <section className="empty-state surface rise-in mx-auto flex max-w-2xl flex-col items-center p-8 text-center sm:p-12">
+      <span className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8">
+        <CalendarRange className="h-6 w-6 text-accent" aria-hidden="true" />
+      </span>
+      <p className="eyebrow mt-5 text-accent">Private browser import</p>
+      <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight">{title}</h1>
+      <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{description}</p>
+      <div className="mt-6 flex w-full max-w-sm flex-col gap-2 sm:flex-row sm:justify-center">
+        <button
+          type="button"
+          disabled={loading}
+          onClick={onImport}
+          className="button-primary inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
+        >
+          <Upload className="h-4 w-4" aria-hidden="true" />
+          {loading ? "Importing…" : "Import ACORN calendar"}
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          onClick={onDemo}
+          className="button-secondary min-h-11 px-4 text-sm font-semibold disabled:opacity-60"
+        >
+          Try a demo
+        </button>
+      </div>
+      <Link to="/" className="mt-5 text-sm font-semibold text-accent hover:underline">
+        Back to Gapwise home
+      </Link>
+    </section>
+  );
+}
+
+function AppLayout() {
+  const navigate = useNavigate();
+  const routerLocation = useRouterState({ select: (state) => state.location });
+  const destination = destinationFromPath(routerLocation.pathname);
+  const selectedBuildingCode =
+    destination === "route" && typeof routerLocation.search["building"] === "string"
+      ? (getRecognizedBuilding(routerLocation.search["building"])?.code ?? null)
+      : null;
   const { theme, toggleTheme } = useTheme();
   const { dismissed, dismiss } = useIntroDismissed();
   const { user, loading: authLoading, error: authError } = useAuth();
@@ -123,7 +198,6 @@ function Index() {
   const [loading, setLoading] = useState(false);
   const [remember, setRemember] = useState(false);
   const [term, setTerm] = useState<Term>("Fall");
-  const [view, setView] = useState<"timetable" | "gaps" | "route">("timetable");
   const [openedViews, setOpenedViews] = useState({ gaps: false, route: false });
   const [isDemo, setIsDemo] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(loadLocalUserPreferences);
@@ -146,7 +220,6 @@ function Index() {
   );
   const [isScrolled, setIsScrolled] = useState(false);
   const isMobile = useIsMobile();
-  const [mobileTab, setMobileTab] = useState<MobileTab>("today");
   const [moreOpen, setMoreOpen] = useState(false);
   const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
   const latestMeetings = useRef<Meeting[] | null>(meetings);
@@ -404,6 +477,11 @@ function Index() {
   useEffect(() => {
     if (meetings?.length) setTerm(chooseDefaultTerm(meetings, new Date()));
   }, [meetings]);
+
+  useEffect(() => {
+    if (destination !== "home" || !meetings?.length) return;
+    void navigate({ to: "/timetable", replace: true });
+  }, [destination, meetings, navigate]);
 
   useEffect(() => {
     if (
@@ -690,12 +768,35 @@ function Index() {
     saveGapPreferences(sanitized);
   }
 
-  const showView = useCallback((nextView: "timetable" | "gaps" | "route") => {
-    if (nextView !== "timetable") {
-      setOpenedViews((current) => (current[nextView] ? current : { ...current, [nextView]: true }));
-    }
-    setView(nextView);
-  }, []);
+  const showView = useCallback(
+    (nextView: "timetable" | "gaps" | "route") => {
+      if (nextView !== "timetable") {
+        setOpenedViews((current) =>
+          current[nextView] ? current : { ...current, [nextView]: true },
+        );
+      }
+      void navigate({ to: DESTINATION_PATHS[nextView] });
+    },
+    [navigate],
+  );
+
+  useEffect(() => {
+    if (destination !== "gaps" && destination !== "route") return;
+    setOpenedViews((current) =>
+      current[destination] ? current : { ...current, [destination]: true },
+    );
+  }, [destination]);
+
+  const selectBuilding = useCallback(
+    (code: string | null) => {
+      void navigate({
+        to: "/route",
+        search: code ? { building: code } : {},
+        replace: true,
+      });
+    },
+    [navigate],
+  );
 
   const openGapPlan = useCallback(() => showView("gaps"), [showView]);
   const openDayRoute = useCallback(() => showView("route"), [showView]);
@@ -722,20 +823,15 @@ function Index() {
     planTransition,
   });
 
-  if (isMobile && meetings) {
+  const mobileTab: MobileTab = destination === "home" ? "today" : destination;
+  const view: "timetable" | "gaps" | "route" =
+    destination === "gaps" || destination === "route" ? destination : "timetable";
+
+  if (isMobile && destination !== "home") {
     return (
       <>
-        <MobileShell
-          tab={mobileTab}
-          onTabChange={(nextTab) => {
-            setMobileTab(nextTab);
-            if (nextTab === "timetable") showView("timetable");
-            if (nextTab === "route") showView("route");
-            if (nextTab === "gaps") showView("gaps");
-          }}
-          onOpenMore={() => setMoreOpen(true)}
-          moreOpen={moreOpen}
-        >
+        <Outlet />
+        <MobileShell tab={mobileTab} onOpenMore={() => setMoreOpen(true)} moreOpen={moreOpen}>
           <input
             ref={replacementInputRef}
             type="file"
@@ -750,7 +846,15 @@ function Index() {
           {restorationMessage ? (
             <p className="surface mb-4 p-4 text-sm text-muted-foreground">{restorationMessage}</p>
           ) : null}
-          {mobileTab === "today" ? (
+          {!meetings && mobileTab !== "route" ? (
+            <ProductEmptyState
+              destination={mobileTab}
+              loading={loading}
+              onImport={() => replacementInputRef.current?.click()}
+              onDemo={loadDemo}
+            />
+          ) : null}
+          {meetings && mobileTab === "today" ? (
             <MobileToday
               state={todayState}
               now={todayNow}
@@ -760,15 +864,13 @@ function Index() {
               isDemo={isDemo}
               onOpenGapPlan={() => {
                 openGapPlan();
-                setMobileTab("gaps");
               }}
               onOpenDayRoute={() => {
                 openDayRoute();
-                setMobileTab("route");
               }}
             />
           ) : null}
-          {mobileTab === "timetable" ? (
+          {meetings && mobileTab === "timetable" ? (
             <MobileTimetable
               meetings={termMeetings}
               term={term}
@@ -777,11 +879,9 @@ function Index() {
               onTermChange={setTerm}
               onOpenGapPlan={() => {
                 openGapPlan();
-                setMobileTab("gaps");
               }}
               onRouteToMeeting={() => {
                 openDayRoute();
-                setMobileTab("route");
               }}
               onAddPersonal={() => {
                 setEditingPersonal(null);
@@ -795,7 +895,7 @@ function Index() {
               onDeletePersonal={deletePersonal}
             />
           ) : null}
-          {mobileTab === "gaps" ? (
+          {meetings && mobileTab === "gaps" ? (
             <div className="dot-field">
               <GapPlan
                 gaps={gaps}
@@ -820,13 +920,15 @@ function Index() {
               }
             >
               <DayRoute
-                meetings={meetings}
+                meetings={meetings ?? EMPTY_MEETINGS}
                 term={term}
                 onTermChange={setTerm}
                 preferences={preferences}
                 onPreferencesChange={updateUserPreferences}
                 user={user}
                 planTransition={planTransition}
+                selectedBuildingCode={selectedBuildingCode}
+                onSelectBuilding={selectBuilding}
               />
             </Suspense>
           ) : null}
@@ -835,6 +937,7 @@ function Index() {
           open={moreOpen}
           onOpenChange={setMoreOpen}
           loading={loading}
+          canRemove={Boolean(meetings)}
           onUpdateTimetable={() => replacementInputRef.current?.click()}
           onRemoveTimetable={() => {
             setMoreOpen(false);
@@ -868,13 +971,14 @@ function Index() {
 
   return (
     <div className="app-shell min-h-screen bg-background text-foreground">
+      <Outlet />
       <header
         className="app-nav sticky top-0 z-30 border-b"
         data-scrolled={isScrolled ? "true" : "false"}
       >
         <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-          <a
-            href="/"
+          <Link
+            to="/"
             aria-label="Gapwise for UTM home"
             className="brand-lockup group flex min-w-0 items-center gap-3"
           >
@@ -886,7 +990,7 @@ function Index() {
                 Gapwise <span className="brand-utm-pill">UTM</span>
               </p>
             </div>
-          </a>
+          </Link>
 
           <div className="flex items-center gap-2">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -905,17 +1009,18 @@ function Index() {
       </header>
 
       <main
-        className={`mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 ${!meetings ? "landing-stage" : ""}`}
+        className={`mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 ${destination === "home" ? "landing-stage" : ""}`}
       >
-        {!meetings ? <div className="topography-field" aria-hidden="true" /> : null}
+        {destination === "home" ? <div className="topography-field" aria-hidden="true" /> : null}
         {(authLoading || guestRestoration === null || restoration === "checking-cloud") &&
-        !meetings ? (
+        !meetings &&
+        destination !== "route" ? (
           <div className="py-16" role="status" aria-live="polite">
             <div className="h-4 w-36 animate-pulse rounded bg-muted" />
             <div className="mt-4 h-24 max-w-xl animate-pulse rounded-xl bg-muted" />
             <span className="sr-only">Checking for your timetable…</span>
           </div>
-        ) : !meetings ? (
+        ) : destination === "home" ? (
           <>
             <div className="landing-bento rise-in">
               <section className="bento-cell bento-hero flex flex-col p-7 text-hero-foreground sm:p-11 lg:col-span-7 lg:p-14">
@@ -1037,6 +1142,59 @@ function Index() {
               />
             </div>
           </>
+        ) : !meetings && destination !== "route" ? (
+          <>
+            <input
+              ref={replacementInputRef}
+              id="product-ics-file"
+              type="file"
+              accept=".ics,text/calendar"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void handleFile(file);
+                event.target.value = "";
+              }}
+            />
+            <ProductEmptyState
+              destination={destination}
+              loading={loading}
+              onImport={() => replacementInputRef.current?.click()}
+              onDemo={loadDemo}
+            />
+          </>
+        ) : !meetings ? (
+          <>
+            <section className="rise-in mb-5">
+              <p className="eyebrow text-accent">UTM campus explorer</p>
+              <h1 className="mt-2 font-display text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
+                Find your way around campus
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Search or select a mapped UTM building. You can explore campus without uploading a
+                timetable.
+              </p>
+            </section>
+            <Suspense
+              fallback={
+                <div className="surface h-96 animate-pulse p-6 text-sm text-muted-foreground">
+                  Loading the campus explorer…
+                </div>
+              }
+            >
+              <DayRoute
+                meetings={EMPTY_MEETINGS}
+                term={term}
+                onTermChange={setTerm}
+                preferences={preferences}
+                onPreferencesChange={updateUserPreferences}
+                user={user}
+                planTransition={planTransition}
+                selectedBuildingCode={selectedBuildingCode}
+                onSelectBuilding={selectBuilding}
+              />
+            </Suspense>
+          </>
         ) : (
           <>
             {!dismissed ? (
@@ -1064,7 +1222,15 @@ function Index() {
                   {isDemo ? "Sample data" : "Campus day plan"}
                 </p>
                 <h1 className="mt-1.5 font-display text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
-                  {isDemo ? "Demo timetable" : "Your timetable"}
+                  {destination === "today"
+                    ? "Today"
+                    : destination === "gaps"
+                      ? "Gap plan"
+                      : destination === "route"
+                        ? "Campus route"
+                        : isDemo
+                          ? "Demo timetable"
+                          : "Your timetable"}
                 </h1>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {termMeetings.length} meetings in {term} · {gaps.length} gaps detected
@@ -1140,6 +1306,11 @@ function Index() {
                 label="View mode"
                 items={[
                   {
+                    value: "today" as const,
+                    label: "Today",
+                    icon: <CalendarClock className="h-4 w-4 shrink-0" aria-hidden="true" />,
+                  },
+                  {
                     value: "timetable" as const,
                     ariaLabel: "Weekly timetable",
                     label: (
@@ -1160,14 +1331,18 @@ function Index() {
                     icon: <MapPinned className="h-4 w-4 shrink-0" aria-hidden="true" />,
                   },
                 ]}
-                value={view}
-                onChange={showView}
-                className="w-full sm:w-[30rem]"
+                value={destination}
+                onChange={(next) => {
+                  if (next === "today") void navigate({ to: "/today" });
+                  else showView(next);
+                }}
+                className="w-full sm:w-[36rem]"
               />
             </div>
 
             <div className="mt-6">
-              {termMeetings.length === 0 ? (
+              {destination === "today" ? null : termMeetings.length === 0 &&
+                destination !== "route" ? (
                 <div className="empty-state surface flex flex-col items-center p-10 text-center sm:p-14">
                   <span className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8">
                     <CalendarRange className="h-6 w-6 text-accent" aria-hidden="true" />
@@ -1182,7 +1357,7 @@ function Index() {
                 </div>
               ) : (
                 <>
-                  <div hidden={view !== "timetable"}>
+                  <div hidden={destination !== "timetable"}>
                     <TimetableGrid
                       meetings={termMeetings}
                       gaps={gaps}
@@ -1295,6 +1470,8 @@ function Index() {
                           onPreferencesChange={updateUserPreferences}
                           user={user}
                           planTransition={planTransition}
+                          selectedBuildingCode={selectedBuildingCode}
+                          onSelectBuilding={selectBuilding}
                         />
                       </Suspense>
                     </div>

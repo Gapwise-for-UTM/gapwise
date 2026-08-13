@@ -89,7 +89,7 @@ describe("account deletion and encrypted-only cloud security", () => {
 
   test("authoritative encrypted mode clears cross-account and plaintext browser state", async () => {
     const [route, preferences, remembered] = await Promise.all([
-      readFile("src/routes/index.tsx", "utf8"),
+      readFile("src/routes/_app.tsx", "utf8"),
       readFile("src/features/sync/preferences.ts", "utf8"),
       readFile("src/hooks/use-preferences.ts", "utf8"),
     ]);

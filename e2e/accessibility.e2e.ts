@@ -88,3 +88,21 @@ test("reduced motion disables monument auto rotation", async ({ page }, testInfo
   await expect(page.locator("model-viewer")).not.toHaveAttribute("auto-rotate");
   guard.assertClean();
 });
+
+test("campus explorer has an accessible keyboard path with reduced motion", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "map accessibility gate runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/route");
+  const search = page.getByRole("searchbox", { name: "Search UTM buildings" });
+  await search.focus();
+  await search.fill("Instructional Centre");
+  await expect(page.getByRole("button", { name: /IB Instructional Centre/ })).toBeVisible();
+  await search.press("Enter");
+  await expect(page.getByRole("heading", { name: "Instructional Centre" })).toBeVisible();
+  await expectNoSeriousAccessibilityViolations(page);
+  guard.assertClean();
+});
