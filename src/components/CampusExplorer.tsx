@@ -142,11 +142,14 @@ export function CampusExplorer({
         ) : null}
       </div>
 
+      <p className="sr-only" role="status" aria-live="polite">
+        {details ? `${details.building.code} ${details.building.name} selected` : ""}
+      </p>
+
       {details ? (
         <section
           className="campus-building-card absolute left-3 top-[4.75rem] z-10 max-h-[calc(100%-5.5rem)] w-[min(23rem,calc(100%-1.5rem))] overflow-y-auto rounded-xl border border-border bg-popover/96 p-4 text-popover-foreground shadow-xl backdrop-blur"
           aria-labelledby="selected-building-title"
-          aria-live="polite"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">

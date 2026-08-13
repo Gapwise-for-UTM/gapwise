@@ -142,6 +142,16 @@ test("route-driven navigation preserves a loaded timetable through history", asy
   await page.goForward();
   await expect(page).toHaveURL(/\/route\/?$/);
   await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
+
+  await page.getByRole("link", { name: "Gapwise for UTM home" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/route\/?$/);
+  await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
   guard.assertClean();
 });
 

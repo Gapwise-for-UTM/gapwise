@@ -410,17 +410,17 @@ export function MobileDayRoute({
     (id: string) => {
       setSelectedMeetingId(id);
       setSelectedSegmentId(null);
-      onSelectBuilding(null);
+      if (selectedBuildingCode) onSelectBuilding(null);
     },
-    [onSelectBuilding],
+    [onSelectBuilding, selectedBuildingCode],
   );
   const selectSegment = useCallback(
     (id: string) => {
       setSelectedSegmentId(id);
       setSelectedMeetingId(null);
-      onSelectBuilding(null);
+      if (selectedBuildingCode) onSelectBuilding(null);
     },
-    [onSelectBuilding],
+    [onSelectBuilding, selectedBuildingCode],
   );
   const selectedSegment = segments.find((segment) => segment.id === selectedSegmentId) ?? null;
 

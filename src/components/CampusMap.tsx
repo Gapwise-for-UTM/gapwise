@@ -49,6 +49,10 @@ const FIT_BOUNDS_MAX_ZOOM = 17;
 const ROUTE_DRAW_DURATION_MS = 1_180;
 const BUILDING_HOVER_DURATION_MS = 200;
 const MAP_BUILDING_HIT_RADIUS_PX = 160;
+// A basemap polygon was hit but its label was not recognized; match its nearest registry point.
+const BUILDING_POLYGON_FALLBACK_RADIUS_PX = 160;
+// Allow a forgiving tap immediately outside a rendered building polygon.
+const BUILDING_NEARBY_TAP_RADIUS_PX = 28;
 const BUILDING_HOVER_SOURCE_ID = "gapwise-building-hover";
 const BUILDING_HOVER_FILL_LAYER_ID = "gapwise-building-hover-fill";
 const BUILDING_HOVER_LINE_LAYER_ID = "gapwise-building-hover-line";
@@ -571,14 +575,10 @@ function syncMapData(
     markerButton.textContent = String(index + 1);
     markerButton.title = `${meeting.courseCode} at ${building.code}`;
     markerButton.setAttribute("aria-label", `Select ${meeting.courseCode}, stop ${index + 1}`);
-    markerButton.addEventListener(
-      "click",
-      (event) => {
-        event.stopPropagation();
-        data.onSelectMeeting(meeting.id);
-      },
-      { once: true },
-    );
+    markerButton.addEventListener("click", (event) => {
+      event.stopPropagation();
+      data.onSelectMeeting(meeting.id);
+    });
     markerButton.addEventListener("mouseenter", () => data.onHoverBuilding(building.code));
     markerButton.addEventListener("mouseleave", () => data.onHoverBuilding(null));
     markers.push(
@@ -903,7 +903,13 @@ export function CampusMap({
               : [];
           const code =
             features.map(featureBuildingCode).find((candidate) => candidate !== null) ??
-            nearestCampusBuildingCode(map, event.point, features.length > 0 ? 160 : 28);
+            nearestCampusBuildingCode(
+              map,
+              event.point,
+              features.length > 0
+                ? BUILDING_POLYGON_FALLBACK_RADIUS_PX
+                : BUILDING_NEARBY_TAP_RADIUS_PX,
+            );
           if (code) latestData.current.onSelectBuilding(code);
         });
         map.on("error", () => {

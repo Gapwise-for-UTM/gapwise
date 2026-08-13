@@ -106,11 +106,6 @@ export function searchCampusBuildings(query: string, limit = 6): BuildingSearchR
     .slice(0, Math.max(0, limit));
 }
 
-export function normalizePublicBuildingCode(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  return getRecognizedBuilding(value)?.code ?? null;
-}
-
 function latestDate(entrances: BuildingEntrance[]): string | null {
   const dates = entrances
     .map((entrance) => entrance.metadata.lastVerified)

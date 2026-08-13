@@ -74,7 +74,6 @@ import {
   isCloudRestoreSuppressed,
   setCloudRestoreSuppressed,
 } from "@/features/sync/restore-preference";
-import { getRecognizedBuilding } from "@/data/utm/building-registry";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -186,7 +185,7 @@ function AppLayout() {
   const destination = destinationFromPath(routerLocation.pathname);
   const selectedBuildingCode =
     destination === "route" && typeof routerLocation.search["building"] === "string"
-      ? (getRecognizedBuilding(routerLocation.search["building"])?.code ?? null)
+      ? routerLocation.search["building"]
       : null;
   const { theme, toggleTheme } = useTheme();
   const { dismissed, dismiss } = useIntroDismissed();
@@ -229,6 +228,7 @@ function AppLayout() {
   const previousUser = useRef<string | null>(null);
   const replacementInputRef = useRef<HTMLInputElement>(null);
   const lastEncryptedFingerprint = useRef<string | null>(null);
+  const allowInitialHomeRedirect = useRef(destination === "home");
   const authenticatedUserId = user?.id ?? null;
   const planTransition = useMemo(
     () => createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings ?? []),
@@ -479,7 +479,13 @@ function AppLayout() {
   }, [meetings]);
 
   useEffect(() => {
-    if (destination !== "home" || !meetings?.length) return;
+    if (!allowInitialHomeRedirect.current) return;
+    if (destination !== "home") {
+      allowInitialHomeRedirect.current = false;
+      return;
+    }
+    if (!meetings?.length) return;
+    allowInitialHomeRedirect.current = false;
     void navigate({ to: "/timetable", replace: true });
   }, [destination, meetings, navigate]);
 
@@ -789,13 +795,14 @@ function AppLayout() {
 
   const selectBuilding = useCallback(
     (code: string | null) => {
+      if (code === null && selectedBuildingCode === null) return;
       void navigate({
         to: "/route",
         search: code ? { building: code } : {},
-        replace: true,
+        replace: destination === "route",
       });
     },
-    [navigate],
+    [destination, navigate, selectedBuildingCode],
   );
 
   const openGapPlan = useCallback(() => showView("gaps"), [showView]);

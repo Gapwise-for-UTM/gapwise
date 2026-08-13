@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { getRecognizedBuilding } from "@/data/utm/building-registry";
+import { normalizePublicBuildingCode } from "@/data/utm/building-registry";
 
 export function validateRouteSearch(search: Record<string, unknown>) {
   const rawBuilding = search["building"];
-  const building =
-    typeof rawBuilding === "string" ? getRecognizedBuilding(rawBuilding)?.code : undefined;
+  const building = normalizePublicBuildingCode(rawBuilding) ?? undefined;
   return building ? { building } : {};
 }
 

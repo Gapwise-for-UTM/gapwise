@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
   getBuildingExplorerDetails,
-  normalizePublicBuildingCode,
   searchCampusBuildings,
 } from "@/features/routing/building-explorer";
+import { normalizePublicBuildingCode } from "@/data/utm/building-registry";
 import { validateRouteSearch } from "@/routes/_app/route/index";
 
 describe("UTM campus building explorer", () => {
