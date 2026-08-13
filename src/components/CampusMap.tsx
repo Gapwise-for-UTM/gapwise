@@ -13,6 +13,7 @@ import {
 import { isResidenceMeeting } from "@/features/routing/residence";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { Meeting } from "@/lib/timetable-types";
+import type { BuildingEntrance } from "@/data/utm/routing-buildings";
 
 type MapSegment = {
   id: string;
@@ -22,6 +23,13 @@ type MapSegment = {
 };
 
 type MapHome = { buildingCode: string; label: string };
+
+type EntranceMarkerRecord = {
+  id: string;
+  entrance: BuildingEntrance;
+  marker: Marker;
+  element: HTMLButtonElement;
+};
 
 export type MapFocusPadding = {
   top: number;
@@ -48,7 +56,22 @@ export type CampusMapProps = {
   className?: string;
 };
 
-type MapData = Omit<CampusMapProps, "className">;
+type MapData = {
+  meetings: Meeting[];
+  segments: MapSegment[];
+  selectedMeetingId: string | null;
+  selectedSegmentId: string | null;
+  onSelectMeeting: (id: string) => void;
+  onSelectSegment: (id: string) => void;
+  hoveredBuildingCode: string | null;
+  onHoverBuilding: (code: string | null) => void;
+  selectedBuildingCode: string | null;
+  onSelectBuilding: (code: string) => void;
+  activeEntranceId: string | null | undefined;
+  onActiveEntranceChange: ((id: string | null) => void) | undefined;
+  focusPadding: MapFocusPadding | undefined;
+  home: MapHome | null;
+};
 
 type MapLibreModule = typeof import("maplibre-gl");
 type MapStatus = "loading" | "ready" | "error" | "unsupported";
@@ -743,60 +766,98 @@ function entranceAccessibilityLabel(accessibility: string) {
   return "accessibility unknown";
 }
 
+function applyEntranceMarkerActiveState(
+  element: HTMLButtonElement,
+  entrance: BuildingEntrance,
+  active: boolean,
+) {
+  element.className = `map-entrance-marker${active ? " is-selected" : ""}`;
+  element.style.width = active ? "34px" : "30px";
+  element.style.height = active ? "34px" : "30px";
+  const notAccessible = entrance.accessibility === "not_accessible";
+  element.style.border = `${active ? 3 : 2}px ${entrance.kind === "approach" ? "dashed" : "solid"} ${notAccessible ? "var(--color-destructive)" : "var(--color-accent)"}`;
+  element.style.transform = active ? "scale(1.06)" : "";
+}
+
 function syncEntranceMarkers(
   map: MapLibreMap,
   maplibregl: MapLibreModule,
   buildingCode: string | null,
   activeEntranceId: string | null,
   onActiveEntranceChange: ((id: string | null) => void) | undefined,
-  markers: Marker[],
+  markers: EntranceMarkerRecord[],
   theme: MapTheme,
 ) {
-  for (const marker of markers) marker.remove();
-  markers.length = 0;
   const building = getCampusBuilding(buildingCode);
+  const targetEntrances = building?.entrances ?? [];
+  const targetIds = new Set(targetEntrances.map((entrance) => entrance.id));
+
+  // Remove markers no longer in the target list
+  for (let index = markers.length - 1; index >= 0; index -= 1) {
+    const record = markers[index];
+    if (!record || !targetIds.has(record.id)) {
+      record?.marker.remove();
+      markers.splice(index, 1);
+    }
+  }
+
   if (!building) return;
 
-  for (const entrance of building.entrances) {
-    const markerButton = document.createElement("button");
-    markerButton.type = "button";
-    const active = entrance.id === activeEntranceId;
-    const accessible = entrance.accessibility === "accessible";
-    const notAccessible = entrance.accessibility === "not_accessible";
-    markerButton.className = `map-entrance-marker${active ? " is-selected" : ""}`;
-    markerButton.textContent = accessible ? "♿" : entrance.kind === "approach" ? "A" : "E";
-    markerButton.title = `${entrance.label} · ${entranceAccessibilityLabel(entrance.accessibility)}`;
-    markerButton.setAttribute(
-      "aria-label",
-      `${entrance.label}, ${entrance.kind === "approach" ? "mapped approach" : "mapped entrance"}, ${entranceAccessibilityLabel(entrance.accessibility)}`,
-    );
-    markerButton.style.width = active ? "34px" : "30px";
-    markerButton.style.height = active ? "34px" : "30px";
-    markerButton.style.borderRadius = "9999px";
-    markerButton.style.border = `${active ? 3 : 2}px ${entrance.kind === "approach" ? "dashed" : "solid"} ${notAccessible ? "var(--color-destructive)" : "var(--color-accent)"}`;
-    markerButton.style.background = theme === "dark" ? "#0b111a" : "#ffffff";
-    markerButton.style.color = notAccessible ? "var(--color-destructive)" : "var(--color-accent)";
-    markerButton.style.fontSize = "12px";
-    markerButton.style.fontWeight = "800";
-    markerButton.style.display = "grid";
-    markerButton.style.placeItems = "center";
-    markerButton.style.boxShadow = "0 4px 14px rgba(0,0,0,.28)";
-    markerButton.style.cursor = "pointer";
-    markerButton.style.transition = "transform 160ms ease, width 160ms ease, height 160ms ease";
-    if (active) markerButton.style.transform = "scale(1.06)";
-    markerButton.addEventListener("mouseenter", () => onActiveEntranceChange?.(entrance.id));
-    markerButton.addEventListener("mouseleave", () => onActiveEntranceChange?.(null));
-    markerButton.addEventListener("focus", () => onActiveEntranceChange?.(entrance.id));
-    markerButton.addEventListener("blur", () => onActiveEntranceChange?.(null));
-    markerButton.addEventListener("click", (event) => {
-      event.stopPropagation();
-      onActiveEntranceChange?.(entrance.id);
-    });
-    markers.push(
-      new maplibregl.Marker({ element: markerButton, anchor: "center" })
+  const existingIds = new Set(markers.map((record) => record.id));
+
+  for (const entrance of targetEntrances) {
+    const existingRecord = markers.find((record) => record.id === entrance.id);
+
+    if (existingRecord) {
+      // Update existing marker's active state without recreating
+      const active = entrance.id === activeEntranceId;
+      applyEntranceMarkerActiveState(existingRecord.element, entrance, active);
+    } else {
+      // Create new marker
+      const markerButton = document.createElement("button");
+      markerButton.type = "button";
+      const active = entrance.id === activeEntranceId;
+      const accessible = entrance.accessibility === "accessible";
+      const notAccessible = entrance.accessibility === "not_accessible";
+      markerButton.textContent = accessible ? "♿" : entrance.kind === "approach" ? "A" : "E";
+      markerButton.title = `${entrance.label} · ${entranceAccessibilityLabel(entrance.accessibility)}`;
+      markerButton.setAttribute(
+        "aria-label",
+        `${entrance.label}, ${entrance.kind === "approach" ? "mapped approach" : "mapped entrance"}, ${entranceAccessibilityLabel(entrance.accessibility)}`,
+      );
+      markerButton.style.borderRadius = "9999px";
+      markerButton.style.background = theme === "dark" ? "#0b111a" : "#ffffff";
+      markerButton.style.color = notAccessible ? "var(--color-destructive)" : "var(--color-accent)";
+      markerButton.style.fontSize = "12px";
+      markerButton.style.fontWeight = "800";
+      markerButton.style.display = "grid";
+      markerButton.style.placeItems = "center";
+      markerButton.style.boxShadow = "0 4px 14px rgba(0,0,0,.28)";
+      markerButton.style.cursor = "pointer";
+      markerButton.style.transition = "transform 160ms ease, width 160ms ease, height 160ms ease";
+      applyEntranceMarkerActiveState(markerButton, entrance, active);
+      markerButton.addEventListener("mouseenter", () => onActiveEntranceChange?.(entrance.id));
+      markerButton.addEventListener("mouseleave", () => onActiveEntranceChange?.(null));
+      markerButton.addEventListener("focus", () => onActiveEntranceChange?.(entrance.id));
+      markerButton.addEventListener("blur", () => onActiveEntranceChange?.(null));
+      markerButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        onActiveEntranceChange?.(entrance.id);
+      });
+      const marker = new maplibregl.Marker({ element: markerButton, anchor: "center" })
         .setLngLat(entrance.coordinates)
-        .addTo(map),
-    );
+        .addTo(map);
+      markers.push({ id: entrance.id, entrance, marker, element: markerButton });
+    }
+  }
+}
+
+function updateEntranceMarkersActiveState(
+  markers: EntranceMarkerRecord[],
+  activeEntranceId: string | null,
+) {
+  for (const record of markers) {
+    applyEntranceMarkerActiveState(record.element, record.entrance, record.id === activeEntranceId);
   }
 }
 
@@ -938,7 +999,7 @@ export function CampusMap({
   const mapRef = useRef<MapLibreMap | null>(null);
   const maplibreRef = useRef<MapLibreModule | null>(null);
   const markersRef = useRef<Marker[]>([]);
-  const entranceMarkersRef = useRef<Marker[]>([]);
+  const entranceMarkersRef = useRef<EntranceMarkerRecord[]>([]);
   const lastFitKeyRef = useRef<string>("");
   const userHasMovedRef = useRef(false);
   const lastFocusedBuildingRef = useRef<string | null>(null);
@@ -1143,6 +1204,9 @@ export function CampusMap({
             "hover",
           );
           syncBuildingHighlight(map, latestData.current.selectedBuildingCode, "selected");
+          // Force full teardown on style.load (theme changes) to recreate with correct theme colors
+          for (const record of entranceMarkersRef.current) record.marker.remove();
+          entranceMarkersRef.current.length = 0;
           syncEntranceMarkers(
             map,
             maplibregl,
@@ -1199,7 +1263,7 @@ export function CampusMap({
       }
       for (const marker of markersRef.current) marker.remove();
       markersRef.current = [];
-      for (const marker of entranceMarkersRef.current) marker.remove();
+      for (const record of entranceMarkersRef.current) record.marker.remove();
       entranceMarkersRef.current = [];
       mapRef.current?.remove();
       mapRef.current = null;
@@ -1262,7 +1326,7 @@ export function CampusMap({
       map,
       maplibregl,
       selectedBuildingCode,
-      activeEntranceId,
+      latestData.current.activeEntranceId ?? null,
       onActiveEntranceChange,
       entranceMarkersRef.current,
       themeRef.current,
@@ -1277,7 +1341,14 @@ export function CampusMap({
       userHasMovedRef.current = true;
     }
     if (!selectedBuildingCode) lastFocusedBuildingRef.current = null;
-  }, [activeEntranceId, focusPadding, onActiveEntranceChange, selectedBuildingCode]);
+  }, [focusPadding, onActiveEntranceChange, selectedBuildingCode]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map?.isStyleLoaded()) {
+      updateEntranceMarkersActiveState(entranceMarkersRef.current, activeEntranceId);
+    }
+  }, [activeEntranceId]);
 
   const hasRouteContent =
     meetings.some((meeting) => getCampusBuilding(meeting.buildingCode)) ||
