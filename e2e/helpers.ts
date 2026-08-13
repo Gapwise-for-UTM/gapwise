@@ -7,6 +7,14 @@ export function isMobileProject(projectName: string) {
 export function watchForAppFailures(page: Page, baseURL: string) {
   const failures: string[] = [];
   const appOrigin = new URL(baseURL).origin;
+  const ignoredLocalInstrumentationPaths = [
+    "/_vercel/insights/",
+    "/_vercel/speed-insights/",
+  ];
+
+  const isIgnoredLocalInstrumentationRequest = (url: URL) =>
+    url.origin === appOrigin &&
+    ignoredLocalInstrumentationPaths.some((path) => url.pathname.startsWith(path));
 
   page.on("pageerror", (error) => {
     failures.push(`pageerror: ${error.message}`);
@@ -29,6 +37,7 @@ export function watchForAppFailures(page: Page, baseURL: string) {
 
   page.on("response", (response) => {
     const url = new URL(response.url());
+    if (isIgnoredLocalInstrumentationRequest(url)) return;
     if (url.origin === appOrigin && response.status() >= 400) {
       failures.push(`HTTP ${response.status()}: ${url.pathname}`);
     }
@@ -36,6 +45,7 @@ export function watchForAppFailures(page: Page, baseURL: string) {
 
   page.on("requestfailed", (request) => {
     const url = new URL(request.url());
+    if (isIgnoredLocalInstrumentationRequest(url)) return;
     if (url.origin !== appOrigin) return;
     failures.push(`request failed: ${url.pathname} (${request.failure()?.errorText ?? "unknown"})`);
   });
