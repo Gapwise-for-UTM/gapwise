@@ -171,10 +171,22 @@ test("campus explorer supports public building deep links and local search", asy
   await expect.poll(() => new URL(page.url()).searchParams.has("building")).toBe(false);
 
   const search = page.getByRole("searchbox", { name: "Search UTM buildings" });
+  const scrollBeforeSearch = await page.evaluate(() => window.scrollY);
+  await search.fill("Kaneff");
+  await search.press("Enter");
+  await expect(page.getByRole("heading", { name: "Kaneff Centre" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Accessible main entrance A/ }).first(),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeSearch);
+
   await search.fill("Deerfield");
   await expect(page.getByRole("button", { name: /DH Deerfield Hall/ })).toBeVisible();
   await search.press("Enter");
   await expect(page.getByRole("heading", { name: "Deerfield Hall" })).toBeVisible();
+  const deerfieldDetails = page.getByRole("region", { name: "Deerfield Hall" });
+  await expect(deerfieldDetails.getByRole("button", { name: /^Main entrance A / })).toBeVisible();
+  await expect(deerfieldDetails.getByRole("button", { name: /^Main entrance B / })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("building")).toBe("DH");
 
   await search.fill("MN 3120");
@@ -186,6 +198,135 @@ test("campus explorer supports public building deep links and local search", asy
   await page.goto("/route?building=NOT_A_BUILDING");
   await expect(page.getByRole("heading", { name: "Find your way around campus" })).toBeVisible();
   await expect(page.locator(".campus-building-card")).toHaveCount(0);
+  guard.assertClean();
+});
+
+test("campus-day arrival settings route transit and parking through the map", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "commuter route coverage runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+  await page.getByRole("button", { name: "Try a demo" }).click();
+  await page
+    .getByRole("group", { name: "View mode" })
+    .getByRole("button", { name: "Day route" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Campus arrival settings" }).click();
+  await page.getByRole("radio", { name: /Public transit/ }).click();
+  await page.getByLabel("Campus arrival point").selectOption("miway-utm-bus-station");
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Arrive on campus", { exact: true })).toBeVisible();
+  await expect(page.getByText("Leave campus", { exact: true })).toBeVisible();
+  await expect(page.getByText("UTM Bus Station (MiWay)").first()).toBeVisible();
+  await expect(page.getByTestId("campus-day-anchor-marker")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Fit the active day route" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Campus arrival settings" }).click();
+  await page.getByRole("radio", { name: /Drive \/ park/ }).click();
+  await page.getByLabel("Campus arrival point").selectOption("parking-p8");
+  await page.keyboard.press("Escape");
+  await expect(page.getByText("Park", { exact: true })).toBeVisible();
+  await expect(page.getByText("Return to car", { exact: true })).toBeVisible();
+  await expect(page.getByText("Parking Lot P8").first()).toBeVisible();
+  await expect(page.getByTestId("campus-day-anchor-marker")).toHaveCount(1);
+  guard.assertClean();
+});
+
+test("live map location appears only for accurate on-campus positions", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "geolocation privacy coverage runs once");
+  await page.addInitScript(() => {
+    const state: {
+      success: PositionCallback | null;
+      failure: PositionErrorCallback | null;
+      cleared: number[];
+    } = { success: null, failure: null, cleared: [] };
+    Object.defineProperty(window, "__gapwiseGeolocationTest", { value: state });
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        watchPosition(success: PositionCallback, failure: PositionErrorCallback) {
+          state.success = success;
+          state.failure = failure;
+          return 17;
+        },
+        clearWatch(id: number) {
+          state.cleared.push(id);
+        },
+      },
+    });
+  });
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  const postBodies: string[] = [];
+  page.on("request", (request) => {
+    const body = request.postData();
+    if (body) postBodies.push(body);
+  });
+  await page.goto("/route");
+  await expect(page.getByRole("button", { name: "Show my location" })).toBeVisible();
+  await expect(page.getByTestId("user-location-marker")).toHaveCount(0);
+  await page.getByRole("button", { name: "Show my location" }).click();
+  await expect(page.getByText("Finding you…")).toBeVisible();
+
+  const emitPosition = (longitude: number, latitude: number, accuracy: number) =>
+    page.evaluate(
+      ([nextLongitude, nextLatitude, nextAccuracy]) => {
+        const state = (
+          window as typeof window & {
+            __gapwiseGeolocationTest: { success: PositionCallback | null };
+          }
+        ).__gapwiseGeolocationTest;
+        state.success?.({
+          coords: {
+            longitude: nextLongitude,
+            latitude: nextLatitude,
+            accuracy: nextAccuracy,
+            altitude: null,
+            altitudeAccuracy: null,
+            heading: null,
+            speed: null,
+            toJSON: () => ({}),
+          },
+          timestamp: Date.now(),
+          toJSON: () => ({}),
+        });
+      },
+      [longitude, latitude, accuracy] as const,
+    );
+
+  await emitPosition(-79.66475, 43.55105, 12);
+  await expect(page.getByTestId("user-location-marker")).toBeVisible();
+  await expect(page.getByText("Your on-campus location is shown")).toBeVisible();
+
+  await emitPosition(-79.7, 43.57, 10);
+  await expect(page.getByTestId("user-location-marker")).toHaveCount(0);
+  await expect(page.getByText("You're outside the mapped UTM campus")).toBeVisible();
+
+  await emitPosition(-79.66346, 43.54786, 8);
+  await expect(page.getByTestId("user-location-marker")).toBeVisible();
+  await page.getByRole("button", { name: "Hide my location" }).click();
+  await expect(page.getByTestId("user-location-marker")).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __gapwiseGeolocationTest: { cleared: number[] };
+          }
+        ).__gapwiseGeolocationTest.cleared,
+    ),
+  ).toEqual([17]);
+
+  const persisted = await page.evaluate(() => ({
+    local: JSON.stringify(window.localStorage),
+    session: JSON.stringify(window.sessionStorage),
+  }));
+  expect(JSON.stringify(persisted)).not.toContain("-79.66346");
+  expect(postBodies.join("\n")).not.toContain("-79.66346");
   guard.assertClean();
 });
 

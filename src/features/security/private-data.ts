@@ -167,7 +167,12 @@ function validatePersonalItem(value: unknown): PersonalItem {
 function requireCanonicalPreferences(value: unknown): UserPreferences {
   if (!isRecord(value)) throw new Error("Private preferences are malformed.");
   const sanitized = sanitizeUserPreferences(value as Partial<UserPreferences>);
+  const legacyOptionalKeys = new Set(["commuteMode", "campusAccessPointId"]);
   for (const [key, expected] of Object.entries(sanitized)) {
+    if (!Object.hasOwn(value, key)) {
+      if (legacyOptionalKeys.has(key)) continue;
+      throw new Error("Private preferences are malformed.");
+    }
     if (value[key] !== expected) throw new Error("Private preferences are malformed.");
   }
   if (!hasOnlyKeys(value, Object.keys(sanitized))) {

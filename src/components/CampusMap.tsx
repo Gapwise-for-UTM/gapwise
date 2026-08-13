@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { LocateFixed } from "lucide-react";
 import type { GeoJSONSource, Map as MapLibreMap, MapGeoJSONFeature, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MAP_CONFIG } from "@/config/map";
-import { CAMPUS_BUILDINGS, getCampusBuilding } from "@/data/utm/campus";
+import { CAMPUS_BUILDINGS, getCampusBuilding, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { UTM_BUILDINGS } from "@/data/utm/building-registry";
 import {
   resolveMapAnchor,
   type MapAnchorSegment,
   type MapCoordinate,
 } from "@/features/routing/map-anchors";
-import { isResidenceMeeting } from "@/features/routing/residence";
+import { isCampusDayAnchorMeeting, type CampusDayAnchor } from "@/features/routing/campus-day";
+import { watchCampusLocation, type LiveLocationState } from "@/features/routing/live-location";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { Meeting } from "@/lib/timetable-types";
 import type { BuildingEntrance } from "@/data/utm/routing-buildings";
@@ -21,8 +23,6 @@ type MapSegment = {
   to: Meeting;
   route: TransitionRoute;
 };
-
-type MapHome = { buildingCode: string; label: string };
 
 type EntranceMarkerRecord = {
   id: string;
@@ -52,7 +52,7 @@ export type CampusMapProps = {
   activeEntranceId?: string | null;
   onActiveEntranceChange?: (id: string | null) => void;
   focusPadding?: MapFocusPadding;
-  home: MapHome | null;
+  dayAnchor: CampusDayAnchor | null;
   className?: string;
 };
 
@@ -70,12 +70,13 @@ type MapData = {
   activeEntranceId: string | null | undefined;
   onActiveEntranceChange: ((id: string | null) => void) | undefined;
   focusPadding: MapFocusPadding | undefined;
-  home: MapHome | null;
+  dayAnchor: CampusDayAnchor | null;
 };
 
 type MapLibreModule = typeof import("maplibre-gl");
 type MapStatus = "loading" | "ready" | "error" | "unsupported";
 type MapTheme = keyof typeof MAP_CONFIG.styleUrls;
+type LocationControlState = LiveLocationState | { status: "disabled"; point: null };
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const FIT_BOUNDS_PADDING_PX = 56;
 const FIT_BOUNDS_MAX_ZOOM = 17;
@@ -86,6 +87,7 @@ const BUILDING_NEARBY_TAP_RADIUS_PX = 28;
 // Entrance coordinates live on/near real building edges. This tiny geographic tolerance is used
 // only to associate an unnamed rendered polygon with one canonical mapped building.
 const BUILDING_FEATURE_MATCH_MAX_DISTANCE = 0.00022;
+const DEFAULT_FOCUS_PADDING: MapFocusPadding = { top: 72, right: 24, bottom: 24, left: 24 };
 const BUILDING_HOVER_SOURCE_ID = "gapwise-building-hover";
 const BUILDING_HOVER_FILL_LAYER_ID = "gapwise-building-hover-fill";
 const BUILDING_HOVER_LINE_LAYER_ID = "gapwise-building-hover-line";
@@ -237,11 +239,11 @@ function anchorSegments(data: MapData): MapAnchorSegment[] {
   }));
 }
 
-function residenceStopIds(data: MapData): string[] {
+function dayAnchorStopIds(data: MapData): string[] {
   const ids = new Set<string>();
   for (const segment of data.segments) {
-    if (isResidenceMeeting(segment.from)) ids.add(segment.from.id);
-    if (isResidenceMeeting(segment.to)) ids.add(segment.to.id);
+    if (isCampusDayAnchorMeeting(segment.from)) ids.add(segment.from.id);
+    if (isCampusDayAnchorMeeting(segment.to)) ids.add(segment.to.id);
   }
   return [...ids];
 }
@@ -710,30 +712,39 @@ function syncMapData(
     );
   });
 
-  if (data.home) {
-    const homeBuilding = getCampusBuilding(data.home.buildingCode);
-    if (homeBuilding) {
-      const anchor = resolveMapAnchor(
-        residenceStopIds(data),
-        homeBuilding.navigationPoint,
-        routes,
-        data.selectedSegmentId,
+  if (data.dayAnchor) {
+    const anchor = resolveMapAnchor(
+      dayAnchorStopIds(data),
+      data.dayAnchor.coordinates,
+      routes,
+      data.selectedSegmentId,
+    );
+    const anchorMarker = document.createElement("div");
+    anchorMarker.className = `map-day-anchor-marker is-${data.dayAnchor.kind}`;
+    anchorMarker.dataset["testid"] = "campus-day-anchor-marker";
+    const anchorIcon = document.createElement("span");
+    anchorIcon.textContent =
+      data.dayAnchor.kind === "residence"
+        ? "⌂"
+        : data.dayAnchor.kind === "transit"
+          ? "T"
+          : data.dayAnchor.kind === "parking"
+            ? "P"
+            : "↕";
+    anchorIcon.setAttribute("aria-hidden", "true");
+    anchorMarker.append(anchorIcon);
+    anchorMarker.title = `${data.dayAnchor.label} · campus day anchor`;
+    anchorMarker.setAttribute("role", "img");
+    anchorMarker.setAttribute("aria-label", `Campus day starts at ${data.dayAnchor.label}`);
+    if (data.dayAnchor.buildingCode) {
+      anchorMarker.addEventListener("mouseenter", () =>
+        data.onHoverBuilding(data.dayAnchor?.buildingCode ?? null),
       );
-      const homeMarker = document.createElement("div");
-      homeMarker.className = "map-home-marker";
-      const homeIcon = document.createElement("span");
-      homeIcon.textContent = "⌂";
-      homeIcon.setAttribute("aria-hidden", "true");
-      homeMarker.append(homeIcon);
-      homeMarker.title = `Home · ${data.home.label}`;
-      homeMarker.setAttribute("role", "img");
-      homeMarker.setAttribute("aria-label", `Home at ${data.home.label}`);
-      homeMarker.addEventListener("mouseenter", () => data.onHoverBuilding(homeBuilding.code));
-      homeMarker.addEventListener("mouseleave", () => data.onHoverBuilding(null));
-      markers.push(
-        new maplibregl.Marker({ element: homeMarker }).setLngLat(anchor.coordinate).addTo(map),
-      );
+      anchorMarker.addEventListener("mouseleave", () => data.onHoverBuilding(null));
     }
+    markers.push(
+      new maplibregl.Marker({ element: anchorMarker }).setLngLat(anchor.coordinate).addTo(map),
+    );
   }
 
   const routeKey = routeGeometryKey(data);
@@ -758,6 +769,39 @@ function syncMapData(
   } else if (sourceCreated || routeAnimationFrameRef.current === null) {
     source.setData(routeFeatureCollection(data));
   }
+}
+
+function syncUserLocationMarker(
+  map: MapLibreMap,
+  maplibregl: MapLibreModule,
+  state: LocationControlState,
+  markerRef: MutableRefObject<Marker | null>,
+) {
+  if (state.status !== "on-campus") {
+    markerRef.current?.remove();
+    markerRef.current = null;
+    return;
+  }
+  const coordinate: [number, number] = [state.point.longitude, state.point.latitude];
+  if (markerRef.current) {
+    markerRef.current.setLngLat(coordinate);
+    return;
+  }
+  const element = document.createElement("div");
+  element.className = "map-user-location-marker";
+  element.dataset["testid"] = "user-location-marker";
+  element.setAttribute("role", "img");
+  element.setAttribute("aria-label", "Your current on-campus location");
+  markerRef.current = new maplibregl.Marker({ element }).setLngLat(coordinate).addTo(map);
+}
+
+function locationStatusLabel(status: LocationControlState["status"]) {
+  if (status === "requesting") return "Finding you…";
+  if (status === "on-campus") return "Your on-campus location is shown";
+  if (status === "off-campus") return "You're outside the mapped UTM campus";
+  if (status === "permission-denied") return "Location permission is off";
+  if (status === "unavailable") return "Location is unavailable";
+  return null;
 }
 
 function entranceAccessibilityLabel(accessibility: string) {
@@ -873,18 +917,15 @@ function collectBoundsPoints(data: MapData): [number, number][] {
       );
     }
   }
-  if (data.home) {
-    const homeBuilding = getCampusBuilding(data.home.buildingCode);
-    if (homeBuilding) {
-      points.push(
-        resolveMapAnchor(
-          residenceStopIds(data),
-          homeBuilding.navigationPoint,
-          routes,
-          data.selectedSegmentId,
-        ).coordinate,
-      );
-    }
+  if (data.dayAnchor) {
+    points.push(
+      resolveMapAnchor(
+        dayAnchorStopIds(data),
+        data.dayAnchor.coordinates,
+        routes,
+        data.selectedSegmentId,
+      ).coordinate,
+    );
   }
   for (const segment of data.segments) {
     for (const coord of segment.route.displayCoordinates) {
@@ -991,14 +1032,15 @@ export function CampusMap({
   onSelectBuilding,
   activeEntranceId = null,
   onActiveEntranceChange,
-  focusPadding = { top: 72, right: 24, bottom: 24, left: 24 },
-  home,
+  focusPadding = DEFAULT_FOCUS_PADDING,
+  dayAnchor,
   className = "",
 }: CampusMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const maplibreRef = useRef<MapLibreModule | null>(null);
   const markersRef = useRef<Marker[]>([]);
+  const userLocationMarkerRef = useRef<Marker | null>(null);
   const entranceMarkersRef = useRef<EntranceMarkerRecord[]>([]);
   const lastFitKeyRef = useRef<string>("");
   const userHasMovedRef = useRef(false);
@@ -1010,6 +1052,12 @@ export function CampusMap({
   const themeRef = useRef<MapTheme>(mapTheme);
   const [status, setStatus] = useState<MapStatus>("loading");
   const [attempt, setAttempt] = useState(0);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [liveLocation, setLiveLocation] = useState<LocationControlState>({
+    status: "disabled",
+    point: null,
+  });
+  const liveLocationRef = useRef<LocationControlState>(liveLocation);
   const latestData = useRef<MapData>({
     meetings,
     segments,
@@ -1024,8 +1072,12 @@ export function CampusMap({
     activeEntranceId,
     onActiveEntranceChange,
     focusPadding,
-    home,
+    dayAnchor,
   });
+
+  useEffect(() => {
+    liveLocationRef.current = liveLocation;
+  }, [liveLocation]);
 
   useEffect(() => {
     themeRef.current = mapTheme;
@@ -1043,12 +1095,12 @@ export function CampusMap({
       activeEntranceId,
       onActiveEntranceChange,
       focusPadding,
-      home,
+      dayAnchor,
     };
   }, [
     activeEntranceId,
     focusPadding,
-    home,
+    dayAnchor,
     mapTheme,
     meetings,
     hoveredBuildingCode,
@@ -1071,6 +1123,22 @@ export function CampusMap({
     observer.observe(root, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!locationEnabled) {
+      setLiveLocation({ status: "disabled", point: null });
+      return;
+    }
+    if (!("geolocation" in navigator)) {
+      setLiveLocation({ status: "unavailable", point: null });
+      return;
+    }
+    return watchCampusLocation({
+      geolocation: navigator.geolocation,
+      graph: UTM_ROUTING_GRAPH,
+      onChange: setLiveLocation,
+    });
+  }, [locationEnabled]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -1196,6 +1264,7 @@ export function CampusMap({
             routeAnimationFrameRef,
             latestData,
           );
+          syncUserLocationMarker(map, maplibregl, liveLocationRef.current, userLocationMarkerRef);
           syncBuildingHighlight(
             map,
             latestData.current.hoveredBuildingCode === latestData.current.selectedBuildingCode
@@ -1224,7 +1293,7 @@ export function CampusMap({
             routeClickBound = true;
           }
           const selectedBuilding = latestData.current.selectedBuildingCode;
-          const selectedPadding = latestData.current.focusPadding ?? focusPadding;
+          const selectedPadding = latestData.current.focusPadding ?? DEFAULT_FOCUS_PADDING;
           const selectedFocusKey = selectedBuilding
             ? focusKey(selectedBuilding, selectedPadding)
             : null;
@@ -1263,6 +1332,8 @@ export function CampusMap({
       }
       for (const marker of markersRef.current) marker.remove();
       markersRef.current = [];
+      userLocationMarkerRef.current?.remove();
+      userLocationMarkerRef.current = null;
       for (const record of entranceMarkersRef.current) record.marker.remove();
       entranceMarkersRef.current = [];
       mapRef.current?.remove();
@@ -1283,7 +1354,7 @@ export function CampusMap({
   useEffect(() => {
     const map = mapRef.current;
     const maplibregl = maplibreRef.current;
-    if (map && maplibregl && map.isStyleLoaded()) {
+    if (map && maplibregl && status === "ready") {
       syncMapData(
         map,
         maplibregl,
@@ -1297,13 +1368,14 @@ export function CampusMap({
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef, !userHasMovedRef.current);
     }
   }, [
-    home,
+    dayAnchor,
     meetings,
     onSelectMeeting,
     onSelectSegment,
     selectedMeetingId,
     selectedSegmentId,
     segments,
+    status,
   ]);
 
   useEffect(() => {
@@ -1350,10 +1422,21 @@ export function CampusMap({
     }
   }, [activeEntranceId]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    const maplibregl = maplibreRef.current;
+    if (map && maplibregl && status === "ready") {
+      syncUserLocationMarker(map, maplibregl, liveLocation, userLocationMarkerRef);
+    } else if (liveLocation.status !== "on-campus") {
+      userLocationMarkerRef.current?.remove();
+      userLocationMarkerRef.current = null;
+    }
+  }, [liveLocation, status]);
+
   const hasRouteContent =
     meetings.some((meeting) => getCampusBuilding(meeting.buildingCode)) ||
     segments.some((segment) => segment.route.displayCoordinates.length > 0) ||
-    Boolean(home && getCampusBuilding(home.buildingCode));
+    Boolean(dayAnchor);
 
   function resetCamera() {
     const map = mapRef.current;
@@ -1377,14 +1460,37 @@ export function CampusMap({
         aria-label="Interactive map of the University of Toronto Mississauga campus"
       />
       {status === "ready" ? (
-        <button
-          type="button"
-          onClick={resetCamera}
-          className="button-secondary absolute right-3 top-[5.75rem] z-10 min-h-10 rounded-lg px-3 text-xs font-semibold shadow-lg"
-          aria-label={hasRouteContent ? "Fit the active day route" : "Return to campus overview"}
-        >
-          {hasRouteContent ? "Fit route" : "Campus overview"}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={resetCamera}
+            className="button-secondary absolute right-3 top-[5.75rem] z-10 min-h-10 rounded-lg px-3 text-xs font-semibold shadow-lg"
+            aria-label={hasRouteContent ? "Fit the active day route" : "Return to campus overview"}
+          >
+            {hasRouteContent ? "Fit route" : "Campus overview"}
+          </button>
+          <div className="absolute right-3 top-[8.65rem] z-10 flex max-w-[min(13rem,calc(100%-1.5rem))] flex-col items-end gap-1.5">
+            <button
+              type="button"
+              onClick={() => setLocationEnabled((enabled) => !enabled)}
+              aria-label={locationEnabled ? "Hide my location" : "Show my location"}
+              aria-pressed={locationEnabled}
+              className="button-secondary inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg"
+            >
+              <LocateFixed className="h-4 w-4" aria-hidden="true" />
+              <span>{locationEnabled ? "Hide my location" : "Show my location"}</span>
+            </button>
+            {locationStatusLabel(liveLocation.status) ? (
+              <p
+                className="rounded-md border border-border bg-popover/95 px-2.5 py-1.5 text-right text-[0.68rem] leading-4 text-popover-foreground shadow-md backdrop-blur"
+                role="status"
+                aria-live="polite"
+              >
+                {locationStatusLabel(liveLocation.status)}
+              </p>
+            ) : null}
+          </div>
+        </>
       ) : null}
       {status === "loading" ? (
         <div
