@@ -174,8 +174,8 @@ export function requireSupabaseClient(): SupabaseClient<Database> {
   return client;
 }
 
-export function assertCanPersistAuthRedirect(available = canPersistAuthRedirect): void {
-  if (!available) {
+export function assertCanPersistAuthRedirect(storage: BrowserStorage | null = authStorage): void {
+  if (!storage || selectDurableAuthStorage([storage]) !== storage) {
     throw new Error("Sign-in requires writable local or session browser storage.");
   }
 }

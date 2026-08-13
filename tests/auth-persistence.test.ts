@@ -79,7 +79,32 @@ describe("persistent Supabase auth storage", () => {
 
     expect(selectDurableAuthStorage([blockedStorage, sessionStorage])).toBe(sessionStorage);
     expect(selectDurableAuthStorage([blockedStorage])).toBeNull();
-    expect(() => assertCanPersistAuthRedirect(false)).toThrow(
+    expect(() => assertCanPersistAuthRedirect(null)).toThrow(
+      "Sign-in requires writable local or session browser storage.",
+    );
+  });
+
+  test("rechecks PKCE storage immediately before an authentication redirect", () => {
+    const values = new Map<string, string>();
+    let blocked = false;
+    const storage = {
+      getItem(key: string) {
+        if (blocked) throw new Error("blocked");
+        return values.get(key) ?? null;
+      },
+      setItem(key: string, value: string) {
+        if (blocked) throw new Error("blocked");
+        values.set(key, value);
+      },
+      removeItem(key: string) {
+        if (blocked) throw new Error("blocked");
+        values.delete(key);
+      },
+    };
+
+    expect(selectDurableAuthStorage([storage])).toBe(storage);
+    blocked = true;
+    expect(() => assertCanPersistAuthRedirect(storage)).toThrow(
       "Sign-in requires writable local or session browser storage.",
     );
   });
