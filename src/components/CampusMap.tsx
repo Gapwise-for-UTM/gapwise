@@ -1058,7 +1058,6 @@ export function CampusMap({
     point: null,
   });
   const liveLocationRef = useRef<LocationControlState>(liveLocation);
-  liveLocationRef.current = liveLocation;
   const latestData = useRef<MapData>({
     meetings,
     segments,
@@ -1075,6 +1074,10 @@ export function CampusMap({
     focusPadding,
     dayAnchor,
   });
+
+  useEffect(() => {
+    liveLocationRef.current = liveLocation;
+  }, [liveLocation]);
 
   useEffect(() => {
     themeRef.current = mapTheme;

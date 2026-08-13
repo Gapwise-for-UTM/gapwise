@@ -579,7 +579,10 @@ export function MobileDayRoute({
                 >
                   <span className="flex items-center gap-2 text-xs font-semibold">
                     {FromAnchorIcon ? (
-                      <FromAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                      <>
+                        <FromAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                        <span className="sr-only">{fromAnchor?.label}</span>
+                      </>
                     ) : (
                       <span className="truncate">{segment.from.courseCode}</span>
                     )}
@@ -588,7 +591,10 @@ export function MobileDayRoute({
                       aria-hidden="true"
                     />
                     {ToAnchorIcon ? (
-                      <ToAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                      <>
+                        <ToAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                        <span className="sr-only">{toAnchor?.label}</span>
+                      </>
                     ) : (
                       <span className="truncate">{segment.to.courseCode}</span>
                     )}

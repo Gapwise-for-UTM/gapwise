@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_ROUTE_PREFERENCES } from "@/config/routing";
-import { CAMPUS_ACCESS_POINTS } from "@/data/utm/campus-access-points";
+import { CAMPUS_ACCESS_POINTS, getCampusAccessPoint } from "@/data/utm/campus-access-points";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import {
   campusAccessPointForMeeting,
@@ -90,7 +90,7 @@ describe("complete campus day routes", () => {
       expect(inbound.result?.nodes.at(-1)?.id).toBe(point.routingNodeId);
       expect(outbound.displayCoordinates.length).toBeGreaterThan(1);
       expect(isCampusDayAnchorMeeting(stops[0]!)).toBe(true);
-      expect(campusAccessPointForMeeting(stops[0])?.id).toBe(point.id);
+      expect(campusAccessPointForMeeting(stops[0]!)?.id).toBe(point.id);
     }
   });
 
@@ -101,8 +101,10 @@ describe("complete campus day routes", () => {
       "Fall",
       "Monday",
     );
+    const accessNodeId = getCampusAccessPoint("miway-utm-bus-station")?.routingNodeId;
+    expect(accessNodeId).toBeTruthy();
     const withoutAccessNode = {
-      nodes: UTM_ROUTING_GRAPH.nodes.filter((node) => node.id !== "osm-node-1312578308"),
+      nodes: UTM_ROUTING_GRAPH.nodes.filter((node) => node.id !== accessNodeId),
       edges: UTM_ROUTING_GRAPH.edges,
     };
     const missing = planMeetingTransition(
