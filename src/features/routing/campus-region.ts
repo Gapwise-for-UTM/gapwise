@@ -2,6 +2,7 @@ import type { RoutingGraph } from "./types";
 
 export type CampusCoordinate = [longitude: number, latitude: number];
 export type CampusBounds = [southWest: CampusCoordinate, northEast: CampusCoordinate];
+export type CampusSegment = [start: CampusCoordinate, end: CampusCoordinate];
 
 export const CAMPUS_LOCATION_MAX_NETWORK_DISTANCE_METERS = 110;
 export const CAMPUS_CAMERA_PADDING_METERS = 140;
@@ -9,6 +10,7 @@ export const CAMPUS_CAMERA_PADDING_METERS = 140;
 export type CompiledCampusRegion = {
   hull: CampusCoordinate[];
   nodes: CampusCoordinate[];
+  segments: CampusSegment[];
   bounds: CampusBounds;
 };
 
@@ -70,6 +72,29 @@ export function distanceMeters(a: CampusCoordinate, b: CampusCoordinate) {
   return 2 * radius * Math.asin(Math.sqrt(h));
 }
 
+/** Distance to a short campus routing segment using a local equirectangular projection. */
+export function distanceToSegmentMeters(
+  point: CampusCoordinate,
+  start: CampusCoordinate,
+  end: CampusCoordinate,
+) {
+  const latitudeRadians = (point[1] * Math.PI) / 180;
+  const metresPerLatitudeDegree = 111_320;
+  const metresPerLongitudeDegree = Math.max(1, 111_320 * Math.cos(latitudeRadians));
+  const toLocal = ([longitude, latitude]: CampusCoordinate) => [
+    (longitude - point[0]) * metresPerLongitudeDegree,
+    (latitude - point[1]) * metresPerLatitudeDegree,
+  ] as const;
+  const [sx, sy] = toLocal(start);
+  const [ex, ey] = toLocal(end);
+  const dx = ex - sx;
+  const dy = ey - sy;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared <= 1e-12) return Math.hypot(sx, sy);
+  const t = Math.max(0, Math.min(1, -(sx * dx + sy * dy) / lengthSquared));
+  return Math.hypot(sx + t * dx, sy + t * dy);
+}
+
 function boundsForCoordinates(coordinates: CampusCoordinate[]): CampusBounds {
   if (coordinates.length === 0) {
     throw new Error("Cannot compute UTM campus bounds without routing coordinates.");
@@ -94,14 +119,21 @@ export function compileCampusRegion(graph: RoutingGraph): CompiledCampusRegion {
   const existing = compiledRegions.get(graph);
   if (existing) return existing;
 
-  const nodes: CampusCoordinate[] = graph.nodes.flatMap((node) =>
-    typeof node.longitude === "number" && typeof node.latitude === "number"
-      ? [[node.longitude, node.latitude] as CampusCoordinate]
-      : [],
-  );
+  const nodeCoordinates = new Map<string, CampusCoordinate>();
+  for (const node of graph.nodes) {
+    if (typeof node.longitude !== "number" || typeof node.latitude !== "number") continue;
+    nodeCoordinates.set(node.id, [node.longitude, node.latitude]);
+  }
+  const nodes = [...nodeCoordinates.values()];
+  const segments: CampusSegment[] = graph.edges.flatMap((edge) => {
+    const start = nodeCoordinates.get(edge.from);
+    const end = nodeCoordinates.get(edge.to);
+    return start && end ? ([[start, end]] as CampusSegment[]) : [];
+  });
   const region = {
     hull: convexHull(nodes),
     nodes,
+    segments,
     bounds: boundsForCoordinates(nodes),
   } satisfies CompiledCampusRegion;
   compiledRegions.set(graph, region);
@@ -118,8 +150,15 @@ export function isCoordinateInsideCampus(
   graph: RoutingGraph,
   maxNetworkDistanceMeters = CAMPUS_LOCATION_MAX_NETWORK_DISTANCE_METERS,
 ) {
-  const { hull, nodes } = compileCampusRegion(graph);
+  const { hull, nodes, segments } = compileCampusRegion(graph);
   if (nodes.length < 3 || !pointInPolygon(coordinate, hull)) return false;
+  if (
+    segments.some(
+      ([start, end]) => distanceToSegmentMeters(coordinate, start, end) <= maxNetworkDistanceMeters,
+    )
+  ) {
+    return true;
+  }
   return nodes.some((node) => distanceMeters(coordinate, node) <= maxNetworkDistanceMeters);
 }
 
