@@ -22,7 +22,7 @@ export type BuildingEntrance = {
 export type CampusBuilding = {
   code: string;
   name: string;
-  category: "academic" | "residence";
+  category: "academic" | "residence" | "facility";
   entrances: BuildingEntrance[];
   navigationPoint: [number, number];
   entranceNodeId: string;

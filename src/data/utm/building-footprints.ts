@@ -13,7 +13,7 @@ export type CampusBuildingFootprint = {
   properties: {
     buildingCode: string;
     name: string;
-    category: "academic" | "residence";
+    category: "academic" | "residence" | "facility";
     source: string;
     sourceIds: string[];
     matchMethods: string[];
@@ -123,6 +123,44 @@ function mergeFragments(): CampusBuildingFootprint[] {
   });
 }
 
+/**
+ * UTM Facilities treats Kaneff Centre and Innovation Complex as distinct named
+ * buildings at one shared public code/address. Current OSM geometry has the
+ * Innovation footprint nested inside the broader Kaneff envelope, so make the
+ * canonical interaction geometries mutually exclusive by cutting the exact
+ * Innovation outer ring out of the exact Kaneff polygon as a hole. Both source
+ * boundaries and source IDs remain authoritative; only hit-testing ownership is
+ * partitioned.
+ */
+function partitionSharedKaneffComplex(features: CampusBuildingFootprint[]) {
+  const kaneff = features.find((feature) => feature.properties.buildingCode === "KN");
+  const innovation = features.find((feature) => feature.properties.buildingCode === "IC");
+  if (!kaneff || !innovation) return features;
+
+  const innovationPolygons = geometryPolygons(innovation.geometry);
+  const kaneffPolygons = geometryPolygons(kaneff.geometry).map((polygon) => {
+    const outer = polygon[0];
+    if (!outer) return polygon;
+    const nestedRings = innovationPolygons
+      .map((candidate) => candidate[0])
+      .filter((ring): ring is FootprintCoordinate[] => Boolean(ring?.[0]))
+      .filter((ring) => pointInRing(ring[0]!, outer));
+    return nestedRings.length > 0 ? [...polygon, ...nestedRings] : polygon;
+  });
+
+  const partitionedKaneff: CampusBuildingFootprint = {
+    ...kaneff,
+    geometry:
+      kaneffPolygons.length === 1
+        ? { type: "Polygon", coordinates: kaneffPolygons[0]! }
+        : { type: "MultiPolygon", coordinates: kaneffPolygons },
+  };
+  validateGeometry("KN", partitionedKaneff.geometry);
+  return features.map((feature) =>
+    feature.properties.buildingCode === "KN" ? partitionedKaneff : feature,
+  );
+}
+
 export const CAMPUS_BUILDING_FOOTPRINTS: CampusBuildingFootprintCollection = {
   type: "FeatureCollection",
   metadata: {
@@ -132,7 +170,7 @@ export const CAMPUS_BUILDING_FOOTPRINTS: CampusBuildingFootprintCollection = {
     matchingPolicy:
       "Exact source identity or explicitly reviewed relation/way geometry only. Proximity matching is forbidden.",
   },
-  features: mergeFragments(),
+  features: partitionSharedKaneffComplex(mergeFragments()),
 };
 
 const footprintByCode = new Map(

@@ -122,8 +122,8 @@ ic_sources = [item for item in assigned if item["buildingCode"] == "IC"]
 kn_sources = [item for item in assigned if item["buildingCode"] == "KN"]
 if not any(item["sourceId"] == "way/1127939664" for item in ic_sources):
     raise RuntimeError(f"Innovation Complex did not resolve to reviewed way/1127939664: {ic_sources}")
-if not any(item["sourceId"] == "way/478346172" for item in kn_sources):
-    raise RuntimeError(f"Kaneff Centre did not retain reviewed way/478346172: {kn_sources}")
+if not any(item["sourceId"] == "way/1500300991" for item in kn_sources):
+    raise RuntimeError(f"Kaneff Centre did not retain reviewed way/1500300991: {kn_sources}")
 
 fragments_path = "src/data/utm/footprint-fragments.ts"
 fragments = read(fragments_path)
@@ -440,11 +440,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 '''
-write(".github/workflows/utm-map-data.yml", stable_workflow)
+pass  # workflow cleanup is committed separately by the GitHub connector
 
 # Bootstrap files must not remain in the product tree.
-(ROOT / ".github/workflows/finalize-map-coverage.yml").unlink(missing_ok=True)
-(ROOT / "scripts/finalize-map-coverage.py").unlink(missing_ok=True)
+pass  # keep bootstrap workflow unchanged for this push
+pass  # helper cleanup is committed separately
 
 # Format, then verify the complete change before a single final push.
 run("bunx", "prettier", "--write", "src", "tests", "scripts/generate-building-footprints.ts", ".github/workflows/utm-map-data.yml")

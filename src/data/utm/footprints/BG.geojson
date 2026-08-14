@@ -1,0 +1,30 @@
+{
+  "type": "Feature",
+  "id": "BG",
+  "properties": {
+    "buildingCode": "BG",
+    "name": "Research Greenhouse",
+    "category": "academic",
+    "source": "OpenStreetMap",
+    "sourceIds": ["way/1127381852"],
+    "matchMethods": ["exact-label"],
+    "lastVerified": "2026-08-14",
+    "verificationStatus": "verified"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.6621351, 43.5509562],
+        [-79.661933, 43.5509317],
+        [-79.6619532, 43.5508439],
+        [-79.6618519, 43.5508316],
+        [-79.6618717, 43.5507462],
+        [-79.6621475, 43.5507797],
+        [-79.6621277, 43.5508651],
+        [-79.6621554, 43.5508685],
+        [-79.6621351, 43.5509562]
+      ]
+    ]
+  }
+}

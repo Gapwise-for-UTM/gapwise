@@ -3,7 +3,7 @@ import type { SourceMetadata } from "@/features/routing/types";
 export type BuildingConfiguration = {
   code: string;
   name: string;
-  category: "academic" | "residence";
+  category: "academic" | "residence" | "facility";
   aliases?: string[];
   metadata?: SourceMetadata;
   verifiedRoomFloors?: Record<
@@ -138,14 +138,14 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
   {
     code: "WC",
     name: "Alumni House",
-    category: "academic",
+    category: "facility",
     aliases: ["ALUMNI HOUSE"],
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
     code: "CUP",
     name: "Central Utilities Plant",
-    category: "academic",
+    category: "facility",
     aliases: ["CENTRAL UTILITIES PLANT"],
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
@@ -165,7 +165,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
   {
     code: "GF",
     name: "Grounds Building",
-    category: "academic",
+    category: "facility",
     aliases: ["GROUNDS BUILDING"],
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
@@ -193,7 +193,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
   {
     code: "LH",
     name: "The Principal's Residence: Lislehurst",
-    category: "academic",
+    category: "facility",
     aliases: ["LISLEHURST", "PRINCIPAL'S RESIDENCE", "THE PRINCIPALS RESIDENCE LISLEHURST"],
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
@@ -266,7 +266,17 @@ export function getRecognizedBuilding(code: string): BuildingConfiguration | nul
   return UTM_BUILDINGS.find((building) => building.code === normalized) ?? null;
 }
 
+const PUBLIC_BUILDING_CODE_ALIASES: Record<string, string> = {
+  CC: "CCT",
+  RA: "RAWC",
+  R: "LL",
+  SB: "NSB",
+};
+
 export function normalizePublicBuildingCode(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  return getRecognizedBuilding(value)?.code ?? null;
+  const normalized = value.trim().toUpperCase();
+  return (
+    getRecognizedBuilding(normalized)?.code ?? PUBLIC_BUILDING_CODE_ALIASES[normalized] ?? null
+  );
 }

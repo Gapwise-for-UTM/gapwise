@@ -36,6 +36,17 @@ describe("UTM campus building explorer", () => {
     }
   });
 
+  test("keeps official identity-only facilities searchable without inventing routing", () => {
+    for (const code of ["WC", "CUP", "FCSH", "GF", "NSB", "PL", "BG", "LH", "IC"] as const) {
+      const result = searchCampusBuildings(code)[0];
+      expect(result?.building.code).toBe(code);
+      expect(getCampusBuildingFootprint(code)).not.toBeNull();
+      const details = getBuildingExplorerDetails(code);
+      expect(details?.building.code).toBe(code);
+      if (!details?.campus) expect(details?.verifiedEntrances).toBe(0);
+    }
+  });
+
   test("resolves room-like searches to a building and supported floor inference only", () => {
     const result = searchCampusBuildings("MN 3120")[0];
     expect(result).toMatchObject({
@@ -55,16 +66,20 @@ describe("UTM campus building explorer", () => {
 
   test("returns canonical entrance, accessibility, and verification details", () => {
     const details = getBuildingExplorerDetails("DH");
-    expect(details?.campus.entrances.length).toBeGreaterThan(0);
-    expect(details?.verifiedEntrances).toBe(details?.campus.entrances.length);
-    expect(details?.campus.indoorMapped).toBeFalse();
-    expect(details?.campus.entrances.every((entrance) => entrance.metadata.source.length > 0)).toBe(
-      true,
-    );
+    expect(details?.campus?.entrances.length).toBeGreaterThan(0);
+    expect(details?.verifiedEntrances).toBe(details?.campus?.entrances.length);
+    expect(details?.campus?.indoorMapped).toBeFalse();
+    expect(
+      details?.campus?.entrances.every((entrance) => entrance.metadata.source.length > 0),
+    ).toBe(true);
   });
 
   test("normalizes valid public building state and ignores invalid codes", () => {
     expect(normalizePublicBuildingCode("mn")).toBe("MN");
+    expect(normalizePublicBuildingCode("CC")).toBe("CCT");
+    expect(normalizePublicBuildingCode("RA")).toBe("RAWC");
+    expect(normalizePublicBuildingCode("R")).toBe("LL");
+    expect(normalizePublicBuildingCode("SB")).toBe("NSB");
     expect(normalizePublicBuildingCode("not-a-building")).toBeNull();
     expect(getBuildingExplorerDetails("not-a-building")).toBeNull();
     expect(validateRouteSearch({ building: "dh" })).toEqual({ building: "DH" });

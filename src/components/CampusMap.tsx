@@ -9,8 +9,10 @@ import {
   buildingCodeAtCoordinate,
   footprintGeometryPoints,
   getCampusBuildingFootprint,
+  representativePointForFootprint,
 } from "@/data/utm/building-footprints";
 import { getCampusCameraBounds } from "@/features/routing/campus-region";
+import { collisionFreeMarkerOffsets } from "@/features/routing/map-marker-layout";
 import {
   resolveMapAnchor,
   type MapAnchorSegment,
@@ -461,6 +463,28 @@ function getMarkerOffset(slot: number, total: number): [number, number] {
   return [(column - (itemsInRow - 1) / 2) * 36, (row - (rows - 1) / 2) * 36];
 }
 
+function mapBuildingAnchor(code: string | null) {
+  const campus = getCampusBuilding(code);
+  if (campus) return { code: campus.code, navigationPoint: campus.navigationPoint };
+  const footprint = getCampusBuildingFootprint(code);
+  const navigationPoint = footprint ? representativePointForFootprint(footprint) : null;
+  return footprint && navigationPoint
+    ? { code: footprint.properties.buildingCode, navigationPoint }
+    : null;
+}
+
+function layoutNumberMarkers(map: MapLibreMap, markers: Marker[]) {
+  const numberMarkers = markers.filter((marker) =>
+    marker.getElement().classList.contains("map-number-marker"),
+  );
+  const points = numberMarkers.map((marker) => {
+    const point = map.project(marker.getLngLat());
+    return { x: point.x, y: point.y };
+  });
+  const offsets = collisionFreeMarkerOffsets(points);
+  numberMarkers.forEach((marker, index) => marker.setOffset(offsets[index] ?? [0, 0]));
+}
+
 function syncMapData(
   map: MapLibreMap,
   maplibregl: MapLibreModule,
@@ -477,14 +501,14 @@ function syncMapData(
   const routes = anchorSegments(data);
   const buildingTotals = new Map<string, number>();
   for (const meeting of data.meetings) {
-    const building = getCampusBuilding(meeting.buildingCode);
+    const building = mapBuildingAnchor(meeting.buildingCode);
     if (!building) continue;
     buildingTotals.set(building.code, (buildingTotals.get(building.code) ?? 0) + 1);
   }
   const buildingSlots = new Map<string, number>();
 
   data.meetings.forEach((meeting, index) => {
-    const building = getCampusBuilding(meeting.buildingCode);
+    const building = mapBuildingAnchor(meeting.buildingCode);
     if (!building) return;
     const slot = buildingSlots.get(building.code) ?? 0;
     buildingSlots.set(building.code, slot + 1);
@@ -551,6 +575,8 @@ function syncMapData(
       new maplibregl.Marker({ element: anchorMarker }).setLngLat(anchor.coordinate).addTo(map),
     );
   }
+
+  layoutNumberMarkers(map, markers);
 
   const routeKey = routeGeometryKey(data);
   const routeChanged = routeKey !== lastRouteKeyRef.current;
@@ -625,7 +651,7 @@ function applyEntranceMarkerActiveState(
   element.style.height = active ? "34px" : "30px";
   const notAccessible = entrance.accessibility === "not_accessible";
   element.style.border = `${active ? 3 : 2}px ${entrance.kind === "approach" ? "dashed" : "solid"} ${notAccessible ? "var(--color-destructive)" : "var(--color-accent)"}`;
-  element.style.transform = active ? "scale(1.06)" : "";
+  element.style.scale = active ? "1.06" : "";
 }
 
 function syncEntranceMarkers(
@@ -683,7 +709,7 @@ function syncEntranceMarkers(
       markerButton.style.placeItems = "center";
       markerButton.style.boxShadow = "0 4px 14px rgba(0,0,0,.28)";
       markerButton.style.cursor = "pointer";
-      markerButton.style.transition = "transform 160ms ease, width 160ms ease, height 160ms ease";
+      markerButton.style.transition = "scale 160ms ease, width 160ms ease, height 160ms ease";
       applyEntranceMarkerActiveState(markerButton, entrance, active);
       markerButton.addEventListener("mouseenter", () => onActiveEntranceChange?.(entrance.id));
       markerButton.addEventListener("mouseleave", () => onActiveEntranceChange?.(null));
@@ -714,7 +740,7 @@ function collectBoundsPoints(data: MapData): [number, number][] {
   const points: [number, number][] = [];
   const routes = anchorSegments(data);
   for (const meeting of data.meetings) {
-    const building = getCampusBuilding(meeting.buildingCode);
+    const building = mapBuildingAnchor(meeting.buildingCode);
     if (building) {
       points.push(
         resolveMapAnchor(meeting.id, building.navigationPoint, routes, data.selectedSegmentId)
@@ -782,13 +808,14 @@ function focusBuilding(
   padding: MapFocusPadding,
 ) {
   const building = getCampusBuilding(buildingCode);
-  if (!building) return false;
   const feature = getCampusBuildingFootprint(buildingCode);
+  if (!building && !feature) return false;
   const points = [
     ...(feature ? footprintGeometryPoints(feature.geometry) : []),
-    ...building.entrances.map((entrance) => entrance.coordinates),
+    ...(building?.entrances.map((entrance) => entrance.coordinates) ?? []),
   ];
-  if (points.length === 0) points.push(building.navigationPoint);
+  if (points.length === 0 && building) points.push(building.navigationPoint);
+  if (points.length === 0) return false;
   const [first, ...rest] = points;
   const bounds = rest.reduce(
     (acc, point) => acc.extend(point),
@@ -986,6 +1013,7 @@ export function CampusMap({
         collapseAttribution();
         map.on("styledata", collapseAttribution);
         map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-right");
+        map.on("move", () => layoutNumberMarkers(map, markersRef.current));
         map.on("dragstart", (event) => {
           if (event.originalEvent) userHasMovedRef.current = true;
         });
@@ -1208,7 +1236,7 @@ export function CampusMap({
   }, [liveLocation, status]);
 
   const hasRouteContent =
-    meetings.some((meeting) => getCampusBuilding(meeting.buildingCode)) ||
+    meetings.some((meeting) => mapBuildingAnchor(meeting.buildingCode)) ||
     segments.some((segment) => segment.route.displayCoordinates.length > 0) ||
     Boolean(dayAnchor);
 

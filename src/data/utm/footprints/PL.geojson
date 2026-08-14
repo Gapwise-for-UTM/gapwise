@@ -1,0 +1,28 @@
+{
+  "type": "Feature",
+  "id": "PL",
+  "properties": {
+    "buildingCode": "PL",
+    "name": "Paleomagnetism Lab",
+    "category": "academic",
+    "source": "OpenStreetMap",
+    "sourceIds": ["way/1133333772"],
+    "matchMethods": ["override"],
+    "lastVerified": "2026-08-14",
+    "verificationStatus": "verified"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.665731, 43.5536831],
+        [-79.6659709, 43.5538507],
+        [-79.6658785, 43.5539203],
+        [-79.6657507, 43.553832],
+        [-79.6656372, 43.5537536],
+        [-79.6656947, 43.5537104],
+        [-79.665731, 43.5536831]
+      ]
+    ]
+  }
+}

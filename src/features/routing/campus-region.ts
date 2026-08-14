@@ -5,7 +5,7 @@ export type CampusBounds = [southWest: CampusCoordinate, northEast: CampusCoordi
 export type CampusSegment = [start: CampusCoordinate, end: CampusCoordinate];
 
 export const CAMPUS_LOCATION_MAX_NETWORK_DISTANCE_METERS = 110;
-export const CAMPUS_CAMERA_PADDING_METERS = 140;
+export const CAMPUS_CAMERA_PADDING_METERS = 500;
 
 export type CompiledCampusRegion = {
   hull: CampusCoordinate[];

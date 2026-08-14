@@ -24,6 +24,15 @@ import ppRaw from "./footprints/r2.geojson?raw";
 import rihRaw from "./footprints/r6.geojson?raw";
 import swRaw from "./footprints/r8.geojson?raw";
 import nrbRaw from "./footprints/NRB.geojson?raw";
+import icRaw from "./footprints/IC.geojson?raw";
+import wcRaw from "./footprints/WC.geojson?raw";
+import cupRaw from "./footprints/CUP.geojson?raw";
+import fcshRaw from "./footprints/FCSH.geojson?raw";
+import gfRaw from "./footprints/GF.geojson?raw";
+import nsbRaw from "./footprints/NSB.geojson?raw";
+import plRaw from "./footprints/PL.geojson?raw";
+import bgRaw from "./footprints/BG.geojson?raw";
+import lhRaw from "./footprints/LH.geojson?raw";
 
 export const CANONICAL_FOOTPRINT_FRAGMENT_RAW = [
   mnRaw,
@@ -52,4 +61,13 @@ export const CANONICAL_FOOTPRINT_FRAGMENT_RAW = [
   rihRaw,
   swRaw,
   nrbRaw,
+  icRaw,
+  wcRaw,
+  cupRaw,
+  fcshRaw,
+  gfRaw,
+  nsbRaw,
+  plRaw,
+  bgRaw,
+  lhRaw,
 ] as const;

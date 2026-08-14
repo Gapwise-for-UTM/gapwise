@@ -253,7 +253,7 @@ export function CampusExplorer({
           <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background/50 p-2.5 text-xs">
             <DoorOpen className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
             <span className="font-semibold">
-              {details.campus.entrances.length} mapped entrances
+              {details.campus?.entrances.length ?? 0} mapped entrances
             </span>
             <span className="ml-auto flex items-center gap-1 text-muted-foreground">
               <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
@@ -273,7 +273,7 @@ export function CampusExplorer({
             className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs"
             aria-label="Mapped entrances"
           >
-            {details.campus.entrances.map((entrance) => {
+            {(details.campus?.entrances ?? []).map((entrance) => {
               const active = entrance.id === activeEntranceId;
               return (
                 <li key={entrance.id}>

@@ -1,0 +1,26 @@
+{
+  "type": "Feature",
+  "id": "FCSH",
+  "properties": {
+    "buildingCode": "FCSH",
+    "name": "Forensic Crime Scene House",
+    "category": "academic",
+    "source": "OpenStreetMap",
+    "sourceIds": ["way/1133333774"],
+    "matchMethods": ["exact-label"],
+    "lastVerified": "2026-08-14",
+    "verificationStatus": "verified"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.6654594, 43.5529575],
+        [-79.6655492, 43.5529008],
+        [-79.6656176, 43.5529577],
+        [-79.6655278, 43.5530144],
+        [-79.6654594, 43.5529575]
+      ]
+    ]
+  }
+}
