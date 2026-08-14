@@ -994,7 +994,6 @@ export function CampusMap({
         });
         let mapHoveredBuildingCode: string | null = null;
         map.on("mousemove", (event) => {
-          if (!map.isStyleLoaded()) return;
           const nextCode = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);
           if (nextCode === mapHoveredBuildingCode) return;
           mapHoveredBuildingCode = nextCode;
@@ -1007,7 +1006,6 @@ export function CampusMap({
           latestData.current.onHoverBuilding(null);
         });
         map.on("click", (event) => {
-          if (!map.isStyleLoaded()) return;
           if (
             map.getLayer("day-routes-solid") &&
             map.queryRenderedFeatures(event.point, { layers: ["day-routes-solid"] }).length > 0
@@ -1152,7 +1150,7 @@ export function CampusMap({
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map?.isStyleLoaded()) {
+    if (map) {
       syncBuildingHighlight(
         map,
         hoveredBuildingCode === selectedBuildingCode ? null : hoveredBuildingCode,
@@ -1169,11 +1167,11 @@ export function CampusMap({
       for (const record of entranceMarkersRef.current) record.marker.remove();
       entranceMarkersRef.current.length = 0;
       lastFocusedBuildingRef.current = null;
-      if (map?.isStyleLoaded()) syncBuildingHighlight(map, null, "selected");
+      if (map) syncBuildingHighlight(map, null, "selected");
       return;
     }
 
-    if (!map?.isStyleLoaded() || !maplibregl) return;
+    if (!map || !maplibregl) return;
     syncBuildingHighlight(map, selectedBuildingCode, "selected");
     syncEntranceMarkers(
       map,
@@ -1195,10 +1193,7 @@ export function CampusMap({
   }, [focusPadding, onActiveEntranceChange, selectedBuildingCode]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (map?.isStyleLoaded()) {
-      updateEntranceMarkersActiveState(entranceMarkersRef.current, activeEntranceId);
-    }
+    updateEntranceMarkersActiveState(entranceMarkersRef.current, activeEntranceId);
   }, [activeEntranceId]);
 
   useEffect(() => {
@@ -1220,7 +1215,7 @@ export function CampusMap({
   function resetCamera() {
     const map = mapRef.current;
     const maplibregl = maplibreRef.current;
-    if (!map || !maplibregl || !map.isStyleLoaded()) return;
+    if (!map || !maplibregl) return;
     userHasMovedRef.current = false;
     lastFitKeyRef.current = "";
     if (!maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef)) {
