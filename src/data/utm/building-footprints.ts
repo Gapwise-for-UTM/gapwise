@@ -216,13 +216,16 @@ export function representativePointForFootprint(feature: CampusBuildingFootprint
   const bounds = getCampusBuildingFootprintBounds(feature.properties.buildingCode);
   if (!bounds) return null;
   const [[west, south], [east, north]] = bounds;
-  for (let row = 1; row < 20; row += 1) {
-    for (let column = 1; column < 20; column += 1) {
+  const code = feature.properties.buildingCode;
+  for (let row = 1; row < 40; row += 1) {
+    for (let column = 1; column < 40; column += 1) {
       const point: FootprintCoordinate = [
-        west + ((east - west) * column) / 20,
-        south + ((north - south) * row) / 20,
+        west + ((east - west) * column) / 40,
+        south + ((north - south) * row) / 40,
       ];
-      if (pointInBuildingFootprint(point, feature)) return point;
+      if (pointInBuildingFootprint(point, feature) && buildingCodeAtCoordinate(point) === code) {
+        return point;
+      }
     }
   }
   return null;
