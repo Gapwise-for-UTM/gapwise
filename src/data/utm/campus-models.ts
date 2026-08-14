@@ -43,6 +43,23 @@ export type CampusBuildingModel = {
  */
 export const CAMPUS_BUILDING_MODELS: readonly CampusBuildingModel[] = [];
 
+const LOCAL_MODEL_BASE = "https://gapwise.local";
+
+function isLocalVendoredModelUrl(modelUrl: string) {
+  if (!modelUrl.startsWith("/") || modelUrl.startsWith("//")) return false;
+  try {
+    const resolved = new URL(modelUrl, LOCAL_MODEL_BASE);
+    return (
+      resolved.origin === LOCAL_MODEL_BASE &&
+      resolved.pathname.startsWith("/") &&
+      !resolved.username &&
+      !resolved.password
+    );
+  } catch {
+    return false;
+  }
+}
+
 function validateCampusModels(models: readonly CampusBuildingModel[]) {
   const seenCodes = new Set<string>();
   for (const model of models) {
@@ -52,7 +69,7 @@ function validateCampusModels(models: readonly CampusBuildingModel[]) {
     }
     if (seenCodes.has(code)) throw new Error(`Duplicate campus model for ${code}.`);
     seenCodes.add(code);
-    if (!model.modelUrl.startsWith("/")) {
+    if (!isLocalVendoredModelUrl(model.modelUrl)) {
       throw new Error(`Campus model ${code} must use a local vendored model URL.`);
     }
     const [longitude, latitude] = model.transform.anchor;
