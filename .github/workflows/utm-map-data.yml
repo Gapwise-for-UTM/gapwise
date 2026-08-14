@@ -8,8 +8,14 @@ on:
       - "scripts/inspect-utm-building-relations.ts"
       - "scripts/fetch-reviewed-osm-ways.ts"
       - "src/data/utm/building-footprint-overrides.json"
+      - "src/data/utm/building-footprints.ts"
+      - "src/data/utm/footprint-fragments.ts"
+      - "src/data/utm/footprints/**"
       - "src/data/utm/building-registry.ts"
       - "src/data/utm/entrances.geojson"
+      - "src/features/routing/campus-region.ts"
+      - "tests/building-footprints.test.ts"
+      - "tests/campus-region.test.ts"
       - ".github/workflows/utm-map-data.yml"
   pull_request:
     branches: [main]
@@ -18,8 +24,14 @@ on:
       - "scripts/inspect-utm-building-relations.ts"
       - "scripts/fetch-reviewed-osm-ways.ts"
       - "src/data/utm/building-footprint-overrides.json"
+      - "src/data/utm/building-footprints.ts"
+      - "src/data/utm/footprint-fragments.ts"
+      - "src/data/utm/footprints/**"
       - "src/data/utm/building-registry.ts"
       - "src/data/utm/entrances.geojson"
+      - "src/features/routing/campus-region.ts"
+      - "tests/building-footprints.test.ts"
+      - "tests/campus-region.test.ts"
       - ".github/workflows/utm-map-data.yml"
   workflow_dispatch:
 
@@ -38,6 +50,10 @@ jobs:
         with:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile
+      - name: Verify TypeScript
+        run: bun run typecheck
+      - name: Verify canonical geometry behavior
+        run: bun test tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
       - name: Generate canonical UTM building footprints
         run: >-
           bun scripts/generate-building-footprints.ts
