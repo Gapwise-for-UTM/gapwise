@@ -29,6 +29,7 @@ type EntranceFeature = {
 type Overrides = {
   version: 1;
   ways: Record<string, string>;
+  relations?: Record<string, string>;
 };
 type PolygonGeometry = { type: "Polygon"; coordinates: Coordinate[][] };
 type MultiPolygonGeometry = { type: "MultiPolygon"; coordinates: Coordinate[][][] };
@@ -48,11 +49,19 @@ type BuildingFeature = {
   geometry: PolygonGeometry | MultiPolygonGeometry;
 };
 
-type AssignedWay = {
-  way: OsmWay;
+type AssignmentMethod =
+  | "override"
+  | "reviewed-relation"
+  | "exact-label"
+  | "entrance-membership";
+type AssignedGeometry = {
   code: string;
-  method: "override" | "exact-label" | "entrance-membership";
-  coordinates: Coordinate[];
+  method: AssignmentMethod;
+  polygons: Coordinate[][][];
+  sourceId: string;
+  sourceType: "way" | "relation";
+  osmId: number;
+  tags?: OsmTags;
 };
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -98,6 +107,17 @@ function isBuildingWay(way: OsmWay) {
   return Boolean((building && building !== "no") || (buildingPart && buildingPart !== "no"));
 }
 
+function isBuildingRelation(relation: OsmRelation, overrideCode: string | undefined) {
+  const building = relation.tags?.["building"];
+  const buildingPart = relation.tags?.["building:part"];
+  return Boolean(
+    overrideCode ||
+      exactCodeForTags(relation.tags) ||
+      ((relation.tags?.["type"] === "multipolygon" || relation.tags?.["type"] === "building") &&
+        ((building && building !== "no") || (buildingPart && buildingPart !== "no"))),
+  );
+}
+
 function polygonCenter(coordinates: Coordinate[]) {
   if (coordinates.length === 0) return null;
   const [longitude, latitude] = coordinates.reduce(
@@ -112,11 +132,125 @@ function closedRing(way: OsmWay, nodes: Map<number, OsmNode>): Coordinate[] | nu
     const node = nodes.get(id);
     return node ? ([[node.lon, node.lat]] as Coordinate[]) : [];
   });
-  if (coordinates.length < 3 || coordinates.length !== way.nodes.length) return null;
+  if (coordinates.length < 4 || coordinates.length !== way.nodes.length) return null;
   const first = coordinates[0]!;
   const last = coordinates.at(-1)!;
-  if (first[0] !== last[0] || first[1] !== last[1]) coordinates.push([...first] as Coordinate);
-  return coordinates.length >= 4 ? coordinates : null;
+  if (first[0] !== last[0] || first[1] !== last[1]) return null;
+  return coordinates;
+}
+
+function nodeRingCoordinates(nodeIds: number[], nodes: Map<number, OsmNode>) {
+  const coordinates = nodeIds.flatMap((id) => {
+    const node = nodes.get(id);
+    return node ? ([[node.lon, node.lat]] as Coordinate[]) : [];
+  });
+  if (coordinates.length !== nodeIds.length || coordinates.length < 4) return null;
+  const first = coordinates[0]!;
+  const last = coordinates.at(-1)!;
+  return first[0] === last[0] && first[1] === last[1] ? coordinates : null;
+}
+
+function stitchMemberRings(memberWays: OsmWay[], nodes: Map<number, OsmNode>) {
+  const remaining = memberWays.map((way) => [...way.nodes]);
+  const rings: Coordinate[][] = [];
+
+  while (remaining.length > 0) {
+    const chain = remaining.shift()!;
+    if (chain.length < 2) return null;
+
+    while (chain[0] !== chain.at(-1)) {
+      const first = chain[0]!;
+      const last = chain.at(-1)!;
+      const index = remaining.findIndex((candidate) => {
+        const candidateFirst = candidate[0];
+        const candidateLast = candidate.at(-1);
+        return (
+          candidateFirst === last ||
+          candidateLast === last ||
+          candidateLast === first ||
+          candidateFirst === first
+        );
+      });
+      if (index < 0) return null;
+      const next = remaining.splice(index, 1)[0]!;
+      const nextFirst = next[0]!;
+      const nextLast = next.at(-1)!;
+      if (nextFirst === last) chain.push(...next.slice(1));
+      else if (nextLast === last) chain.push(...next.slice(0, -1).reverse());
+      else if (nextLast === first) chain.unshift(...next.slice(0, -1));
+      else if (nextFirst === first) chain.unshift(...next.slice(1).reverse());
+    }
+
+    const coordinates = nodeRingCoordinates(chain, nodes);
+    if (!coordinates) return null;
+    rings.push(coordinates);
+  }
+
+  return rings;
+}
+
+function pointInRing(point: Coordinate, ring: Coordinate[]) {
+  let inside = false;
+  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
+    const [xi, yi] = ring[index]!;
+    const [xj, yj] = ring[previous]!;
+    const intersects =
+      yi > point[1] !== yj > point[1] &&
+      point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+
+function relationPolygons(
+  relation: OsmRelation,
+  waysById: Map<number, OsmWay>,
+  nodes: Map<number, OsmNode>,
+) {
+  const outerWays: OsmWay[] = [];
+  const innerWays: OsmWay[] = [];
+  for (const member of relation.members) {
+    if (member.type !== "way") continue;
+    const way = waysById.get(member.ref);
+    if (!way) return null;
+    if (member.role === "inner") innerWays.push(way);
+    else if (member.role === "outer" || member.role === "") outerWays.push(way);
+  }
+  if (outerWays.length === 0) return null;
+  const outerRings = stitchMemberRings(outerWays, nodes);
+  const innerRings = innerWays.length > 0 ? stitchMemberRings(innerWays, nodes) : [];
+  if (!outerRings || !innerRings) return null;
+
+  const polygons = outerRings.map((outer) => [outer]);
+  for (const inner of innerRings) {
+    const sample = inner[0]!;
+    const parentIndex = outerRings.findIndex((outer) => pointInRing(sample, outer));
+    if (parentIndex < 0) return null;
+    polygons[parentIndex]!.push(inner);
+  }
+  return polygons;
+}
+
+function relationMemberNodeIds(relation: OsmRelation, waysById: Map<number, OsmWay>) {
+  return relation.members.flatMap((member) =>
+    member.type === "way" ? (waysById.get(member.ref)?.nodes ?? []) : [],
+  );
+}
+
+function resolveCandidates(
+  overrideCode: string | undefined,
+  exactCode: string | null,
+  nodeIds: number[],
+  entranceCodeByNode: Map<number, string>,
+) {
+  const candidates = new Set<string>();
+  if (overrideCode) candidates.add(overrideCode);
+  if (exactCode) candidates.add(exactCode);
+  for (const nodeId of nodeIds) {
+    const entranceCode = entranceCodeByNode.get(nodeId);
+    if (entranceCode) candidates.add(entranceCode);
+  }
+  return [...candidates];
 }
 
 async function fetchOsmSnapshot(): Promise<OsmPayload> {
@@ -159,18 +293,89 @@ async function main() {
   const ways = payload.elements.filter(
     (element): element is OsmWay => element.type === "way" && "nodes" in element,
   );
+  const waysById = new Map(ways.map((way) => [way.id, way]));
+  const relations = payload.elements.filter(
+    (element): element is OsmRelation => element.type === "relation" && "members" in element,
+  );
   const entranceCodeByNode = new Map(
     entrances
       .filter((entrance) => entrance.properties.kind === "entrance")
       .map((entrance) => [entrance.properties.osmNodeId, entrance.properties.buildingCode]),
   );
   const recognizedCodes = new Set(UTM_BUILDINGS.map((building) => building.code));
-  const assigned: AssignedWay[] = [];
+  const assigned: AssignedGeometry[] = [];
   const ambiguous: unknown[] = [];
   const unassigned: unknown[] = [];
+  const assignedRelationMemberWays = new Set<number>();
+
+  for (const relation of relations) {
+    const overrideCode = overrides.relations?.[String(relation.id)]?.toUpperCase();
+    if (!isBuildingRelation(relation, overrideCode)) continue;
+    if (overrideCode && !recognizedCodes.has(overrideCode)) {
+      throw new Error(
+        `Footprint override for OSM relation ${relation.id} uses unknown building code ${overrideCode}.`,
+      );
+    }
+    const polygons = relationPolygons(relation, waysById, nodes);
+    if (!polygons) {
+      unassigned.push({
+        osmRelationId: relation.id,
+        name: relation.tags?.["name"] ?? null,
+        ref: relation.tags?.["ref"] ?? null,
+        reason: "relation-rings-unavailable-or-invalid",
+      });
+      continue;
+    }
+    const exactCode = exactCodeForTags(relation.tags);
+    const memberNodeIds = relationMemberNodeIds(relation, waysById);
+    const candidateCodes = resolveCandidates(
+      overrideCode,
+      exactCode,
+      memberNodeIds,
+      entranceCodeByNode,
+    );
+    if (candidateCodes.length > 1) {
+      ambiguous.push({
+        osmRelationId: relation.id,
+        name: relation.tags?.["name"] ?? null,
+        ref: relation.tags?.["ref"] ?? null,
+        candidateCodes,
+        center: polygonCenter(polygons[0]?.[0] ?? []),
+      });
+      continue;
+    }
+    const code = candidateCodes[0];
+    if (!code) {
+      unassigned.push({
+        osmRelationId: relation.id,
+        name: relation.tags?.["name"] ?? null,
+        ref: relation.tags?.["ref"] ?? null,
+        reason: "no-canonical-building-code",
+        center: polygonCenter(polygons[0]?.[0] ?? []),
+      });
+      continue;
+    }
+    const method: AssignmentMethod = overrideCode
+      ? "reviewed-relation"
+      : exactCode
+        ? "exact-label"
+        : "entrance-membership";
+    assigned.push({
+      code,
+      method,
+      polygons,
+      sourceId: `relation/${relation.id}`,
+      sourceType: "relation",
+      osmId: relation.id,
+      tags: relation.tags,
+    });
+    for (const member of relation.members) {
+      if (member.type === "way") assignedRelationMemberWays.add(member.ref);
+    }
+  }
 
   for (const way of ways) {
-    if (!isBuildingWay(way)) continue;
+    if (!isBuildingWay(way) || assignedRelationMemberWays.has(way.id)) continue;
     const coordinates = closedRing(way, nodes);
     if (!coordinates) continue;
     const overrideCode = overrides.ways[String(way.id)]?.toUpperCase();
@@ -180,18 +385,12 @@ async function main() {
       );
     }
     const exactCode = exactCodeForTags(way.tags);
-    const entranceCodes = new Set(
-      way.nodes.flatMap((nodeId) => {
-        const code = entranceCodeByNode.get(nodeId);
-        return code ? [code] : [];
-      }),
+    const candidateCodes = resolveCandidates(
+      overrideCode,
+      exactCode,
+      way.nodes,
+      entranceCodeByNode,
     );
-
-    const candidates = new Set<string>();
-    if (overrideCode) candidates.add(overrideCode);
-    if (exactCode) candidates.add(exactCode);
-    for (const code of entranceCodes) candidates.add(code);
-    const candidateCodes = [...candidates];
     if (candidateCodes.length > 1) {
       ambiguous.push({
         osmWayId: way.id,
@@ -214,15 +413,23 @@ async function main() {
       });
       continue;
     }
-    const method: AssignedWay["method"] = overrideCode
+    const method: AssignmentMethod = overrideCode
       ? "override"
       : exactCode
         ? "exact-label"
         : "entrance-membership";
-    assigned.push({ way, code, method, coordinates });
+    assigned.push({
+      code,
+      method,
+      polygons: [[coordinates]],
+      sourceId: `way/${way.id}`,
+      sourceType: "way",
+      osmId: way.id,
+      tags: way.tags,
+    });
   }
 
-  const grouped = new Map<string, AssignedWay[]>();
+  const grouped = new Map<string, AssignedGeometry[]>();
   for (const record of assigned) {
     const list = grouped.get(record.code) ?? [];
     list.push(record);
@@ -232,7 +439,7 @@ async function main() {
   const features: BuildingFeature[] = UTM_BUILDINGS.flatMap((building) => {
     const records = grouped.get(building.code) ?? [];
     if (records.length === 0) return [];
-    const polygons = records.map((record) => [record.coordinates]);
+    const polygons = records.flatMap((record) => record.polygons);
     return [
       {
         type: "Feature",
@@ -242,7 +449,7 @@ async function main() {
           name: building.name,
           category: building.category,
           source: "OpenStreetMap",
-          sourceIds: records.map((record) => `way/${record.way.id}`).sort(),
+          sourceIds: [...new Set(records.map((record) => record.sourceId))].sort(),
           matchMethods: [...new Set(records.map((record) => record.method))].sort(),
           lastVerified: VERIFIED_AT,
           verificationStatus: "verified",
@@ -266,13 +473,15 @@ async function main() {
     missingCodes,
     ambiguous,
     unassigned,
-    assignedWays: assigned.map((record) => ({
-      osmWayId: record.way.id,
+    assignedSources: assigned.map((record) => ({
+      sourceId: record.sourceId,
+      sourceType: record.sourceType,
+      osmId: record.osmId,
       buildingCode: record.code,
       method: record.method,
-      name: record.way.tags?.["name"] ?? null,
-      ref: record.way.tags?.["ref"] ?? null,
-      center: polygonCenter(record.coordinates),
+      name: record.tags?.["name"] ?? null,
+      ref: record.tags?.["ref"] ?? null,
+      center: polygonCenter(record.polygons[0]?.[0] ?? []),
     })),
   };
   const collection = {
@@ -285,7 +494,7 @@ async function main() {
       generatedAt: report.generatedAt,
       verificationStatus: "verified",
       matchingPolicy:
-        "Exact registry labels, explicit reviewed OSM-way overrides, or topological membership of a verified entrance node. Proximity guessing is forbidden.",
+        "Exact registry labels, explicit reviewed OSM way/relation overrides, or topological membership of a verified entrance node. Proximity guessing is forbidden.",
     },
     features,
   };
@@ -297,12 +506,12 @@ async function main() {
 
   console.log(`Generated ${features.length} canonical building footprints.`);
   console.log(`Missing registry codes: ${missingCodes.join(", ") || "none"}.`);
-  console.log(`Ambiguous building ways: ${ambiguous.length}.`);
+  console.log(`Ambiguous building geometries: ${ambiguous.length}.`);
   console.log(`Report: ${reportPath}`);
 
   if (failOnAmbiguity && ambiguous.length > 0) {
     throw new Error(
-      "Ambiguous UTM building geometry was found. Resolve it with explicit reviewed OSM-way overrides before accepting the generated dataset.",
+      "Ambiguous UTM building geometry was found. Resolve it with explicit reviewed OSM overrides before accepting the generated dataset.",
     );
   }
   if (requireComplete && missingCodes.length > 0) {
