@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { LocateFixed } from "lucide-react";
-import type { GeoJSONSource, Map as MapLibreMap, MapGeoJSONFeature, Marker } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MAP_CONFIG } from "@/config/map";
 import { CAMPUS_BUILDINGS, getCampusBuilding, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
-import { UTM_BUILDINGS } from "@/data/utm/building-registry";
+import {
+  buildingCodeAtCoordinate,
+  footprintGeometryPoints,
+  getCampusBuildingFootprint,
+} from "@/data/utm/building-footprints";
+import { getCampusCameraBounds } from "@/features/routing/campus-region";
 import {
   resolveMapAnchor,
   type MapAnchorSegment,
@@ -82,11 +87,6 @@ const FIT_BOUNDS_PADDING_PX = 56;
 const FIT_BOUNDS_MAX_ZOOM = 17;
 const ROUTE_DRAW_DURATION_MS = 1_180;
 const BUILDING_HOVER_DURATION_MS = 200;
-// Only clicks in empty map space get a small forgiving hit target. Hover never uses proximity.
-const BUILDING_NEARBY_TAP_RADIUS_PX = 28;
-// Entrance coordinates live on/near real building edges. This tiny geographic tolerance is used
-// only to associate an unnamed rendered polygon with one canonical mapped building.
-const BUILDING_FEATURE_MATCH_MAX_DISTANCE = 0.00022;
 const DEFAULT_FOCUS_PADDING: MapFocusPadding = { top: 72, right: 24, bottom: 24, left: 24 };
 const BUILDING_HOVER_SOURCE_ID = "gapwise-building-hover";
 const BUILDING_HOVER_FILL_LAYER_ID = "gapwise-building-hover-fill";
@@ -94,18 +94,6 @@ const BUILDING_HOVER_LINE_LAYER_ID = "gapwise-building-hover-line";
 const BUILDING_SELECTED_SOURCE_ID = "gapwise-building-selected";
 const BUILDING_SELECTED_FILL_LAYER_ID = "gapwise-building-selected-fill";
 const BUILDING_SELECTED_LINE_LAYER_ID = "gapwise-building-selected-line";
-
-const BUILDING_CODE_BY_LABEL = new Map(
-  UTM_BUILDINGS.flatMap((building) =>
-    [building.code, building.name, ...(building.aliases ?? [])].map(
-      (label) => [normalizeBuildingLabel(label), building.code] as const,
-    ),
-  ),
-);
-
-function normalizeBuildingLabel(value: string) {
-  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-}
 
 function mapAccentColor(theme: MapTheme) {
   return theme === "dark" ? "#60a5fa" : "#146bb8";
@@ -429,161 +417,6 @@ function ensureBuildingHighlightLayers(map: MapLibreMap, theme: MapTheme) {
   });
 }
 
-function featureBuildingCode(feature: MapGeoJSONFeature): string | null {
-  const properties = feature.properties ?? {};
-  const labels = [
-    properties["ref"],
-    properties["name"],
-    properties["name_en"],
-    properties["name:en"],
-  ];
-
-  for (const label of labels) {
-    if (typeof label !== "string") continue;
-    const code = BUILDING_CODE_BY_LABEL.get(normalizeBuildingLabel(label));
-    if (code) return code;
-  }
-  return null;
-}
-
-function pointInRing(point: [number, number], ring: number[][]): boolean {
-  let inside = false;
-  for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
-    const currentPoint = ring[index];
-    const previousPoint = ring[previous];
-    if (!currentPoint || !previousPoint) continue;
-    const [x, y] = point;
-    const [xi, yi] = currentPoint;
-    const [xj, yj] = previousPoint;
-    if (xi === undefined || yi === undefined || xj === undefined || yj === undefined) continue;
-    const intersects = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-    if (intersects) inside = !inside;
-  }
-  return inside;
-}
-
-function pointInFeatureGeometry(
-  geometry: MapGeoJSONFeature["geometry"],
-  point: [number, number],
-): boolean {
-  if (geometry.type === "Polygon") {
-    const rings = geometry.coordinates as number[][][];
-    const outer = rings[0];
-    if (!outer || !pointInRing(point, outer)) return false;
-    return !rings.slice(1).some((ring) => pointInRing(point, ring));
-  }
-  if (geometry.type === "MultiPolygon") {
-    return (geometry.coordinates as number[][][][]).some((polygon) => {
-      const outer = polygon[0];
-      if (!outer || !pointInRing(point, outer)) return false;
-      return !polygon.slice(1).some((ring) => pointInRing(point, ring));
-    });
-  }
-  return false;
-}
-
-function pointToSegmentDistanceSquared(
-  point: [number, number],
-  start: [number, number],
-  end: [number, number],
-) {
-  const dx = end[0] - start[0];
-  const dy = end[1] - start[1];
-  if (dx === 0 && dy === 0) {
-    return (point[0] - start[0]) ** 2 + (point[1] - start[1]) ** 2;
-  }
-  const t = Math.max(
-    0,
-    Math.min(1, ((point[0] - start[0]) * dx + (point[1] - start[1]) * dy) / (dx * dx + dy * dy)),
-  );
-  const x = start[0] + t * dx;
-  const y = start[1] + t * dy;
-  return (point[0] - x) ** 2 + (point[1] - y) ** 2;
-}
-
-function geometryDistanceSquared(geometry: MapGeoJSONFeature["geometry"], point: [number, number]) {
-  if (pointInFeatureGeometry(geometry, point)) return 0;
-  let nearest = Number.POSITIVE_INFINITY;
-  const visitRing = (ring: number[][]) => {
-    for (let index = 0; index < ring.length; index += 1) {
-      const start = ring[index];
-      const end = ring[(index + 1) % ring.length];
-      if (
-        !start ||
-        !end ||
-        start[0] === undefined ||
-        start[1] === undefined ||
-        end[0] === undefined ||
-        end[1] === undefined
-      ) {
-        continue;
-      }
-      nearest = Math.min(
-        nearest,
-        pointToSegmentDistanceSquared(point, [start[0], start[1]], [end[0], end[1]]),
-      );
-    }
-  };
-  if (geometry.type === "Polygon") {
-    for (const ring of geometry.coordinates as number[][][]) visitRing(ring);
-  } else if (geometry.type === "MultiPolygon") {
-    for (const polygon of geometry.coordinates as number[][][][]) {
-      for (const ring of polygon) visitRing(ring);
-    }
-  }
-  return nearest;
-}
-
-function canonicalCodeForFeature(feature: MapGeoJSONFeature): string | null {
-  const named = featureBuildingCode(feature);
-  if (named) return named;
-  if (feature.geometry.type !== "Polygon" && feature.geometry.type !== "MultiPolygon") return null;
-
-  let best: { code: string; distance: number } | null = null;
-  for (const building of CAMPUS_BUILDINGS) {
-    const distance = Math.min(
-      ...building.entrances.map((entrance) =>
-        geometryDistanceSquared(feature.geometry, entrance.coordinates),
-      ),
-    );
-    if (!Number.isFinite(distance)) continue;
-    if (!best || distance < best.distance) best = { code: building.code, distance };
-  }
-  return best && best.distance <= BUILDING_FEATURE_MATCH_MAX_DISTANCE ** 2 ? best.code : null;
-}
-
-function findBuildingFeature(map: MapLibreMap, buildingCode: string) {
-  const building = getCampusBuilding(buildingCode);
-  const layers = buildingLayerIds(map);
-  if (!building || layers.length === 0) return null;
-
-  const projectedEntrances = building.entrances.map((entrance) =>
-    map.project(entrance.coordinates),
-  );
-  const xs = projectedEntrances.map((point) => point.x);
-  const ys = projectedEntrances.map((point) => point.y);
-  const center = map.project(building.navigationPoint);
-  const minX = Math.min(center.x, ...xs) - 54;
-  const minY = Math.min(center.y, ...ys) - 54;
-  const maxX = Math.max(center.x, ...xs) + 54;
-  const maxY = Math.max(center.y, ...ys) + 54;
-  const candidates = map
-    .queryRenderedFeatures(
-      [
-        [minX, minY],
-        [maxX, maxY],
-      ],
-      { layers },
-    )
-    .filter(
-      (feature) => feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon",
-    );
-
-  const namedMatch = candidates.find((feature) => featureBuildingCode(feature) === building.code);
-  if (namedMatch) return namedMatch;
-  return candidates.find((feature) => canonicalCodeForFeature(feature) === building.code) ?? null;
-}
-
 function syncBuildingHighlight(
   map: MapLibreMap,
   buildingCode: string | null,
@@ -597,19 +430,10 @@ function syncBuildingHighlight(
   const source = map.getSource(sourceId) as GeoJSONSource | undefined;
   if (!source) return;
 
-  const feature = buildingCode ? findBuildingFeature(map, buildingCode) : null;
-  if (feature) {
-    source.setData({
-      type: "FeatureCollection",
-      features: [
-        {
-          type: "Feature",
-          properties: { buildingCode },
-          geometry: feature.geometry,
-        },
-      ],
-    });
-  }
+  const feature = buildingCode ? getCampusBuildingFootprint(buildingCode) : null;
+  source.setData(
+    feature ? { type: "FeatureCollection", features: [feature] } : emptyFeatureCollection(),
+  );
 
   const visible = Boolean(feature);
   if (map.getLayer(fillLayerId)) {
@@ -626,25 +450,6 @@ function syncBuildingHighlight(
       visible ? (kind === "selected" ? 1 : 0.7) : 0,
     );
   }
-}
-
-function nearestCampusBuildingCode(
-  map: MapLibreMap,
-  point: { x: number; y: number },
-  radius: number,
-) {
-  let nearestCode: string | null = null;
-  let nearestDistance = radius ** 2;
-
-  for (const building of CAMPUS_BUILDINGS) {
-    const projected = map.project(building.navigationPoint);
-    const distance = (projected.x - point.x) ** 2 + (projected.y - point.y) ** 2;
-    if (distance >= nearestDistance) continue;
-    nearestCode = building.code;
-    nearestDistance = distance;
-  }
-
-  return nearestCode;
 }
 
 function getMarkerOffset(slot: number, total: number): [number, number] {
@@ -966,20 +771,6 @@ function maybeFitBounds(
   return true;
 }
 
-function geometryPoints(geometry: MapGeoJSONFeature["geometry"]): [number, number][] {
-  const points: [number, number][] = [];
-  const visit = (value: unknown) => {
-    if (!Array.isArray(value)) return;
-    if (value.length >= 2 && typeof value[0] === "number" && typeof value[1] === "number") {
-      points.push([value[0], value[1]]);
-      return;
-    }
-    for (const child of value) visit(child);
-  };
-  if ("coordinates" in geometry) visit(geometry.coordinates);
-  return points;
-}
-
 function focusKey(buildingCode: string, padding: MapFocusPadding) {
   return `${buildingCode}|${padding.top}|${padding.right}|${padding.bottom}|${padding.left}`;
 }
@@ -992,9 +783,9 @@ function focusBuilding(
 ) {
   const building = getCampusBuilding(buildingCode);
   if (!building) return false;
-  const feature = findBuildingFeature(map, buildingCode);
+  const feature = getCampusBuildingFootprint(buildingCode);
   const points = [
-    ...(feature ? geometryPoints(feature.geometry) : []),
+    ...(feature ? footprintGeometryPoints(feature.geometry) : []),
     ...building.entrances.map((entrance) => entrance.coordinates),
   ];
   if (points.length === 0) points.push(building.navigationPoint);
@@ -1005,17 +796,17 @@ function focusBuilding(
   );
   map.fitBounds(bounds, {
     padding,
-    maxZoom: 17.65,
-    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650,
+    maxZoom: 18,
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 800,
   });
   return true;
 }
 
 function showCampusOverview(map: MapLibreMap) {
-  map.easeTo({
-    center: MAP_CONFIG.campusCenter,
-    zoom: MAP_CONFIG.initialZoom,
-    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500,
+  map.fitBounds(getCampusCameraBounds(UTM_ROUTING_GRAPH), {
+    padding: FIT_BOUNDS_PADDING_PX,
+    maxZoom: MAP_CONFIG.initialZoom,
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650,
   });
 }
 
@@ -1162,11 +953,19 @@ export function CampusMap({
         if (disposed || !containerRef.current) return;
         maplibregl.setWorkerUrl(mapLibreWorkerUrl);
         const initialTheme = themeRef.current;
+        const campusCameraBounds = getCampusCameraBounds(UTM_ROUTING_GRAPH);
         const map = new maplibregl.Map({
           container: containerRef.current,
           style: MAP_CONFIG.styleUrls[initialTheme],
           center: MAP_CONFIG.campusCenter,
           zoom: MAP_CONFIG.initialZoom,
+          minZoom: 14.5,
+          maxZoom: 20,
+          maxPitch: 70,
+          pitch: 30,
+          bearing: -8,
+          maxBounds: campusCameraBounds,
+          renderWorldCopies: false,
           attributionControl: false,
         });
         appliedThemeRef.current = initialTheme;
@@ -1186,7 +985,7 @@ export function CampusMap({
         };
         collapseAttribution();
         map.on("styledata", collapseAttribution);
-        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+        map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-right");
         map.on("dragstart", (event) => {
           if (event.originalEvent) userHasMovedRef.current = true;
         });
@@ -1196,19 +995,7 @@ export function CampusMap({
         let mapHoveredBuildingCode: string | null = null;
         map.on("mousemove", (event) => {
           if (!map.isStyleLoaded()) return;
-          const layers = buildingLayerIds(map);
-          const buildingFeatures =
-            layers.length > 0
-              ? map
-                  .queryRenderedFeatures(event.point, { layers })
-                  .filter(
-                    (feature) =>
-                      feature.geometry.type === "Polygon" ||
-                      feature.geometry.type === "MultiPolygon",
-                  )
-              : [];
-          const nextCode =
-            buildingFeatures.map(canonicalCodeForFeature).find((code) => code !== null) ?? null;
+          const nextCode = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);
           if (nextCode === mapHoveredBuildingCode) return;
           mapHoveredBuildingCode = nextCode;
           map.getCanvas().style.cursor = nextCode ? "pointer" : "";
@@ -1227,22 +1014,7 @@ export function CampusMap({
           ) {
             return;
           }
-          const layers = buildingLayerIds(map);
-          const features =
-            layers.length > 0
-              ? map
-                  .queryRenderedFeatures(event.point, { layers })
-                  .filter(
-                    (feature) =>
-                      feature.geometry.type === "Polygon" ||
-                      feature.geometry.type === "MultiPolygon",
-                  )
-              : [];
-          const code =
-            features.map(canonicalCodeForFeature).find((candidate) => candidate !== null) ??
-            (features.length === 0
-              ? nearestCampusBuildingCode(map, event.point, BUILDING_NEARBY_TAP_RADIUS_PX)
-              : null);
+          const code = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);
           if (code) latestData.current.onSelectBuilding(code);
         });
         map.on("error", () => {
