@@ -81,10 +81,11 @@ export function distanceToSegmentMeters(
   const latitudeRadians = (point[1] * Math.PI) / 180;
   const metresPerLatitudeDegree = 111_320;
   const metresPerLongitudeDegree = Math.max(1, 111_320 * Math.cos(latitudeRadians));
-  const toLocal = ([longitude, latitude]: CampusCoordinate) => [
-    (longitude - point[0]) * metresPerLongitudeDegree,
-    (latitude - point[1]) * metresPerLatitudeDegree,
-  ] as const;
+  const toLocal = ([longitude, latitude]: CampusCoordinate) =>
+    [
+      (longitude - point[0]) * metresPerLongitudeDegree,
+      (latitude - point[1]) * metresPerLatitudeDegree,
+    ] as const;
   const [sx, sy] = toLocal(start);
   const [ex, ey] = toLocal(end);
   const dx = ex - sx;
