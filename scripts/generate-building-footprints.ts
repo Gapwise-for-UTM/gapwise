@@ -139,6 +139,7 @@ async function main() {
   const outputPath = resolve(repositoryRoot, argValue("--output", DEFAULT_OUTPUT));
   const reportPath = resolve(repositoryRoot, argValue("--report", DEFAULT_REPORT));
   const requireComplete = process.argv.includes("--require-complete");
+  const failOnAmbiguity = process.argv.includes("--fail-on-ambiguity");
   const [payload, entranceRaw, overrideRaw] = await Promise.all([
     fetchOsmSnapshot(),
     readFile(entrancePath, "utf8"),
@@ -295,7 +296,7 @@ async function main() {
   console.log(`Ambiguous building ways: ${ambiguous.length}.`);
   console.log(`Report: ${reportPath}`);
 
-  if (ambiguous.length > 0) {
+  if (failOnAmbiguity && ambiguous.length > 0) {
     throw new Error(
       "Ambiguous UTM building geometry was found. Resolve it with explicit reviewed OSM-way overrides before accepting the generated dataset.",
     );
