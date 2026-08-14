@@ -6,7 +6,9 @@ import {
   buildingCodeAtCoordinate,
   getCampusBuildingFootprint,
   getCampusBuildingFootprintBounds,
+  pointInBuildingFootprint,
   representativePointForFootprint,
+  type FootprintCoordinate,
 } from "@/data/utm/building-footprints";
 import { getCampusCameraBounds } from "@/features/routing/campus-region";
 
@@ -27,6 +29,30 @@ describe("canonical UTM building footprints", () => {
       expect(buildingCodeAtCoordinate(point!), `${feature.id} must not cross-resolve`).toBe(
         feature.properties.buildingCode,
       );
+    }
+  });
+
+  test("sampled interior points never resolve to a neighbouring building", () => {
+    for (const feature of CAMPUS_BUILDING_FOOTPRINTS.features) {
+      const bounds = getCampusBuildingFootprintBounds(feature.properties.buildingCode);
+      expect(bounds).not.toBeNull();
+      const [[west, south], [east, north]] = bounds!;
+      let interiorSamples = 0;
+      for (let row = 1; row < 48; row += 1) {
+        for (let column = 1; column < 48; column += 1) {
+          const point: FootprintCoordinate = [
+            west + ((east - west) * column) / 48,
+            south + ((north - south) * row) / 48,
+          ];
+          if (!pointInBuildingFootprint(point, feature)) continue;
+          interiorSamples += 1;
+          expect(
+            buildingCodeAtCoordinate(point),
+            `${feature.properties.buildingCode} cross-resolves near ${point.join(",")}`,
+          ).toBe(feature.properties.buildingCode);
+        }
+      }
+      expect(interiorSamples, `${feature.properties.buildingCode} needs sampled interior area`).toBeGreaterThan(0);
     }
   });
 
