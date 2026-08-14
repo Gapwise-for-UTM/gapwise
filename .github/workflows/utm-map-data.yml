@@ -1,6 +1,14 @@
 name: UTM map data
 
 on:
+  push:
+    branches: [fix/utm-map-region-foundation]
+    paths:
+      - "scripts/generate-building-footprints.ts"
+      - "src/data/utm/building-footprint-overrides.json"
+      - "src/data/utm/building-registry.ts"
+      - "src/data/utm/entrances.geojson"
+      - ".github/workflows/utm-map-data.yml"
   pull_request:
     branches: [main]
     paths:
