@@ -3,6 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      /*
+       * MapLibre owns the marker root's transform. Keep entrance marker geometry
+       * absolutely stable so visual selection state can never scale or resize
+       * the geographic translation during repeated pan/zoom interactions.
+       */
+      .map-entrance-marker {
+        box-sizing: border-box !important;
+        width: 30px !important;
+        height: 30px !important;
+        scale: none !important;
+        transition: border-width 160ms ease, border-color 160ms ease, outline-color 160ms ease !important;
+      }
+
+      .map-entrance-marker.is-selected {
+        outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
+        outline-offset: 2px;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
