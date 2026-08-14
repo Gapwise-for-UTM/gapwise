@@ -150,7 +150,10 @@ describe("bundled UTM routing data", () => {
   });
 
   test("keeps route calculation offline at runtime", async () => {
-    const source = await readFile(new URL("../src/features/routing/engine.ts", import.meta.url), "utf8");
+    const source = await readFile(
+      new URL("../src/features/routing/engine.ts", import.meta.url),
+      "utf8",
+    );
     expect(source).not.toContain("fetch(");
     expect(source).not.toContain("axios");
     expect(source).not.toContain("http://");
