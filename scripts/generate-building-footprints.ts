@@ -61,7 +61,7 @@ type AssignedGeometry = {
   sourceId: string;
   sourceType: "way" | "relation";
   osmId: number;
-  tags?: OsmTags;
+  tags: OsmTags | undefined;
 };
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
