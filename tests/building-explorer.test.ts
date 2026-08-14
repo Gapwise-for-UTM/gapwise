@@ -3,7 +3,8 @@ import {
   getBuildingExplorerDetails,
   searchCampusBuildings,
 } from "@/features/routing/building-explorer";
-import { normalizePublicBuildingCode } from "@/data/utm/building-registry";
+import { UTM_BUILDINGS, normalizePublicBuildingCode } from "@/data/utm/building-registry";
+import { getCampusBuildingFootprint } from "@/data/utm/building-footprints";
 import { validateRouteSearch } from "@/routes/_app/route/index";
 
 describe("UTM campus building explorer", () => {
@@ -14,6 +15,25 @@ describe("UTM campus building explorer", () => {
     expect(searchCampusBuildings("Instructional Centre")[0]?.building.code).toBe("IB");
     expect(searchCampusBuildings("Kaneff")[0]?.building.code).toBe("KN");
     expect(searchCampusBuildings("Student Centre")[0]?.building.code).toBe("XR");
+  });
+
+  test("maps every supported building search to its own canonical footprint", () => {
+    for (const building of UTM_BUILDINGS) {
+      const byCode = searchCampusBuildings(building.code)[0];
+      expect(byCode?.building.code, `${building.code} code search`).toBe(building.code);
+
+      const byName = searchCampusBuildings(building.name)[0];
+      expect(byName?.building.code, `${building.name} name search`).toBe(building.code);
+
+      for (const alias of building.aliases ?? []) {
+        const byAlias = searchCampusBuildings(alias)[0];
+        expect(byAlias?.building.code, `${alias} alias search`).toBe(building.code);
+      }
+
+      const footprint = getCampusBuildingFootprint(building.code);
+      expect(footprint, `${building.code} canonical footprint`).not.toBeNull();
+      expect(footprint?.properties.buildingCode).toBe(building.code);
+    }
   });
 
   test("resolves room-like searches to a building and supported floor inference only", () => {

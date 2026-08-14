@@ -1,0 +1,90 @@
+name: UTM map data
+
+on:
+  push:
+    branches: [fix/utm-map-region-foundation]
+    paths:
+      - "scripts/generate-building-footprints.ts"
+      - "scripts/inspect-utm-building-relations.ts"
+      - "scripts/fetch-reviewed-osm-ways.ts"
+      - "scripts/diagnose-building-overlaps.ts"
+      - "src/components/CampusMap.tsx"
+      - "src/data/utm/building-footprint-overrides.json"
+      - "src/data/utm/building-footprints.ts"
+      - "src/data/utm/footprint-fragments.ts"
+      - "src/data/utm/footprints/**"
+      - "src/data/utm/building-registry.ts"
+      - "src/data/utm/entrances.geojson"
+      - "src/data/utm/campus.ts"
+      - "src/features/routing/campus-presence.ts"
+      - "src/features/routing/campus-region.ts"
+      - "tests/building-explorer.test.ts"
+      - "tests/building-footprints.test.ts"
+      - "tests/campus-presence.test.ts"
+      - "tests/campus-region.test.ts"
+      - ".github/workflows/utm-map-data.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/generate-building-footprints.ts"
+      - "scripts/inspect-utm-building-relations.ts"
+      - "scripts/fetch-reviewed-osm-ways.ts"
+      - "scripts/diagnose-building-overlaps.ts"
+      - "src/components/CampusMap.tsx"
+      - "src/data/utm/building-footprint-overrides.json"
+      - "src/data/utm/building-footprints.ts"
+      - "src/data/utm/footprint-fragments.ts"
+      - "src/data/utm/footprints/**"
+      - "src/data/utm/building-registry.ts"
+      - "src/data/utm/entrances.geojson"
+      - "src/data/utm/campus.ts"
+      - "src/features/routing/campus-presence.ts"
+      - "src/features/routing/campus-region.ts"
+      - "tests/building-explorer.test.ts"
+      - "tests/building-footprints.test.ts"
+      - "tests/campus-presence.test.ts"
+      - "tests/campus-region.test.ts"
+      - ".github/workflows/utm-map-data.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-footprints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - name: Verify TypeScript
+        run: bun run typecheck
+      - name: Diagnose canonical footprint overlap
+        run: bun scripts/diagnose-building-overlaps.ts
+      - name: Verify canonical geometry and search behavior
+        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
+      - name: Generate canonical UTM building footprints
+        run: >-
+          bun scripts/generate-building-footprints.ts
+          --output artifacts/building-footprints.geojson
+          --report artifacts/utm-building-footprint-report.json
+      - name: Inspect current OSM building relations
+        run: bun scripts/inspect-utm-building-relations.ts
+      - name: Fetch reviewed multipolygon member ways
+        run: bun scripts/fetch-reviewed-osm-ways.ts
+      - name: Upload geometry and review reports
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: utm-building-footprints
+          path: |
+            artifacts/building-footprints.geojson
+            artifacts/utm-building-footprint-report.json
+            artifacts/utm-building-relations.json
+            artifacts/utm-reviewed-osm-ways.json
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,30 @@
+{
+  "type": "Feature",
+  "id": "DW",
+  "properties": {
+    "buildingCode": "DW",
+    "name": "Erindale Studio Theatre",
+    "category": "academic",
+    "source": "OpenStreetMap",
+    "sourceIds": ["way/32875017"],
+    "matchMethods": ["override"],
+    "lastVerified": "2026-08-14",
+    "verificationStatus": "verified"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.6664102, 43.550075],
+        [-79.666393, 43.5500695],
+        [-79.6661125, 43.5499796],
+        [-79.6661518, 43.549915],
+        [-79.6661378, 43.5499078],
+        [-79.6661244, 43.5499009],
+        [-79.6662233, 43.5497996],
+        [-79.6665201, 43.5498948],
+        [-79.6664102, 43.550075]
+      ]
+    ]
+  }
+}
