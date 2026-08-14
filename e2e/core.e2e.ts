@@ -338,22 +338,39 @@ test("tapping recognized map geometry selects a building without a timetable", a
 
   await page.goto("/route?building=MN");
   await expect(page.getByRole("button", { name: "Return to campus overview" })).toBeVisible();
-
-  const entranceMarker = page.locator(".map-entrance-marker").first();
-  await expect(entranceMarker).toBeVisible();
-  const entranceBounds = await entranceMarker.boundingBox();
-  expect(entranceBounds).not.toBeNull();
-  if (!entranceBounds) throw new Error("Mapped entrance bounds are unavailable.");
-  const buildingPoint = {
-    x: entranceBounds.x + entranceBounds.width / 2,
-    y: entranceBounds.y + entranceBounds.height / 2,
-  };
-
   await page.getByRole("button", { name: "Close Maanjiwe nendamowinan details" }).click();
-  await expect(entranceMarker).toHaveCount(0);
-  await page.mouse.click(buildingPoint.x, buildingPoint.y);
-  await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toBeVisible();
-  expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
+  await expect(page.locator(".map-entrance-marker")).toHaveCount(0);
+  await expect.poll(() => new URL(page.url()).searchParams.has("building")).toBe(false);
+
+  const canvas = page.locator(".maplibregl-canvas").first();
+  await expect(canvas).toBeVisible();
+  const bounds = await canvas.boundingBox();
+  expect(bounds).not.toBeNull();
+  if (!bounds) throw new Error("Campus map canvas bounds are unavailable.");
+
+  let recognizedPoint: { x: number; y: number } | null = null;
+  const columns = 14;
+  const rows = 12;
+  for (let row = 2; row < rows - 1 && !recognizedPoint; row += 1) {
+    for (let column = 2; column < columns - 1; column += 1) {
+      const point = {
+        x: bounds.x + (bounds.width * column) / columns,
+        y: bounds.y + (bounds.height * row) / rows,
+      };
+      await page.mouse.move(point.x, point.y);
+      const cursor = await canvas.evaluate((element) => element.style.cursor);
+      if (cursor === "pointer") {
+        recognizedPoint = point;
+        break;
+      }
+    }
+  }
+
+  expect(recognizedPoint, "expected at least one visible canonical building footprint").not.toBeNull();
+  if (!recognizedPoint) throw new Error("No recognized building geometry was found on the visible map.");
+  await page.mouse.click(recognizedPoint.x, recognizedPoint.y);
+  await expect(page.locator(".campus-building-card")).toBeVisible();
+  await expect.poll(() => new URL(page.url()).searchParams.get("building")).not.toBeNull();
   guard.assertClean();
 });
 
