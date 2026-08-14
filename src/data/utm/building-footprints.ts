@@ -166,15 +166,18 @@ function pointOnSegment(
   start: FootprintCoordinate,
   end: FootprintCoordinate,
 ) {
-  const cross =
-    (point[1] - start[1]) * (end[0] - start[0]) -
-    (point[0] - start[0]) * (end[1] - start[1]);
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const squaredLength = dx * dx + dy * dy;
+  if (squaredLength <= 1e-24) {
+    const pointDx = point[0] - start[0];
+    const pointDy = point[1] - start[1];
+    return pointDx * pointDx + pointDy * pointDy <= 1e-24;
+  }
+  const cross = (point[1] - start[1]) * dx - (point[0] - start[0]) * dy;
   if (Math.abs(cross) > 1e-11) return false;
-  const dot =
-    (point[0] - start[0]) * (end[0] - start[0]) +
-    (point[1] - start[1]) * (end[1] - start[1]);
+  const dot = (point[0] - start[0]) * dx + (point[1] - start[1]) * dy;
   if (dot < 0) return false;
-  const squaredLength = (end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2;
   return dot <= squaredLength;
 }
 
