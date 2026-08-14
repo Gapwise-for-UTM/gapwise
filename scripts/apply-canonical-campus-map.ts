@@ -33,20 +33,16 @@ replaceOnce(
   '// Only clicks in empty map space get a small forgiving hit target. Hover never uses proximity.\nconst BUILDING_NEARBY_TAP_RADIUS_PX = 28;\n// Entrance coordinates live on/near real building edges. This tiny geographic tolerance is used\n// only to associate an unnamed rendered polygon with one canonical mapped building.\nconst BUILDING_FEATURE_MATCH_MAX_DISTANCE = 0.00022;\n',
   '',
 );
-replaceRange(
-  'const BUILDING_CODE_BY_LABEL = new Map(',
-  'function mapAccentColor(theme: MapTheme)',
-  'function mapAccentColor(theme: MapTheme)',
-);
+replaceRange('const BUILDING_CODE_BY_LABEL = new Map(', 'function mapAccentColor(theme: MapTheme)', '');
 replaceRange(
   'function featureBuildingCode(feature: MapGeoJSONFeature): string | null {',
   'function getMarkerOffset(slot: number, total: number): [number, number] {',
-  `function syncBuildingHighlight(\n  map: MapLibreMap,\n  buildingCode: string | null,\n  kind: "hover" | "selected",\n) {\n  const sourceId = kind === "selected" ? BUILDING_SELECTED_SOURCE_ID : BUILDING_HOVER_SOURCE_ID;\n  const fillLayerId =\n    kind === "selected" ? BUILDING_SELECTED_FILL_LAYER_ID : BUILDING_HOVER_FILL_LAYER_ID;\n  const lineLayerId =\n    kind === "selected" ? BUILDING_SELECTED_LINE_LAYER_ID : BUILDING_HOVER_LINE_LAYER_ID;\n  const source = map.getSource(sourceId) as GeoJSONSource | undefined;\n  if (!source) return;\n\n  const feature = buildingCode ? getCampusBuildingFootprint(buildingCode) : null;\n  source.setData(\n    feature\n      ? { type: "FeatureCollection", features: [feature] }\n      : emptyFeatureCollection(),\n  );\n\n  const visible = Boolean(feature);\n  if (map.getLayer(fillLayerId)) {\n    map.setPaintProperty(\n      fillLayerId,\n      "fill-opacity",\n      visible ? (kind === "selected" ? 0.36 : 0.16) : 0,\n    );\n  }\n  if (map.getLayer(lineLayerId)) {\n    map.setPaintProperty(\n      lineLayerId,\n      "line-opacity",\n      visible ? (kind === "selected" ? 1 : 0.7) : 0,\n    );\n  }\n}\n\nfunction getMarkerOffset(slot: number, total: number): [number, number] {`,
+  `function syncBuildingHighlight(\n  map: MapLibreMap,\n  buildingCode: string | null,\n  kind: "hover" | "selected",\n) {\n  const sourceId = kind === "selected" ? BUILDING_SELECTED_SOURCE_ID : BUILDING_HOVER_SOURCE_ID;\n  const fillLayerId =\n    kind === "selected" ? BUILDING_SELECTED_FILL_LAYER_ID : BUILDING_HOVER_FILL_LAYER_ID;\n  const lineLayerId =\n    kind === "selected" ? BUILDING_SELECTED_LINE_LAYER_ID : BUILDING_HOVER_LINE_LAYER_ID;\n  const source = map.getSource(sourceId) as GeoJSONSource | undefined;\n  if (!source) return;\n\n  const feature = buildingCode ? getCampusBuildingFootprint(buildingCode) : null;\n  source.setData(\n    feature ? { type: "FeatureCollection", features: [feature] } : emptyFeatureCollection(),\n  );\n\n  const visible = Boolean(feature);\n  if (map.getLayer(fillLayerId)) {\n    map.setPaintProperty(\n      fillLayerId,\n      "fill-opacity",\n      visible ? (kind === "selected" ? 0.36 : 0.16) : 0,\n    );\n  }\n  if (map.getLayer(lineLayerId)) {\n    map.setPaintProperty(\n      lineLayerId,\n      "line-opacity",\n      visible ? (kind === "selected" ? 1 : 0.7) : 0,\n    );\n  }\n}\n\n`,
 );
 replaceRange(
   'function geometryPoints(geometry: MapGeoJSONFeature["geometry"]): [number, number][] {',
   'function focusKey(buildingCode: string, padding: MapFocusPadding) {',
-  'function focusKey(buildingCode: string, padding: MapFocusPadding) {',
+  '',
 );
 replaceOnce(
   '  const feature = findBuildingFeature(map, buildingCode);\n  const points = [\n    ...(feature ? geometryPoints(feature.geometry) : []),\n    ...building.entrances.map((entrance) => entrance.coordinates),\n  ];',
@@ -71,7 +67,7 @@ replaceOnce(
 replaceRange(
   '        let mapHoveredBuildingCode: string | null = null;\n        map.on("mousemove", (event) => {',
   '        map.on("error", () => {',
-  `        let mapHoveredBuildingCode: string | null = null;\n        map.on("mousemove", (event) => {\n          if (!map.isStyleLoaded()) return;\n          const nextCode = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);\n          if (nextCode === mapHoveredBuildingCode) return;\n          mapHoveredBuildingCode = nextCode;\n          map.getCanvas().style.cursor = nextCode ? "pointer" : "";\n          latestData.current.onHoverBuilding(nextCode);\n        });\n        map.getCanvas().addEventListener("mouseleave", () => {\n          mapHoveredBuildingCode = null;\n          map.getCanvas().style.cursor = "";\n          latestData.current.onHoverBuilding(null);\n        });\n        map.on("click", (event) => {\n          if (!map.isStyleLoaded()) return;\n          if (\n            map.getLayer("day-routes-solid") &&\n            map.queryRenderedFeatures(event.point, { layers: ["day-routes-solid"] }).length > 0\n          ) {\n            return;\n          }\n          const code = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);\n          if (code) latestData.current.onSelectBuilding(code);\n        });\n        map.on("error", () => {`,
+  `        let mapHoveredBuildingCode: string | null = null;\n        map.on("mousemove", (event) => {\n          if (!map.isStyleLoaded()) return;\n          const nextCode = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);\n          if (nextCode === mapHoveredBuildingCode) return;\n          mapHoveredBuildingCode = nextCode;\n          map.getCanvas().style.cursor = nextCode ? "pointer" : "";\n          latestData.current.onHoverBuilding(nextCode);\n        });\n        map.getCanvas().addEventListener("mouseleave", () => {\n          mapHoveredBuildingCode = null;\n          map.getCanvas().style.cursor = "";\n          latestData.current.onHoverBuilding(null);\n        });\n        map.on("click", (event) => {\n          if (!map.isStyleLoaded()) return;\n          if (\n            map.getLayer("day-routes-solid") &&\n            map.queryRenderedFeatures(event.point, { layers: ["day-routes-solid"] }).length > 0\n          ) {\n            return;\n          }\n          const code = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);\n          if (code) latestData.current.onSelectBuilding(code);\n        });\n`,
 );
 
 if (source.includes("canonicalCodeForFeature") || source.includes("nearestCampusBuildingCode")) {
