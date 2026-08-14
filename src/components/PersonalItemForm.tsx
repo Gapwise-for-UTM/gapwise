@@ -14,16 +14,18 @@ export default function PersonalItemForm({
   open,
   onOpenChange,
   initial,
+  defaultTerm,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initial?: PersonalItem | null;
+  defaultTerm: Term;
   onSave: (item: PersonalItem) => void;
 }) {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<PersonalCategory>("Personal");
-  const [term, setTerm] = useState<Term>(TERMS[0] as Term);
+  const [term, setTerm] = useState<Term>(defaultTerm);
   const [weekday, setWeekday] = useState<Weekday>(WEEKDAYS[0] as Weekday);
   const [start, setStart] = useState("12:00");
   const [end, setEnd] = useState("13:00");
@@ -43,14 +45,14 @@ export default function PersonalItemForm({
     } else {
       setTitle("");
       setCategory("Personal");
-      setTerm(TERMS[0] as Term);
+      setTerm(defaultTerm);
       setWeekday(WEEKDAYS[0] as Weekday);
       setStart("12:00");
       setEnd("13:00");
       setNotes("");
       setColor("#5b21b6");
     }
-  }, [initial, open]);
+  }, [defaultTerm, initial, open]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
