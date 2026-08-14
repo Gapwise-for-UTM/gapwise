@@ -64,6 +64,11 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Verify TypeScript
         run: bun run typecheck
+      - name: Use the complete official UTM facilities geometry window
+        run: >-
+          sed -i
+          's/-79.6715,43.5450,-79.6600,43.5524/-79.6725,43.5440,-79.6595,43.5555/'
+          scripts/generate-building-footprints.ts
       - name: Generate canonical UTM building footprints
         run: >-
           bun scripts/generate-building-footprints.ts

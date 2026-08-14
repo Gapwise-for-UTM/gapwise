@@ -159,7 +159,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     code: "FCSH",
     name: "Forensic Crime Scene House",
     category: "academic",
-    aliases: ["FORENSIC CRIME SCENE HOUSE", "FORENSIC ANTHROPOLOGY FIELD SCHOOL"],
+    aliases: ["FORENSIC CRIME SCENE HOUSE", "FORENSIC ANTHROPOLOGY FIELD SCHOOL", "CSI HOUSE"],
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
@@ -173,7 +173,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     code: "NSB",
     name: "New Science Building",
     category: "academic",
-    aliases: ["NEW SCIENCE BUILDING", "NEW SCIENCE BUILDING UTM"],
+    aliases: ["NEW SCIENCE BUILDING", "NEW SCIENCE BUILDING UTM", "SCIENCE BUILDING", "SB"],
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
