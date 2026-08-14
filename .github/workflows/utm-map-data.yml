@@ -64,27 +64,35 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Verify TypeScript
         run: bun run typecheck
-      - name: Diagnose canonical footprint overlap
-        run: bun scripts/diagnose-building-overlaps.ts
-      - name: Verify canonical geometry and search behavior
-        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
       - name: Generate canonical UTM building footprints
         run: >-
           bun scripts/generate-building-footprints.ts
           --output artifacts/building-footprints.geojson
           --report artifacts/utm-building-footprint-report.json
-      - name: Inspect current OSM building relations
-        run: bun scripts/inspect-utm-building-relations.ts
-      - name: Fetch reviewed multipolygon member ways
-        run: bun scripts/fetch-reviewed-osm-ways.ts
-      - name: Upload geometry and review reports
+      - name: Upload geometry discovery artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: utm-building-footprints
           path: |
             artifacts/building-footprints.geojson
             artifacts/utm-building-footprint-report.json
+          if-no-files-found: error
+          retention-days: 7
+      - name: Diagnose canonical footprint overlap
+        run: bun scripts/diagnose-building-overlaps.ts
+      - name: Verify canonical geometry and search behavior
+        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
+      - name: Inspect current OSM building relations
+        run: bun scripts/inspect-utm-building-relations.ts
+      - name: Fetch reviewed multipolygon member ways
+        run: bun scripts/fetch-reviewed-osm-ways.ts
+      - name: Upload relation review reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: utm-building-relation-review
+          path: |
             artifacts/utm-building-relations.json
             artifacts/utm-reviewed-osm-ways.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7

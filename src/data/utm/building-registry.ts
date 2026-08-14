@@ -28,9 +28,17 @@ const OFFICIAL_ROOM_EXAMPLE_SOURCE = {
   verificationStatus: "verified",
 } as const satisfies SourceMetadata;
 
+const OFFICIAL_FACILITIES_SOURCE = {
+  source: "University of Toronto Mississauga Facilities Management & Planning building list",
+  sourceUrl: "https://www.utm.utoronto.ca/facilities/buildings",
+  lastVerified: "2026-08-14",
+  verificationStatus: "verified",
+} as const satisfies SourceMetadata;
+
 /**
- * Recognition data only. Presence here does not imply that coordinates, paths,
- * entrances, floors, or accessibility have been surveyed for routing.
+ * Canonical recognition data for UTM buildings. Presence here establishes
+ * identity/search coverage, not surveyed routing, entrance, floor, or
+ * accessibility coverage.
  */
 export const UTM_BUILDINGS: BuildingConfiguration[] = [
   {
@@ -97,6 +105,13 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     aliases: ["KANEFF", "KANEFF CENTRE"],
   },
   {
+    code: "IC",
+    name: "Innovation Complex",
+    category: "academic",
+    aliases: ["INNOVATION COMPLEX"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
     code: "RAWC",
     name: "Recreation, Athletics and Wellness Centre",
     category: "academic",
@@ -121,10 +136,66 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     aliases: ["ACADEMIC ANNEX"],
   },
   {
+    code: "WC",
+    name: "Alumni House",
+    category: "academic",
+    aliases: ["ALUMNI HOUSE"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
+    code: "CUP",
+    name: "Central Utilities Plant",
+    category: "academic",
+    aliases: ["CENTRAL UTILITIES PLANT"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
     code: "DW",
     name: "Erindale Studio Theatre",
     category: "academic",
     aliases: ["ERINDALE STUDIO THEATRE"],
+  },
+  {
+    code: "FCSH",
+    name: "Forensic Crime Scene House",
+    category: "academic",
+    aliases: ["FORENSIC CRIME SCENE HOUSE", "FORENSIC ANTHROPOLOGY FIELD SCHOOL"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
+    code: "GF",
+    name: "Grounds Building",
+    category: "academic",
+    aliases: ["GROUNDS BUILDING"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
+    code: "NSB",
+    name: "New Science Building",
+    category: "academic",
+    aliases: ["NEW SCIENCE BUILDING", "NEW SCIENCE BUILDING UTM"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
+    code: "PL",
+    name: "Paleomagnetism Lab",
+    category: "academic",
+    aliases: ["PALEOMAGNETISM LAB", "PALEOMAGNETISM LABORATORY"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
+    code: "BG",
+    name: "Research Greenhouse",
+    category: "academic",
+    aliases: ["RESEARCH GREENHOUSE"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
+  },
+  {
+    code: "LH",
+    name: "The Principal's Residence: Lislehurst",
+    category: "academic",
+    aliases: ["LISLEHURST", "PRINCIPAL'S RESIDENCE", "THE PRINCIPALS RESIDENCE LISLEHURST"],
+    metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
     code: "EH",
@@ -136,7 +207,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     code: "LL",
     name: "Leacock Lane",
     category: "residence",
-    aliases: ["LEACOCK LANE", "LEACOCK LANE RESIDENCE"],
+    aliases: ["R", "LEACOCK LANE", "LEACOCK LANE RESIDENCE"],
   },
   {
     code: "MV",
