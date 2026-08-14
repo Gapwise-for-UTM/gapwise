@@ -1,5 +1,5 @@
-import { getRecognizedBuilding } from "./building-registry";
-import footprintDataRaw from "./building-footprints.geojson?raw";
+import { getRecognizedBuilding, UTM_BUILDINGS } from "./building-registry";
+import { CANONICAL_FOOTPRINT_FRAGMENT_RAW } from "./footprint-fragments";
 
 export type FootprintCoordinate = [longitude: number, latitude: number];
 export type FootprintPolygon = { type: "Polygon"; coordinates: FootprintCoordinate[][] };
@@ -28,41 +28,38 @@ export type CampusBuildingFootprintCollection = {
   features: CampusBuildingFootprint[];
 };
 
-const parsed = JSON.parse(footprintDataRaw) as CampusBuildingFootprintCollection;
+type FootprintFragment = CampusBuildingFootprint;
+const fragments = CANONICAL_FOOTPRINT_FRAGMENT_RAW.map(
+  (raw) => JSON.parse(raw) as FootprintFragment,
+);
 
-function assertCoordinate([longitude, latitude]: FootprintCoordinate) {
-  if (
-    !Number.isFinite(longitude) ||
-    !Number.isFinite(latitude) ||
-    longitude < -180 ||
-    longitude > 180 ||
-    latitude < -90 ||
-    latitude > 90
-  ) {
-    throw new Error(`Invalid canonical building footprint coordinate ${longitude},${latitude}.`);
-  }
+function geometryPolygons(geometry: CampusBuildingFootprint["geometry"]): FootprintCoordinate[][][] {
+  return geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
 }
 
 function geometryRings(geometry: CampusBuildingFootprint["geometry"]) {
-  return geometry.type === "Polygon" ? geometry.coordinates : geometry.coordinates.flat();
+  return geometryPolygons(geometry).flat();
 }
 
-function validateCollection(collection: CampusBuildingFootprintCollection) {
-  if (collection.type !== "FeatureCollection") {
-    throw new Error("Canonical UTM building footprints must be a GeoJSON FeatureCollection.");
-  }
-  const seen = new Set<string>();
-  for (const feature of collection.features) {
-    const code = feature.properties.buildingCode.toUpperCase();
-    if (!getRecognizedBuilding(code)) {
-      throw new Error(`Canonical building footprint uses unknown code ${code}.`);
-    }
-    if (seen.has(code)) throw new Error(`Duplicate canonical building footprint for ${code}.`);
-    seen.add(code);
-    if (feature.id !== code) throw new Error(`Canonical building footprint ${code} has mismatched id.`);
-    for (const ring of geometryRings(feature.geometry)) {
+function validateGeometry(code: string, geometry: CampusBuildingFootprint["geometry"]) {
+  const polygons = geometryPolygons(geometry);
+  if (polygons.length === 0) throw new Error(`Canonical building footprint ${code} has no polygons.`);
+  for (const polygon of polygons) {
+    if (polygon.length === 0) throw new Error(`Canonical building footprint ${code} has an empty polygon.`);
+    for (const ring of polygon) {
       if (ring.length < 4) throw new Error(`Canonical building footprint ${code} has an invalid ring.`);
-      for (const coordinate of ring) assertCoordinate(coordinate);
+      for (const [longitude, latitude] of ring) {
+        if (
+          !Number.isFinite(longitude) ||
+          !Number.isFinite(latitude) ||
+          longitude < -180 ||
+          longitude > 180 ||
+          latitude < -90 ||
+          latitude > 90
+        ) {
+          throw new Error(`Invalid canonical building footprint coordinate ${longitude},${latitude}.`);
+        }
+      }
       const first = ring[0]!;
       const last = ring.at(-1)!;
       if (first[0] !== last[0] || first[1] !== last[1]) {
@@ -72,14 +69,67 @@ function validateCollection(collection: CampusBuildingFootprintCollection) {
   }
 }
 
-validateCollection(parsed);
+function mergeFragments(): CampusBuildingFootprint[] {
+  const grouped = new Map<string, FootprintFragment[]>();
+  for (const fragment of fragments) {
+    const code = fragment.properties.buildingCode.toUpperCase();
+    if (!getRecognizedBuilding(code)) {
+      throw new Error(`Canonical building footprint fragment uses unknown code ${code}.`);
+    }
+    validateGeometry(code, fragment.geometry);
+    const records = grouped.get(code) ?? [];
+    records.push(fragment);
+    grouped.set(code, records);
+  }
 
-export const CAMPUS_BUILDING_FOOTPRINTS = parsed;
+  return UTM_BUILDINGS.map((building) => {
+    const records = grouped.get(building.code) ?? [];
+    if (records.length === 0) {
+      throw new Error(`Canonical UTM footprint coverage is missing ${building.code}.`);
+    }
+    const polygons = records.flatMap((record) => geometryPolygons(record.geometry));
+    const feature: CampusBuildingFootprint = {
+      type: "Feature",
+      id: building.code,
+      properties: {
+        buildingCode: building.code,
+        name: building.name,
+        category: building.category,
+        source: "OpenStreetMap",
+        sourceIds: [...new Set(records.flatMap((record) => record.properties.sourceIds))].sort(),
+        matchMethods: [
+          ...new Set(records.flatMap((record) => record.properties.matchMethods)),
+        ].sort(),
+        lastVerified: records
+          .map((record) => record.properties.lastVerified)
+          .sort()
+          .at(-1)!,
+        verificationStatus: "verified",
+      },
+      geometry:
+        polygons.length === 1
+          ? { type: "Polygon", coordinates: polygons[0]! }
+          : { type: "MultiPolygon", coordinates: polygons },
+    };
+    validateGeometry(building.code, feature.geometry);
+    return feature;
+  });
+}
+
+export const CAMPUS_BUILDING_FOOTPRINTS: CampusBuildingFootprintCollection = {
+  type: "FeatureCollection",
+  metadata: {
+    description:
+      "Canonical UTM geometry used for building identity, hit-testing, highlighting, and camera focus.",
+    source: "OpenStreetMap",
+    matchingPolicy:
+      "Exact source identity or explicitly reviewed relation/way geometry only. Proximity matching is forbidden.",
+  },
+  features: mergeFragments(),
+};
+
 const footprintByCode = new Map(
-  CAMPUS_BUILDING_FOOTPRINTS.features.map((feature) => [
-    feature.properties.buildingCode.toUpperCase(),
-    feature,
-  ]),
+  CAMPUS_BUILDING_FOOTPRINTS.features.map((feature) => [feature.properties.buildingCode, feature]),
 );
 
 export function getCampusBuildingFootprint(code: string | null) {
@@ -111,11 +161,29 @@ export function getCampusBuildingFootprintBounds(code: string | null) {
   ] as [FootprintCoordinate, FootprintCoordinate];
 }
 
+function pointOnSegment(
+  point: FootprintCoordinate,
+  start: FootprintCoordinate,
+  end: FootprintCoordinate,
+) {
+  const cross =
+    (point[1] - start[1]) * (end[0] - start[0]) -
+    (point[0] - start[0]) * (end[1] - start[1]);
+  if (Math.abs(cross) > 1e-11) return false;
+  const dot =
+    (point[0] - start[0]) * (end[0] - start[0]) +
+    (point[1] - start[1]) * (end[1] - start[1]);
+  if (dot < 0) return false;
+  const squaredLength = (end[0] - start[0]) ** 2 + (end[1] - start[1]) ** 2;
+  return dot <= squaredLength;
+}
+
 function pointInRing(point: FootprintCoordinate, ring: FootprintCoordinate[]) {
   let inside = false;
   for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index++) {
     const currentPoint = ring[index]!;
     const previousPoint = ring[previous]!;
+    if (pointOnSegment(point, previousPoint, currentPoint)) return true;
     const [x, y] = point;
     const [xi, yi] = currentPoint;
     const [xj, yj] = previousPoint;
@@ -134,10 +202,7 @@ export function pointInBuildingFootprint(
   point: FootprintCoordinate,
   feature: CampusBuildingFootprint,
 ) {
-  if (feature.geometry.type === "Polygon") {
-    return pointInPolygon(point, feature.geometry.coordinates);
-  }
-  return feature.geometry.coordinates.some((polygon) => pointInPolygon(point, polygon));
+  return geometryPolygons(feature.geometry).some((polygon) => pointInPolygon(point, polygon));
 }
 
 export function buildingCodeAtCoordinate(point: FootprintCoordinate) {
@@ -145,4 +210,20 @@ export function buildingCodeAtCoordinate(point: FootprintCoordinate) {
     pointInBuildingFootprint(point, feature),
   );
   return matches.length === 1 ? matches[0]!.properties.buildingCode : null;
+}
+
+export function representativePointForFootprint(feature: CampusBuildingFootprint) {
+  const bounds = getCampusBuildingFootprintBounds(feature.properties.buildingCode);
+  if (!bounds) return null;
+  const [[west, south], [east, north]] = bounds;
+  for (let row = 1; row < 20; row += 1) {
+    for (let column = 1; column < 20; column += 1) {
+      const point: FootprintCoordinate = [
+        west + ((east - west) * column) / 20,
+        south + ((north - south) * row) / 20,
+      ];
+      if (pointInBuildingFootprint(point, feature)) return point;
+    }
+  }
+  return null;
 }
