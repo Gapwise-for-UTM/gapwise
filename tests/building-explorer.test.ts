@@ -25,6 +25,11 @@ describe("UTM campus building explorer", () => {
       const byName = searchCampusBuildings(building.name)[0];
       expect(byName?.building.code, `${building.name} name search`).toBe(building.code);
 
+      for (const alias of building.aliases ?? []) {
+        const byAlias = searchCampusBuildings(alias)[0];
+        expect(byAlias?.building.code, `${alias} alias search`).toBe(building.code);
+      }
+
       const footprint = getCampusBuildingFootprint(building.code);
       expect(footprint, `${building.code} canonical footprint`).not.toBeNull();
       expect(footprint?.properties.buildingCode).toBe(building.code);
