@@ -49,11 +49,7 @@ type BuildingFeature = {
   geometry: PolygonGeometry | MultiPolygonGeometry;
 };
 
-type AssignmentMethod =
-  | "override"
-  | "reviewed-relation"
-  | "exact-label"
-  | "entrance-membership";
+type AssignmentMethod = "override" | "reviewed-relation" | "exact-label" | "entrance-membership";
 type AssignedGeometry = {
   code: string;
   method: AssignmentMethod;
@@ -112,9 +108,9 @@ function isBuildingRelation(relation: OsmRelation, overrideCode: string | undefi
   const buildingPart = relation.tags?.["building:part"];
   return Boolean(
     overrideCode ||
-      exactCodeForTags(relation.tags) ||
-      ((relation.tags?.["type"] === "multipolygon" || relation.tags?.["type"] === "building") &&
-        ((building && building !== "no") || (buildingPart && buildingPart !== "no"))),
+    exactCodeForTags(relation.tags) ||
+    ((relation.tags?.["type"] === "multipolygon" || relation.tags?.["type"] === "building") &&
+      ((building && building !== "no") || (buildingPart && buildingPart !== "no"))),
   );
 }
 
@@ -195,8 +191,7 @@ function pointInRing(point: Coordinate, ring: Coordinate[]) {
     const [xi, yi] = ring[index]!;
     const [xj, yj] = ring[previous]!;
     const intersects =
-      yi > point[1] !== yj > point[1] &&
-      point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
+      yi > point[1] !== yj > point[1] && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
     if (intersects) inside = !inside;
   }
   return inside;
