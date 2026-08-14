@@ -27,6 +27,8 @@ jobs:
         run: bun scripts/apply-canonical-campus-map.ts
       - name: Format changed map file
         run: bunx prettier --write src/components/CampusMap.tsx
+      - name: Verify generated TypeScript
+        run: bun run typecheck
       - name: Commit the generated refactor
         run: |
           git add src/components/CampusMap.tsx
