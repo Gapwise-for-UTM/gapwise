@@ -4,7 +4,7 @@ _Last updated: 2026-08-13_
 
 Gapwise for UTM is an independent student project. It is not affiliated with, endorsed by, or an official service of the University of Toronto.
 
-This notice describes the data handling of the public Gapwise application at `gapwise-utm.vercel.app`.
+This notice describes the data handling of the public Gapwise application at `gapwise.ca`.
 
 ## What stays in your browser
 

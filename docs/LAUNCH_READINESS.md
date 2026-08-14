@@ -12,7 +12,7 @@ Gate 6 is complete. The legacy plaintext `user_schedules` and `user_preferences`
 
 ## Current production posture
 
-- Production is served from `https://gapwise-utm.vercel.app` from GitHub `main`.
+- Production is served from `https://gapwise.ca` from GitHub `main`.
 - Private cloud is permanently encrypted-only in source; there is no deploy-time plaintext fallback.
 - The original ACORN `.ics` file is parsed locally and is not uploaded.
 - Private timetable/settings payloads and the separate friend-availability capsule are encrypted in the browser before Supabase storage.

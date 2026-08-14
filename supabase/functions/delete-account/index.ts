@@ -1,8 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
 
 const defaultOrigins = [
+  "https://gapwise.ca",
+  "https://www.gapwise.ca",
   "https://gapwise-utm.vercel.app",
-  "https://campus-gap-finder.vercel.app",
   "http://localhost:8080",
   "http://127.0.0.1:8080",
 ];

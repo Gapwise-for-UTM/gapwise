@@ -67,7 +67,8 @@ describe("account deletion and encrypted-only cloud security", () => {
 
   test("allows only exact configured account-deletion origins", async () => {
     const source = await readFile("supabase/functions/delete-account/index.ts", "utf8");
-    expect(source).toContain('"https://gapwise-utm.vercel.app"');
+    expect(source).toContain('"https://gapwise.ca"');
+    expect(source).toContain('"https://www.gapwise.ca"');
     expect(source).toContain("configuredOrigins.has(origin)");
     expect(source).toContain("const originAllowed = isAllowedOrigin(origin)");
     expect(source).toContain("if (!originAllowed)");
