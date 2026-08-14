@@ -1164,6 +1164,15 @@ export function CampusMap({
   useEffect(() => {
     const map = mapRef.current;
     const maplibregl = maplibreRef.current;
+
+    if (!selectedBuildingCode) {
+      for (const record of entranceMarkersRef.current) record.marker.remove();
+      entranceMarkersRef.current.length = 0;
+      lastFocusedBuildingRef.current = null;
+      if (map?.isStyleLoaded()) syncBuildingHighlight(map, null, "selected");
+      return;
+    }
+
     if (!map?.isStyleLoaded() || !maplibregl) return;
     syncBuildingHighlight(map, selectedBuildingCode, "selected");
     syncEntranceMarkers(
@@ -1175,16 +1184,14 @@ export function CampusMap({
       entranceMarkersRef.current,
       themeRef.current,
     );
-    const nextFocusKey = selectedBuildingCode ? focusKey(selectedBuildingCode, focusPadding) : null;
+    const nextFocusKey = focusKey(selectedBuildingCode, focusPadding);
     if (
-      selectedBuildingCode &&
       nextFocusKey !== lastFocusedBuildingRef.current &&
       focusBuilding(map, maplibregl, selectedBuildingCode, focusPadding)
     ) {
       lastFocusedBuildingRef.current = nextFocusKey;
       userHasMovedRef.current = true;
     }
-    if (!selectedBuildingCode) lastFocusedBuildingRef.current = null;
   }, [focusPadding, onActiveEntranceChange, selectedBuildingCode]);
 
   useEffect(() => {
