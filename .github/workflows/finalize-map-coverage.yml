@@ -46,5 +46,16 @@ jobs:
           text = text.replace('  features: mergeFragments(),', '  features: partitionSharedKaneffComplex(mergeFragments()),', 1)
           path.write_text(text)
           PY
+      - name: Prevent the GitHub Actions token from touching workflow files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/finalize-map-coverage.py')
+          text = path.read_text()
+          text = text.replace('write(".github/workflows/utm-map-data.yml", stable_workflow)', 'pass  # workflow cleanup is committed separately by the GitHub connector')
+          text = text.replace('(ROOT / ".github/workflows/finalize-map-coverage.yml").unlink(missing_ok=True)', 'pass  # keep bootstrap workflow unchanged for this push')
+          text = text.replace('(ROOT / "scripts/finalize-map-coverage.py").unlink(missing_ok=True)', 'pass  # helper cleanup is committed separately')
+          path.write_text(text)
+          PY
       - name: Build, verify, and push the consolidated map fix
         run: python3 scripts/finalize-map-coverage.py
