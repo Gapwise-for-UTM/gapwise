@@ -16,6 +16,7 @@ on:
       - "src/data/utm/building-registry.ts"
       - "src/data/utm/entrances.geojson"
       - "src/features/routing/campus-region.ts"
+      - "tests/building-explorer.test.ts"
       - "tests/building-footprints.test.ts"
       - "tests/campus-region.test.ts"
       - ".github/workflows/utm-map-data.yml"
@@ -34,6 +35,7 @@ on:
       - "src/data/utm/building-registry.ts"
       - "src/data/utm/entrances.geojson"
       - "src/features/routing/campus-region.ts"
+      - "tests/building-explorer.test.ts"
       - "tests/building-footprints.test.ts"
       - "tests/campus-region.test.ts"
       - ".github/workflows/utm-map-data.yml"
@@ -58,8 +60,8 @@ jobs:
         run: bun run typecheck
       - name: Diagnose canonical footprint overlap
         run: bun scripts/diagnose-building-overlaps.ts
-      - name: Verify canonical geometry behavior
-        run: bun test tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
+      - name: Verify canonical geometry and search behavior
+        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
       - name: Generate canonical UTM building footprints
         run: >-
           bun scripts/generate-building-footprints.ts
