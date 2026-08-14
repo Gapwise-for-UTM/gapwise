@@ -7,6 +7,7 @@ on:
       - "scripts/generate-building-footprints.ts"
       - "scripts/inspect-utm-building-relations.ts"
       - "scripts/fetch-reviewed-osm-ways.ts"
+      - "scripts/diagnose-building-overlaps.ts"
       - "src/components/CampusMap.tsx"
       - "src/data/utm/building-footprint-overrides.json"
       - "src/data/utm/building-footprints.ts"
@@ -24,6 +25,7 @@ on:
       - "scripts/generate-building-footprints.ts"
       - "scripts/inspect-utm-building-relations.ts"
       - "scripts/fetch-reviewed-osm-ways.ts"
+      - "scripts/diagnose-building-overlaps.ts"
       - "src/components/CampusMap.tsx"
       - "src/data/utm/building-footprint-overrides.json"
       - "src/data/utm/building-footprints.ts"
@@ -54,6 +56,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Verify TypeScript
         run: bun run typecheck
+      - name: Diagnose canonical footprint overlap
+        run: bun scripts/diagnose-building-overlaps.ts
       - name: Verify canonical geometry behavior
         run: bun test tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
       - name: Generate canonical UTM building footprints
