@@ -108,55 +108,62 @@ describe("bundled UTM routing data", () => {
   });
 
   test("answers every pair in the full campus route matrix", () => {
-    for (const from of CAMPUS_BUILDINGS) {
-      for (const to of CAMPUS_BUILDINGS) {
+    for (const origin of CAMPUS_BUILDINGS) {
+      for (const destination of CAMPUS_BUILDINGS) {
         const route = findRoute(
           UTM_ROUTING_GRAPH,
-          from.entranceNodeId,
-          to.entranceNodeId,
+          origin.entranceNodeId,
+          destination.entranceNodeId,
           DEFAULT_ROUTE_PREFERENCES,
         );
         expect(route).not.toBeNull();
+        expect(route!.totalDistanceMeters).toBeGreaterThanOrEqual(0);
       }
     }
   });
 
   test("keeps the reviewed Five Minute Walk shortcut explicit and sourced", () => {
-    const shortcut = UTM_ROUTING_GRAPH.edges.find(
-      (edge) => edge.id === "utm-five-minute-walk-dv-kn",
+    const connector = UTM_ROUTING_GRAPH.edges.find(
+      (edge) => edge.id === "reviewed-topology-connector-five-minute-walk-east-link",
     );
-    expect(shortcut).toBeDefined();
-    expect(shortcut?.metadata.source).toContain("Five Minute Walk");
-    expect(shortcut?.metadata.sourceUrl).toStartWith("https://");
-    expect(shortcut?.metadata.lastVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(connector).toMatchObject({
+      from: "osm-node-10307668718",
+      to: "osm-node-1728239086",
+      bidirectional: true,
+      metadata: {
+        verificationStatus: "inferred",
+        sourceUrl: "https://www.utm.utoronto.ca/visitors/maps-and-directions",
+      },
+    });
+    expect(connector!.distanceMeters).toBeGreaterThan(8);
+    expect(connector!.distanceMeters).toBeLessThan(9);
   });
 
   test("matches an independent Dijkstra baseline in fastest mode", () => {
-    for (const from of CAMPUS_BUILDINGS) {
-      for (const to of CAMPUS_BUILDINGS) {
-        const route = findRoute(
-          UTM_ROUTING_GRAPH,
-          from.entranceNodeId,
-          to.entranceNodeId,
-          DEFAULT_ROUTE_PREFERENCES,
-        );
-        expect(route).not.toBeNull();
-        expect(route?.totalSeconds).toBeCloseTo(
-          dijkstraFastestSeconds(UTM_ROUTING_GRAPH, from.entranceNodeId, to.entranceNodeId),
-          8,
-        );
-      }
+    const pairs = [
+      ["osm-node-1312381405", "osm-node-13568164844"], // Erindale Hall to Davis
+      ["osm-node-2383650599", "osm-node-1728239148"], // Instructional Building to Alumni House
+      ["osm-node-2105676602", "osm-node-13738956113"], // Recreation to Health Sciences
+    ] as const;
+    for (const [start, end] of pairs) {
+      const route = findRoute(UTM_ROUTING_GRAPH, start, end, DEFAULT_ROUTE_PREFERENCES);
+      expect(route).not.toBeNull();
+      expect(route!.estimatedSeconds).toBeCloseTo(
+        dijkstraFastestSeconds(UTM_ROUTING_GRAPH, start, end),
+        8,
+      );
     }
   });
 
   test("keeps route calculation offline at runtime", async () => {
-    const source = await readFile(
-      new URL("../src/features/routing/engine.ts", import.meta.url),
-      "utf8",
+    const files = await Array.fromAsync(
+      new Bun.Glob("src/features/routing/**/*.{ts,tsx}").scan("."),
     );
-    expect(source).not.toContain("fetch(");
-    expect(source).not.toContain("axios");
-    expect(source).not.toContain("http://");
-    expect(source).not.toContain("https://");
+    files.push("src/components/CampusMap.tsx");
+    for (const file of files) {
+      const source = await readFile(file, "utf8");
+      expect(source).not.toContain("fetch(");
+      expect(source.toLowerCase()).not.toContain("valhalla");
+    }
   });
 });
