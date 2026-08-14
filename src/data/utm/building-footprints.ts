@@ -33,7 +33,9 @@ const fragments = CANONICAL_FOOTPRINT_FRAGMENT_RAW.map(
   (raw) => JSON.parse(raw) as FootprintFragment,
 );
 
-function geometryPolygons(geometry: CampusBuildingFootprint["geometry"]): FootprintCoordinate[][][] {
+function geometryPolygons(
+  geometry: CampusBuildingFootprint["geometry"],
+): FootprintCoordinate[][][] {
   return geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
 }
 
@@ -43,11 +45,14 @@ function geometryRings(geometry: CampusBuildingFootprint["geometry"]) {
 
 function validateGeometry(code: string, geometry: CampusBuildingFootprint["geometry"]) {
   const polygons = geometryPolygons(geometry);
-  if (polygons.length === 0) throw new Error(`Canonical building footprint ${code} has no polygons.`);
+  if (polygons.length === 0)
+    throw new Error(`Canonical building footprint ${code} has no polygons.`);
   for (const polygon of polygons) {
-    if (polygon.length === 0) throw new Error(`Canonical building footprint ${code} has an empty polygon.`);
+    if (polygon.length === 0)
+      throw new Error(`Canonical building footprint ${code} has an empty polygon.`);
     for (const ring of polygon) {
-      if (ring.length < 4) throw new Error(`Canonical building footprint ${code} has an invalid ring.`);
+      if (ring.length < 4)
+        throw new Error(`Canonical building footprint ${code} has an invalid ring.`);
       for (const [longitude, latitude] of ring) {
         if (
           !Number.isFinite(longitude) ||
@@ -57,7 +62,9 @@ function validateGeometry(code: string, geometry: CampusBuildingFootprint["geome
           latitude < -90 ||
           latitude > 90
         ) {
-          throw new Error(`Invalid canonical building footprint coordinate ${longitude},${latitude}.`);
+          throw new Error(
+            `Invalid canonical building footprint coordinate ${longitude},${latitude}.`,
+          );
         }
       }
       const first = ring[0]!;

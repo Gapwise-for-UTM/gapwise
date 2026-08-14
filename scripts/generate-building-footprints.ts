@@ -131,7 +131,8 @@ async function fetchOsmSnapshot(): Promise<OsmPayload> {
   });
   if (!response.ok) throw new Error(`OpenStreetMap map API returned HTTP ${response.status}.`);
   const payload = (await response.json()) as OsmPayload;
-  if (!Array.isArray(payload.elements)) throw new Error("OpenStreetMap response is missing elements.");
+  if (!Array.isArray(payload.elements))
+    throw new Error("OpenStreetMap response is missing elements.");
   return payload;
 }
 
@@ -147,7 +148,8 @@ async function main() {
   ]);
   const entrances = (JSON.parse(entranceRaw) as { features: EntranceFeature[] }).features;
   const overrides = JSON.parse(overrideRaw) as Overrides;
-  if (overrides.version !== 1) throw new Error(`Unsupported footprint override version ${overrides.version}.`);
+  if (overrides.version !== 1)
+    throw new Error(`Unsupported footprint override version ${overrides.version}.`);
 
   const nodes = new Map(
     payload.elements
@@ -173,7 +175,9 @@ async function main() {
     if (!coordinates) continue;
     const overrideCode = overrides.ways[String(way.id)]?.toUpperCase();
     if (overrideCode && !recognizedCodes.has(overrideCode)) {
-      throw new Error(`Footprint override for OSM way ${way.id} uses unknown building code ${overrideCode}.`);
+      throw new Error(
+        `Footprint override for OSM way ${way.id} uses unknown building code ${overrideCode}.`,
+      );
     }
     const exactCode = exactCodeForTags(way.tags);
     const entranceCodes = new Set(

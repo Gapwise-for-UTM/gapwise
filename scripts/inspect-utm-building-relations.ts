@@ -30,8 +30,8 @@ const relations = payload.elements
     const tags = relation.tags ?? {};
     return Boolean(
       tags["type"] === "multipolygon" ||
-        (tags["building"] && tags["building"] !== "no") ||
-        (tags["building:part"] && tags["building:part"] !== "no"),
+      (tags["building"] && tags["building"] !== "no") ||
+      (tags["building:part"] && tags["building:part"] !== "no"),
     );
   })
   .map((relation) => ({

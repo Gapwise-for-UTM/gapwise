@@ -31,12 +31,12 @@ The footprint fragments in `src/data/utm/footprints/` come from current OpenStre
 
 Several dense/complex academic buildings use reviewed OSM multipolygon relations:
 
-| Gapwise code | Building | OSM relation |
-| --- | --- | --- |
-| `XR` | Student Centre | `20449622` |
-| `DH` | Deerfield Hall | `20449623` |
-| `DV` | William G. Davis Building | `20449624` |
-| `KN` | Kaneff Centre / Innovation Complex | `20462171` |
+| Gapwise code | Building                           | OSM relation |
+| ------------ | ---------------------------------- | ------------ |
+| `XR`         | Student Centre                     | `20449622`   |
+| `DH`         | Deerfield Hall                     | `20449623`   |
+| `DV`         | William G. Davis Building          | `20449624`   |
+| `KN`         | Kaneff Centre / Innovation Complex | `20462171`   |
 
 The Erindale regression cluster is specifically protected by canonical geometry for:
 

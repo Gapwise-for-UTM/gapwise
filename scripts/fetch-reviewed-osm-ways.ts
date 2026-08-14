@@ -15,5 +15,9 @@ for (const wayId of wayIds) {
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = resolve(root, "artifacts/utm-reviewed-osm-ways.json");
 await mkdir(dirname(output), { recursive: true });
-await writeFile(output, `${JSON.stringify({ generatedAt: new Date().toISOString(), snapshots }, null, 2)}\n`, "utf8");
+await writeFile(
+  output,
+  `${JSON.stringify({ generatedAt: new Date().toISOString(), snapshots }, null, 2)}\n`,
+  "utf8",
+);
 console.log(`Fetched ${snapshots.length} reviewed UTM OSM ways.`);

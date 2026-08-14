@@ -25,7 +25,8 @@ for (const feature of CAMPUS_BUILDING_FOOTPRINTS.features) {
         .filter((candidate) => pointInBuildingFootprint(point, candidate))
         .map((candidate) => candidate.properties.buildingCode)
         .sort();
-      if (matches.length === 1 && matches[0] === feature.properties.buildingCode) sampledUnique += 1;
+      if (matches.length === 1 && matches[0] === feature.properties.buildingCode)
+        sampledUnique += 1;
       const signature = matches.join("+");
       signatures.set(signature, (signatures.get(signature) ?? 0) + 1);
     }
