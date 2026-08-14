@@ -566,6 +566,12 @@ export function MobileDayRoute({
               const active = segment.id === selectedSegmentId;
               const fromAnchor = campusDayAnchorPresentation(segment.from);
               const toAnchor = campusDayAnchorPresentation(segment.to);
+              const fromAccessibleLabel = fromAnchor
+                ? `${fromAnchor.title}: ${fromAnchor.label}`
+                : segment.from.courseCode;
+              const toAccessibleLabel = toAnchor
+                ? `${toAnchor.title}: ${toAnchor.label}`
+                : segment.to.courseCode;
               const FromAnchorIcon = fromAnchor ? anchorIcon(fromAnchor.kind) : null;
               const ToAnchorIcon = toAnchor ? anchorIcon(toAnchor.kind) : null;
               return (
@@ -573,6 +579,7 @@ export function MobileDayRoute({
                   key={segment.id}
                   type="button"
                   onClick={() => selectSegment(segment.id)}
+                  aria-label={`${fromAccessibleLabel} to ${toAccessibleLabel}. ${presentation.label}`}
                   className={`min-h-14 min-w-[13.5rem] snap-start rounded-xl border px-3 py-2.5 text-left ${
                     active ? "border-accent/50 bg-accent/10" : "border-border bg-card/70"
                   }`}
