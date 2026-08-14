@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_ROUTE_PREFERENCES, ROUTING_DEFAULTS } from "@/config/routing";
+import { getCampusBuildingFootprint } from "@/data/utm/building-footprints";
 import { UTM_BUILDINGS, UTM_RESIDENCES } from "@/data/utm/building-registry";
 import { CAMPUS_BUILDINGS, RESIDENCE_BUILDINGS, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { findRoute } from "@/features/routing/engine";
@@ -50,10 +51,16 @@ function dijkstraFastestSeconds(graph: RoutingGraph, startId: string, endId: str
 }
 
 describe("bundled UTM routing data", () => {
-  test("covers every recognized academic and residence building", () => {
-    expect(CAMPUS_BUILDINGS.map((building) => building.code).sort()).toEqual(
-      UTM_BUILDINGS.map((building) => building.code).sort(),
-    );
+  test("keeps routing coverage explicit while canonical identity covers every recognized building", () => {
+    const recognizedCodes = new Set(UTM_BUILDINGS.map((building) => building.code));
+    for (const building of CAMPUS_BUILDINGS) {
+      expect(recognizedCodes.has(building.code)).toBe(true);
+    }
+    for (const building of UTM_BUILDINGS) {
+      expect(getCampusBuildingFootprint(building.code)).not.toBeNull();
+    }
+
+    // Every residence currently offered as a personalized home origin remains routable.
     expect(RESIDENCE_BUILDINGS.map((building) => building.code).sort()).toEqual(
       UTM_RESIDENCES.map((building) => building.code).sort(),
     );

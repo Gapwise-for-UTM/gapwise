@@ -1,0 +1,31 @@
+{
+  "type": "Feature",
+  "id": "GF",
+  "properties": {
+    "buildingCode": "GF",
+    "name": "Grounds Building",
+    "category": "facility",
+    "source": "OpenStreetMap",
+    "sourceIds": ["way/1133333773"],
+    "matchMethods": ["override"],
+    "lastVerified": "2026-08-14",
+    "verificationStatus": "verified"
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-79.665275, 43.5535062],
+        [-79.6653434, 43.5534547],
+        [-79.6654327, 43.5533875],
+        [-79.6657097, 43.553581],
+        [-79.6656956, 43.5535916],
+        [-79.6655974, 43.5536654],
+        [-79.6655519, 43.5536996],
+        [-79.6654067, 43.5535982],
+        [-79.6653329, 43.5535466],
+        [-79.665275, 43.5535062]
+      ]
+    ]
+  }
+}

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { UTM_BUILDINGS } from "../src/data/utm/building-registry";
 
 const OSM_MAP_ENDPOINT = "https://api.openstreetmap.org/api/0.6/map";
-const CAMPUS_BOUNDS = "-79.6715,43.5450,-79.6600,43.5524";
+const CAMPUS_BOUNDS = "-79.6725,43.5440,-79.6595,43.5555";
 const DEFAULT_OUTPUT = "src/data/utm/building-footprints.geojson";
 const DEFAULT_REPORT = "artifacts/utm-building-footprint-report.json";
 const VERIFIED_AT = new Date().toISOString().slice(0, 10);
@@ -39,7 +39,7 @@ type BuildingFeature = {
   properties: {
     buildingCode: string;
     name: string;
-    category: "academic" | "residence";
+    category: "academic" | "residence" | "facility";
     source: "OpenStreetMap";
     sourceIds: string[];
     matchMethods: string[];
@@ -323,10 +323,14 @@ async function main() {
     }
     const exactCode = exactCodeForTags(relation.tags);
     const memberNodeIds = relationMemberNodeIds(relation, waysById);
+    // A relation may wrap multiple adjacent named buildings. Never let one entrance
+    // silently assign that entire unlabeled relation to a single building identity.
+    // Exact labels and reviewed relation overrides remain valid; otherwise member ways
+    // are left available for their own exact/override matching below.
     const candidateCodes = resolveCandidates(
       overrideCode,
       exactCode,
-      memberNodeIds,
+      overrideCode || exactCode ? memberNodeIds : [],
       entranceCodeByNode,
     );
     if (candidateCodes.length > 1) {

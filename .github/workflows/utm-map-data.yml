@@ -2,7 +2,7 @@ name: UTM map data
 
 on:
   push:
-    branches: [fix/utm-map-region-foundation]
+    branches: [main]
     paths:
       - "scripts/generate-building-footprints.ts"
       - "scripts/inspect-utm-building-relations.ts"
@@ -18,10 +18,12 @@ on:
       - "src/data/utm/campus.ts"
       - "src/features/routing/campus-presence.ts"
       - "src/features/routing/campus-region.ts"
+      - "src/features/routing/map-marker-layout.ts"
       - "tests/building-explorer.test.ts"
       - "tests/building-footprints.test.ts"
       - "tests/campus-presence.test.ts"
       - "tests/campus-region.test.ts"
+      - "tests/map-marker-layout.test.ts"
       - ".github/workflows/utm-map-data.yml"
   pull_request:
     branches: [main]
@@ -40,10 +42,12 @@ on:
       - "src/data/utm/campus.ts"
       - "src/features/routing/campus-presence.ts"
       - "src/features/routing/campus-region.ts"
+      - "src/features/routing/map-marker-layout.ts"
       - "tests/building-explorer.test.ts"
       - "tests/building-footprints.test.ts"
       - "tests/campus-presence.test.ts"
       - "tests/campus-region.test.ts"
+      - "tests/map-marker-layout.test.ts"
       - ".github/workflows/utm-map-data.yml"
   workflow_dispatch:
 
@@ -66,13 +70,14 @@ jobs:
         run: bun run typecheck
       - name: Diagnose canonical footprint overlap
         run: bun scripts/diagnose-building-overlaps.ts
-      - name: Verify canonical geometry and search behavior
-        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
-      - name: Generate canonical UTM building footprints
+      - name: Verify canonical geometry, search, and marker layout
+        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts tests/map-marker-layout.test.ts
+      - name: Generate complete canonical UTM building footprints
         run: >-
           bun scripts/generate-building-footprints.ts
           --output artifacts/building-footprints.geojson
           --report artifacts/utm-building-footprint-report.json
+          --require-complete
       - name: Inspect current OSM building relations
         run: bun scripts/inspect-utm-building-relations.ts
       - name: Fetch reviewed multipolygon member ways

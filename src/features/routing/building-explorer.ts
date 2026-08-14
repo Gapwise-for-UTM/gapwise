@@ -8,12 +8,13 @@ import {
   type BuildingEntrance,
   type CampusBuilding,
 } from "@/data/utm/routing-buildings";
+import { getCampusBuildingFootprint } from "@/data/utm/building-footprints";
 import { resolveAcornLocation } from "./location-resolver";
 import type { VerificationStatus } from "./types";
 
 export type BuildingSearchResult = {
   building: BuildingConfiguration;
-  campus: CampusBuilding;
+  campus: CampusBuilding | null;
   room: string | null;
   floor: string | null;
   floorVerification: VerificationStatus;
@@ -21,7 +22,7 @@ export type BuildingSearchResult = {
 
 export type BuildingExplorerDetails = {
   building: BuildingConfiguration;
-  campus: CampusBuilding;
+  campus: CampusBuilding | null;
   verifiedEntrances: number;
   inferredApproaches: number;
   accessibleEntrances: number;
@@ -71,8 +72,9 @@ function resultFor(
   floor: string | null = null,
   floorVerification: VerificationStatus = "unknown",
 ): BuildingSearchResult | null {
+  if (!getCampusBuildingFootprint(building.code)) return null;
   const campus = getCampusBuilding(building.code);
-  return campus ? { building, campus, room, floor, floorVerification } : null;
+  return { building, campus, room, floor, floorVerification };
 }
 
 /** Local-only UTM building search. Room-like queries resolve to a building, never a room pin. */
@@ -118,22 +120,21 @@ export function getBuildingExplorerDetails(code: string | null): BuildingExplore
   if (!code) return null;
   const building = getRecognizedBuilding(code);
   const campus = getCampusBuilding(code);
-  if (!building || !campus) return null;
+  if (!building || !getCampusBuildingFootprint(code)) return null;
+  const entrances = campus?.entrances ?? [];
   return {
     building,
     campus,
-    verifiedEntrances: campus.entrances.filter(
+    verifiedEntrances: entrances.filter(
       (entrance) => entrance.metadata.verificationStatus === "verified",
     ).length,
-    inferredApproaches: campus.entrances.filter(
+    inferredApproaches: entrances.filter(
       (entrance) => entrance.metadata.verificationStatus === "inferred",
     ).length,
-    accessibleEntrances: campus.entrances.filter(
-      (entrance) => entrance.accessibility === "accessible",
-    ).length,
-    accessibilityUnknown: campus.entrances.filter(
-      (entrance) => entrance.accessibility === "unknown",
-    ).length,
-    latestVerificationDate: latestDate(campus.entrances),
+    accessibleEntrances: entrances.filter((entrance) => entrance.accessibility === "accessible")
+      .length,
+    accessibilityUnknown: entrances.filter((entrance) => entrance.accessibility === "unknown")
+      .length,
+    latestVerificationDate: latestDate(entrances),
   };
 }
