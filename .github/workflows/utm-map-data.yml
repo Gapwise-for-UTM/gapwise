@@ -5,6 +5,7 @@ on:
     branches: [fix/utm-map-region-foundation]
     paths:
       - "scripts/generate-building-footprints.ts"
+      - "scripts/inspect-utm-building-relations.ts"
       - "src/data/utm/building-footprint-overrides.json"
       - "src/data/utm/building-registry.ts"
       - "src/data/utm/entrances.geojson"
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - "scripts/generate-building-footprints.ts"
+      - "scripts/inspect-utm-building-relations.ts"
       - "src/data/utm/building-footprint-overrides.json"
       - "src/data/utm/building-registry.ts"
       - "src/data/utm/entrances.geojson"
@@ -39,12 +41,15 @@ jobs:
           bun scripts/generate-building-footprints.ts
           --output artifacts/building-footprints.geojson
           --report artifacts/utm-building-footprint-report.json
-      - name: Upload geometry and review report
+      - name: Inspect current OSM building relations
+        run: bun scripts/inspect-utm-building-relations.ts
+      - name: Upload geometry and review reports
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: utm-building-footprints
           path: |
             artifacts/building-footprints.geojson
             artifacts/utm-building-footprint-report.json
+            artifacts/utm-building-relations.json
           if-no-files-found: error
           retention-days: 7
