@@ -4,7 +4,7 @@
 
 Gapwise is a local-first React/Vite application. The browser parses an ACORN calendar, calculates timetable gaps, runs the deterministic UTM route graph, and encrypts private state before optional cloud synchronization. The original file, calculated gaps, and calculated routes do not leave the browser. Microsoft, Google, and GitHub OAuth use Supabase Auth.
 
-Production is built from GitHub `main` by Vercel and served from `https://gapwise-utm.vercel.app`. Private cloud is permanently encrypted-only in source; the legacy plaintext cloud tables and overlap helpers have been retired.
+Production is built from GitHub `main` by Vercel and served from `https://gapwise.ca`. Private cloud is permanently encrypted-only in source; the legacy plaintext cloud tables and overlap helpers have been retired.
 
 | Concern                                        | Owner                  | Notes                                                                                        |
 | ---------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------------- |

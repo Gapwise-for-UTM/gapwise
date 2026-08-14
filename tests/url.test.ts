@@ -10,7 +10,7 @@ describe("URL canonicalization", () => {
     expect(
       removeBareHash(
         {
-          href: "https://gapwise-utm.vercel.app/?term=fall#",
+          href: "https://gapwise.ca/?term=fall#",
           pathname: "/",
           search: "?term=fall",
         },
@@ -35,15 +35,12 @@ describe("URL canonicalization", () => {
     };
 
     expect(
-      removeBareHash(
-        { href: "https://gapwise-utm.vercel.app/", pathname: "/", search: "" },
-        history,
-      ),
+      removeBareHash({ href: "https://gapwise.ca/", pathname: "/", search: "" }, history),
     ).toBe(false);
     expect(
       removeBareHash(
         {
-          href: "https://gapwise-utm.vercel.app/#access_token=token",
+          href: "https://gapwise.ca/#access_token=token",
           pathname: "/",
           search: "",
         },

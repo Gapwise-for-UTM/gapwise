@@ -8,7 +8,7 @@
 
 **A privacy-first timetable, gap planner, and campus navigation experience built specifically for University of Toronto Mississauga students.**
 
-[![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise-utm.vercel.app)
+[![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise.ca)
 [![CI](https://img.shields.io/github/actions/workflow/status/andrewmuratov/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/andrewmuratov/gapwise/actions/workflows/ci.yml)
 [![MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
 
@@ -16,7 +16,7 @@
 
 <br />
 
-**[Live app](https://gapwise-utm.vercel.app)** · **[Privacy](PRIVACY.md)** · **[Security](SECURITY.md)** · **[Contributing](CONTRIBUTING.md)** · **[Campus map geometry](docs/CAMPUS_MAP_GEOMETRY.md)** · **[Campus survey](docs/CAMPUS_SURVEY.md)**
+**[Live app](https://gapwise.ca)** · **[Privacy](PRIVACY.md)** · **[Security](SECURITY.md)** · **[Contributing](CONTRIBUTING.md)** · **[Campus map geometry](docs/CAMPUS_MAP_GEOMETRY.md)** · **[Campus survey](docs/CAMPUS_SURVEY.md)**
 
 </div>
 
@@ -392,6 +392,6 @@ Third-party software, fonts, services, and OpenStreetMap-derived data remain sub
 
 **Built for the spaces between classes.**
 
-[Open Gapwise →](https://gapwise-utm.vercel.app)
+[Open Gapwise →](https://gapwise.ca)
 
 </div>

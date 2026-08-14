@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Report a security vulnerability privately
-    url: https://github.com/andrewmuratov/campus-gap-finder/security/policy
+    url: https://github.com/andrewmuratov/gapwise/security/policy
     about: Do not disclose authentication, authorization, timetable-privacy, or credential vulnerabilities in public issues.
   - name: Use Gapwise for UTM
-    url: https://campus-gap-finder.vercel.app
+    url: https://gapwise.ca
     about: Open the current production application.
