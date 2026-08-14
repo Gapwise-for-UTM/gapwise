@@ -366,8 +366,12 @@ test("tapping recognized map geometry selects a building without a timetable", a
     }
   }
 
-  expect(recognizedPoint, "expected at least one visible canonical building footprint").not.toBeNull();
-  if (!recognizedPoint) throw new Error("No recognized building geometry was found on the visible map.");
+  expect(
+    recognizedPoint,
+    "expected at least one visible canonical building footprint",
+  ).not.toBeNull();
+  if (!recognizedPoint)
+    throw new Error("No recognized building geometry was found on the visible map.");
   await page.mouse.click(recognizedPoint.x, recognizedPoint.y);
   await expect(page.locator(".campus-building-card")).toBeVisible();
   await expect.poll(() => new URL(page.url()).searchParams.get("building")).not.toBeNull();
