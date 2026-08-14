@@ -971,6 +971,7 @@ function AppLayout() {
             if (!open) setEditingPersonal(null);
           }}
           initial={editingPersonal}
+          defaultTerm={term}
           onSave={addOrUpdatePersonal}
         />
       </>
@@ -1442,6 +1443,7 @@ function AppLayout() {
                         if (!open) setEditingPersonal(null);
                       }}
                       initial={editingPersonal}
+                      defaultTerm={term}
                       onSave={(item) => addOrUpdatePersonal(item)}
                     />
                   </div>
