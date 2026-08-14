@@ -2,7 +2,7 @@ name: UTM map data
 
 on:
   push:
-    branches: [fix/utm-map-region-foundation]
+    branches: [main]
     paths:
       - "scripts/generate-building-footprints.ts"
       - "scripts/inspect-utm-building-relations.ts"
@@ -18,10 +18,12 @@ on:
       - "src/data/utm/campus.ts"
       - "src/features/routing/campus-presence.ts"
       - "src/features/routing/campus-region.ts"
+      - "src/features/routing/map-marker-layout.ts"
       - "tests/building-explorer.test.ts"
       - "tests/building-footprints.test.ts"
       - "tests/campus-presence.test.ts"
       - "tests/campus-region.test.ts"
+      - "tests/map-marker-layout.test.ts"
       - ".github/workflows/utm-map-data.yml"
   pull_request:
     branches: [main]
@@ -40,10 +42,12 @@ on:
       - "src/data/utm/campus.ts"
       - "src/features/routing/campus-presence.ts"
       - "src/features/routing/campus-region.ts"
+      - "src/features/routing/map-marker-layout.ts"
       - "tests/building-explorer.test.ts"
       - "tests/building-footprints.test.ts"
       - "tests/campus-presence.test.ts"
       - "tests/campus-region.test.ts"
+      - "tests/map-marker-layout.test.ts"
       - ".github/workflows/utm-map-data.yml"
   workflow_dispatch:
 
@@ -64,40 +68,28 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Verify TypeScript
         run: bun run typecheck
-      - name: Use the complete official UTM facilities geometry window
-        run: >-
-          sed -i
-          's/-79.6715,43.5450,-79.6600,43.5524/-79.6725,43.5440,-79.6595,43.5555/'
-          scripts/generate-building-footprints.ts
-      - name: Generate canonical UTM building footprints
+      - name: Diagnose canonical footprint overlap
+        run: bun scripts/diagnose-building-overlaps.ts
+      - name: Verify canonical geometry, search, and marker layout
+        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts tests/map-marker-layout.test.ts
+      - name: Generate complete canonical UTM building footprints
         run: >-
           bun scripts/generate-building-footprints.ts
           --output artifacts/building-footprints.geojson
           --report artifacts/utm-building-footprint-report.json
-      - name: Upload geometry discovery artifact
+          --require-complete
+      - name: Inspect current OSM building relations
+        run: bun scripts/inspect-utm-building-relations.ts
+      - name: Fetch reviewed multipolygon member ways
+        run: bun scripts/fetch-reviewed-osm-ways.ts
+      - name: Upload geometry and review reports
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: utm-building-footprints
           path: |
             artifacts/building-footprints.geojson
             artifacts/utm-building-footprint-report.json
-          if-no-files-found: error
-          retention-days: 7
-      - name: Diagnose canonical footprint overlap
-        run: bun scripts/diagnose-building-overlaps.ts
-      - name: Verify canonical geometry and search behavior
-        run: bun test tests/building-explorer.test.ts tests/building-footprints.test.ts tests/campus-region.test.ts tests/campus-presence.test.ts
-      - name: Inspect current OSM building relations
-        run: bun scripts/inspect-utm-building-relations.ts
-      - name: Fetch reviewed multipolygon member ways
-        run: bun scripts/fetch-reviewed-osm-ways.ts
-      - name: Upload relation review reports
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: utm-building-relation-review
-          path: |
             artifacts/utm-building-relations.json
             artifacts/utm-reviewed-osm-ways.json
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
