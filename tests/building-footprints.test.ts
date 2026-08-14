@@ -52,7 +52,10 @@ describe("canonical UTM building footprints", () => {
           ).toBe(feature.properties.buildingCode);
         }
       }
-      expect(interiorSamples, `${feature.properties.buildingCode} needs sampled interior area`).toBeGreaterThan(0);
+      expect(
+        interiorSamples,
+        `${feature.properties.buildingCode} needs sampled interior area`,
+      ).toBeGreaterThan(0);
     }
   });
 
