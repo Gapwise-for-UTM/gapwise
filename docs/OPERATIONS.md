@@ -6,14 +6,14 @@ Gapwise is a local-first React/Vite application. The browser parses an ACORN cal
 
 Production is built from GitHub `main` by Vercel and served from `https://gapwise.ca`. Private cloud is encrypted-only in source; legacy plaintext timetable/settings storage and overlap helpers have been retired.
 
-| Concern | Owner | Notes |
-| --- | --- | --- |
-| UI, parsing, gaps, routing, private encryption | Browser | Guest mode works without Supabase; signed-in private data is encrypted before storage. |
-| Auth, ciphertext, wrapped keys, relationships | Supabase | Owner RLS; no Vercel KEK in the database. |
-| Device key broker and common gap | Vercel Functions | Verified JWT, caller-scoped Supabase client, KEK; no service role. |
-| Account deletion | Supabase Edge Function | JWT required; identity comes from the verified token. |
-| Static build, canonical domain, security headers | Vercel | `main` is production. |
-| Verification | GitHub Actions | App checks, browser E2E/accessibility/PWA, and isolated PostgreSQL security checks. |
+| Concern                                        | Owner                  | Notes                                                                                  |
+| ---------------------------------------------- | ---------------------- | -------------------------------------------------------------------------------------- |
+| UI, parsing, gaps, routing, private encryption | Browser                | Guest mode works without Supabase; signed-in private data is encrypted before storage. |
+| Auth, ciphertext, wrapped keys, relationships  | Supabase               | Owner RLS; no Vercel KEK in the database.                                              |
+| Device key broker and common gap               | Vercel Functions       | Verified JWT, caller-scoped Supabase client, KEK; no service role.                     |
+| Account deletion                               | Supabase Edge Function | JWT required; identity comes from the verified token.                                  |
+| Static build, canonical domain, security headers | Vercel               | `main` is production.                                                                  |
+| Verification                                   | GitHub Actions         | App checks, browser E2E/accessibility/PWA, and isolated PostgreSQL security checks.     |
 
 ## Local setup
 
