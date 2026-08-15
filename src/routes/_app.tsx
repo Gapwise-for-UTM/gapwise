@@ -1322,11 +1322,7 @@ function AppLayout() {
                   {
                     value: "timetable" as const,
                     ariaLabel: "Weekly timetable",
-                    label: (
-                      <span>
-                        <span className="hidden sm:inline">Weekly </span>timetable
-                      </span>
-                    ),
+                    label: "Timetable",
                     icon: <LayoutGrid className="h-4 w-4 shrink-0" aria-hidden="true" />,
                   },
                   {
@@ -1531,7 +1527,25 @@ function AppLayout() {
             </p>
             <p className="max-w-xl leading-relaxed">
               Gapwise for UTM is an independent student project and is not affiliated with the
-              University of Toronto.
+              University of Toronto. It is free, open-source software on{" "}
+              <a
+                href="https://github.com/andrewmuratov/gapwise"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-foreground underline decoration-border underline-offset-4 hover:text-accent"
+              >
+                GitHub
+              </a>{" "}
+              under the{" "}
+              <a
+                href="https://github.com/andrewmuratov/gapwise/blob/main/LICENSE"
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-foreground underline decoration-border underline-offset-4 hover:text-accent"
+              >
+                MIT License
+              </a>
+              .
             </p>
           </div>
           <p className="eyebrow self-end text-muted-foreground">Built for UTM students</p>
