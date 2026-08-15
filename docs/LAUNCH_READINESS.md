@@ -1,91 +1,101 @@
 # Launch readiness
 
-Gapwise is approved for public announcement under the production-hardening standard below. This sign-off is intentionally conservative and does not claim that any internet-facing application can be made perfectly secure.
+Gapwise is approved for public use under the production-hardening standard below. This document records the launch baseline and the current operating posture; it does not claim that any internet-facing application can be made perfectly secure.
 
-## Production launch sign-off — 2026-08-12
+## Current production posture — 2026-08-15
 
-Status: **READY TO ANNOUNCE**.
+Status: **READY / ON TRACK**.
 
-The release candidate for PR #60 passed all required checks before squash-merge to `main`: typecheck, lint, 242 application/security tests, production build, generated-asset verification, Prettier, isolated database migrations, pgTAP/database-security checks, Supabase database lint, Snyk, CodeRabbit, and Vercel Preview. Production now serves merge commit `719d86daaf695b4bf7cc68e02ed7649ee152e64a` from the canonical domain.
+The canonical production domain is `https://gapwise.ca`, built from GitHub `main` by Vercel.
 
-Gate 6 is complete. The legacy plaintext `user_schedules` and `user_preferences` tables and the legacy plaintext overlap helpers are removed from production. The encrypted private-data row, wrapped-key envelope, and separately encrypted friend-availability row remain present.
+The original encrypted-only launch sign-off completed on 2026-08-12. Subsequent production work remained narrow and reviewed:
 
-## Current production posture
+- PR #103 made `gapwise.ca` the canonical production domain across documentation, tests, GitHub links, and account-deletion CORS configuration.
+- PR #104 polished timetable/map controls, added visible GitHub/MIT links in the app footer, and updated the affected browser-level regression.
+- At the start of the Aug 15 documentation synchronization, the current **application-behavior baseline** was `f25fdd5d6b3b4c5e0e1ed57eac53e05740b0db75` (PR #104). A documentation-only merge may advance `main` without changing that application behavior baseline.
 
-- Production is served from `https://gapwise.ca` from GitHub `main`.
-- Private cloud is permanently encrypted-only in source; there is no deploy-time plaintext fallback.
+Private cloud remains encrypted-only in source; the legacy plaintext timetable/settings tables and plaintext overlap implementation remain retired.
+
+## Required production properties
+
 - The original ACORN `.ics` file is parsed locally and is not uploaded.
-- Private timetable/settings payloads and the separate friend-availability capsule are encrypted in the browser before Supabase storage.
-- Supabase remains inside the account/relationship trust boundary but stores timetable ciphertext rather than the private timetable payload.
-- Vercel is inside the cryptographic trust boundary because the key broker can unwrap per-user data-encryption keys under the production KEK.
-- Friend common-gap responses are deliberately bounded and do not expose the friend's timetable, course list, rooms, buildings, or arbitrary availability.
-- Production and Preview must never share a KEK.
-- Gapwise is not end-to-end encrypted or zero knowledge and must not be described that way.
+- Guest mode remains a first-class path.
+- Private timetable/settings payloads are encrypted in the browser before Supabase storage.
+- Friend availability is stored separately as a deliberately lossy encrypted capsule.
+- Supabase remains in the account/relationship trust boundary but stores timetable ciphertext rather than the private timetable payload.
+- Vercel remains inside the cryptographic trust boundary because the key broker can unwrap per-user data-encryption keys under the production KEK.
+- Production and Preview never share a KEK.
+- Common-gap responses are bounded and do not expose a friend's timetable/course/room/building history.
+- Gapwise does not claim E2EE, zero knowledge, or perfect security.
+- Live location is opt-in and not background-tracked.
+- Campus route/accessibility claims remain conservative when evidence is not verified.
+- The app states that it is an independent student project and not affiliated with or endorsed by the University of Toronto.
 
-## Launch blockers — completed
+## Launch/security gates — completed
 
-- [x] Release-candidate CI is green: typecheck, lint, tests, build, format, generated assets, and isolated database-security checks.
-- [x] Latest production Vercel deployment is `READY` and corresponds to the intended `main` commit.
-- [x] Production has no unexplained Vercel runtime errors in the final observation window.
-- [x] Production response headers retain the restrictive CSP, HSTS, `nosniff`, referrer policy, permissions policy, and frame denial.
-- [x] Supabase Security Advisor findings were reviewed. Remaining notices are understood design choices: private rate-limit tables intentionally have no browser policies; authenticated `SECURITY DEFINER` RPCs are narrow caller-facing capabilities covered by authorization tests; leaked-password protection is not part of the deployed Microsoft/Google/GitHub OAuth authentication path.
-- [x] Supabase Performance Advisor findings were reviewed. The remaining unused friendship-index notices are low-signal on the current small dataset and are retained until real usage justifies removal.
-- [x] Production database migration state matches the encrypted-only repository architecture.
-- [x] Gate 6 permanently removed intentional plaintext timetable/settings cloud storage and the plaintext overlap implementation after the fail-closed replacement precheck.
-- [x] Fresh-device encrypted restore succeeded using normal authentication during production cutover validation.
-- [x] Same-device reload succeeds from local encrypted state; regression coverage verifies local restore without networking.
-- [x] Sign-out clears the signed-in user's local private state; automated coverage verifies cross-account cleanup and stale-callback protection.
-- [x] Account deletion was exercised with a disposable account and removes user-owned encrypted/application records; database cascade coverage remains green.
-- [x] Friend overlap requires an accepted relationship and returns no more than the documented bounded rounded windows; authorization/non-enumeration/revocation coverage is green.
-- [x] Security tests and release review found no KEK, DEK, access token, service-role key, timetable plaintext, distinctive private fixture, or ciphertext dump in repository source, built assets, public logs, or analytics payloads.
-- [x] `PRIVACY.md`, `SECURITY.md`, README/security architecture, operations guidance, and user-facing terminology describe browser-side encryption and the trusted Vercel key-broker boundary without E2EE/zero-knowledge claims.
-- [x] Guest mode remains supported without creating an account; routing and timetable calculations remain local-first.
-- [x] Recovery and incident procedures are documented in `OPERATIONS.md` and `PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`, including KEK recovery/rotation and database-restore implications.
+- [x] Typecheck, lint, tests, production build, generated assets/format checks, and isolated database-security checks were green at launch.
+- [x] Production Vercel deployment was `READY` and matched the intended `main` commit at the release checks.
+- [x] Production runtime errors were reviewed during release observation windows.
+- [x] Restrictive CSP/HSTS/nosniff/referrer/permissions/frame protections were verified.
+- [x] Supabase Security and Performance Advisor findings were reviewed.
+- [x] Production database migration state matched the encrypted-only repository architecture.
+- [x] Legacy plaintext timetable/settings storage and plaintext overlap helpers were removed.
+- [x] Fresh-device encrypted restore and same-device local restore were exercised/covered.
+- [x] Sign-out cleanup, account deletion, user isolation, and bounded friend-overlap authorization were exercised/covered.
+- [x] Security review found no production KEK/DEK, service-role key, token, private timetable fixture, or ciphertext dump in public source/log/analytics paths.
+- [x] Privacy/security docs describe browser-side encryption and the trusted Vercel key-broker boundary without E2EE/zero-knowledge claims.
+- [x] Recovery and incident procedures are documented.
 
-## Final production evidence
+## Release verification for future behavior changes
 
-- Canonical production deployment for merge commit `719d86daaf695b4bf7cc68e02ed7649ee152e64a`: `READY`.
-- Final production runtime error/fatal query: no matching errors in the observation window.
-- Production database post-Gate-6 aggregate check:
-  - `public.user_schedules`: removed;
-  - `public.user_preferences`: removed;
-  - legacy plaintext overlap helpers: removed;
-  - encrypted private-data records: present;
-  - wrapped-key envelopes: present;
-  - encrypted friend-availability records: present.
-- Production response headers include restrictive CSP (`script-src 'self' 'wasm-unsafe-eval'` without JavaScript `unsafe-eval`), HSTS, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, restrictive `Permissions-Policy`, `frame-ancestors 'none'`, and `X-Frame-Options: DENY`.
+Before a major release/announcement or after a meaningful production behavior change:
+
+1. Confirm the intended `main` SHA and matching production deployment.
+2. Run/confirm required GitHub application and database-security checks.
+3. Verify the relevant desktop/mobile browser journeys and accessibility behavior.
+4. Check Vercel production status/runtime errors and response headers.
+5. Check Supabase health/advisors/logs when backend/auth/database behavior changed.
+6. Exercise destructive auth/data paths only with disposable accounts/data when the change affects them.
+7. Reconcile Linear and documentation with what is actually deployed.
+
+Documentation-only changes should not trigger unrelated feature work. They may advance the production SHA while leaving the application behavior baseline unchanged.
 
 ## Free-plan operating limits
 
-Gapwise should remain local-first and conservative with server work so it can remain free for students and fit current free infrastructure tiers as long as practical.
+Gapwise remains local-first and conservative with server work so it can stay free for students and within practical free infrastructure limits.
 
-- Do not poll Supabase or Vercel for timetable state.
+- Do not poll Supabase/Vercel for timetable state.
 - Do not add background location tracking.
-- Do not add paid map APIs when the bundled routing graph and OpenFreeMap satisfy the use case.
-- Cache/deduplicate friend-overlap refreshes and keep bounded social work until real usage data justifies a different design.
-- Monitor Vercel function invocations and transfer, Supabase database size/egress, and authentication limits before raising social caps.
-- Prefer aggregate operational metrics; never send timetable or relationship contents to analytics.
-- Keep core timetable, gap, recommendation, and route computation in the browser so ordinary use has near-zero marginal backend work.
-- If a vendor changes its free tier, prefer optimization, client-side work, open-source/self-hostable substitutes, or bounded features over charging students for the core product.
+- Do not add a paid map API when reviewed bundled/open routing data satisfies the product need.
+- Cache/deduplicate bounded social work.
+- Monitor Vercel invocation/transfer and Supabase size/egress before raising backend-heavy caps.
+- Prefer aggregate operational metrics; never send timetable/relationship contents to analytics.
+- Keep core timetable, gap, recommendation, and route computation in the browser.
+- Prefer optimization/client-side work/open-source substitutes over charging students for the core product.
 
-## Announcement wording
+## CI/deployment discipline
+
+Correctness gates stay strict, but remote churn should stay low:
+
+- verify locally before pushing;
+- batch coherent changes into one intentional branch update where practical;
+- avoid push-based formatting/test debugging loops;
+- rerun failed jobs/runs instead of no-op commits when appropriate;
+- use focused PRs and squash-merge to `main`;
+- never bypass a real required-check failure merely to save CI time.
+
+## Safe public wording
 
 Safe claims include:
 
-- "Your original timetable file stays in your browser."
-- "Private cloud timetable data is encrypted in your browser before storage."
-- "Gapwise is local-first for timetable, gap, and campus-route calculations."
-- "Friend overlap shares only a few rounded common windows, not your timetable."
-- "Gapwise is independently built and is not affiliated with or endorsed by the University of Toronto."
+- “Your original timetable file stays in your browser.”
+- “Private cloud timetable data is encrypted in your browser before storage.”
+- “Gapwise is local-first for timetable, gap, and campus-route calculations.”
+- “Friend overlap shares only a few rounded common windows, not your timetable.”
+- “Gapwise is independently built and is not affiliated with or endorsed by the University of Toronto.”
 
-Do not claim:
+Do not claim end-to-end encryption, zero knowledge, server-inability to decrypt, unhackability, perfect security, or official U of T affiliation.
 
-- end-to-end encryption / E2EE;
-- zero knowledge;
-- that the server can never decrypt cloud data;
-- that Gapwise is unhackable or perfectly secure;
-- that Gapwise is affiliated with or endorsed by the University of Toronto.
+## Current roadmap gate
 
-## Ongoing maintenance is not a launch blocker
-
-A production app is never permanently finished. Dependency updates, newly disclosed vulnerabilities, vendor free-tier changes, capacity growth, browser changes, and real-world usage can require future maintenance. Those are normal operational responsibilities, not known blockers to the 2026-08-12 launch posture documented here.
+The pre-vacation hardening milestone is complete. After the Aug 15 domain/UI/doc sync, no further planned feature expansion is required before the Sep 3 re-entry verification unless a critical production issue appears. On Sep 3, verify the actual GitHub/Vercel/Supabase state before beginning the remaining evidence-driven roadmap.
