@@ -6,14 +6,14 @@ Gapwise is a local-first React/Vite application. The browser parses an ACORN cal
 
 Production is built from GitHub `main` by Vercel and served from `https://gapwise.ca`. Private cloud is encrypted-only in source; legacy plaintext timetable/settings storage and overlap helpers have been retired.
 
-| Concern                                        | Owner                  | Notes                                                                                       |
-| ---------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------- |
-| UI, parsing, gaps, routing, private encryption | Browser                | Guest mode works without Supabase; signed-in private data is encrypted before storage.      |
-| Auth, ciphertext, wrapped keys, relationships  | Supabase               | Owner RLS; no Vercel KEK in the database.                                                   |
-| Device key broker and common gap               | Vercel Functions       | Verified JWT, caller-scoped Supabase client, KEK; no service role.                          |
-| Account deletion                               | Supabase Edge Function | JWT required; identity comes from the verified token.                                       |
-| Static build and domains                       | Vercel                 | `main` is production; canonical domain and security headers come from repository config.    |
-| Verification                                   | GitHub Actions         | App checks, browser E2E/accessibility/PWA, and isolated PostgreSQL security checks.          |
+Architecture ownership:
+
+- **Browser:** UI, parsing, gaps, routing, and private encryption. Guest mode works without Supabase; signed-in private data is encrypted before storage.
+- **Supabase:** authentication, ciphertext, wrapped keys, and relationships. Owner RLS applies; the Vercel KEK is not stored in the database.
+- **Vercel Functions:** device key broker and common-gap computation. Requests use verified JWTs and caller-scoped Supabase clients; no service-role credential is used there.
+- **Supabase Edge Function:** account deletion. JWT is required and identity comes from the verified token.
+- **Vercel:** static build, canonical domain, and security headers. `main` is production.
+- **GitHub Actions:** application checks, browser E2E/accessibility/PWA coverage, and isolated PostgreSQL security checks.
 
 ## Local setup
 
