@@ -1262,37 +1262,35 @@ export function CampusMap({
         aria-label="Interactive map of the University of Toronto Mississauga campus"
       />
       {status === "ready" ? (
-        <>
+        <div className="absolute right-3 top-[5.75rem] z-10 flex max-w-[min(13rem,calc(100%-1.5rem))] flex-col items-end gap-2">
           <button
             type="button"
             onClick={resetCamera}
-            className="button-secondary absolute right-3 top-[5.75rem] z-10 min-h-10 rounded-lg px-3 text-xs font-semibold shadow-lg"
+            className="button-secondary min-h-10 rounded-lg px-3 text-xs font-semibold shadow-lg"
             aria-label={hasRouteContent ? "Fit the active day route" : "Return to campus overview"}
           >
             {hasRouteContent ? "Fit route" : "Campus overview"}
           </button>
-          <div className="absolute right-3 top-[8.65rem] z-10 flex max-w-[min(13rem,calc(100%-1.5rem))] flex-col items-end gap-1.5">
-            <button
-              type="button"
-              onClick={() => setLocationEnabled((enabled) => !enabled)}
-              aria-label={locationEnabled ? "Hide my location" : "Show my location"}
-              aria-pressed={locationEnabled}
-              className="button-secondary inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg"
+          <button
+            type="button"
+            onClick={() => setLocationEnabled((enabled) => !enabled)}
+            aria-label={locationEnabled ? "Hide my location" : "Show my location"}
+            aria-pressed={locationEnabled}
+            className="button-secondary inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg"
+          >
+            <LocateFixed className="h-4 w-4" aria-hidden="true" />
+            <span>{locationEnabled ? "Hide my location" : "Show my location"}</span>
+          </button>
+          {locationStatusLabel(liveLocation.status) ? (
+            <p
+              className="rounded-md border border-border bg-popover/95 px-2.5 py-1.5 text-right text-[0.68rem] leading-4 text-popover-foreground shadow-md backdrop-blur"
+              role="status"
+              aria-live="polite"
             >
-              <LocateFixed className="h-4 w-4" aria-hidden="true" />
-              <span>{locationEnabled ? "Hide my location" : "Show my location"}</span>
-            </button>
-            {locationStatusLabel(liveLocation.status) ? (
-              <p
-                className="rounded-md border border-border bg-popover/95 px-2.5 py-1.5 text-right text-[0.68rem] leading-4 text-popover-foreground shadow-md backdrop-blur"
-                role="status"
-                aria-live="polite"
-              >
-                {locationStatusLabel(liveLocation.status)}
-              </p>
-            ) : null}
-          </div>
-        </>
+              {locationStatusLabel(liveLocation.status)}
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {status === "loading" ? (
         <div

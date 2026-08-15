@@ -459,7 +459,7 @@ export const TimetableGrid = memo(function TimetableGrid({
               type="button"
               aria-pressed={compactHours}
               onClick={() => setCompactHours((current) => !current)}
-              className="button-secondary hidden px-2.5 py-1 text-xs font-semibold text-muted-foreground md:inline-flex"
+              className="button-secondary hidden min-w-36 items-center justify-center px-2.5 py-1 text-center text-xs font-semibold text-muted-foreground md:inline-flex"
             >
               {compactHours ? "Full spacing" : "Compact empty time"}
             </button>

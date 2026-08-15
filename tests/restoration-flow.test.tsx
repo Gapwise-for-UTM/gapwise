@@ -425,7 +425,7 @@ describe("route-level encrypted timetable restoration", () => {
 
     await click("Gap plan");
     expect(container!.contains(courseNode!)).toBeTrue();
-    await click("Weekly timetable");
+    await click("Timetable");
     expect(
       Array.from(container!.querySelectorAll("span")).find(
         (node) => node.textContent === "DEM101H5",
