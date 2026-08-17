@@ -64,9 +64,11 @@ export function CampusExplorer({
   const selectMeetingFromMap = useCallback(
     (id: string) => {
       setMapDetailMeetingId(id);
+      setRoomResult(null);
+      onSelectBuilding(null);
       onSelectMeeting(id);
     },
-    [onSelectMeeting],
+    [onSelectBuilding, onSelectMeeting],
   );
 
   useEffect(() => {
