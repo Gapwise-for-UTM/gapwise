@@ -1,19 +1,14 @@
 import {
   AlertTriangle,
-  BusFront,
-  CarFront,
-  ChevronRight,
   Clock3,
   Footprints,
-  Home,
   LocateFixed,
-  MapPin,
   Route as RouteIcon,
   Settings2,
-  type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusExplorer } from "@/components/CampusExplorer";
+import { DayRouteSequence } from "@/components/DayRouteSequence";
 import { IndoorFloorViewer } from "@/components/IndoorFloorViewer";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
@@ -29,7 +24,6 @@ import {
   createCampusDayRouteStops,
   isCampusDayAnchorMeeting,
   selectedCampusDayAnchor,
-  type CampusDayAnchor,
 } from "@/features/routing/campus-day";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
@@ -64,14 +58,7 @@ function distanceLabel(meters: number): string {
   return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
 }
 
-function anchorIcon(kind: CampusDayAnchor["kind"]): LucideIcon {
-  if (kind === "residence") return Home;
-  if (kind === "transit") return BusFront;
-  if (kind === "parking") return CarFront;
-  return MapPin;
-}
-
-function departureMetricLabel(kind: CampusDayAnchor["kind"]) {
+function departureMetricLabel(kind: "residence" | "transit" | "parking" | "pickup") {
   if (kind === "residence") return "Head home";
   if (kind === "parking") return "Return to car";
   if (kind === "transit") return "To transit";
@@ -120,7 +107,6 @@ function RouteOptionsDrawer({
               Tune walking assumptions without covering the map.
             </DrawerDescription>
           </DrawerHeader>
-
           <div className="space-y-5">
             <label className="block text-sm font-medium">
               Route mode
@@ -136,7 +122,6 @@ function RouteOptionsDrawer({
                 <option value="step-free">Step-free</option>
               </select>
             </label>
-
             <label className="block text-sm font-medium">
               <span className="flex items-center justify-between gap-3">
                 <span>Walking speed</span>
@@ -154,7 +139,6 @@ function RouteOptionsDrawer({
                 className="mt-4 w-full accent-[var(--color-accent)]"
               />
             </label>
-
             <label className="block text-sm font-medium">
               <span className="flex items-center justify-between gap-3">
                 <span>Transition buffer</span>
@@ -213,7 +197,8 @@ function SegmentSummary({
       <section className="surface p-4">
         <p className="text-sm font-semibold">Select a transition</p>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          Tap a route between classes to see walking time, distance, and leave-by guidance.
+          Tap a route line or the travel step between classes to see walking time, distance, and
+          leave-by guidance.
         </p>
       </section>
     );
@@ -446,7 +431,7 @@ export function MobileDayRoute({
           selectedBuildingCode={selectedBuildingCode}
           onSelectBuilding={onSelectBuilding}
           dayAnchor={null}
-          className="h-[62dvh] min-h-[26rem] max-h-[38rem]"
+          className="h-[64dvh] min-h-[27rem] max-h-[40rem]"
         />
       </div>
     );
@@ -454,16 +439,16 @@ export function MobileDayRoute({
 
   return (
     <div className="rise-in space-y-3">
-      <section className="surface p-4">
+      <section className="surface p-3.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="eyebrow text-accent">Campus route</p>
-            <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-[-0.035em]">
+            <h1 className="mt-1 font-display text-xl font-semibold tracking-[-0.035em]">
               {weekday}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {dayMeetings.length} {dayMeetings.length === 1 ? "class" : "classes"} ·{" "}
-              {segments.length} {segments.length === 1 ? "transition" : "transitions"}
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {dayMeetings.length} {dayMeetings.length === 1 ? "class" : "classes"} · time-labelled
+              map
             </p>
           </div>
           <button
@@ -477,7 +462,7 @@ export function MobileDayRoute({
         </div>
 
         {availableTerms.length > 1 ? (
-          <div className="mt-4 flex gap-1 rounded-xl border border-border bg-background/45 p-1">
+          <div className="mt-3 flex gap-1 rounded-xl border border-border bg-background/45 p-1">
             {availableTerms.map((item) => (
               <button
                 key={item}
@@ -496,7 +481,7 @@ export function MobileDayRoute({
           </div>
         ) : null}
 
-        <div className="mt-3 grid grid-cols-5 gap-1" role="group" aria-label="Route weekday">
+        <div className="mt-2 grid grid-cols-5 gap-1" role="group" aria-label="Route weekday">
           {WEEKDAYS.map((day) => (
             <button
               key={day}
@@ -536,7 +521,7 @@ export function MobileDayRoute({
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
             dayAnchor={null}
-            className="h-[55dvh] min-h-[23rem] max-h-[32rem]"
+            className="h-[58dvh] min-h-[24rem] max-h-[34rem]"
           />
         </>
       ) : (
@@ -553,66 +538,17 @@ export function MobileDayRoute({
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
             dayAnchor={dayAnchor}
-            className="h-[45dvh] min-h-[20rem] max-h-[30rem]"
+            className="h-[52dvh] min-h-[22rem] max-h-[36rem]"
           />
 
-          <div className="flex snap-x gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {segments.map((segment) => {
-              const presentation = getLocationPresentation({
-                from: segment.from,
-                to: segment.to,
-                route: segment.route,
-              });
-              const active = segment.id === selectedSegmentId;
-              const fromAnchor = campusDayAnchorPresentation(segment.from);
-              const toAnchor = campusDayAnchorPresentation(segment.to);
-              const fromAccessibleLabel = fromAnchor
-                ? `${fromAnchor.title}: ${fromAnchor.label}`
-                : segment.from.courseCode;
-              const toAccessibleLabel = toAnchor
-                ? `${toAnchor.title}: ${toAnchor.label}`
-                : segment.to.courseCode;
-              const FromAnchorIcon = fromAnchor ? anchorIcon(fromAnchor.kind) : null;
-              const ToAnchorIcon = toAnchor ? anchorIcon(toAnchor.kind) : null;
-              return (
-                <button
-                  key={segment.id}
-                  type="button"
-                  onClick={() => selectSegment(segment.id)}
-                  aria-label={`${fromAccessibleLabel} to ${toAccessibleLabel}. ${presentation.label}`}
-                  className={`min-h-14 min-w-[13.5rem] snap-start rounded-xl border px-3 py-2.5 text-left ${
-                    active ? "border-accent/50 bg-accent/10" : "border-border bg-card/70"
-                  }`}
-                >
-                  <span className="flex items-center gap-2 text-xs font-semibold">
-                    {FromAnchorIcon ? (
-                      <>
-                        <FromAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                        <span className="sr-only">{fromAnchor?.label}</span>
-                      </>
-                    ) : (
-                      <span className="truncate">{segment.from.courseCode}</span>
-                    )}
-                    <ChevronRight
-                      className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    {ToAnchorIcon ? (
-                      <>
-                        <ToAnchorIcon className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                        <span className="sr-only">{toAnchor?.label}</span>
-                      </>
-                    ) : (
-                      <span className="truncate">{segment.to.courseCode}</span>
-                    )}
-                  </span>
-                  <span className="mt-1 block truncate text-[0.68rem] text-muted-foreground">
-                    {presentation.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <DayRouteSequence
+            routeStops={routeStops}
+            segments={segments}
+            selectedMeetingId={selectedMeetingId}
+            selectedSegmentId={selectedSegmentId}
+            onSelectMeeting={selectMeeting}
+            onSelectSegment={selectSegment}
+          />
 
           <SegmentSummary segment={selectedSegment} preferences={preferences} />
 

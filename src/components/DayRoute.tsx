@@ -1,25 +1,14 @@
 import type { User } from "@supabase/supabase-js";
-import {
-  AlertTriangle,
-  BusFront,
-  CarFront,
-  Clock3,
-  Footprints,
-  Home,
-  LocateFixed,
-  MapPin,
-  Route as RouteIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { AlertTriangle, Clock3, Footprints, LocateFixed, Route as RouteIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BubbleTabs } from "./BubbleTabs";
 import { CampusExplorer } from "./CampusExplorer";
+import { DayRouteSequence } from "./DayRouteSequence";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
 import { MobileDayRoute } from "@/components/mobile/MobileDayRoute";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import {
   campusDayAnchorPresentation,
-  classNumberForRouteStop,
   createCampusDayRouteStops,
   isCampusDayAnchorMeeting,
   selectedCampusDayAnchor,
@@ -51,13 +40,6 @@ function secondsLabel(seconds: number): string {
 
 function distanceLabel(meters: number): string {
   return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
-}
-
-function anchorIcon(kind: CampusDayAnchor["kind"]): LucideIcon {
-  if (kind === "residence") return Home;
-  if (kind === "transit") return BusFront;
-  if (kind === "parking") return CarFront;
-  return MapPin;
 }
 
 function departureMetricLabel(kind: CampusDayAnchor["kind"]) {
@@ -150,9 +132,7 @@ export function DayRoute({
     },
     [onSelectBuilding, selectedBuildingCode],
   );
-  const highlightBuilding = useCallback((code: string | null) => {
-    setHoveredBuildingCode(code);
-  }, []);
+  const highlightBuilding = useCallback((code: string | null) => setHoveredBuildingCode(code), []);
   const selectedSegment = segments.find((segment) => segment.id === selectedSegmentId) ?? null;
 
   function updatePreferences(patch: Partial<UserPreferences>) {
@@ -191,7 +171,7 @@ export function DayRoute({
         selectedBuildingCode={selectedBuildingCode}
         onSelectBuilding={onSelectBuilding}
         dayAnchor={null}
-        className="h-[calc(100dvh-13rem)] min-h-[32rem] max-h-[42rem]"
+        className="h-[calc(100dvh-13rem)] min-h-[32rem] max-h-[46rem]"
       />
     );
   }
@@ -348,132 +328,38 @@ export function DayRoute({
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
             dayAnchor={null}
-            className="h-[30rem] lg:h-[36rem]"
+            className="h-[32rem] lg:h-[40rem]"
           />
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.65fr)]">
-          <section className="surface p-5" aria-labelledby="day-timeline-title">
-            <p className="eyebrow text-accent">Day sequence</p>
-            <h2
-              id="day-timeline-title"
-              className="mt-2 font-display text-xl font-medium tracking-[-0.03em]"
-            >
-              {weekday} timeline
-            </h2>
-            <ol className="mt-3 space-y-3">
-              {routeStops.map((meeting, index) => {
-                const segment = segments[index];
-                const selected = selectedMeetingId === meeting.id;
-                const anchorPresentation = campusDayAnchorPresentation(meeting);
-                const anchorStop = Boolean(anchorPresentation);
-                const buildingHighlighted =
-                  meeting.buildingCode !== null &&
-                  meeting.buildingCode.toUpperCase() === hoveredBuildingCode;
-                const classNumber = classNumberForRouteStop(routeStops, index);
-                const meetingPresentation = getLocationPresentation({ meeting });
-                const segmentPresentation = segment
-                  ? getLocationPresentation({
-                      from: segment.from,
-                      to: segment.to,
-                      route: segment.route,
-                    })
-                  : null;
-                const SegmentStatusIcon = segmentPresentation?.icon;
-                const AnchorIcon = anchorPresentation ? anchorIcon(anchorPresentation.kind) : null;
-                const segmentAnchor = segment
-                  ? (campusDayAnchorPresentation(segment.from) ??
-                    campusDayAnchorPresentation(segment.to))
-                  : null;
-                return (
-                  <li key={meeting.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectMeeting(meeting.id)}
-                      onMouseEnter={() =>
-                        highlightBuilding(meeting.buildingCode?.toUpperCase() ?? null)
-                      }
-                      onMouseLeave={() => highlightBuilding(null)}
-                      onFocus={() => highlightBuilding(meeting.buildingCode?.toUpperCase() ?? null)}
-                      onBlur={() => highlightBuilding(null)}
-                      data-building-code={meeting.buildingCode ?? undefined}
-                      data-building-highlighted={buildingHighlighted}
-                      className={`route-stop-card w-full rounded-lg border p-3 text-left ${
-                        selected
-                          ? "border-accent/60 bg-accent/8"
-                          : "border-border bg-card hover:bg-muted/60"
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                          {AnchorIcon ? (
-                            <AnchorIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                          ) : (
-                            classNumber
-                          )}
-                        </span>
-                        <span>
-                          <span className="block text-sm font-semibold">
-                            {anchorPresentation
-                              ? anchorPresentation.title
-                              : `${meeting.courseCode} ${meeting.activityType}`}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {anchorPresentation
-                              ? anchorPresentation.label
-                              : `${formatTime(meeting.startTime)}–${formatTime(meeting.endTime)} · ${meetingPresentation.label}`}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-                    {segment ? (
-                      <button
-                        type="button"
-                        onClick={() => selectSegment(segment.id)}
-                        className={`ml-3 mt-2 w-[calc(100%-0.75rem)] rounded-lg border-l-2 p-3 text-left text-xs ${
-                          selectedSegmentId === segment.id
-                            ? "border-accent bg-accent/8"
-                            : "border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 font-semibold">
-                          {SegmentStatusIcon ? (
-                            <SegmentStatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                          ) : null}
-                          {segmentAnchor
-                            ? segmentAnchor.segmentLabel
-                            : `Transition to ${segment.to.courseCode}`}
-                        </span>
-                        <span className="mt-1 block text-muted-foreground">
-                          {segmentPresentation?.label}
-                        </span>
-                      </button>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
+        <div className="space-y-3">
+          <CampusExplorer
+            meetings={dayMeetings}
+            segments={segments}
+            selectedMeetingId={selectedMeetingId}
+            selectedSegmentId={selectedSegmentId}
+            onSelectMeeting={selectMeeting}
+            onSelectSegment={selectSegment}
+            hoveredBuildingCode={hoveredBuildingCode}
+            onHoverBuilding={highlightBuilding}
+            selectedBuildingCode={selectedBuildingCode}
+            onSelectBuilding={onSelectBuilding}
+            dayAnchor={dayAnchor}
+            className="h-[min(66vh,44rem)] min-h-[34rem]"
+          />
 
-          <div className="space-y-3">
-            <CampusExplorer
-              meetings={dayMeetings}
-              segments={segments}
-              selectedMeetingId={selectedMeetingId}
-              selectedSegmentId={selectedSegmentId}
-              onSelectMeeting={selectMeeting}
-              onSelectSegment={selectSegment}
-              hoveredBuildingCode={hoveredBuildingCode}
-              onHoverBuilding={highlightBuilding}
-              selectedBuildingCode={selectedBuildingCode}
-              onSelectBuilding={onSelectBuilding}
-              dayAnchor={dayAnchor}
-              className="h-[30rem] lg:h-[36rem]"
-            />
-            {selectedSegment ? (
-              <SegmentDetails segment={selectedSegment} preferences={preferences} />
-            ) : null}
-          </div>
+          <DayRouteSequence
+            routeStops={routeStops}
+            segments={segments}
+            selectedMeetingId={selectedMeetingId}
+            selectedSegmentId={selectedSegmentId}
+            onSelectMeeting={selectMeeting}
+            onSelectSegment={selectSegment}
+          />
+
+          {selectedSegment ? (
+            <SegmentDetails segment={selectedSegment} preferences={preferences} />
+          ) : null}
         </div>
       )}
 
@@ -499,11 +385,7 @@ function SegmentDetails({
   preferences: UserPreferences;
 }) {
   const route = segment.route;
-  const presentation = getLocationPresentation({
-    from: segment.from,
-    to: segment.to,
-    route,
-  });
+  const presentation = getLocationPresentation({ from: segment.from, to: segment.to, route });
   const fromLocation = getLocationPresentation({ meeting: segment.from });
   const toLocation = getLocationPresentation({ meeting: segment.to });
   const fromAnchor = campusDayAnchorPresentation(segment.from);

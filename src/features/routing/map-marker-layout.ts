@@ -34,11 +34,12 @@ function ringOffsets(ring: number, spacing: number): MarkerPixelOffset[] {
  * Deterministically place marker centres so no pair is closer than minSeparationPx.
  * The returned offsets are screen-pixel offsets from the geographic anchor, so the
  * geographic point remains authoritative while labels stay readable at every zoom.
+ * Defaults leave enough room for the time pills used by the Day Route map.
  */
 export function collisionFreeMarkerOffsets(
   points: MarkerScreenPoint[],
-  minSeparationPx = 40,
-  spacingPx = 42,
+  minSeparationPx = 76,
+  spacingPx = 60,
 ): MarkerPixelOffset[] {
   const placed: MarkerScreenPoint[] = [];
   return points.map((point) => {
