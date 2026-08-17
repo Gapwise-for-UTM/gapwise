@@ -213,7 +213,7 @@ describe("route-level encrypted timetable restoration", () => {
     syncOptedIn = true;
     Object.defineProperty(browserWindow.navigator, "onLine", { configurable: true, value: false });
     await mountRoute();
-    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the empty state");
+    await waitFor(() => pageText().includes("Import ACORN"), "the empty state");
 
     const input = container?.querySelector<HTMLInputElement>("#ics-file");
     expect(input).not.toBeNull();
@@ -257,7 +257,7 @@ describe("route-level encrypted timetable restoration", () => {
 
     await mountRoute();
     expect(pageText()).toContain("Checking for your timetable…");
-    expect(pageText()).not.toContain("Upload your ACORN calendar");
+    expect(pageText()).not.toContain("Import ACORN");
 
     await setAuth({ user: authenticatedUser, loading: false, error: null });
     await waitFor(() => loadCalls.length === 1, "the encrypted restore to start");
@@ -308,7 +308,7 @@ describe("route-level encrypted timetable restoration", () => {
 
     await unmountRoute();
     await mountRoute();
-    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "suppressed reload");
+    await waitFor(() => pageText().includes("Import ACORN"), "suppressed reload");
     expect(pageText()).not.toContain("REMOVE101H5");
     expect(loadCalls).toEqual([authenticatedUser.id]);
   });
@@ -324,7 +324,7 @@ describe("route-level encrypted timetable restoration", () => {
       () => pageText().includes("We couldn't restore your cloud timetable."),
       "the restore error",
     );
-    expect(pageText()).toContain("Upload your ACORN calendar");
+    expect(pageText()).toContain("Import ACORN");
   });
 
   test("shows a visible error when auth session initialization fails", async () => {
@@ -348,9 +348,9 @@ describe("route-level encrypted timetable restoration", () => {
     loadImplementation = async () => query.promise;
 
     await mountRoute();
-    expect(pageText()).not.toContain("Upload your ACORN calendar");
+    expect(pageText()).not.toContain("Import ACORN");
     query.resolve(null);
-    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the empty state");
+    await waitFor(() => pageText().includes("Import ACORN"), "the empty state");
     expect(pageText()).not.toContain("We couldn't restore your cloud timetable.");
   });
 
@@ -364,7 +364,7 @@ describe("route-level encrypted timetable restoration", () => {
     authSnapshot = { user: null, loading: false, error: null };
 
     await mountRoute();
-    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the guest empty state");
+    await waitFor(() => pageText().includes("Import ACORN"), "the guest empty state");
 
     expect(pageText()).not.toContain("LEGACY101H5");
     expect(localStorage.getItem("gapwise:timetable")).toBeNull();
@@ -396,7 +396,7 @@ describe("route-level encrypted timetable restoration", () => {
     await waitFor(() => loadCalls.length === 1, "the encrypted restore to start");
     await setAuth({ user: null, loading: false, error: null });
     query.resolve({ meetings: [cloud], updatedAt: "2026-08-01T12:00:00.000Z" });
-    await waitFor(() => pageText().includes("Upload your ACORN calendar"), "the guest state");
+    await waitFor(() => pageText().includes("Import ACORN"), "the guest state");
     await flush();
 
     expect(pageText()).not.toContain("STALE101H5");
@@ -406,7 +406,7 @@ describe("route-level encrypted timetable restoration", () => {
   test("keeps the weekly grid mounted while switching schedule views", async () => {
     authSnapshot = { user: null, loading: false, error: null };
     await mountRoute();
-    await waitFor(() => pageText().includes("Try a demo"), "the demo button");
+    await waitFor(() => pageText().includes("Try Demo Schedule"), "the demo button");
     const buttons = () => Array.from(container!.querySelectorAll("button"));
     const click = async (label: string) => {
       const button = buttons().find((candidate) => candidate.textContent?.includes(label));
@@ -416,7 +416,7 @@ describe("route-level encrypted timetable restoration", () => {
       );
     };
 
-    await click("Try a demo");
+    await click("Try Demo Schedule");
     await waitFor(() => pageText().includes("Demo timetable"), "the demo timetable");
     const courseNode = Array.from(container!.querySelectorAll("span")).find(
       (node) => node.textContent === "DEM101H5",
@@ -436,10 +436,10 @@ describe("route-level encrypted timetable restoration", () => {
   test("does not query cloud over an already loaded in-memory demo", async () => {
     authSnapshot = { user: null, loading: false, error: null };
     await mountRoute();
-    await waitFor(() => pageText().includes("Try a demo"), "the demo button");
+    await waitFor(() => pageText().includes("Try Demo Schedule"), "the demo button");
 
     const demoButton = Array.from(container!.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Try a demo"),
+      button.textContent?.includes("Try Demo Schedule"),
     );
     expect(demoButton).toBeTruthy();
     await act(async () =>
