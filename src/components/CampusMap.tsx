@@ -12,7 +12,7 @@ import {
   representativePointForFootprint,
 } from "@/data/utm/building-footprints";
 import { getCampusCameraBounds } from "@/features/routing/campus-region";
-import { collisionFreeMarkerOffsets } from "@/features/routing/map-marker-layout";
+import { groupedVerticalMarkerOffsets } from "@/features/routing/map-marker-layout";
 import {
   resolveMapAnchor,
   type MapAnchorSegment,
@@ -451,15 +451,6 @@ function syncBuildingHighlight(
   }
 }
 
-function getMarkerOffset(slot: number, total: number): [number, number] {
-  if (total <= 1) return [0, 0];
-  const row = Math.floor(slot / 2);
-  const column = slot % 2;
-  const rows = Math.ceil(total / 2);
-  const itemsInRow = Math.min(2, total - row * 2);
-  return [(column - (itemsInRow - 1) / 2) * 68, (row - (rows - 1) / 2) * 42];
-}
-
 function mapBuildingAnchor(code: string | null) {
   const campus = getCampusBuilding(code);
   if (campus) return { code: campus.code, navigationPoint: campus.navigationPoint };
@@ -470,15 +461,67 @@ function mapBuildingAnchor(code: string | null) {
     : null;
 }
 
+function createMeetingPopupContent(meeting: Meeting, buildingCode: string) {
+  const card = document.createElement("section");
+  card.className = "map-meeting-popover";
+  card.dataset["activity"] = meeting.activityType;
+  card.setAttribute("aria-label", `Timetable details for ${meeting.courseCode}`);
+
+  const headingRow = document.createElement("div");
+  headingRow.className = "map-meeting-popover-heading";
+  const title = document.createElement("strong");
+  title.textContent = meeting.courseCode;
+  const activity = document.createElement("span");
+  activity.className = "map-meeting-popover-activity";
+  activity.textContent = meeting.activityType;
+  headingRow.append(title, activity);
+  card.append(headingRow);
+
+  if (meeting.courseName) {
+    const courseName = document.createElement("p");
+    courseName.className = "map-meeting-popover-course";
+    courseName.textContent = meeting.courseName;
+    card.append(courseName);
+  }
+
+  const details = document.createElement("dl");
+  details.className = "map-meeting-popover-details";
+  const location = meeting.room ? `${buildingCode} ${meeting.room}` : buildingCode;
+  const rows: [string, string][] = [
+    ["Time", `${formatTime(meeting.startTime)} – ${formatTime(meeting.endTime)}`],
+    ["Location", location],
+    ["Component", `${meeting.activityType}${meeting.sectionCode ? ` · ${meeting.sectionCode}` : ""}`],
+    ["Day", `${meeting.weekday} · ${meeting.term}`],
+  ];
+  for (const [label, value] of rows) {
+    const row = document.createElement("div");
+    const term = document.createElement("dt");
+    const description = document.createElement("dd");
+    term.textContent = label;
+    description.textContent = value;
+    row.append(term, description);
+    details.append(row);
+  }
+  card.append(details);
+  return card;
+}
+
 function layoutTimeMarkers(map: MapLibreMap, markers: Marker[]) {
   const timeMarkers = markers.filter((marker) =>
     marker.getElement().classList.contains("map-time-marker"),
   );
-  const points = timeMarkers.map((marker) => {
+  const points = timeMarkers.map((marker, index) => {
+    const element = marker.getElement();
     const point = map.project(marker.getLngLat());
-    return { x: point.x, y: point.y };
+    const parsedStartTime = Number(element.dataset["startTime"]);
+    return {
+      x: point.x,
+      y: point.y,
+      groupKey: element.dataset["buildingCode"] ?? `marker-${index}`,
+      order: Number.isFinite(parsedStartTime) ? parsedStartTime : index,
+    };
   });
-  const offsets = collisionFreeMarkerOffsets(points);
+  const offsets = groupedVerticalMarkerOffsets(points);
   timeMarkers.forEach((marker, index) => marker.setOffset(offsets[index] ?? [0, 0]));
 }
 
@@ -496,41 +539,28 @@ function syncMapData(
   markers.length = 0;
 
   const routes = anchorSegments(data);
-  const buildingTotals = new Map<string, number>();
-  for (const meeting of data.meetings) {
-    const building = mapBuildingAnchor(meeting.buildingCode);
-    if (!building) continue;
-    buildingTotals.set(building.code, (buildingTotals.get(building.code) ?? 0) + 1);
-  }
-  const buildingSlots = new Map<string, number>();
 
-  data.meetings.forEach((meeting, index) => {
+  data.meetings.forEach((meeting) => {
     const building = mapBuildingAnchor(meeting.buildingCode);
     if (!building) return;
-    const slot = buildingSlots.get(building.code) ?? 0;
-    buildingSlots.set(building.code, slot + 1);
     const anchor = resolveMapAnchor(
       meeting.id,
       building.navigationPoint,
       routes,
       data.selectedSegmentId,
     );
-    const offset =
-      anchor.source === "fallback"
-        ? getMarkerOffset(slot, buildingTotals.get(building.code) ?? 1)
-        : ([0, 0] as [number, number]);
     const markerButton = document.createElement("button");
     markerButton.type = "button";
     markerButton.className = `map-time-marker${meeting.id === data.selectedMeetingId ? " is-selected" : ""}`;
+    markerButton.dataset["activity"] = meeting.activityType;
+    markerButton.dataset["buildingCode"] = building.code;
+    markerButton.dataset["startTime"] = String(meeting.startTime);
     markerButton.textContent = formatTime(meeting.startTime);
-    markerButton.style.setProperty(
-      "--map-stop-color",
-      routeSequenceColor(theme, index, data.meetings.length),
-    );
-    markerButton.title = `${formatTime(meeting.startTime)} · ${meeting.courseCode} · ${building.code}`;
+    const location = meeting.room ? `${building.code} ${meeting.room}` : building.code;
+    markerButton.title = `${formatTime(meeting.startTime)} · ${meeting.courseCode} · ${location}`;
     markerButton.setAttribute(
       "aria-label",
-      `Select ${meeting.courseCode} at ${formatTime(meeting.startTime)}, ${building.code}`,
+      `Show details for ${meeting.courseCode}, ${meeting.activityType}, ${formatTime(meeting.startTime)} to ${formatTime(meeting.endTime)}, ${location}`,
     );
     markerButton.addEventListener("click", (event) => {
       event.stopPropagation();
@@ -538,11 +568,18 @@ function syncMapData(
     });
     markerButton.addEventListener("mouseenter", () => data.onHoverBuilding(building.code));
     markerButton.addEventListener("mouseleave", () => data.onHoverBuilding(null));
-    markers.push(
-      new maplibregl.Marker({ element: markerButton, offset })
-        .setLngLat(anchor.coordinate)
-        .addTo(map),
-    );
+
+    const popup = new maplibregl.Popup({
+      offset: 18,
+      closeButton: true,
+      closeOnClick: true,
+      maxWidth: "18rem",
+    }).setDOMContent(createMeetingPopupContent(meeting, building.code));
+    const marker = new maplibregl.Marker({ element: markerButton })
+      .setLngLat(anchor.coordinate)
+      .setPopup(popup)
+      .addTo(map);
+    markers.push(marker);
   });
 
   if (data.dayAnchor) {
@@ -771,8 +808,11 @@ function collectBoundsPoints(data: MapData): [number, number][] {
   return points;
 }
 
-function fitPadding(map: MapLibreMap) {
-  return map.getContainer().clientWidth < 640 ? 36 : 64;
+function fitPadding(map: MapLibreMap): MapFocusPadding {
+  if (map.getContainer().clientWidth < 640) {
+    return { top: 148, right: 92, bottom: 64, left: 36 };
+  }
+  return { top: 96, right: 156, bottom: 64, left: 64 };
 }
 
 function maybeFitBounds(
