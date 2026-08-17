@@ -535,6 +535,9 @@ function syncMapData(
   routeAnimationFrameRef: MutableRefObject<number | null>,
   latestDataRef: MutableRefObject<MapData>,
 ) {
+  const openMeetingId = markers.find((marker) => marker.getPopup()?.isOpen())?.getElement().dataset[
+    "meetingId"
+  ] ?? null;
   for (const marker of markers) marker.remove();
   markers.length = 0;
 
@@ -552,6 +555,7 @@ function syncMapData(
     const markerButton = document.createElement("button");
     markerButton.type = "button";
     markerButton.className = `map-time-marker${meeting.id === data.selectedMeetingId ? " is-selected" : ""}`;
+    markerButton.dataset["meetingId"] = meeting.id;
     markerButton.dataset["activity"] = meeting.activityType;
     markerButton.dataset["buildingCode"] = building.code;
     markerButton.dataset["startTime"] = String(meeting.startTime);
@@ -579,6 +583,7 @@ function syncMapData(
       .setLngLat(anchor.coordinate)
       .setPopup(popup)
       .addTo(map);
+    if (meeting.id === openMeetingId) marker.togglePopup();
     markers.push(marker);
   });
 
