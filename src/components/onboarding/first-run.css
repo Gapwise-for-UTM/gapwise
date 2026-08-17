@@ -1,0 +1,42 @@
+@media (max-width: 1023px) {
+  .landing-bento > .upload-card {
+    order: -1;
+    min-height: 0;
+  }
+}
+
+body:has(main.landing-stage) header [role="group"][aria-label="Account"],
+body:has(main.landing-stage) header [aria-label="Campus arrival settings"],
+body:has(main.landing-stage) main.landing-stage section[aria-labelledby="cloud-sync-title"] {
+  display: none;
+}
+
+@keyframes first-value-outline {
+  0% {
+    outline-color: transparent;
+    outline-offset: 0;
+  }
+  45% {
+    outline-color: var(--color-accent);
+    outline-offset: 3px;
+  }
+  100% {
+    outline-color: transparent;
+    outline-offset: 5px;
+  }
+}
+
+.first-value-emphasis {
+  outline: 2px solid transparent;
+  animation: first-value-outline 560ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .first-value-emphasis {
+    animation: none;
+    outline: 0;
+  }
+  .and66-skeleton * {
+    animation: none !important;
+  }
+}

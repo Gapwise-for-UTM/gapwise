@@ -16,6 +16,7 @@ export function MobileMoreSheet({
   onRemoveTimetable,
   canRemove = true,
   children,
+  syncControls,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -25,6 +26,8 @@ export function MobileMoreSheet({
   canRemove?: boolean;
   /** Existing account, theme, and residence controls, rendered unchanged. */
   children: ReactNode;
+  /** Optional post-value private-sync controls. Never shown by the caller before a timetable exists. */
+  syncControls?: ReactNode;
 }) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -39,6 +42,7 @@ export function MobileMoreSheet({
         </DrawerHeader>
         <div className="space-y-4 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <div className="flex flex-wrap items-center gap-2">{children}</div>
+          {syncControls ? <div className="border-t border-border pt-4">{syncControls}</div> : null}
           <div className="space-y-2 border-t border-border pt-4">
             <button
               type="button"

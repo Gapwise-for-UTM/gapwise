@@ -1,3 +1,4 @@
+import { useLocation } from "@tanstack/react-router";
 import {
   CalendarClock,
   Clock3,
@@ -5,9 +6,11 @@ import {
   MapPin,
   Navigation,
   Sparkles,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
+import { useFirstValueArrival } from "@/features/onboarding/first-value";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import {
   formatOccurrenceDate,
@@ -35,14 +38,9 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
       return {
         eyebrow: `${selectedTerm} hasn't started`,
         title: `First class: ${state.first.meeting.courseCode}`,
-        detail: `${formatOccurrenceDate(state.first.date)} · ${formatTime(
-          state.first.meeting.startTime,
-        )}`,
+        detail: `${formatOccurrenceDate(state.first.date)} · ${formatTime(state.first.meeting.startTime)}`,
         rows: [
-          {
-            icon: MapPin,
-            text: getLocationPresentation({ meeting: state.first.meeting }).label,
-          },
+          { icon: MapPin, text: getLocationPresentation({ meeting: state.first.meeting }).label },
         ],
       };
     case "ended":
@@ -76,9 +74,7 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
       const rows: Row[] = [
         {
           icon: MapPin,
-          text: `${getLocationPresentation({ meeting: state.current }).label} · until ${formatTime(
-            state.current.endTime,
-          )}`,
+          text: `${getLocationPresentation({ meeting: state.current }).label} · until ${formatTime(state.current.endTime)}`,
         },
       ];
       if (state.next && state.route) {
@@ -89,11 +85,7 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
         });
         rows.push({
           icon: presentation.icon,
-          text: `Next: ${state.next.courseCode} at ${formatTime(state.next.startTime)} · ${routeCopy(
-            state.current,
-            state.next,
-            state.route,
-          )}`,
+          text: `Next: ${state.next.courseCode} at ${formatTime(state.next.startTime)} · ${routeCopy(state.current, state.next, state.route)}`,
         });
         if (state.leaveBy !== null && state.leaveBy !== undefined) {
           rows.push({ icon: Clock3, text: `Leave by ${formatTime(state.leaveBy)}` });
@@ -110,9 +102,7 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
       const rows: Row[] = [
         {
           icon: MapPin,
-          text: `Next: ${state.gap.next.courseCode} · ${
-            getLocationPresentation({ meeting: state.gap.next }).label
-          } at ${formatTime(state.gap.next.startTime)}`,
+          text: `Next: ${state.gap.next.courseCode} · ${getLocationPresentation({ meeting: state.gap.next }).label} at ${formatTime(state.gap.next.startTime)}`,
         },
       ];
       const outbound = state.residenceTrip ? routeMinutes(state.residenceTrip.outbound) : null;
@@ -193,6 +183,8 @@ export function MobileToday({
   onOpenGapPlan: () => void;
   onOpenDayRoute: () => void;
 }) {
+  const location = useLocation();
+  const firstValue = useFirstValueArrival(location.pathname.replace(/\/$/, "") === "/today");
   const { setRouteTargetId } = useMobileRouteTarget();
   const { eyebrow, title, detail, rows } = present(state, now, selectedTerm);
   const canPlanGap = state.kind === "gap";
@@ -206,10 +198,24 @@ export function MobileToday({
         : state.kind === "in-class"
           ? (state.next?.id ?? state.current.id)
           : null;
+  const showGapHint = firstValue.showHint && state.kind === "gap";
 
   return (
     <div className="rise-in space-y-4">
-      <section className="surface overflow-hidden p-5" aria-labelledby="mobile-today-title">
+      {firstValue.showSuccess ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="surface border-accent/25 bg-accent/6 px-4 py-3 text-sm font-medium"
+        >
+          Schedule ready — {meetingCount} {meetingCount === 1 ? "class" : "classes"} imported.
+        </p>
+      ) : null}
+
+      <section
+        className={`surface overflow-hidden p-5 ${firstValue.emphasize ? "first-value-emphasis" : ""}`}
+        aria-labelledby="mobile-today-title"
+      >
         <p className="flex items-center gap-2 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           <CalendarClock className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
           {eyebrow}
@@ -241,12 +247,32 @@ export function MobileToday({
           </ul>
         ) : null}
 
+        {showGapHint ? (
+          <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-accent/25 bg-accent/6 px-3.5 py-3 text-sm leading-5">
+            <p>
+              You have a {formatCompactDuration(state.gap.durationMinutes)} gap here. Tap to plan
+              it.
+            </p>
+            <button
+              type="button"
+              onClick={firstValue.dismissHint}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Dismiss gap hint"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        ) : null}
+
         {canPlanGap || canOpenRoute ? (
           <div className="mt-5 flex flex-col gap-2">
             {canPlanGap ? (
               <button
                 type="button"
-                onClick={onOpenGapPlan}
+                onClick={() => {
+                  firstValue.acknowledge();
+                  onOpenGapPlan();
+                }}
                 className="button-primary inline-flex min-h-[2.875rem] items-center justify-center gap-2 px-4 text-sm font-semibold"
               >
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
@@ -257,6 +283,7 @@ export function MobileToday({
               <button
                 type="button"
                 onClick={() => {
+                  firstValue.acknowledge();
                   setRouteTargetId(routeTargetId);
                   onOpenDayRoute();
                 }}

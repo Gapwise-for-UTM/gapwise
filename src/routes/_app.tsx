@@ -867,7 +867,7 @@ function AppLayout() {
               state={todayState}
               now={todayNow}
               selectedTerm={term}
-              meetingCount={termMeetings.length}
+              meetingCount={meetings.length}
               gapCount={gaps.length}
               isDemo={isDemo}
               onOpenGapPlan={() => {
@@ -951,6 +951,20 @@ function AppLayout() {
             setMoreOpen(false);
             confirmRemoveTimetable();
           }}
+          syncControls={
+            meetings ? (
+              <CloudSyncControls
+                user={user}
+                meetings={meetings}
+                personalItems={personalItems}
+                preferences={preferences}
+                gapPreferences={gapPreferences}
+                onLoad={loadCloudTimetable}
+                onLoadPrivate={loadPrivateData}
+                restorationState={restoration}
+              />
+            ) : null
+          }
         >
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <ResidenceSettings
