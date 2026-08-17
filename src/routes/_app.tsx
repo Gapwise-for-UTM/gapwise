@@ -867,7 +867,7 @@ function AppLayout() {
               state={todayState}
               now={todayNow}
               selectedTerm={term}
-              meetingCount={termMeetings.length}
+              meetingCount={meetings.length}
               gapCount={gaps.length}
               isDemo={isDemo}
               onOpenGapPlan={() => {
