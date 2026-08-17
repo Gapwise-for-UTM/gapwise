@@ -1,0 +1,42 @@
+import path from "node:path";
+import { expect, test } from "@playwright/test";
+import { expectLanding, watchForAppFailures } from "./helpers";
+
+const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
+
+test("AND-66 first-run landing keeps activation above the fold on a narrow phone", async ({ page }, testInfo) => {
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await page.setViewportSize({ width: 360, height: 740 });
+  await expectLanding(page);
+
+  await expect(page.getByText("See gaps. Navigate UTM. Privately.")).toBeVisible();
+  await expect(page.getByText("Your calendar stays on this device. No account required.")).toBeVisible();
+  await expect(page.getByText("Try Demo Schedule")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign in" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Campus arrival settings" })).toHaveCount(0);
+  await expect(page.locator('section[aria-labelledby="cloud-sync-title"]')).not.toBeVisible();
+
+  const box = await page.getByRole("button", { name: "Import ACORN" }).boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.height).toBeGreaterThanOrEqual(52);
+  expect(box!.width).toBeGreaterThanOrEqual(288);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(740);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  guard.assertClean();
+});
+
+test("AND-66 real Import ACORN action hands a successful local parse to Today", async ({ page }, testInfo) => {
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+
+  const chooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Import ACORN" }).click();
+  const chooser = await chooserPromise;
+  await chooser.setFiles(fixturePath);
+
+  await expect(page).toHaveURL(/\/today$/);
+  await expect(page.getByText(/Schedule ready — 2 classes imported\./)).toBeVisible();
+  await expect(page.getByRole("group", { name: "View mode" }).getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".first-value-emphasis")).toBeVisible();
+  guard.assertClean();
+});

@@ -1,13 +1,16 @@
+import { useLocation } from "@tanstack/react-router";
 import {
   ArrowRight,
   CalendarClock,
   Home,
   Navigation,
   Sparkles,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { memo } from "react";
 import type { GapPreferences } from "@/features/gaps/types";
+import { useFirstValueArrival } from "@/features/onboarding/first-value";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
@@ -39,6 +42,9 @@ export const TodaySummary = memo(function TodaySummary({
   onOpenGapPlan: () => void;
   onOpenDayRoute: () => void;
 }) {
+  const location = useLocation();
+  const onTodayRoute = location.pathname.replace(/\/$/, "") === "/today";
+  const firstValue = useFirstValueArrival(onTodayRoute);
   const { now, state: summary } = useTodayState({
     meetings,
     selectedTerm,
@@ -146,54 +152,92 @@ export const TodaySummary = memo(function TodaySummary({
   const canPlanGap = summary.kind === "gap";
   const canOpenRoute =
     summary.kind === "gap" || summary.kind === "before-first" || summary.kind === "in-class";
+  const showGapHint = firstValue.showHint && summary.kind === "gap";
 
   return (
-    <section
-      className="today-signal surface mb-6 mt-6 overflow-hidden p-5 sm:p-6"
-      aria-labelledby="today-title"
-    >
-      <h2
-        id="today-title"
-        className="flex items-center gap-2 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
-      >
-        <CalendarClock className="h-4 w-4 text-accent" aria-hidden="true" />
-        {heading}
-      </h2>
-      <p className="mt-4 font-display text-xl font-medium tracking-tight">{title}</p>
-      {detail ? <p className="mt-1.5 text-sm text-muted-foreground">{detail}</p> : null}
-      {secondary ? (
-        <p className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-sm text-muted-foreground">
-          <SecondaryIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-          {secondary}
+    <>
+      {firstValue.showSuccess ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="surface mb-3 mt-6 border-accent/25 bg-accent/6 px-4 py-3 text-sm font-medium"
+        >
+          Schedule ready — {meetings.length} {meetings.length === 1 ? "class" : "classes"} imported.
         </p>
       ) : null}
-      {canPlanGap || canOpenRoute ? (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {canPlanGap ? (
+      <section
+        className={`today-signal surface mb-6 mt-6 overflow-hidden p-5 sm:p-6 ${
+          firstValue.emphasize ? "first-value-emphasis" : ""
+        }`}
+        aria-labelledby="today-title"
+      >
+        <h2
+          id="today-title"
+          className="flex items-center gap-2 font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground"
+        >
+          <CalendarClock className="h-4 w-4 text-accent" aria-hidden="true" />
+          {heading}
+        </h2>
+        <p className="mt-4 font-display text-xl font-medium tracking-tight">{title}</p>
+        {detail ? <p className="mt-1.5 text-sm text-muted-foreground">{detail}</p> : null}
+        {secondary ? (
+          <p className="mt-3 flex items-start gap-2 border-t border-border pt-3 text-sm text-muted-foreground">
+            <SecondaryIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+            {secondary}
+          </p>
+        ) : null}
+
+        {showGapHint ? (
+          <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-accent/25 bg-accent/6 px-3.5 py-3 text-sm">
+            <p>
+              You have a {formatCompactDuration(summary.gap.durationMinutes)} gap here. Tap to plan
+              it.
+            </p>
             <button
               type="button"
-              onClick={onOpenGapPlan}
-              className="button-primary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+              onClick={firstValue.dismissHint}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Dismiss gap hint"
             >
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              Plan this gap
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
-          ) : null}
-          {canOpenRoute ? (
-            <button
-              type="button"
-              onClick={onOpenDayRoute}
-              className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold ${
-                canPlanGap ? "button-secondary" : "button-primary"
-              }`}
-            >
-              <Navigation className="h-4 w-4" aria-hidden="true" />
-              View day route
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-    </section>
+          </div>
+        ) : null}
+
+        {canPlanGap || canOpenRoute ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {canPlanGap ? (
+              <button
+                type="button"
+                onClick={() => {
+                  firstValue.acknowledge();
+                  onOpenGapPlan();
+                }}
+                className="button-primary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold"
+              >
+                <Sparkles className="h-4 w-4" aria-hidden="true" />
+                Plan this gap
+              </button>
+            ) : null}
+            {canOpenRoute ? (
+              <button
+                type="button"
+                onClick={() => {
+                  firstValue.acknowledge();
+                  onOpenDayRoute();
+                }}
+                className={`inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold ${
+                  canPlanGap ? "button-secondary" : "button-primary"
+                }`}
+              >
+                <Navigation className="h-4 w-4" aria-hidden="true" />
+                View day route
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </section>
+    </>
   );
 });
