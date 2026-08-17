@@ -1,6 +1,6 @@
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { expectLanding, watchForAppFailures } from "./helpers";
+import { expectLanding, isMobileProject, watchForAppFailures } from "./helpers";
 
 const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
 
@@ -36,7 +36,13 @@ test("AND-66 real Import ACORN action hands a successful local parse to Today", 
 
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByText(/Schedule ready — 2 classes imported\./)).toBeVisible();
-  await expect(page.getByRole("group", { name: "View mode" }).getByRole("button", { name: "Today" })).toHaveAttribute("aria-pressed", "true");
+  if (isMobileProject(testInfo.project.name)) {
+    await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Today" })).toBeVisible();
+  } else {
+    await expect(
+      page.getByRole("group", { name: "View mode" }).getByRole("button", { name: "Today" }),
+    ).toHaveAttribute("aria-pressed", "true");
+  }
   await expect(page.locator(".first-value-emphasis")).toBeVisible();
   guard.assertClean();
 });
