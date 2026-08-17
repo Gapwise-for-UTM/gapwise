@@ -1,11 +1,4 @@
-import {
-  BusFront,
-  CarFront,
-  ChevronRight,
-  Home,
-  MapPin,
-  type LucideIcon,
-} from "lucide-react";
+import { BusFront, CarFront, ChevronRight, Home, MapPin, type LucideIcon } from "lucide-react";
 import { campusDayAnchorPresentation } from "@/features/routing/campus-day";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import type { TransitionRoute } from "@/features/routing/types";

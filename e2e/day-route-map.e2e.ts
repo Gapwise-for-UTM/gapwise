@@ -1,14 +1,24 @@
+import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { watchForAppFailures } from "./helpers";
 
+const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
+
 test.describe("map-first Day Route", () => {
-  test("shows chronological time markers with non-overlapping controls", async ({ page, baseURL }) => {
+  test("shows chronological time markers with non-overlapping controls", async ({
+    page,
+    baseURL,
+  }) => {
     test.skip(!["chromium", "mobile-chromium"].includes(test.info().project.name));
     if (!baseURL) throw new Error("Playwright baseURL is required");
     const failures = watchForAppFailures(page, baseURL);
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Try a demo" }).click();
+    const chooserPromise = page.waitForEvent("filechooser");
+    await page.getByRole("button", { name: "Import ACORN" }).click();
+    const chooser = await chooserPromise;
+    await chooser.setFiles(fixturePath);
+    await expect(page).toHaveURL(/\/today$/);
     await page.goto("/route");
 
     await expect(page.getByText("Day order", { exact: true })).toBeVisible();

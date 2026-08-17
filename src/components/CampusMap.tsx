@@ -4,7 +4,7 @@ import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MAP_CONFIG } from "@/config/map";
-import { CAMPUS_BUILDINGS, getCampusBuilding, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
+import { getCampusBuilding, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import {
   buildingCodeAtCoordinate,
   footprintGeometryPoints,
@@ -273,17 +273,6 @@ function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
       "line-opacity": ["case", ["==", ["get", "selected"], true], 1, 0.78],
     },
   });
-}
-
-function buildingLayerIds(map: MapLibreMap) {
-  return (map.getStyle().layers ?? [])
-    .filter(
-      (layer) =>
-        "source-layer" in layer &&
-        layer["source-layer"] === "building" &&
-        (layer.type === "fill" || layer.type === "fill-extrusion"),
-    )
-    .map((layer) => layer.id);
 }
 
 function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
@@ -891,7 +880,10 @@ export function CampusMap({
   const [status, setStatus] = useState<MapStatus>("loading");
   const [attempt, setAttempt] = useState(0);
   const [locationEnabled, setLocationEnabled] = useState(false);
-  const [liveLocation, setLiveLocation] = useState<LocationControlState>({ status: "disabled", point: null });
+  const [liveLocation, setLiveLocation] = useState<LocationControlState>({
+    status: "disabled",
+    point: null,
+  });
   const liveLocationRef = useRef<LocationControlState>(liveLocation);
   const latestData = useRef<MapData>({
     meetings,
@@ -968,7 +960,11 @@ export function CampusMap({
       setLiveLocation({ status: "unavailable", point: null });
       return;
     }
-    return watchCampusLocation({ geolocation: navigator.geolocation, graph: UTM_ROUTING_GRAPH, onChange: setLiveLocation });
+    return watchCampusLocation({
+      geolocation: navigator.geolocation,
+      graph: UTM_ROUTING_GRAPH,
+      onChange: setLiveLocation,
+    });
   }, [locationEnabled]);
 
   useEffect(() => {
@@ -1015,7 +1011,8 @@ export function CampusMap({
         maplibreRef.current = maplibregl;
         map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
         const collapseAttribution = () => {
-          const attribution = containerRef.current?.querySelector<HTMLElement>(".maplibregl-ctrl-attrib");
+          const attribution =
+            containerRef.current?.querySelector<HTMLElement>(".maplibregl-ctrl-attrib");
           attribution?.classList.remove("maplibregl-compact-show");
           attribution?.removeAttribute("open");
         };
@@ -1046,7 +1043,9 @@ export function CampusMap({
           if (
             map.getLayer("day-routes-solid") &&
             map.queryRenderedFeatures(event.point, { layers: ["day-routes-solid"] }).length > 0
-          ) return;
+          ) {
+            return;
+          }
           const code = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);
           if (code) latestData.current.onSelectBuilding(code);
         });
@@ -1098,7 +1097,9 @@ export function CampusMap({
           }
           const selectedBuilding = latestData.current.selectedBuildingCode;
           const selectedPadding = latestData.current.focusPadding ?? DEFAULT_FOCUS_PADDING;
-          const selectedFocusKey = selectedBuilding ? focusKey(selectedBuilding, selectedPadding) : null;
+          const selectedFocusKey = selectedBuilding
+            ? focusKey(selectedBuilding, selectedPadding)
+            : null;
           if (
             selectedBuilding &&
             selectedFocusKey !== lastFocusedBuildingRef.current &&
@@ -1107,7 +1108,13 @@ export function CampusMap({
             lastFocusedBuildingRef.current = selectedFocusKey;
             userHasMovedRef.current = true;
           } else {
-            maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef, !userHasMovedRef.current);
+            maybeFitBounds(
+              map,
+              maplibregl,
+              latestData.current,
+              lastFitKeyRef,
+              !userHasMovedRef.current,
+            );
           }
           setStatus("ready");
         });
@@ -1122,7 +1129,9 @@ export function CampusMap({
     return () => {
       disposed = true;
       if (loadTimeout) clearTimeout(loadTimeout);
-      if (routeAnimationFrameRef.current !== null) cancelAnimationFrame(routeAnimationFrameRef.current);
+      if (routeAnimationFrameRef.current !== null) {
+        cancelAnimationFrame(routeAnimationFrameRef.current);
+      }
       routeAnimationFrameRef.current = null;
       for (const marker of markersRef.current) marker.remove();
       markersRef.current = [];
@@ -1161,7 +1170,16 @@ export function CampusMap({
       );
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef, !userHasMovedRef.current);
     }
-  }, [dayAnchor, meetings, onSelectMeeting, onSelectSegment, selectedMeetingId, selectedSegmentId, segments, status]);
+  }, [
+    dayAnchor,
+    meetings,
+    onSelectMeeting,
+    onSelectSegment,
+    selectedMeetingId,
+    selectedSegmentId,
+    segments,
+    status,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1231,11 +1249,15 @@ export function CampusMap({
     if (!map || !maplibregl) return;
     userHasMovedRef.current = false;
     lastFitKeyRef.current = "";
-    if (!maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef)) showCampusOverview(map);
+    if (!maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef)) {
+      showCampusOverview(map);
+    }
   }
 
   return (
-    <div className={`campus-map relative w-full overflow-hidden rounded-xl border border-border bg-muted ${className || "h-[25rem]"}`}>
+    <div
+      className={`campus-map relative w-full overflow-hidden rounded-xl border border-border bg-muted ${className || "h-[25rem]"}`}
+    >
       <div
         ref={containerRef}
         className="h-full w-full"
@@ -1252,7 +1274,9 @@ export function CampusMap({
             title={hasRouteContent ? "Fit route" : "Campus overview"}
           >
             <Maximize2 className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden md:inline">{hasRouteContent ? "Fit route" : "Campus overview"}</span>
+            <span className="hidden md:inline">
+              {hasRouteContent ? "Fit route" : "Campus overview"}
+            </span>
           </button>
           <button
             type="button"
@@ -1263,7 +1287,9 @@ export function CampusMap({
             title={locationEnabled ? "Hide my location" : "Show my location"}
           >
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden md:inline">{locationEnabled ? "Hide my location" : "Show my location"}</span>
+            <span className="hidden md:inline">
+              {locationEnabled ? "Hide my location" : "Show my location"}
+            </span>
           </button>
           {locationStatusLabel(liveLocation.status) ? (
             <p
@@ -1277,7 +1303,11 @@ export function CampusMap({
         </div>
       ) : null}
       {status === "loading" ? (
-        <div className="pointer-events-none absolute inset-0 grid place-items-center bg-muted/90 px-6 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
+        <div
+          className="pointer-events-none absolute inset-0 grid place-items-center bg-muted/90 px-6 text-center text-sm text-muted-foreground"
+          role="status"
+          aria-live="polite"
+        >
           Loading the campus map…
         </div>
       ) : null}
@@ -1286,17 +1316,22 @@ export function CampusMap({
           <div>
             <p className="font-semibold">Interactive map unavailable</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              This browser does not support WebGL 2. Use the route sequence and written directions on this page instead.
+              This browser does not support WebGL 2. Use the route sequence and written directions
+              on this page instead.
             </p>
           </div>
         </div>
       ) : null}
       {status === "error" ? (
-        <div className="absolute inset-0 grid place-items-center bg-muted px-6 text-center" role="alert">
+        <div
+          className="absolute inset-0 grid place-items-center bg-muted px-6 text-center"
+          role="alert"
+        >
           <div>
             <p className="font-semibold">The campus map could not load</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Route details remain available on this page. Check your connection or try the map again.
+              Route details remain available on this page. Check your connection or try the map
+              again.
             </p>
             <button
               type="button"

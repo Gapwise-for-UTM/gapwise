@@ -101,7 +101,12 @@ export function DayRoute({
     () =>
       routeStops.slice(0, -1).map((from, index) => {
         const to = routeStops[index + 1]!;
-        return { id: `${from.id}--${to.id}`, from, to, route: planTransition(from, to, preferences) };
+        return {
+          id: `${from.id}--${to.id}`,
+          from,
+          to,
+          route: planTransition(from, to, preferences),
+        };
       }),
     [planTransition, preferences, routeStops],
   );
@@ -187,7 +192,11 @@ export function DayRoute({
             />
             <BubbleTabs
               label="Route weekday"
-              items={WEEKDAYS.map((day) => ({ value: day, label: day.slice(0, 3), ariaLabel: day }))}
+              items={WEEKDAYS.map((day) => ({
+                value: day,
+                label: day.slice(0, 3),
+                ariaLabel: day,
+              }))}
               value={weekday}
               onChange={setWeekday}
               compact
@@ -195,7 +204,10 @@ export function DayRoute({
             />
           </div>
           <div>
-            <h2 id="route-preferences-title" className="font-display text-base font-semibold tracking-tight">
+            <h2
+              id="route-preferences-title"
+              className="font-display text-base font-semibold tracking-tight"
+            >
               Route preferences
             </h2>
             <div className="mt-2 grid gap-3 sm:grid-cols-3">
@@ -203,7 +215,9 @@ export function DayRoute({
                 Mode
                 <select
                   value={preferences.mode}
-                  onChange={(event) => updatePreferences({ mode: event.target.value as UserPreferences["mode"] })}
+                  onChange={(event) =>
+                    updatePreferences({ mode: event.target.value as UserPreferences["mode"] })
+                  }
                   className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2"
                 >
                   <option value="fastest">Fastest</option>
@@ -219,7 +233,9 @@ export function DayRoute({
                   max="2.5"
                   step="0.05"
                   value={preferences.walkingSpeedMps}
-                  onChange={(event) => updatePreferences({ walkingSpeedMps: Number(event.target.value) })}
+                  onChange={(event) =>
+                    updatePreferences({ walkingSpeedMps: Number(event.target.value) })
+                  }
                   className="mt-3 w-full accent-[var(--color-accent)]"
                 />
               </label>
@@ -231,7 +247,9 @@ export function DayRoute({
                   max="30"
                   step="1"
                   value={preferences.transitionBufferMinutes}
-                  onChange={(event) => updatePreferences({ transitionBufferMinutes: Number(event.target.value) })}
+                  onChange={(event) =>
+                    updatePreferences({ transitionBufferMinutes: Number(event.target.value) })
+                  }
                   className="mt-3 w-full accent-[var(--color-accent)]"
                 />
               </label>
@@ -244,7 +262,9 @@ export function DayRoute({
                     void savePreferences(preferences)
                       .then(() => setPreferenceMessage("Route preferences saved."))
                       .catch((error: unknown) =>
-                        setPreferenceMessage(error instanceof Error ? error.message : "Save failed."),
+                        setPreferenceMessage(
+                          error instanceof Error ? error.message : "Save failed.",
+                        ),
                       )
                   }
                   className="button-secondary px-2 py-1 text-xs font-semibold"
@@ -257,10 +277,14 @@ export function DayRoute({
                     void loadPreferences()
                       .then((value) => {
                         if (value) onPreferencesChange(value);
-                        setPreferenceMessage(value ? "Saved preferences loaded." : "No saved preferences found.");
+                        setPreferenceMessage(
+                          value ? "Saved preferences loaded." : "No saved preferences found.",
+                        );
                       })
                       .catch((error: unknown) =>
-                        setPreferenceMessage(error instanceof Error ? error.message : "Load failed."),
+                        setPreferenceMessage(
+                          error instanceof Error ? error.message : "Load failed.",
+                        ),
                       )
                   }
                   className="button-secondary px-2 py-1 text-xs font-semibold"
@@ -285,7 +309,9 @@ export function DayRoute({
       {dayMeetings.length === 0 ? (
         <div className="space-y-3">
           <div className="empty-state surface p-6 text-center">
-            <h2 className="font-display text-xl font-semibold tracking-tight">No classes on {weekday}</h2>
+            <h2 className="font-display text-xl font-semibold tracking-tight">
+              No classes on {weekday}
+            </h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Choose another weekday, or keep exploring the campus map.
             </p>
@@ -331,7 +357,9 @@ export function DayRoute({
             onSelectSegment={selectSegment}
           />
 
-          {selectedSegment ? <SegmentDetails segment={selectedSegment} preferences={preferences} /> : null}
+          {selectedSegment ? (
+            <SegmentDetails segment={selectedSegment} preferences={preferences} />
+          ) : null}
         </div>
       )}
 
@@ -349,7 +377,13 @@ export function DayRoute({
   );
 }
 
-function SegmentDetails({ segment, preferences }: { segment: DaySegment; preferences: UserPreferences }) {
+function SegmentDetails({
+  segment,
+  preferences,
+}: {
+  segment: DaySegment;
+  preferences: UserPreferences;
+}) {
   const route = segment.route;
   const presentation = getLocationPresentation({ from: segment.from, to: segment.to, route });
   const fromLocation = getLocationPresentation({ meeting: segment.from });
@@ -367,7 +401,10 @@ function SegmentDetails({ segment, preferences }: { segment: DaySegment; prefere
       ? null
       : toAnchor
         ? segment.from.endTime
-        : Math.max(0, segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes);
+        : Math.max(
+            0,
+            segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes,
+          );
   return (
     <section className="surface route-details-panel p-4" aria-labelledby="segment-details-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -390,31 +427,65 @@ function SegmentDetails({ segment, preferences }: { segment: DaySegment; prefere
       {route.status === "same-room" ? (
         <div className="mt-4 rounded-xl border border-lec/25 bg-lec/8 p-3.5">
           <p className="text-sm font-semibold text-lec">No walk needed</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your next class is in the same room.</p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            Your next class is in the same room.
+          </p>
         </div>
-      ) : route.status === "unavailable" || seconds === null || distance === null || departure === null ? (
+      ) : route.status === "unavailable" ||
+        seconds === null ||
+        distance === null ||
+        departure === null ? (
         <div className="mt-4 flex gap-3 rounded-xl border border-accent/25 bg-accent/8 p-3.5">
           <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold">{presentation.label}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{presentation.detail}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {presentation.detail}
+            </p>
           </div>
         </div>
       ) : (
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
           <Metric icon={Clock3} label="Estimated walk" value={secondsLabel(seconds)} />
-          <Metric icon={Footprints} label="Distance" value={`${route.status === "approximate" ? "~" : ""}${distanceLabel(distance)}`} />
-          <Metric icon={LocateFixed} label={toAnchor ? departureMetricLabel(toAnchor.kind) : "Leave by"} value={formatTime(departure)} />
-          <Metric icon={RouteIcon} label="Outdoor" value={route.result ? distanceLabel(route.result.outdoorDistanceMeters) : `~${distanceLabel(distance)}`} />
-          <Metric icon={RouteIcon} label="Indoor" value={route.result ? distanceLabel(route.result.indoorDistanceMeters) : "Not mapped"} />
-          <Metric icon={RouteIcon} label="Floor changes" value={route.result ? String(route.result.floorChanges) : "Unknown"} />
+          <Metric
+            icon={Footprints}
+            label="Distance"
+            value={`${route.status === "approximate" ? "~" : ""}${distanceLabel(distance)}`}
+          />
+          <Metric
+            icon={LocateFixed}
+            label={toAnchor ? departureMetricLabel(toAnchor.kind) : "Leave by"}
+            value={formatTime(departure)}
+          />
+          <Metric
+            icon={RouteIcon}
+            label="Outdoor"
+            value={
+              route.result
+                ? distanceLabel(route.result.outdoorDistanceMeters)
+                : `~${distanceLabel(distance)}`
+            }
+          />
+          <Metric
+            icon={RouteIcon}
+            label="Indoor"
+            value={route.result ? distanceLabel(route.result.indoorDistanceMeters) : "Not mapped"}
+          />
+          <Metric
+            icon={RouteIcon}
+            label="Floor changes"
+            value={route.result ? String(route.result.floorChanges) : "Unknown"}
+          />
         </dl>
       )}
       {routeWarnings.length > 0 ? (
         <ul className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
           {routeWarnings.map((warning) => (
             <li key={warning} className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+              <AlertTriangle
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
+                aria-hidden="true"
+              />
               {warning}
             </li>
           ))}
@@ -424,7 +495,15 @@ function SegmentDetails({ segment, preferences }: { segment: DaySegment; prefere
   );
 }
 
-function Metric({ icon: Icon, label, value }: { icon: typeof Clock3; label: string; value: string }) {
+function Metric({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Clock3;
+  label: string;
+  value: string;
+}) {
   return (
     <div>
       <dt className="flex items-center gap-1 text-xs text-muted-foreground">
