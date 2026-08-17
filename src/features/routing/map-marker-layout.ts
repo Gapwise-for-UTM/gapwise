@@ -5,6 +5,11 @@ export type GroupedMarkerScreenPoint = MarkerScreenPoint & {
   order: number;
 };
 
+type StackPlacement = MarkerScreenPoint & {
+  halfWidth: number;
+  halfHeight: number;
+};
+
 function ringOffsets(ring: number, spacing: number): MarkerPixelOffset[] {
   if (ring === 0) return [[0, 0]];
   const r = ring * spacing;
@@ -62,18 +67,37 @@ export function collisionFreeMarkerOffsets(
   });
 }
 
+function stackPlacementsDoNotOverlap(
+  candidate: StackPlacement,
+  placed: StackPlacement[],
+  gapPx: number,
+) {
+  return placed.every((other) => {
+    const horizontalClear =
+      Math.abs(candidate.x - other.x) >= candidate.halfWidth + other.halfWidth + gapPx;
+    const verticalClear =
+      Math.abs(candidate.y - other.y) >= candidate.halfHeight + other.halfHeight + gapPx;
+    return horizontalClear || verticalClear;
+  });
+}
+
 /**
  * Keep every class in the same building on one vertical chronological stack while
  * still separating different building stacks. The group anchor is the average of
  * the projected class anchors, so multiple verified entrance/route points for one
  * building collapse into a single readable timetable stack without changing route
- * geometry itself.
+ * geometry itself. Group placement accounts for the full rendered stack rectangle,
+ * not only the stack center, so tall same-building schedules cannot overlap nearby
+ * building stacks.
  */
 export function groupedVerticalMarkerOffsets(
   points: GroupedMarkerScreenPoint[],
   minGroupSeparationPx = 92,
   groupSpacingPx = 72,
   stackSpacingPx = 44,
+  markerWidthPx = 64,
+  markerHeightPx = 38,
+  stackGapPx = 8,
 ): MarkerPixelOffset[] {
   const groups = new Map<string, number[]>();
   points.forEach((point, index) => {
@@ -93,11 +117,37 @@ export function groupedVerticalMarkerOffsets(
     );
     return { x: total.x / indices.length, y: total.y / indices.length };
   });
-  const groupOffsets = collisionFreeMarkerOffsets(
-    groupAnchors,
-    minGroupSeparationPx,
-    groupSpacingPx,
-  );
+  const placedStacks: StackPlacement[] = [];
+  const groupOffsets: MarkerPixelOffset[] = [];
+
+  entries.forEach(([, indices], groupIndex) => {
+    const anchor = groupAnchors[groupIndex]!;
+    const halfWidth = markerWidthPx / 2;
+    const halfHeight = (markerHeightPx + Math.max(0, indices.length - 1) * stackSpacingPx) / 2;
+
+    for (let ring = 0; ; ring += 1) {
+      let found = false;
+      for (const offset of ringOffsets(ring, groupSpacingPx)) {
+        const candidate: StackPlacement = {
+          x: anchor.x + offset[0],
+          y: anchor.y + offset[1],
+          halfWidth,
+          halfHeight,
+        };
+        const centersClear = placedStacks.every(
+          (other) => Math.hypot(candidate.x - other.x, candidate.y - other.y) >= minGroupSeparationPx,
+        );
+        if (centersClear && stackPlacementsDoNotOverlap(candidate, placedStacks, stackGapPx)) {
+          placedStacks.push(candidate);
+          groupOffsets[groupIndex] = offset;
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+  });
+
   const offsets: MarkerPixelOffset[] = points.map(() => [0, 0]);
 
   entries.forEach(([, indices], groupIndex) => {
