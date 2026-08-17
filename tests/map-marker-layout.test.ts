@@ -85,8 +85,6 @@ describe("campus map marker layout", () => {
       x: dv[0]!.x,
       y: dv.reduce((sum, centre) => sum + centre.y, 0) / dv.length,
     };
-    expect(Math.hypot(mnCenter.x - dvCenter.x, mnCenter.y - dvCenter.y)).toBeGreaterThanOrEqual(
-      92,
-    );
+    expect(Math.hypot(mnCenter.x - dvCenter.x, mnCenter.y - dvCenter.y)).toBeGreaterThanOrEqual(92);
   });
 });
