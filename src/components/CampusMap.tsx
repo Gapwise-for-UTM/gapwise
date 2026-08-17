@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import { LocateFixed } from "lucide-react";
+import { LocateFixed, Maximize2 } from "lucide-react";
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -21,7 +21,7 @@ import {
 import { isCampusDayAnchorMeeting, type CampusDayAnchor } from "@/features/routing/campus-day";
 import { watchCampusLocation, type LiveLocationState } from "@/features/routing/live-location";
 import type { TransitionRoute } from "@/features/routing/types";
-import type { Meeting } from "@/lib/timetable-types";
+import { formatTime, type Meeting } from "@/lib/timetable-types";
 import type { BuildingEntrance } from "@/data/utm/routing-buildings";
 
 type MapSegment = {
@@ -85,9 +85,8 @@ type MapStatus = "loading" | "ready" | "error" | "unsupported";
 type MapTheme = keyof typeof MAP_CONFIG.styleUrls;
 type LocationControlState = LiveLocationState | { status: "disabled"; point: null };
 const MAP_LOAD_TIMEOUT_MS = 12_000;
-const FIT_BOUNDS_PADDING_PX = 56;
 const FIT_BOUNDS_MAX_ZOOM = 17;
-const ROUTE_DRAW_DURATION_MS = 1_180;
+const ROUTE_DRAW_DURATION_MS = 900;
 const BUILDING_HOVER_DURATION_MS = 200;
 const DEFAULT_FOCUS_PADDING: MapFocusPadding = { top: 72, right: 24, bottom: 24, left: 24 };
 const BUILDING_HOVER_SOURCE_ID = "gapwise-building-hover";
@@ -99,6 +98,15 @@ const BUILDING_SELECTED_LINE_LAYER_ID = "gapwise-building-selected-line";
 
 function mapAccentColor(theme: MapTheme) {
   return theme === "dark" ? "#60a5fa" : "#146bb8";
+}
+
+function routeSequenceColor(theme: MapTheme, index: number, total: number) {
+  const progress = total <= 1 ? 0 : index / (total - 1);
+  const start = theme === "dark" ? [96, 165, 250] : [20, 107, 184];
+  const end = theme === "dark" ? [167, 139, 250] : [124, 58, 237];
+  const channel = (slot: number) =>
+    Math.round(start[slot]! + (end[slot]! - start[slot]!) * progress);
+  return `rgb(${channel(0)} ${channel(1)} ${channel(2)})`;
 }
 
 function emptyFeatureCollection() {
@@ -151,16 +159,17 @@ function partialRouteCoordinates(coordinates: [number, number][], progress: numb
   return visible;
 }
 
-function routeFeatureCollection(data: MapData, progress = 1) {
+function routeFeatureCollection(data: MapData, theme: MapTheme, progress = 1) {
   return {
     type: "FeatureCollection" as const,
     features: data.segments
       .filter((segment) => segment.route.displayCoordinates.length >= 2)
-      .map((segment) => ({
+      .map((segment, index, visibleSegments) => ({
         type: "Feature" as const,
         properties: {
           id: segment.id,
           selected: segment.id === data.selectedSegmentId,
+          sequenceColor: routeSequenceColor(theme, index, visibleSegments.length),
         },
         geometry: {
           type: "LineString" as const,
@@ -185,6 +194,7 @@ function animateRouteDraw(
   map: MapLibreMap,
   source: GeoJSONSource,
   key: string,
+  theme: MapTheme,
   lastRouteKeyRef: MutableRefObject<string>,
   animationFrameRef: MutableRefObject<number | null>,
   latestDataRef: MutableRefObject<MapData>,
@@ -196,11 +206,11 @@ function animateRouteDraw(
     animationFrameRef.current = null;
   }
   if (!key || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    source.setData(routeFeatureCollection(latestDataRef.current));
+    source.setData(routeFeatureCollection(latestDataRef.current, theme));
     return;
   }
 
-  source.setData(routeFeatureCollection(latestDataRef.current, 0));
+  source.setData(routeFeatureCollection(latestDataRef.current, theme, 0));
   const startedAt = performance.now();
   const drawFrame = (now: number) => {
     if (map.getSource("day-routes") !== source || routeGeometryKey(latestDataRef.current) !== key) {
@@ -209,7 +219,7 @@ function animateRouteDraw(
     }
     const elapsed = Math.min(1, (now - startedAt) / ROUTE_DRAW_DURATION_MS);
     const eased = 1 - (1 - elapsed) ** 3;
-    source.setData(routeFeatureCollection(latestDataRef.current, eased));
+    source.setData(routeFeatureCollection(latestDataRef.current, theme, eased));
 
     if (elapsed < 1) {
       animationFrameRef.current = requestAnimationFrame(drawFrame);
@@ -240,8 +250,6 @@ function dayAnchorStopIds(data: MapData): string[] {
 
 function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
   const casingColor = theme === "dark" ? "#05070a" : "#f8fafc";
-  const routeColor = mapAccentColor(theme);
-  const inactiveRouteColor = theme === "dark" ? "#57728d" : "#6d879f";
 
   map.addLayer({
     id: "day-routes-casing",
@@ -260,9 +268,9 @@ function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
     source: "day-routes",
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
-      "line-color": ["case", ["==", ["get", "selected"], true], routeColor, inactiveRouteColor],
-      "line-width": ["case", ["==", ["get", "selected"], true], 4, 2.5],
-      "line-opacity": ["case", ["==", ["get", "selected"], true], 1, 0.68],
+      "line-color": ["get", "sequenceColor"],
+      "line-width": ["case", ["==", ["get", "selected"], true], 4.5, 3],
+      "line-opacity": ["case", ["==", ["get", "selected"], true], 1, 0.78],
     },
   });
 }
@@ -456,11 +464,11 @@ function syncBuildingHighlight(
 
 function getMarkerOffset(slot: number, total: number): [number, number] {
   if (total <= 1) return [0, 0];
-  const row = Math.floor(slot / 3);
-  const column = slot % 3;
-  const rows = Math.ceil(total / 3);
-  const itemsInRow = Math.min(3, total - row * 3);
-  return [(column - (itemsInRow - 1) / 2) * 36, (row - (rows - 1) / 2) * 36];
+  const row = Math.floor(slot / 2);
+  const column = slot % 2;
+  const rows = Math.ceil(total / 2);
+  const itemsInRow = Math.min(2, total - row * 2);
+  return [(column - (itemsInRow - 1) / 2) * 68, (row - (rows - 1) / 2) * 42];
 }
 
 function mapBuildingAnchor(code: string | null) {
@@ -473,16 +481,16 @@ function mapBuildingAnchor(code: string | null) {
     : null;
 }
 
-function layoutNumberMarkers(map: MapLibreMap, markers: Marker[]) {
-  const numberMarkers = markers.filter((marker) =>
-    marker.getElement().classList.contains("map-number-marker"),
+function layoutTimeMarkers(map: MapLibreMap, markers: Marker[]) {
+  const timeMarkers = markers.filter((marker) =>
+    marker.getElement().classList.contains("map-time-marker"),
   );
-  const points = numberMarkers.map((marker) => {
+  const points = timeMarkers.map((marker) => {
     const point = map.project(marker.getLngLat());
     return { x: point.x, y: point.y };
   });
   const offsets = collisionFreeMarkerOffsets(points);
-  numberMarkers.forEach((marker, index) => marker.setOffset(offsets[index] ?? [0, 0]));
+  timeMarkers.forEach((marker, index) => marker.setOffset(offsets[index] ?? [0, 0]));
 }
 
 function syncMapData(
@@ -524,10 +532,17 @@ function syncMapData(
         : ([0, 0] as [number, number]);
     const markerButton = document.createElement("button");
     markerButton.type = "button";
-    markerButton.className = `map-number-marker${meeting.id === data.selectedMeetingId ? " is-selected" : ""}`;
-    markerButton.textContent = String(index + 1);
-    markerButton.title = `${meeting.courseCode} at ${building.code}`;
-    markerButton.setAttribute("aria-label", `Select ${meeting.courseCode}, stop ${index + 1}`);
+    markerButton.className = `map-time-marker${meeting.id === data.selectedMeetingId ? " is-selected" : ""}`;
+    markerButton.textContent = formatTime(meeting.startTime);
+    markerButton.style.setProperty(
+      "--map-stop-color",
+      routeSequenceColor(theme, index, data.meetings.length),
+    );
+    markerButton.title = `${formatTime(meeting.startTime)} · ${meeting.courseCode} · ${building.code}`;
+    markerButton.setAttribute(
+      "aria-label",
+      `Select ${meeting.courseCode} at ${formatTime(meeting.startTime)}, ${building.code}`,
+    );
     markerButton.addEventListener("click", (event) => {
       event.stopPropagation();
       data.onSelectMeeting(meeting.id);
@@ -576,7 +591,7 @@ function syncMapData(
     );
   }
 
-  layoutNumberMarkers(map, markers);
+  layoutTimeMarkers(map, markers);
 
   const routeKey = routeGeometryKey(data);
   const routeChanged = routeKey !== lastRouteKeyRef.current;
@@ -589,16 +604,24 @@ function syncMapData(
   if (!source) {
     map.addSource("day-routes", {
       type: "geojson",
-      data: routeFeatureCollection(data, shouldAnimate ? 0 : 1),
+      data: routeFeatureCollection(data, theme, shouldAnimate ? 0 : 1),
     });
     addRouteLayers(map, theme);
     source = map.getSource("day-routes") as GeoJSONSource;
   }
 
   if (routeChanged) {
-    animateRouteDraw(map, source, routeKey, lastRouteKeyRef, routeAnimationFrameRef, latestDataRef);
+    animateRouteDraw(
+      map,
+      source,
+      routeKey,
+      theme,
+      lastRouteKeyRef,
+      routeAnimationFrameRef,
+      latestDataRef,
+    );
   } else if (sourceCreated || routeAnimationFrameRef.current === null) {
-    source.setData(routeFeatureCollection(data));
+    source.setData(routeFeatureCollection(data, theme));
   }
 }
 
@@ -667,7 +690,6 @@ function syncEntranceMarkers(
   const targetEntrances = building?.entrances ?? [];
   const targetIds = new Set(targetEntrances.map((entrance) => entrance.id));
 
-  // Remove markers no longer in the target list
   for (let index = markers.length - 1; index >= 0; index -= 1) {
     const record = markers[index];
     if (!record || !targetIds.has(record.id)) {
@@ -678,17 +700,13 @@ function syncEntranceMarkers(
 
   if (!building) return;
 
-  const existingIds = new Set(markers.map((record) => record.id));
-
   for (const entrance of targetEntrances) {
     const existingRecord = markers.find((record) => record.id === entrance.id);
 
     if (existingRecord) {
-      // Update existing marker's active state without recreating
       const active = entrance.id === activeEntranceId;
       applyEntranceMarkerActiveState(existingRecord.element, entrance, active);
     } else {
-      // Create new marker
       const markerButton = document.createElement("button");
       markerButton.type = "button";
       const active = entrance.id === activeEntranceId;
@@ -759,11 +777,13 @@ function collectBoundsPoints(data: MapData): [number, number][] {
     );
   }
   for (const segment of data.segments) {
-    for (const coord of segment.route.displayCoordinates) {
-      points.push(coord as MapCoordinate);
-    }
+    for (const coord of segment.route.displayCoordinates) points.push(coord as MapCoordinate);
   }
   return points;
+}
+
+function fitPadding(map: MapLibreMap) {
+  return map.getContainer().clientWidth < 640 ? 36 : 64;
 }
 
 function maybeFitBounds(
@@ -790,9 +810,9 @@ function maybeFitBounds(
     new maplibregl.LngLatBounds(first, first),
   );
   map.fitBounds(bounds, {
-    padding: FIT_BOUNDS_PADDING_PX,
+    padding: fitPadding(map),
     maxZoom: FIT_BOUNDS_MAX_ZOOM,
-    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 500,
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 520,
   });
   return true;
 }
@@ -824,16 +844,16 @@ function focusBuilding(
   map.fitBounds(bounds, {
     padding,
     maxZoom: 18,
-    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 800,
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 620,
   });
   return true;
 }
 
 function showCampusOverview(map: MapLibreMap) {
   map.fitBounds(getCampusCameraBounds(UTM_ROUTING_GRAPH), {
-    padding: FIT_BOUNDS_PADDING_PX,
+    padding: fitPadding(map),
     maxZoom: MAP_CONFIG.initialZoom,
-    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 650,
+    duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 520,
   });
 }
 
@@ -871,10 +891,7 @@ export function CampusMap({
   const [status, setStatus] = useState<MapStatus>("loading");
   const [attempt, setAttempt] = useState(0);
   const [locationEnabled, setLocationEnabled] = useState(false);
-  const [liveLocation, setLiveLocation] = useState<LocationControlState>({
-    status: "disabled",
-    point: null,
-  });
+  const [liveLocation, setLiveLocation] = useState<LocationControlState>({ status: "disabled", point: null });
   const liveLocationRef = useRef<LocationControlState>(liveLocation);
   const latestData = useRef<MapData>({
     meetings,
@@ -951,11 +968,7 @@ export function CampusMap({
       setLiveLocation({ status: "unavailable", point: null });
       return;
     }
-    return watchCampusLocation({
-      geolocation: navigator.geolocation,
-      graph: UTM_ROUTING_GRAPH,
-      onChange: setLiveLocation,
-    });
+    return watchCampusLocation({ geolocation: navigator.geolocation, graph: UTM_ROUTING_GRAPH, onChange: setLiveLocation });
   }, [locationEnabled]);
 
   useEffect(() => {
@@ -988,32 +1001,28 @@ export function CampusMap({
           zoom: MAP_CONFIG.initialZoom,
           minZoom: 14.5,
           maxZoom: 20,
-          maxPitch: 70,
-          pitch: 30,
-          bearing: -8,
+          maxPitch: 55,
+          pitch: 24,
+          bearing: 0,
           maxBounds: campusCameraBounds,
           renderWorldCopies: false,
           attributionControl: false,
         });
+        map.dragRotate.disable();
+        map.touchZoomRotate.disableRotation();
         appliedThemeRef.current = initialTheme;
         mapRef.current = map;
         maplibreRef.current = maplibregl;
-        map.addControl(
-          new maplibregl.AttributionControl({
-            compact: true,
-          }),
-          "bottom-right",
-        );
+        map.addControl(new maplibregl.AttributionControl({ compact: true }), "bottom-right");
         const collapseAttribution = () => {
-          const attribution =
-            containerRef.current?.querySelector<HTMLElement>(".maplibregl-ctrl-attrib");
+          const attribution = containerRef.current?.querySelector<HTMLElement>(".maplibregl-ctrl-attrib");
           attribution?.classList.remove("maplibregl-compact-show");
           attribution?.removeAttribute("open");
         };
         collapseAttribution();
         map.on("styledata", collapseAttribution);
-        map.addControl(new maplibregl.NavigationControl({ showCompass: true }), "top-right");
-        map.on("move", () => layoutNumberMarkers(map, markersRef.current));
+        map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+        map.on("move", () => layoutTimeMarkers(map, markersRef.current));
         map.on("dragstart", (event) => {
           if (event.originalEvent) userHasMovedRef.current = true;
         });
@@ -1037,9 +1046,7 @@ export function CampusMap({
           if (
             map.getLayer("day-routes-solid") &&
             map.queryRenderedFeatures(event.point, { layers: ["day-routes-solid"] }).length > 0
-          ) {
-            return;
-          }
+          ) return;
           const code = buildingCodeAtCoordinate([event.lngLat.lng, event.lngLat.lat]);
           if (code) latestData.current.onSelectBuilding(code);
         });
@@ -1071,7 +1078,6 @@ export function CampusMap({
             "hover",
           );
           syncBuildingHighlight(map, latestData.current.selectedBuildingCode, "selected");
-          // Force full teardown on style.load (theme changes) to recreate with correct theme colors
           for (const record of entranceMarkersRef.current) record.marker.remove();
           entranceMarkersRef.current.length = 0;
           syncEntranceMarkers(
@@ -1092,9 +1098,7 @@ export function CampusMap({
           }
           const selectedBuilding = latestData.current.selectedBuildingCode;
           const selectedPadding = latestData.current.focusPadding ?? DEFAULT_FOCUS_PADDING;
-          const selectedFocusKey = selectedBuilding
-            ? focusKey(selectedBuilding, selectedPadding)
-            : null;
+          const selectedFocusKey = selectedBuilding ? focusKey(selectedBuilding, selectedPadding) : null;
           if (
             selectedBuilding &&
             selectedFocusKey !== lastFocusedBuildingRef.current &&
@@ -1103,13 +1107,7 @@ export function CampusMap({
             lastFocusedBuildingRef.current = selectedFocusKey;
             userHasMovedRef.current = true;
           } else {
-            maybeFitBounds(
-              map,
-              maplibregl,
-              latestData.current,
-              lastFitKeyRef,
-              !userHasMovedRef.current,
-            );
+            maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef, !userHasMovedRef.current);
           }
           setStatus("ready");
         });
@@ -1124,10 +1122,8 @@ export function CampusMap({
     return () => {
       disposed = true;
       if (loadTimeout) clearTimeout(loadTimeout);
-      if (routeAnimationFrameRef.current !== null) {
-        cancelAnimationFrame(routeAnimationFrameRef.current);
-        routeAnimationFrameRef.current = null;
-      }
+      if (routeAnimationFrameRef.current !== null) cancelAnimationFrame(routeAnimationFrameRef.current);
+      routeAnimationFrameRef.current = null;
       for (const marker of markersRef.current) marker.remove();
       markersRef.current = [];
       userLocationMarkerRef.current?.remove();
@@ -1165,16 +1161,7 @@ export function CampusMap({
       );
       maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef, !userHasMovedRef.current);
     }
-  }, [
-    dayAnchor,
-    meetings,
-    onSelectMeeting,
-    onSelectSegment,
-    selectedMeetingId,
-    selectedSegmentId,
-    segments,
-    status,
-  ]);
+  }, [dayAnchor, meetings, onSelectMeeting, onSelectSegment, selectedMeetingId, selectedSegmentId, segments, status]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1190,7 +1177,6 @@ export function CampusMap({
   useEffect(() => {
     const map = mapRef.current;
     const maplibregl = maplibreRef.current;
-
     if (!selectedBuildingCode) {
       for (const record of entranceMarkersRef.current) record.marker.remove();
       entranceMarkersRef.current.length = 0;
@@ -1198,7 +1184,6 @@ export function CampusMap({
       if (map) syncBuildingHighlight(map, null, "selected");
       return;
     }
-
     if (!map || !maplibregl) return;
     syncBuildingHighlight(map, selectedBuildingCode, "selected");
     syncEntranceMarkers(
@@ -1246,15 +1231,11 @@ export function CampusMap({
     if (!map || !maplibregl) return;
     userHasMovedRef.current = false;
     lastFitKeyRef.current = "";
-    if (!maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef)) {
-      showCampusOverview(map);
-    }
+    if (!maybeFitBounds(map, maplibregl, latestData.current, lastFitKeyRef)) showCampusOverview(map);
   }
 
   return (
-    <div
-      className={`campus-map relative w-full overflow-hidden rounded-xl border border-border bg-muted ${className || "h-[25rem]"}`}
-    >
+    <div className={`campus-map relative w-full overflow-hidden rounded-xl border border-border bg-muted ${className || "h-[25rem]"}`}>
       <div
         ref={containerRef}
         className="h-full w-full"
@@ -1262,28 +1243,31 @@ export function CampusMap({
         aria-label="Interactive map of the University of Toronto Mississauga campus"
       />
       {status === "ready" ? (
-        <div className="absolute right-3 top-[5.75rem] z-10 flex max-w-[min(13rem,calc(100%-1.5rem))] flex-col items-end gap-2">
+        <div className="campus-map-actions absolute right-3 top-[5.35rem] z-10 flex max-w-[min(13rem,calc(100%-1.5rem))] flex-col items-end gap-2">
           <button
             type="button"
             onClick={resetCamera}
-            className="button-secondary min-h-10 rounded-lg px-3 text-xs font-semibold shadow-lg"
+            className="button-secondary inline-flex min-h-10 min-w-10 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-semibold shadow-lg md:px-3"
             aria-label={hasRouteContent ? "Fit the active day route" : "Return to campus overview"}
+            title={hasRouteContent ? "Fit route" : "Campus overview"}
           >
-            {hasRouteContent ? "Fit route" : "Campus overview"}
+            <Maximize2 className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden md:inline">{hasRouteContent ? "Fit route" : "Campus overview"}</span>
           </button>
           <button
             type="button"
             onClick={() => setLocationEnabled((enabled) => !enabled)}
             aria-label={locationEnabled ? "Hide my location" : "Show my location"}
             aria-pressed={locationEnabled}
-            className="button-secondary inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold shadow-lg"
+            className="button-secondary inline-flex min-h-10 min-w-10 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-semibold shadow-lg md:px-3"
+            title={locationEnabled ? "Hide my location" : "Show my location"}
           >
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
-            <span>{locationEnabled ? "Hide my location" : "Show my location"}</span>
+            <span className="hidden md:inline">{locationEnabled ? "Hide my location" : "Show my location"}</span>
           </button>
           {locationStatusLabel(liveLocation.status) ? (
             <p
-              className="rounded-md border border-border bg-popover/95 px-2.5 py-1.5 text-right text-[0.68rem] leading-4 text-popover-foreground shadow-md backdrop-blur"
+              className="max-w-[11rem] rounded-md border border-border bg-popover/95 px-2.5 py-1.5 text-right text-[0.68rem] leading-4 text-popover-foreground shadow-md backdrop-blur"
               role="status"
               aria-live="polite"
             >
@@ -1293,11 +1277,7 @@ export function CampusMap({
         </div>
       ) : null}
       {status === "loading" ? (
-        <div
-          className="pointer-events-none absolute inset-0 grid place-items-center bg-muted/90 px-6 text-center text-sm text-muted-foreground"
-          role="status"
-          aria-live="polite"
-        >
+        <div className="pointer-events-none absolute inset-0 grid place-items-center bg-muted/90 px-6 text-center text-sm text-muted-foreground" role="status" aria-live="polite">
           Loading the campus map…
         </div>
       ) : null}
@@ -1306,22 +1286,17 @@ export function CampusMap({
           <div>
             <p className="font-semibold">Interactive map unavailable</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              This browser does not support WebGL 2. Use the route timeline and written directions
-              on this page instead.
+              This browser does not support WebGL 2. Use the route sequence and written directions on this page instead.
             </p>
           </div>
         </div>
       ) : null}
       {status === "error" ? (
-        <div
-          className="absolute inset-0 grid place-items-center bg-muted px-6 text-center"
-          role="alert"
-        >
+        <div className="absolute inset-0 grid place-items-center bg-muted px-6 text-center" role="alert">
           <div>
             <p className="font-semibold">The campus map could not load</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Route details remain available on this page. Check your connection or try the map
-              again.
+              Route details remain available on this page. Check your connection or try the map again.
             </p>
             <button
               type="button"

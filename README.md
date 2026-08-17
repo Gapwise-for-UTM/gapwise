@@ -30,10 +30,11 @@ The original calendar file is parsed locally in the browser. Gapwise builds time
 
 ### Current product surface
 
-- **ACORN import and demo** — browser-local `.ics` parsing, first-run guidance, weekly timetable, and dedicated mobile day views.
+- **ACORN import and demo** — browser-local `.ics` parsing, import-first onboarding, weekly timetable, and dedicated mobile day views.
 - **Today** — current/next class context, gap state, leave-by guidance, and direct navigation actions.
 - **Gap Plan** — route-aware usable-time recommendations rather than a static timetable-only view.
-- **Day Route / campus explorer** — MapLibre-based UTM map, canonical building geometry, mapped entrances, commute origins, and conservative route confidence.
+- **Day Route / campus explorer** — a map-first MapLibre experience with time-labelled class locations, chronological route progression, a left-to-right day sequence, canonical building geometry, mapped entrances, commute origins, and conservative route confidence.
+- **Map navigation tuned for phones and laptops** — north-stable interaction, collision-aware time labels, separated fit/location/zoom controls, reduced-motion support, and route fitting that respects manual pan/zoom.
 - **Residence, transit, parking, and pickup origins** — model realistic campus-day starts and returns.
 - **Opt-in live location** — foreground geolocation only; no background tracking.
 - **Optional encrypted private sync** — restore signed-in private state across devices while keeping guest mode first-class.
@@ -58,6 +59,8 @@ Routing is intentionally conservative:
 - **Inferred** — a mapped approach used when a verified public door point is unavailable.
 - **Approximate** — clearly labelled fallback guidance.
 - **Unavailable** — Gapwise refuses to invent a route it cannot justify.
+
+The Day Route map is a presentation of this same deterministic routing truth. Class markers show actual timetable times rather than synthetic stop numbers, route segments progress visually from earlier to later stops, and start/end commute anchors stay semantically distinct from classes.
 
 The next campus-data milestone is not broader guessed coverage. It is a smaller **field-verified routing dataset** with provenance and verification dates, followed by a lightweight correction/reporting loop.
 
@@ -109,9 +112,19 @@ Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVAT
 
 ---
 
+## Engineering model
+
+Gapwise's scheduling and routing engine is deterministic. React is a consumer of timetable, gap, routing, and campus-domain logic rather than the source of truth for those rules.
+
+The same verified domain logic is intended to support the web app today and, after the launch freeze, a small public REST/OpenAPI surface and remote MCP server without duplicating routing semantics per AI platform.
+
+AI tools accelerate implementation and review, but the architecture, privacy boundaries, UTM-specific semantics, routing model, verification policy, product decisions, and production maintenance remain deliberate project engineering decisions.
+
+---
+
 ## Tech stack
 
-- React 19.2 + TypeScript 5.8
+- React 19.2 + TypeScript 5.x
 - TanStack Router / Start
 - Vite 8
 - Tailwind CSS 4
@@ -122,7 +135,7 @@ Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVAT
 - Vercel + Vercel Analytics/Speed Insights
 - GitHub Actions
 
-`package.json` is the source of truth for exact dependency versions.
+`package.json` and `bun.lock` are the source of truth for exact dependency versions. The project currently targets **Node 24.x** for Node-based tooling; TypeScript 6 and Node 26 typings are deliberately deferred major migrations rather than launch-period dependency hygiene.
 
 ---
 
@@ -168,7 +181,7 @@ bun run test:e2e
 
 Database/security changes also require the isolated Supabase checks documented in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
-The repository includes regression coverage for ACORN parsing/restoration, gap planning, campus routing/geometry, encrypted sync and user isolation, OAuth/account flows, accessibility, PWA behavior, and critical browser journeys.
+The repository includes regression coverage for ACORN parsing/restoration, onboarding, gap planning, campus routing/geometry, time-marker collision layout, encrypted sync and user isolation, OAuth/account flows, accessibility, PWA behavior, and critical browser journeys.
 
 ---
 
@@ -189,19 +202,25 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md).
 
 ---
 
-## Current direction — 2026-08-15
+## Current direction — 2026-08-17
 
-The pre-vacation product hardening milestone is complete. The live product has since received two narrow follow-ups: `gapwise.ca` became the canonical production domain (PR #103), and timetable/map/footer UI polish shipped in PR #104.
+Gapwise is in launch stabilization for UTM Orientation. The core product is working; the remaining roadmap is deliberately bounded around first-run reliability, real-user validation, and trustworthy routing.
 
-Planned feature work remains intentionally small and evidence-driven:
+Already shipped during the Aug 17 owner-approved maintenance window:
 
-1. **Sep 3 re-entry verification** — re-check the actual GitHub/Vercel/Supabase state before carrying August assumptions forward.
-2. **Mobile Gap Plan polish** — only if the re-entry check or real-user evidence still shows a material result-first usability gap.
-3. **Five uncoached UTM student sessions** — convert critical/high-friction findings into focused work.
-4. **First verified campus routing dataset** — approximately 5–10 high-value transitions with provenance and verification status.
-5. **Campus-data correction flow** — only after verified routing data exists to improve.
+- **AND-66 first-run activation** — Import ACORN is the dominant action, account decisions are post-value, local parsing is explicit, successful imports hand off to Today, and mobile auth/timetable polish is live.
+- **Map-first Day Route UX** — chronological class times replace numbered map stops, route segments visually communicate progression, the map is the primary surface on mobile and desktop, and map controls are separated so zoom/fit/location actions do not overlap.
+- **Launch-safe dependency maintenance** — current minor/patch updates were consolidated and validated, `@types/node` is aligned with Node 24.x, and TypeScript 6 / Node 26 typings remain explicitly deferred.
 
-Generic feature expansion, speculative analytics, standing performance work without measurements, and 3D model production are not current roadmap commitments.
+Next execution gates:
+
+1. **Sep 2 — AND-53 re-entry smoke check**: reconcile actual GitHub/Vercel/Supabase state, run real-device ACORN import checks, and re-verify the shipped onboarding/map behavior.
+2. **Sep 3 — P0 launch work**: parser compatibility hardening, five uncoached launch-gate sessions, only evidence-backed P0 fixes, then final flyer/QR output.
+3. **Sep 4–11 — Orientation launch**: prioritize observing and supporting real UTM students over speculative feature coding.
+4. **Sep 8–12 — tightly capped retention work**: Today hardening and, only if simple/justified, centralized `ZZ TBA` reserved-assessment handling.
+5. **Sep 15 — feature freeze**: after this date, only narrow security/privacy/data-loss/core-import/auth/routing correctness work interrupts academics.
+
+December is reserved for the first field-verified high-value routing dataset, then the transport-neutral domain/API/MCP foundation if capacity remains. Personal-schedule AI access, AI-specific OAuth, Web Push, native apps, broad social features, 3D production, multi-campus expansion, and architectural rewrites are not launch commitments.
 
 ---
 

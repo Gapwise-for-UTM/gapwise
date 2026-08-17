@@ -1,25 +1,14 @@
 import type { User } from "@supabase/supabase-js";
-import {
-  AlertTriangle,
-  BusFront,
-  CarFront,
-  Clock3,
-  Footprints,
-  Home,
-  LocateFixed,
-  MapPin,
-  Route as RouteIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { AlertTriangle, Clock3, Footprints, LocateFixed, Route as RouteIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BubbleTabs } from "./BubbleTabs";
 import { CampusExplorer } from "./CampusExplorer";
+import { DayRouteSequence } from "./DayRouteSequence";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
 import { MobileDayRoute } from "@/components/mobile/MobileDayRoute";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import {
   campusDayAnchorPresentation,
-  classNumberForRouteStop,
   createCampusDayRouteStops,
   isCampusDayAnchorMeeting,
   selectedCampusDayAnchor,
@@ -51,13 +40,6 @@ function secondsLabel(seconds: number): string {
 
 function distanceLabel(meters: number): string {
   return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
-}
-
-function anchorIcon(kind: CampusDayAnchor["kind"]): LucideIcon {
-  if (kind === "residence") return Home;
-  if (kind === "transit") return BusFront;
-  if (kind === "parking") return CarFront;
-  return MapPin;
 }
 
 function departureMetricLabel(kind: CampusDayAnchor["kind"]) {
@@ -119,12 +101,7 @@ export function DayRoute({
     () =>
       routeStops.slice(0, -1).map((from, index) => {
         const to = routeStops[index + 1]!;
-        return {
-          id: `${from.id}--${to.id}`,
-          from,
-          to,
-          route: planTransition(from, to, preferences),
-        };
+        return { id: `${from.id}--${to.id}`, from, to, route: planTransition(from, to, preferences) };
       }),
     [planTransition, preferences, routeStops],
   );
@@ -150,9 +127,7 @@ export function DayRoute({
     },
     [onSelectBuilding, selectedBuildingCode],
   );
-  const highlightBuilding = useCallback((code: string | null) => {
-    setHoveredBuildingCode(code);
-  }, []);
+  const highlightBuilding = useCallback((code: string | null) => setHoveredBuildingCode(code), []);
   const selectedSegment = segments.find((segment) => segment.id === selectedSegmentId) ?? null;
 
   function updatePreferences(patch: Partial<UserPreferences>) {
@@ -191,7 +166,7 @@ export function DayRoute({
         selectedBuildingCode={selectedBuildingCode}
         onSelectBuilding={onSelectBuilding}
         dayAnchor={null}
-        className="h-[calc(100dvh-13rem)] min-h-[32rem] max-h-[42rem]"
+        className="h-[calc(100dvh-13rem)] min-h-[32rem] max-h-[46rem]"
       />
     );
   }
@@ -212,11 +187,7 @@ export function DayRoute({
             />
             <BubbleTabs
               label="Route weekday"
-              items={WEEKDAYS.map((day) => ({
-                value: day,
-                label: day.slice(0, 3),
-                ariaLabel: day,
-              }))}
+              items={WEEKDAYS.map((day) => ({ value: day, label: day.slice(0, 3), ariaLabel: day }))}
               value={weekday}
               onChange={setWeekday}
               compact
@@ -224,10 +195,7 @@ export function DayRoute({
             />
           </div>
           <div>
-            <h2
-              id="route-preferences-title"
-              className="font-display text-base font-semibold tracking-tight"
-            >
+            <h2 id="route-preferences-title" className="font-display text-base font-semibold tracking-tight">
               Route preferences
             </h2>
             <div className="mt-2 grid gap-3 sm:grid-cols-3">
@@ -235,9 +203,7 @@ export function DayRoute({
                 Mode
                 <select
                   value={preferences.mode}
-                  onChange={(event) =>
-                    updatePreferences({ mode: event.target.value as UserPreferences["mode"] })
-                  }
+                  onChange={(event) => updatePreferences({ mode: event.target.value as UserPreferences["mode"] })}
                   className="mt-1 w-full rounded-md border border-input bg-card px-2 py-2"
                 >
                   <option value="fastest">Fastest</option>
@@ -253,9 +219,7 @@ export function DayRoute({
                   max="2.5"
                   step="0.05"
                   value={preferences.walkingSpeedMps}
-                  onChange={(event) =>
-                    updatePreferences({ walkingSpeedMps: Number(event.target.value) })
-                  }
+                  onChange={(event) => updatePreferences({ walkingSpeedMps: Number(event.target.value) })}
                   className="mt-3 w-full accent-[var(--color-accent)]"
                 />
               </label>
@@ -267,9 +231,7 @@ export function DayRoute({
                   max="30"
                   step="1"
                   value={preferences.transitionBufferMinutes}
-                  onChange={(event) =>
-                    updatePreferences({ transitionBufferMinutes: Number(event.target.value) })
-                  }
+                  onChange={(event) => updatePreferences({ transitionBufferMinutes: Number(event.target.value) })}
                   className="mt-3 w-full accent-[var(--color-accent)]"
                 />
               </label>
@@ -282,9 +244,7 @@ export function DayRoute({
                     void savePreferences(preferences)
                       .then(() => setPreferenceMessage("Route preferences saved."))
                       .catch((error: unknown) =>
-                        setPreferenceMessage(
-                          error instanceof Error ? error.message : "Save failed.",
-                        ),
+                        setPreferenceMessage(error instanceof Error ? error.message : "Save failed."),
                       )
                   }
                   className="button-secondary px-2 py-1 text-xs font-semibold"
@@ -297,14 +257,10 @@ export function DayRoute({
                     void loadPreferences()
                       .then((value) => {
                         if (value) onPreferencesChange(value);
-                        setPreferenceMessage(
-                          value ? "Saved preferences loaded." : "No saved preferences found.",
-                        );
+                        setPreferenceMessage(value ? "Saved preferences loaded." : "No saved preferences found.");
                       })
                       .catch((error: unknown) =>
-                        setPreferenceMessage(
-                          error instanceof Error ? error.message : "Load failed.",
-                        ),
+                        setPreferenceMessage(error instanceof Error ? error.message : "Load failed."),
                       )
                   }
                   className="button-secondary px-2 py-1 text-xs font-semibold"
@@ -329,9 +285,7 @@ export function DayRoute({
       {dayMeetings.length === 0 ? (
         <div className="space-y-3">
           <div className="empty-state surface p-6 text-center">
-            <h2 className="font-display text-xl font-semibold tracking-tight">
-              No classes on {weekday}
-            </h2>
+            <h2 className="font-display text-xl font-semibold tracking-tight">No classes on {weekday}</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Choose another weekday, or keep exploring the campus map.
             </p>
@@ -348,132 +302,36 @@ export function DayRoute({
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
             dayAnchor={null}
-            className="h-[30rem] lg:h-[36rem]"
+            className="h-[32rem] lg:h-[40rem]"
           />
         </div>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(18rem,0.72fr)_minmax(0,1.65fr)]">
-          <section className="surface p-5" aria-labelledby="day-timeline-title">
-            <p className="eyebrow text-accent">Day sequence</p>
-            <h2
-              id="day-timeline-title"
-              className="mt-2 font-display text-xl font-medium tracking-[-0.03em]"
-            >
-              {weekday} timeline
-            </h2>
-            <ol className="mt-3 space-y-3">
-              {routeStops.map((meeting, index) => {
-                const segment = segments[index];
-                const selected = selectedMeetingId === meeting.id;
-                const anchorPresentation = campusDayAnchorPresentation(meeting);
-                const anchorStop = Boolean(anchorPresentation);
-                const buildingHighlighted =
-                  meeting.buildingCode !== null &&
-                  meeting.buildingCode.toUpperCase() === hoveredBuildingCode;
-                const classNumber = classNumberForRouteStop(routeStops, index);
-                const meetingPresentation = getLocationPresentation({ meeting });
-                const segmentPresentation = segment
-                  ? getLocationPresentation({
-                      from: segment.from,
-                      to: segment.to,
-                      route: segment.route,
-                    })
-                  : null;
-                const SegmentStatusIcon = segmentPresentation?.icon;
-                const AnchorIcon = anchorPresentation ? anchorIcon(anchorPresentation.kind) : null;
-                const segmentAnchor = segment
-                  ? (campusDayAnchorPresentation(segment.from) ??
-                    campusDayAnchorPresentation(segment.to))
-                  : null;
-                return (
-                  <li key={meeting.id}>
-                    <button
-                      type="button"
-                      onClick={() => selectMeeting(meeting.id)}
-                      onMouseEnter={() =>
-                        highlightBuilding(meeting.buildingCode?.toUpperCase() ?? null)
-                      }
-                      onMouseLeave={() => highlightBuilding(null)}
-                      onFocus={() => highlightBuilding(meeting.buildingCode?.toUpperCase() ?? null)}
-                      onBlur={() => highlightBuilding(null)}
-                      data-building-code={meeting.buildingCode ?? undefined}
-                      data-building-highlighted={buildingHighlighted}
-                      className={`route-stop-card w-full rounded-lg border p-3 text-left ${
-                        selected
-                          ? "border-accent/60 bg-accent/8"
-                          : "border-border bg-card hover:bg-muted/60"
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                          {AnchorIcon ? (
-                            <AnchorIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                          ) : (
-                            classNumber
-                          )}
-                        </span>
-                        <span>
-                          <span className="block text-sm font-semibold">
-                            {anchorPresentation
-                              ? anchorPresentation.title
-                              : `${meeting.courseCode} ${meeting.activityType}`}
-                          </span>
-                          <span className="block text-xs text-muted-foreground">
-                            {anchorPresentation
-                              ? anchorPresentation.label
-                              : `${formatTime(meeting.startTime)}–${formatTime(meeting.endTime)} · ${meetingPresentation.label}`}
-                          </span>
-                        </span>
-                      </span>
-                    </button>
-                    {segment ? (
-                      <button
-                        type="button"
-                        onClick={() => selectSegment(segment.id)}
-                        className={`ml-3 mt-2 w-[calc(100%-0.75rem)] rounded-lg border-l-2 p-3 text-left text-xs ${
-                          selectedSegmentId === segment.id
-                            ? "border-accent bg-accent/8"
-                            : "border-border hover:bg-muted/50"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2 font-semibold">
-                          {SegmentStatusIcon ? (
-                            <SegmentStatusIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                          ) : null}
-                          {segmentAnchor
-                            ? segmentAnchor.segmentLabel
-                            : `Transition to ${segment.to.courseCode}`}
-                        </span>
-                        <span className="mt-1 block text-muted-foreground">
-                          {segmentPresentation?.label}
-                        </span>
-                      </button>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-          </section>
+        <div className="space-y-3">
+          <CampusExplorer
+            meetings={dayMeetings}
+            segments={segments}
+            selectedMeetingId={selectedMeetingId}
+            selectedSegmentId={selectedSegmentId}
+            onSelectMeeting={selectMeeting}
+            onSelectSegment={selectSegment}
+            hoveredBuildingCode={hoveredBuildingCode}
+            onHoverBuilding={highlightBuilding}
+            selectedBuildingCode={selectedBuildingCode}
+            onSelectBuilding={onSelectBuilding}
+            dayAnchor={dayAnchor}
+            className="h-[min(66vh,44rem)] min-h-[34rem]"
+          />
 
-          <div className="space-y-3">
-            <CampusExplorer
-              meetings={dayMeetings}
-              segments={segments}
-              selectedMeetingId={selectedMeetingId}
-              selectedSegmentId={selectedSegmentId}
-              onSelectMeeting={selectMeeting}
-              onSelectSegment={selectSegment}
-              hoveredBuildingCode={hoveredBuildingCode}
-              onHoverBuilding={highlightBuilding}
-              selectedBuildingCode={selectedBuildingCode}
-              onSelectBuilding={onSelectBuilding}
-              dayAnchor={dayAnchor}
-              className="h-[30rem] lg:h-[36rem]"
-            />
-            {selectedSegment ? (
-              <SegmentDetails segment={selectedSegment} preferences={preferences} />
-            ) : null}
-          </div>
+          <DayRouteSequence
+            routeStops={routeStops}
+            segments={segments}
+            selectedMeetingId={selectedMeetingId}
+            selectedSegmentId={selectedSegmentId}
+            onSelectMeeting={selectMeeting}
+            onSelectSegment={selectSegment}
+          />
+
+          {selectedSegment ? <SegmentDetails segment={selectedSegment} preferences={preferences} /> : null}
         </div>
       )}
 
@@ -491,19 +349,9 @@ export function DayRoute({
   );
 }
 
-function SegmentDetails({
-  segment,
-  preferences,
-}: {
-  segment: DaySegment;
-  preferences: UserPreferences;
-}) {
+function SegmentDetails({ segment, preferences }: { segment: DaySegment; preferences: UserPreferences }) {
   const route = segment.route;
-  const presentation = getLocationPresentation({
-    from: segment.from,
-    to: segment.to,
-    route,
-  });
+  const presentation = getLocationPresentation({ from: segment.from, to: segment.to, route });
   const fromLocation = getLocationPresentation({ meeting: segment.from });
   const toLocation = getLocationPresentation({ meeting: segment.to });
   const fromAnchor = campusDayAnchorPresentation(segment.from);
@@ -519,10 +367,7 @@ function SegmentDetails({
       ? null
       : toAnchor
         ? segment.from.endTime
-        : Math.max(
-            0,
-            segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes,
-          );
+        : Math.max(0, segment.to.startTime - Math.ceil(seconds / 60) - preferences.transitionBufferMinutes);
   return (
     <section className="surface route-details-panel p-4" aria-labelledby="segment-details-title">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -545,65 +390,31 @@ function SegmentDetails({
       {route.status === "same-room" ? (
         <div className="mt-4 rounded-xl border border-lec/25 bg-lec/8 p-3.5">
           <p className="text-sm font-semibold text-lec">No walk needed</p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-            Your next class is in the same room.
-          </p>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">Your next class is in the same room.</p>
         </div>
-      ) : route.status === "unavailable" ||
-        seconds === null ||
-        distance === null ||
-        departure === null ? (
+      ) : route.status === "unavailable" || seconds === null || distance === null || departure === null ? (
         <div className="mt-4 flex gap-3 rounded-xl border border-accent/25 bg-accent/8 p-3.5">
           <StatusIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
           <div>
             <p className="text-sm font-semibold">{presentation.label}</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              {presentation.detail}
-            </p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{presentation.detail}</p>
           </div>
         </div>
       ) : (
         <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
           <Metric icon={Clock3} label="Estimated walk" value={secondsLabel(seconds)} />
-          <Metric
-            icon={Footprints}
-            label="Distance"
-            value={`${route.status === "approximate" ? "~" : ""}${distanceLabel(distance)}`}
-          />
-          <Metric
-            icon={LocateFixed}
-            label={toAnchor ? departureMetricLabel(toAnchor.kind) : "Leave by"}
-            value={formatTime(departure)}
-          />
-          <Metric
-            icon={RouteIcon}
-            label="Outdoor"
-            value={
-              route.result
-                ? distanceLabel(route.result.outdoorDistanceMeters)
-                : `~${distanceLabel(distance)}`
-            }
-          />
-          <Metric
-            icon={RouteIcon}
-            label="Indoor"
-            value={route.result ? distanceLabel(route.result.indoorDistanceMeters) : "Not mapped"}
-          />
-          <Metric
-            icon={RouteIcon}
-            label="Floor changes"
-            value={route.result ? String(route.result.floorChanges) : "Unknown"}
-          />
+          <Metric icon={Footprints} label="Distance" value={`${route.status === "approximate" ? "~" : ""}${distanceLabel(distance)}`} />
+          <Metric icon={LocateFixed} label={toAnchor ? departureMetricLabel(toAnchor.kind) : "Leave by"} value={formatTime(departure)} />
+          <Metric icon={RouteIcon} label="Outdoor" value={route.result ? distanceLabel(route.result.outdoorDistanceMeters) : `~${distanceLabel(distance)}`} />
+          <Metric icon={RouteIcon} label="Indoor" value={route.result ? distanceLabel(route.result.indoorDistanceMeters) : "Not mapped"} />
+          <Metric icon={RouteIcon} label="Floor changes" value={route.result ? String(route.result.floorChanges) : "Unknown"} />
         </dl>
       )}
       {routeWarnings.length > 0 ? (
         <ul className="mt-4 space-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
           {routeWarnings.map((warning) => (
             <li key={warning} className="flex items-start gap-2">
-              <AlertTriangle
-                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
-                aria-hidden="true"
-              />
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               {warning}
             </li>
           ))}
@@ -613,15 +424,7 @@ function SegmentDetails({
   );
 }
 
-function Metric({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Clock3;
-  label: string;
-  value: string;
-}) {
+function Metric({ icon: Icon, label, value }: { icon: typeof Clock3; label: string; value: string }) {
   return (
     <div>
       <dt className="flex items-center gap-1 text-xs text-muted-foreground">
