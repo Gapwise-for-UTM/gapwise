@@ -11,9 +11,7 @@ const baseProps = {
 };
 
 function renderPanel(loading: boolean) {
-  return renderToStaticMarkup(
-    <UploadPanel {...baseProps} loading={loading} variant="hero" />,
-  );
+  return renderToStaticMarkup(<UploadPanel {...baseProps} loading={loading} variant="hero" />);
 }
 
 describe("AND-66 first-run upload surface", () => {

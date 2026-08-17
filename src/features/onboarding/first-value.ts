@@ -111,15 +111,11 @@ export function useFirstValueArrival(active: boolean) {
 
     setArrival({ source, showSuccess: true, showHint: firstVisit, emphasize: firstVisit });
 
-    const emphasisTimer = window.setTimeout(() => {
-      setArrival((current) => ({ ...current, emphasize: false }));
-    }, 600);
     const successTimer = window.setTimeout(() => {
       setArrival((current) => ({ ...current, showSuccess: false }));
     }, 2200);
 
     return () => {
-      window.clearTimeout(emphasisTimer);
       window.clearTimeout(successTimer);
     };
   }, [active]);
