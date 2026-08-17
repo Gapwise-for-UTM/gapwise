@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FileUp, LogIn, ShieldCheck, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { requestGapwiseSignIn } from "@/features/auth/AccountStatus";
+import { requestGapwiseSignIn } from "@/features/auth/sign-in-trigger";
 import { clearFirstValuePending, markFirstValuePending } from "@/features/onboarding/first-value";
 import { emitClickSpark } from "@/lib/micro-interactions";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -221,7 +221,11 @@ export function UploadPanel({
                 onClick={requestGapwiseSignIn}
                 disabled={!isSupabaseConfigured}
                 aria-label="Sign in to sync across devices"
-                title={isSupabaseConfigured ? "Sign in to sync" : "Sign-in is unavailable in this environment"}
+                title={
+                  isSupabaseConfigured
+                    ? "Sign in to sync"
+                    : "Sign-in is unavailable in this environment"
+                }
                 className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold text-accent transition-colors hover:bg-accent/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
               >
                 <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
