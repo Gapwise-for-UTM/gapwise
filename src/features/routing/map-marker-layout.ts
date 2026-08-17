@@ -135,7 +135,8 @@ export function groupedVerticalMarkerOffsets(
           halfHeight,
         };
         const centersClear = placedStacks.every(
-          (other) => Math.hypot(candidate.x - other.x, candidate.y - other.y) >= minGroupSeparationPx,
+          (other) =>
+            Math.hypot(candidate.x - other.x, candidate.y - other.y) >= minGroupSeparationPx,
         );
         if (centersClear && stackPlacementsDoNotOverlap(candidate, placedStacks, stackGapPx)) {
           placedStacks.push(candidate);
