@@ -68,13 +68,15 @@ test.describe("map-first Day Route", () => {
     }
 
     await timeMarkers.nth(1).click();
-    const meetingPopover = page.locator(".map-meeting-popover");
-    await expect(meetingPopover).toBeVisible();
-    await expect(meetingPopover).toContainText(/DEM\d+/);
-    await expect(meetingPopover.getByText("Time", { exact: true })).toBeVisible();
-    await expect(meetingPopover.getByText("Location", { exact: true })).toBeVisible();
-    await expect(meetingPopover.getByText("Component", { exact: true })).toBeVisible();
-    await expect(meetingPopover.getByText("Day", { exact: true })).toBeVisible();
+    const meetingDetails = page.getByTestId("map-meeting-details");
+    await expect(meetingDetails).toBeVisible();
+    await expect(meetingDetails).toContainText(/DEM\d+/);
+    await expect(meetingDetails.getByText("Time", { exact: true })).toBeVisible();
+    await expect(meetingDetails.getByText("Location", { exact: true })).toBeVisible();
+    await expect(meetingDetails.getByText("Component", { exact: true })).toBeVisible();
+    await expect(meetingDetails.getByText("Day", { exact: true })).toBeVisible();
+    await expect(meetingDetails).toContainText("IB 245");
+    await expect(meetingDetails).toContainText("TUT");
 
     await expect(page.locator(".maplibregl-ctrl-compass")).toHaveCount(0);
     const fitRoute = page.getByRole("button", { name: "Fit the active day route" });
