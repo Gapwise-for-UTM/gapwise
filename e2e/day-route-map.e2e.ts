@@ -130,8 +130,8 @@ test.describe("map-first Day Route", () => {
       .poll(() =>
         page.evaluate(
           () =>
-            (window as typeof window & { __gapwiseAutoFitClicks?: number }).__gapwiseAutoFitClicks ??
-            0,
+            (window as typeof window & { __gapwiseAutoFitClicks?: number })
+              .__gapwiseAutoFitClicks ?? 0,
         ),
       )
       .toBeGreaterThan(0);
