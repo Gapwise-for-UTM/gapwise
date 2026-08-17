@@ -15,7 +15,10 @@ function renderPanel(loading: boolean) {
 }
 
 function textContent(html: string) {
-  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 describe("AND-66 first-run upload surface", () => {
