@@ -1,5 +1,9 @@
 export type MarkerScreenPoint = { x: number; y: number };
 export type MarkerPixelOffset = [x: number, y: number];
+export type GroupedMarkerScreenPoint = MarkerScreenPoint & {
+  groupKey: string;
+  order: number;
+};
 
 function ringOffsets(ring: number, spacing: number): MarkerPixelOffset[] {
   if (ring === 0) return [[0, 0]];
@@ -56,4 +60,63 @@ export function collisionFreeMarkerOffsets(
       }
     }
   });
+}
+
+/**
+ * Keep every class in the same building on one vertical chronological stack while
+ * still separating different building stacks. The group anchor is the average of
+ * the projected class anchors, so multiple verified entrance/route points for one
+ * building collapse into a single readable timetable stack without changing route
+ * geometry itself.
+ */
+export function groupedVerticalMarkerOffsets(
+  points: GroupedMarkerScreenPoint[],
+  minGroupSeparationPx = 92,
+  groupSpacingPx = 72,
+  stackSpacingPx = 44,
+): MarkerPixelOffset[] {
+  const groups = new Map<string, number[]>();
+  points.forEach((point, index) => {
+    const indices = groups.get(point.groupKey) ?? [];
+    indices.push(index);
+    groups.set(point.groupKey, indices);
+  });
+
+  const entries = [...groups.entries()];
+  const groupAnchors = entries.map(([, indices]) => {
+    const total = indices.reduce(
+      (acc, index) => ({
+        x: acc.x + points[index]!.x,
+        y: acc.y + points[index]!.y,
+      }),
+      { x: 0, y: 0 },
+    );
+    return { x: total.x / indices.length, y: total.y / indices.length };
+  });
+  const groupOffsets = collisionFreeMarkerOffsets(
+    groupAnchors,
+    minGroupSeparationPx,
+    groupSpacingPx,
+  );
+  const offsets: MarkerPixelOffset[] = points.map(() => [0, 0]);
+
+  entries.forEach(([, indices], groupIndex) => {
+    const anchor = groupAnchors[groupIndex]!;
+    const groupOffset = groupOffsets[groupIndex] ?? [0, 0];
+    const orderedIndices = [...indices].sort((a, b) => {
+      const orderDifference = points[a]!.order - points[b]!.order;
+      return orderDifference === 0 ? a - b : orderDifference;
+    });
+
+    orderedIndices.forEach((pointIndex, slot) => {
+      const point = points[pointIndex]!;
+      const stackOffsetY = (slot - (orderedIndices.length - 1) / 2) * stackSpacingPx;
+      offsets[pointIndex] = [
+        anchor.x + groupOffset[0] - point.x,
+        anchor.y + groupOffset[1] + stackOffsetY - point.y,
+      ];
+    });
+  });
+
+  return offsets;
 }
