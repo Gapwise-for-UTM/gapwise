@@ -33,6 +33,7 @@ import {
   signInWithMicrosoft,
   signOut,
 } from "./auth-service";
+import { OPEN_SIGN_IN_EVENT } from "./sign-in-trigger";
 
 function MicrosoftIcon() {
   return (
@@ -70,6 +71,18 @@ export function AccountStatus({
     const error = consumeOAuthError(window.location, window.history);
     if (error) setMessage("Sign-in did not complete. Please try again.");
   }, []);
+
+  useEffect(() => {
+    const openSignIn = () => {
+      if (!user && isSupabaseConfigured) setSignInOpen(true);
+    };
+    window.addEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
+    return () => window.removeEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
+  }, [user]);
+
+  useEffect(() => {
+    if (user) setSignInOpen(false);
+  }, [user]);
 
   async function removeAccount() {
     if (busy) return;

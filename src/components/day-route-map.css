@@ -1,5 +1,24 @@
-.map-time-marker {
+.map-time-marker,
+.map-meeting-popover {
   --map-stop-color: var(--color-accent);
+}
+
+.map-time-marker[data-activity="LEC"],
+.map-meeting-popover[data-activity="LEC"] {
+  --map-stop-color: var(--color-lec);
+}
+
+.map-time-marker[data-activity="TUT"],
+.map-meeting-popover[data-activity="TUT"] {
+  --map-stop-color: var(--color-tut);
+}
+
+.map-time-marker[data-activity="PRA"],
+.map-meeting-popover[data-activity="PRA"] {
+  --map-stop-color: var(--color-pra);
+}
+
+.map-time-marker {
   box-sizing: border-box;
   min-width: 3.65rem;
   min-height: 2.15rem;
@@ -42,6 +61,98 @@
     0 0 0 4px color-mix(in srgb, var(--map-stop-color) 38%, transparent);
 }
 
+.campus-map .maplibregl-popup-content {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.9rem;
+  background: var(--color-popover);
+  color: var(--color-popover-foreground);
+  padding: 0;
+  box-shadow: 0 18px 44px -20px rgb(0 0 0 / 56%);
+}
+
+.campus-map .maplibregl-popup-close-button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 9999px;
+  color: var(--color-muted-foreground);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.campus-map .maplibregl-popup-close-button:hover,
+.campus-map .maplibregl-popup-close-button:focus-visible {
+  background: var(--color-secondary);
+  color: var(--color-foreground);
+}
+
+.map-meeting-popover {
+  min-width: min(15.5rem, calc(100vw - 4rem));
+  border-left: 4px solid var(--map-stop-color);
+  padding: 0.85rem 2.25rem 0.85rem 0.9rem;
+  text-align: left;
+}
+
+.map-meeting-popover-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-popover-foreground);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.map-meeting-popover-activity {
+  border: 1px solid color-mix(in srgb, var(--map-stop-color) 52%, transparent);
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--map-stop-color) 15%, transparent);
+  color: var(--map-stop-color);
+  padding: 0.2rem 0.42rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.map-meeting-popover-course {
+  margin-top: 0.35rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.map-meeting-popover-details {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.map-meeting-popover-details > div {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: baseline;
+}
+
+.map-meeting-popover-details dt {
+  color: var(--color-muted-foreground);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.map-meeting-popover-details dd {
+  margin: 0;
+  color: var(--color-popover-foreground);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
 .day-route-sequence {
   border: 1px solid var(--color-border);
   border-radius: 0.9rem;
@@ -61,6 +172,10 @@
     min-height: 2rem;
     padding-inline: 0.45rem;
     font-size: 0.68rem;
+  }
+
+  .map-meeting-popover {
+    min-width: min(14.5rem, calc(100vw - 3rem));
   }
 
   .day-route-sequence {
