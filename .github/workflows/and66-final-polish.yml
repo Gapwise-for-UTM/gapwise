@@ -1,0 +1,56 @@
+name: AND-66 Final Polish
+on:
+  push:
+    branches: [feat/and-66-first-run-onboarding-draft]
+permissions:
+  contents: write
+jobs:
+  polish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - name: Apply final launch-copy and import-count fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          upload = Path('src/components/UploadPanel.tsx')
+          text = upload.read_text()
+          old = 'Your calendar stays on this device. No account required.'
+          new = 'Your calendar stays on this device — the original .ics file is never uploaded. No account required.'
+          if old not in text:
+              raise SystemExit('expected UploadPanel privacy copy not found')
+          upload.write_text(text.replace(old, new, 1))
+
+          app = Path('src/routes/_app.tsx')
+          text = app.read_text()
+          old = 'meetingCount={termMeetings.length}'
+          new = 'meetingCount={meetings.length}'
+          if old not in text:
+              raise SystemExit('expected mobile meetingCount expression not found')
+          app.write_text(text.replace(old, new, 1))
+
+          e2e = Path('e2e/and66.e2e.ts')
+          text = e2e.read_text()
+          old = 'Your calendar stays on this device. No account required.'
+          new = 'Your calendar stays on this device — the original .ics file is never uploaded. No account required.'
+          if old not in text:
+              raise SystemExit('expected AND-66 privacy assertion not found')
+          e2e.write_text(text.replace(old, new, 1))
+          PY
+          bunx prettier --write src/components/UploadPanel.tsx src/routes/_app.tsx e2e/and66.e2e.ts
+          bunx eslint --fix src/components/UploadPanel.tsx src/routes/_app.tsx e2e/and66.e2e.ts
+          bunx prettier --write src/components/UploadPanel.tsx src/routes/_app.tsx e2e/and66.e2e.ts
+      - name: Commit final polish
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/UploadPanel.tsx src/routes/_app.tsx e2e/and66.e2e.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: polish AND-66 activation details"
+          git push origin HEAD:feat/and-66-first-run-onboarding-draft
