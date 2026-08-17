@@ -39,12 +39,16 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
         eyebrow: `${selectedTerm} hasn't started`,
         title: `First class: ${state.first.meeting.courseCode}`,
         detail: `${formatOccurrenceDate(state.first.date)} · ${formatTime(state.first.meeting.startTime)}`,
-        rows: [{ icon: MapPin, text: getLocationPresentation({ meeting: state.first.meeting }).label }],
+        rows: [
+          { icon: MapPin, text: getLocationPresentation({ meeting: state.first.meeting }).label },
+        ],
       };
     case "ended":
       return {
         eyebrow: `${selectedTerm} has finished`,
-        title: state.next ? `${state.next.meeting.term} is next` : "No later classes in this timetable",
+        title: state.next
+          ? `${state.next.meeting.term} is next`
+          : "No later classes in this timetable",
         detail: state.next
           ? occurrenceLead(state.next.date, state.next.meeting, now)
           : "Upload a new ACORN calendar when your next timetable is ready.",
@@ -74,7 +78,11 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
         },
       ];
       if (state.next && state.route) {
-        const presentation = getLocationPresentation({ from: state.current, to: state.next, route: state.route });
+        const presentation = getLocationPresentation({
+          from: state.current,
+          to: state.next,
+          route: state.route,
+        });
         rows.push({
           icon: presentation.icon,
           text: `Next: ${state.next.courseCode} at ${formatTime(state.next.startTime)} · ${routeCopy(state.current, state.next, state.route)}`,
@@ -117,8 +125,14 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
           to: state.gap.next,
           route: state.route,
         });
-        rows.push({ icon: presentation.icon, text: routeCopy(state.gap.previous, state.gap.next, state.route) });
-        rows.push({ icon: Clock3, text: `Leave by ${formatTime(state.assessment.leaveByMinutes)}` });
+        rows.push({
+          icon: presentation.icon,
+          text: routeCopy(state.gap.previous, state.gap.next, state.route),
+        });
+        rows.push({
+          icon: Clock3,
+          text: `Leave by ${formatTime(state.assessment.leaveByMinutes)}`,
+        });
       }
       return {
         eyebrow: `Today · ${weekdayLabel}`,
@@ -212,14 +226,19 @@ export function MobileToday({
         >
           {title}
         </h1>
-        {detail ? <p className="mt-2 text-[0.9rem] leading-6 text-muted-foreground">{detail}</p> : null}
+        {detail ? (
+          <p className="mt-2 text-[0.9rem] leading-6 text-muted-foreground">{detail}</p>
+        ) : null}
 
         {rows.length > 0 ? (
           <ul className="mt-4 space-y-2.5 border-t border-border pt-4">
             {rows.map((row) => {
               const Icon = row.icon;
               return (
-                <li key={row.text} className="flex items-start gap-2.5 text-[0.875rem] leading-6 text-muted-foreground">
+                <li
+                  key={row.text}
+                  className="flex items-start gap-2.5 text-[0.875rem] leading-6 text-muted-foreground"
+                >
                   <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                   <span className="min-w-0">{row.text}</span>
                 </li>
@@ -230,7 +249,10 @@ export function MobileToday({
 
         {showGapHint ? (
           <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-accent/25 bg-accent/6 px-3.5 py-3 text-sm leading-5">
-            <p>You have a {formatCompactDuration(state.gap.durationMinutes)} gap here. Tap to plan it.</p>
+            <p>
+              You have a {formatCompactDuration(state.gap.durationMinutes)} gap here. Tap to plan
+              it.
+            </p>
             <button
               type="button"
               onClick={firstValue.dismissHint}
@@ -278,7 +300,9 @@ export function MobileToday({
       </section>
 
       <section className="surface p-5">
-        <p className="eyebrow text-muted-foreground">{isDemo ? "Sample data" : "Campus day plan"}</p>
+        <p className="eyebrow text-muted-foreground">
+          {isDemo ? "Sample data" : "Campus day plan"}
+        </p>
         <p className="mt-2 text-[0.875rem] leading-6 text-muted-foreground">
           {meetingCount} meetings in {selectedTerm} · {gapCount} gaps detected
         </p>

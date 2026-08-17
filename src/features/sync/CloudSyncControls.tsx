@@ -54,7 +54,9 @@ export function CloudSyncControls({
     <section className="surface p-4 sm:p-5" aria-labelledby="cloud-sync-title">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="cloud-sync-title" className="text-sm font-semibold">Sync across devices</h2>
+          <h2 id="cloud-sync-title" className="text-sm font-semibold">
+            Sync across devices
+          </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Your private Gapwise data is encrypted in your browser before it is stored. Sync is
             optional. The original .ics file is never uploaded.
@@ -77,7 +79,10 @@ export function CloudSyncControls({
               emitClickSpark(event);
               void run(async () => {
                 const result = await saveEncryptedPrivateState(user!.id, {
-                  schedule: meetings ?? [], personalItems, preferences, gapPreferences,
+                  schedule: meetings ?? [],
+                  personalItems,
+                  preferences,
+                  gapPreferences,
                 });
                 setCloudRestoreSuppressed(user!.id, false);
                 return result.persistentKeys
@@ -93,13 +98,15 @@ export function CloudSyncControls({
           <button
             type="button"
             disabled={!enabled || busy}
-            onClick={() => void run(async () => {
-              const restored = await loadEncryptedPrivateState(user!.id, undefined, true);
-              if (!restored) return "No encrypted cloud data was found.";
-              setCloudRestoreSuppressed(user!.id, false);
-              onLoadPrivate(restored.payload);
-              return "Encrypted private data loaded into this browser.";
-            })}
+            onClick={() =>
+              void run(async () => {
+                const restored = await loadEncryptedPrivateState(user!.id, undefined, true);
+                if (!restored) return "No encrypted cloud data was found.";
+                setCloudRestoreSuppressed(user!.id, false);
+                onLoadPrivate(restored.payload);
+                return "Encrypted private data loaded into this browser.";
+              })
+            }
             className="button-secondary inline-flex min-h-11 items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             <CloudDownload className="h-3.5 w-3.5" aria-hidden="true" />
@@ -109,7 +116,8 @@ export function CloudSyncControls({
             type="button"
             disabled={!enabled || busy}
             onClick={() => {
-              if (!window.confirm("Delete your synced encrypted private data from your account?")) return;
+              if (!window.confirm("Delete your synced encrypted private data from your account?"))
+                return;
               void run(async () => {
                 await deleteEncryptedPrivateCloud(user!.id);
                 return "Cloud encrypted private data deleted. Local browser data was not changed.";
@@ -129,7 +137,11 @@ export function CloudSyncControls({
             : "Cloud controls are disabled on this deployment. Guest mode remains fully functional."}
         </p>
       ) : null}
-      {message ? <p role="status" className="mt-3 text-xs text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p role="status" className="mt-3 text-xs text-muted-foreground">
+          {message}
+        </p>
+      ) : null}
     </section>
   );
 }

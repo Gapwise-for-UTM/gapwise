@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FileUp, ShieldCheck, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  clearFirstValuePending,
-  markFirstValuePending,
-} from "@/features/onboarding/first-value";
+import { clearFirstValuePending, markFirstValuePending } from "@/features/onboarding/first-value";
 import { emitClickSpark } from "@/lib/micro-interactions";
 import "./onboarding/first-run.css";
 
@@ -170,7 +167,8 @@ export function UploadPanel({
           See gaps. Navigate UTM. Privately.
         </h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Import your ACORN calendar to see what&apos;s next, how much time is usable, and where to go.
+          Import your ACORN calendar to see what&apos;s next, how much time is usable, and where to
+          go.
         </p>
 
         {loading ? (
@@ -197,7 +195,10 @@ export function UploadPanel({
                 <FileUp className="h-4 w-4" aria-hidden="true" />
                 Import ACORN
               </button>
-              <p id="first-run-import-help" className="text-center text-xs leading-5 text-muted-foreground">
+              <p
+                id="first-run-import-help"
+                className="text-center text-xs leading-5 text-muted-foreground"
+              >
                 Choose the .ics file you downloaded from ACORN.
               </p>
               <button

@@ -12,9 +12,18 @@ body:has(main.landing-stage) main.landing-stage section[aria-labelledby="cloud-s
 }
 
 @keyframes first-value-outline {
-  0% { outline-color: transparent; outline-offset: 0; }
-  45% { outline-color: var(--color-accent); outline-offset: 3px; }
-  100% { outline-color: transparent; outline-offset: 5px; }
+  0% {
+    outline-color: transparent;
+    outline-offset: 0;
+  }
+  45% {
+    outline-color: var(--color-accent);
+    outline-offset: 3px;
+  }
+  100% {
+    outline-color: transparent;
+    outline-offset: 5px;
+  }
 }
 
 .first-value-emphasis {
@@ -23,6 +32,11 @@ body:has(main.landing-stage) main.landing-stage section[aria-labelledby="cloud-s
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .first-value-emphasis { animation: none; outline: 0; }
-  .and66-skeleton * { animation: none !important; }
+  .first-value-emphasis {
+    animation: none;
+    outline: 0;
+  }
+  .and66-skeleton * {
+    animation: none !important;
+  }
 }
