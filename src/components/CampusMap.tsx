@@ -490,7 +490,10 @@ function createMeetingPopupContent(meeting: Meeting, buildingCode: string) {
   const rows: [string, string][] = [
     ["Time", `${formatTime(meeting.startTime)} – ${formatTime(meeting.endTime)}`],
     ["Location", location],
-    ["Component", `${meeting.activityType}${meeting.sectionCode ? ` · ${meeting.sectionCode}` : ""}`],
+    [
+      "Component",
+      `${meeting.activityType}${meeting.sectionCode ? ` · ${meeting.sectionCode}` : ""}`,
+    ],
     ["Day", `${meeting.weekday} · ${meeting.term}`],
   ];
   for (const [label, value] of rows) {
@@ -535,9 +538,9 @@ function syncMapData(
   routeAnimationFrameRef: MutableRefObject<number | null>,
   latestDataRef: MutableRefObject<MapData>,
 ) {
-  const openMeetingId = markers.find((marker) => marker.getPopup()?.isOpen())?.getElement().dataset[
-    "meetingId"
-  ] ?? null;
+  const openMeetingId =
+    markers.find((marker) => marker.getPopup()?.isOpen())?.getElement().dataset["meetingId"] ??
+    null;
   for (const marker of markers) marker.remove();
   markers.length = 0;
 
