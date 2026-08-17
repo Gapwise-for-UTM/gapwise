@@ -57,8 +57,8 @@ test.describe("map-first Day Route", () => {
       ),
     ).toBe(true);
 
-    const lecture = timeMarkers.filter({ has: page.locator(':scope[data-activity="LEC"]') }).first();
-    const tutorial = timeMarkers.filter({ has: page.locator(':scope[data-activity="TUT"]') }).first();
+    const lecture = page.locator('.map-time-marker[data-activity="LEC"]').first();
+    const tutorial = page.locator('.map-time-marker[data-activity="TUT"]').first();
     if ((await lecture.count()) > 0 && (await tutorial.count()) > 0) {
       const [lectureColor, tutorialColor] = await Promise.all([
         lecture.evaluate((marker) => getComputedStyle(marker).backgroundColor),
