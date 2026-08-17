@@ -20,11 +20,13 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
   await expect(page.getByRole("button", { name: "Campus arrival settings" })).toHaveCount(0);
   await expect(page.locator('section[aria-labelledby="cloud-sync-title"]')).not.toBeVisible();
 
-  const box = await page.getByRole("button", { name: "Import ACORN" }).boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.height).toBeGreaterThanOrEqual(52);
-  expect(box!.width).toBeGreaterThanOrEqual(288);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(740);
+  const ctaBox = await page.getByRole("button", { name: "Import ACORN" }).boundingBox();
+  const panelBox = await page.locator(".and66-first-run").boundingBox();
+  expect(ctaBox).not.toBeNull();
+  expect(panelBox).not.toBeNull();
+  expect(ctaBox!.height).toBeGreaterThanOrEqual(52);
+  expect(ctaBox!.width / panelBox!.width).toBeGreaterThanOrEqual(0.85);
+  expect(ctaBox!.y + ctaBox!.height).toBeLessThanOrEqual(740);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
