@@ -27,9 +27,7 @@ describe("AND-66 first-run upload surface", () => {
 
     expect(html).toContain("See gaps. Navigate UTM. Privately.");
     expect(html).toContain("Import ACORN");
-    expect(html).toContain(
-      "Your calendar stays on this device — the original .ics file is never uploaded. No account required.",
-    );
+    expect(html).toContain("Your calendar stays on this device. No account required.");
     expect(html).toContain("Choose the .ics file you downloaded from ACORN.");
     expect(html).toContain("Try Demo Schedule");
     expect(html).toContain('accept=".ics,text/calendar"');
