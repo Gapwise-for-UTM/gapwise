@@ -76,6 +76,17 @@ describe("campus map marker layout", () => {
     const dv = centres.filter((centre) => centre.groupKey === "DV");
     expect(new Set(mn.map((centre) => centre.x)).size).toBe(1);
     expect(new Set(dv.map((centre) => centre.x)).size).toBe(1);
-    expect(Math.abs(mn[0]!.x - dv[0]!.x)).toBeGreaterThanOrEqual(72);
+
+    const mnCenter = {
+      x: mn[0]!.x,
+      y: mn.reduce((sum, centre) => sum + centre.y, 0) / mn.length,
+    };
+    const dvCenter = {
+      x: dv[0]!.x,
+      y: dv.reduce((sum, centre) => sum + centre.y, 0) / dv.length,
+    };
+    expect(Math.hypot(mnCenter.x - dvCenter.x, mnCenter.y - dvCenter.y)).toBeGreaterThanOrEqual(
+      92,
+    );
   });
 });
