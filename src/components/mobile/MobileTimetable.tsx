@@ -347,96 +347,82 @@ export function MobileTimetable({
         </section>
       ) : (
         <section className="surface overflow-hidden p-4" aria-label={`${selectedDay} schedule`}>
-          <div className="relative">
-            <div
-              className="absolute bottom-5 left-[0.7rem] top-5 w-px bg-border"
-              aria-hidden="true"
-            />
-            <ol className="relative space-y-0">
-              {dayMeetings.map((meeting, index) => {
-                const next = dayMeetings[index + 1] ?? null;
-                const gap = next ? gapByTransition.get(`${meeting.id}:${next.id}`) : null;
-                const isPersonal = meeting.sectionCode === "PERSONAL";
-                return (
-                  <li key={meeting.id}>
-                    <div className="relative flex gap-3 pb-3">
-                      <span
-                        className="relative z-10 mt-5 h-3.5 w-3.5 shrink-0 rounded-full border-2 border-background bg-accent ring-1 ring-accent/40"
-                        aria-hidden="true"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setSelectedMeeting(meeting)}
-                        data-activity={meeting.activityType}
-                        style={
-                          meeting.color
-                            ? ({ "--meeting-accent": meeting.color } as CSSProperties)
-                            : undefined
-                        }
-                        className="meeting-card min-w-0 flex-1 rounded-xl p-4 text-left outline-none transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent"
-                      >
-                        <div className="flex min-w-0 items-center gap-2">
-                          <span className="truncate font-display text-[0.95rem] font-bold tracking-tight">
-                            {meeting.courseCode}
+          <ol className="space-y-0">
+            {dayMeetings.map((meeting, index) => {
+              const next = dayMeetings[index + 1] ?? null;
+              const gap = next ? gapByTransition.get(`${meeting.id}:${next.id}`) : null;
+              const isPersonal = meeting.sectionCode === "PERSONAL";
+              return (
+                <li key={meeting.id}>
+                  <div className="pb-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMeeting(meeting)}
+                      data-activity={meeting.activityType}
+                      style={
+                        meeting.color
+                          ? ({ "--meeting-accent": meeting.color } as CSSProperties)
+                          : undefined
+                      }
+                      className="meeting-card w-full rounded-xl p-4 text-left outline-none transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-accent"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="truncate font-display text-[0.95rem] font-bold tracking-tight">
+                          {meeting.courseCode}
+                        </span>
+                        <ActivityBadge type={meeting.activityType} />
+                        {isPersonal ? (
+                          <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[0.62rem] font-semibold text-muted-foreground">
+                            Personal
                           </span>
-                          <ActivityBadge type={meeting.activityType} />
-                          {isPersonal ? (
-                            <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[0.62rem] font-semibold text-muted-foreground">
-                              Personal
-                            </span>
-                          ) : null}
-                          <ChevronRight
-                            className="ml-auto h-4 w-4 shrink-0 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        </div>
-                        <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold tabular-nums text-foreground">
-                          <Clock3 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                          {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
-                        </p>
-                        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                          <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                          {locationLabel(meeting)}
-                        </p>
-                        {meeting.courseName ? (
-                          <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                            {meeting.courseName}
-                          </p>
                         ) : null}
-                      </button>
-                    </div>
-
-                    {gap ? (
-                      <div className="relative flex gap-3 pb-3">
-                        <span
-                          className="relative z-10 mt-4 h-3.5 w-3.5 shrink-0 rounded-full border border-accent/35 bg-background"
+                        <ChevronRight
+                          className="ml-auto h-4 w-4 shrink-0 text-muted-foreground"
                           aria-hidden="true"
                         />
-                        <button
-                          type="button"
-                          onClick={onOpenGapPlan}
-                          className="mobile-gap-card min-w-0 flex-1 rounded-xl border border-dashed px-4 py-3 text-left transition-colors active:bg-gap/10"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-3.5 w-3.5 text-gap" aria-hidden="true" />
-                            <span className="text-xs font-semibold text-foreground">
-                              {formatCompactDuration(gap.durationMinutes)} gap
-                            </span>
-                            <span className="ml-auto text-[0.68rem] font-semibold text-gap-text">
-                              View gap plan
-                            </span>
-                          </div>
-                          <p className="mt-1 text-[0.7rem] text-muted-foreground">
-                            {formatTime(gap.startTime)} – {formatTime(gap.endTime)}
-                          </p>
-                        </button>
                       </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold tabular-nums text-foreground">
+                        <Clock3 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                        {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
+                      </p>
+                      <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                        <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+                        {locationLabel(meeting)}
+                      </p>
+                      {meeting.courseName ? (
+                        <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                          {meeting.courseName}
+                        </p>
+                      ) : null}
+                    </button>
+                  </div>
+
+                  {gap ? (
+                    <div className="pb-3">
+                      <button
+                        type="button"
+                        onClick={onOpenGapPlan}
+                        className="mobile-gap-card w-full rounded-xl border border-dashed px-4 py-3 text-left transition-colors active:bg-gap/10"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-3.5 w-3.5 text-gap" aria-hidden="true" />
+                          <span className="text-xs font-semibold text-foreground">
+                            {formatCompactDuration(gap.durationMinutes)} gap
+                          </span>
+                          <span className="ml-auto text-[0.68rem] font-semibold text-gap-text">
+                            View gap plan
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[0.7rem] text-muted-foreground">
+                          {formatTime(gap.startTime)} – {formatTime(gap.endTime)}
+                        </p>
+                      </button>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ol>
         </section>
       )}
 
