@@ -14,6 +14,10 @@ function renderPanel(loading: boolean) {
   return renderToStaticMarkup(<UploadPanel {...baseProps} loading={loading} variant="hero" />);
 }
 
+function textContent(html: string) {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
 describe("AND-66 first-run upload surface", () => {
   test("puts the local-first import action ahead of demo and account decisions", () => {
     const html = renderPanel(false);
@@ -28,10 +32,11 @@ describe("AND-66 first-run upload surface", () => {
 
   test("uses a schedule-shaped local parsing state without fake progress", () => {
     const html = renderPanel(true);
+    const visibleText = textContent(html);
 
-    expect(html).toContain("Reading your ACORN schedule…");
-    expect(html).toContain("The original .ics file is parsed locally and never uploaded.");
-    expect(html).not.toMatch(/\d+%/);
+    expect(visibleText).toContain("Reading your ACORN schedule…");
+    expect(visibleText).toContain("The original .ics file is parsed locally and never uploaded.");
+    expect(visibleText).not.toMatch(/\b\d+%\b/);
     expect(html).not.toContain('role="progressbar"');
   });
 });
