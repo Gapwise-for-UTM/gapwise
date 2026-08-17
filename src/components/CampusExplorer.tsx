@@ -1,5 +1,5 @@
 import { DoorOpen, MapPin, Search, ShieldCheck, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CampusMap, type CampusMapProps, type MapFocusPadding } from "./CampusMap";
 import {
   getBuildingExplorerDetails,
@@ -35,6 +35,7 @@ function floorStatusLabel(result: BuildingSearchResult) {
 export function CampusExplorer({
   selectedBuildingCode,
   onSelectBuilding,
+  onSelectMeeting,
   ...mapProps
 }: CampusExplorerProps) {
   const [query, setQuery] = useState("");
@@ -53,6 +54,14 @@ export function CampusExplorer({
   const details = useMemo(
     () => getBuildingExplorerDetails(selectedBuildingCode),
     [selectedBuildingCode],
+  );
+  const selectMeetingFromMap = useCallback(
+    (id: string) => {
+      // Let MapLibre finish its marker click (including opening the attached popup)
+      // before React selection state rebuilds the marker set.
+      queueMicrotask(() => onSelectMeeting(id));
+    },
+    [onSelectMeeting],
   );
 
   useEffect(() => {
@@ -119,6 +128,7 @@ export function CampusExplorer({
     <div ref={explorerRef} className="campus-explorer relative">
       <CampusMap
         {...mapProps}
+        onSelectMeeting={selectMeetingFromMap}
         selectedBuildingCode={selectedBuildingCode}
         onSelectBuilding={selectFromMap}
         activeEntranceId={activeEntranceId}
