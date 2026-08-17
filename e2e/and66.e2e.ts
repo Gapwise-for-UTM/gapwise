@@ -16,17 +16,25 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
     page.getByText("Your calendar stays on this device. No account required."),
   ).toBeVisible();
   await expect(page.getByText("Try Demo Schedule")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Sign in" })).toHaveCount(0);
+  const signInToSync = page.getByRole("button", { name: "Sign in to sync across devices" });
+  await expect(signInToSync).toBeVisible();
   await expect(page.getByRole("button", { name: "Campus arrival settings" })).toHaveCount(0);
   await expect(page.locator('section[aria-labelledby="cloud-sync-title"]')).not.toBeVisible();
 
-  const ctaBox = await page.getByRole("button", { name: "Import ACORN" }).boundingBox();
-  const panelBox = await page.locator(".and66-first-run").boundingBox();
+  const importAction = page.getByRole("button", { name: "Import ACORN" });
+  const [ctaBox, signInBox, panelBox] = await Promise.all([
+    importAction.boundingBox(),
+    signInToSync.boundingBox(),
+    page.locator(".and66-first-run").boundingBox(),
+  ]);
   expect(ctaBox).not.toBeNull();
+  expect(signInBox).not.toBeNull();
   expect(panelBox).not.toBeNull();
   expect(ctaBox!.height).toBeGreaterThanOrEqual(52);
   expect(ctaBox!.width / panelBox!.width).toBeGreaterThanOrEqual(0.85);
   expect(ctaBox!.y + ctaBox!.height).toBeLessThanOrEqual(740);
+  expect(signInBox!.y).toBeGreaterThan(ctaBox!.y + ctaBox!.height);
+  expect(signInBox!.height).toBeLessThan(ctaBox!.height);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
