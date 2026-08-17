@@ -38,6 +38,15 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+
+  if (await signInToSync.isEnabled()) {
+    await signInToSync.click();
+    await expect(page.getByRole("heading", { name: "Sign in to sync" })).toBeVisible();
+    await page.getByRole("button", { name: "Close sign-in panel" }).click();
+  } else {
+    await expect(signInToSync).toBeDisabled();
+  }
+
   guard.assertClean();
 });
 
