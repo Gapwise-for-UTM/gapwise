@@ -13,9 +13,7 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
 
   await expect(page.getByText("See gaps. Navigate UTM. Privately.")).toBeVisible();
   await expect(
-    page.getByText(
-      "Your calendar stays on this device — the original .ics file is never uploaded. No account required.",
-    ),
+    page.getByText("Your calendar stays on this device. No account required."),
   ).toBeVisible();
   await expect(page.getByText("Try Demo Schedule")).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign in" })).toHaveCount(0);
