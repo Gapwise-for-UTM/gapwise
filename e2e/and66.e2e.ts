@@ -4,6 +4,33 @@ import { expectLanding, isMobileProject, watchForAppFailures } from "./helpers";
 
 const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
 
+async function expectSignInDialogWhenAvailable(page: import("@playwright/test").Page) {
+  const signInToSync = page.getByRole("button", { name: "Sign in to sync across devices" });
+  await expect(signInToSync).toBeVisible();
+  if (!(await signInToSync.isEnabled())) {
+    await expect(signInToSync).toBeDisabled();
+    return;
+  }
+
+  await signInToSync.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Sign in to sync" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Continue with Google" })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Continue with GitHub" })).toBeVisible();
+
+  const box = await dialog.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(await page.evaluate(() => window.innerWidth));
+  expect(box!.y + box!.height).toBeLessThanOrEqual(await page.evaluate(() => window.innerHeight));
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+}
+
 test("AND-66 first-run landing keeps activation above the fold on a narrow phone", async ({
   page,
 }, testInfo) => {
@@ -39,14 +66,15 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
     true,
   );
 
-  if (await signInToSync.isEnabled()) {
-    await signInToSync.click();
-    await expect(page.getByRole("heading", { name: "Sign in to sync" })).toBeVisible();
-    await page.getByRole("button", { name: "Close sign-in panel" }).click();
-  } else {
-    await expect(signInToSync).toBeDisabled();
-  }
+  await expectSignInDialogWhenAvailable(page);
+  guard.assertClean();
+});
 
+test("landing sign-in dialog remains usable at tablet width", async ({ page }, testInfo) => {
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await page.setViewportSize({ width: 900, height: 650 });
+  await expectLanding(page);
+  await expectSignInDialogWhenAvailable(page);
   guard.assertClean();
 });
 

@@ -13,13 +13,26 @@ function boxesOverlap(a: Box, b: Box) {
 }
 
 test.describe("map-first Day Route", () => {
-  test("uses timetable semantics for markers, details, and control-safe route fitting", async ({
+  test("uses timetable semantics, stable controls, and auto-fits when the selected day changes", async ({
     page,
     baseURL,
   }) => {
     test.skip(!["chromium", "mobile-chromium"].includes(test.info().project.name));
     if (!baseURL) throw new Error("Playwright baseURL is required");
     const failures = watchForAppFailures(page, baseURL);
+
+    await page.addInitScript(() => {
+      const originalClick = HTMLButtonElement.prototype.click;
+      (window as typeof window & { __gapwiseAutoFitClicks?: number }).__gapwiseAutoFitClicks = 0;
+      HTMLButtonElement.prototype.click = function click() {
+        const label = this.getAttribute("aria-label");
+        if (label === "Fit the active day route" || label === "Return to campus overview") {
+          const state = window as typeof window & { __gapwiseAutoFitClicks?: number };
+          state.__gapwiseAutoFitClicks = (state.__gapwiseAutoFitClicks ?? 0) + 1;
+        }
+        return originalClick.call(this);
+      };
+    });
 
     await page.goto("/");
     await page.getByRole("button", { name: "Try a demo" }).click();
@@ -105,6 +118,23 @@ test.describe("map-first Day Route", () => {
     for (const markerBox of markerBoxes) {
       expect(boxesOverlap(markerBox, actionBox!)).toBe(false);
     }
+
+    const weekdayGroup = page.getByRole("group", { name: "Route weekday" });
+    await expect(weekdayGroup).toBeVisible();
+    await page.evaluate(() => {
+      (window as typeof window & { __gapwiseAutoFitClicks?: number }).__gapwiseAutoFitClicks = 0;
+    });
+    const anotherDay = weekdayGroup.locator('button[aria-pressed="false"]').last();
+    await anotherDay.click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as typeof window & { __gapwiseAutoFitClicks?: number })
+              .__gapwiseAutoFitClicks ?? 0,
+        ),
+      )
+      .toBeGreaterThan(0);
 
     failures.assertClean();
   });

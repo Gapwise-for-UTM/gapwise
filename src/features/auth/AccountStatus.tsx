@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, GitBranch, LogOut, Trash2, UserRound, X } from "lucide-react";
+import { ChevronDown, GitBranch, LogOut, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -11,6 +11,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +40,7 @@ import {
   signInWithMicrosoft,
   signOut,
 } from "./auth-service";
-import { OPEN_SIGN_IN_EVENT } from "./sign-in-trigger";
+import { consumePendingSignInRequest, OPEN_SIGN_IN_EVENT } from "./sign-in-trigger";
 
 function MicrosoftIcon() {
   return (
@@ -74,9 +81,15 @@ export function AccountStatus({
 
   useEffect(() => {
     const openSignIn = () => {
-      if (!user && isSupabaseConfigured) setSignInOpen(true);
+      if (!user && isSupabaseConfigured) {
+        consumePendingSignInRequest();
+        setSignInOpen(true);
+      }
     };
     window.addEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
+    if (!user && isSupabaseConfigured && consumePendingSignInRequest()) {
+      setSignInOpen(true);
+    }
     return () => window.removeEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
   }, [user]);
 
@@ -239,65 +252,59 @@ export function AccountStatus({
           </AlertDialog>
         </>
       ) : (
-        <>
-          <button
-            type="button"
-            onClick={() => setSignInOpen((open) => !open)}
-            disabled={!isSupabaseConfigured}
-            className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-            aria-expanded={signInOpen}
-          >
-            <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
-          </button>
-          {signInOpen ? (
-            <section className="sign-in-panel glass-panel fixed inset-x-4 top-1/2 z-[70] -translate-y-1/2 rounded-2xl p-5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-[min(22rem,calc(100vw-2rem))] sm:translate-y-0">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-semibold">Sign in to sync</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSignInOpen(false)}
-                  className="rounded-md p-2 hover:bg-secondary"
-                  aria-label="Close sign-in panel"
-                >
-                  <X className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => void startOAuth(signInWithMicrosoft)}
-                  disabled={busy}
-                  className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-                >
-                  <MicrosoftIcon /> Continue with Microsoft
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void startOAuth(signInWithGoogle)}
-                  disabled={busy}
-                  className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-                >
-                  <GoogleIcon /> Continue with Google
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void startOAuth(signInWithGitHub)}
-                  disabled={busy}
-                  className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-                >
-                  <GitBranch className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
-                </button>
-              </div>
-              <p className="mt-3 text-center text-xs text-muted-foreground">
-                You can keep using Gapwise without an account.
-              </p>
-            </section>
-          ) : null}
-        </>
+        <button
+          type="button"
+          onClick={() => setSignInOpen((open) => !open)}
+          disabled={!isSupabaseConfigured}
+          className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+          aria-expanded={signInOpen}
+        >
+          <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
+        </button>
       )}
+
+      <Dialog
+        open={!loading && !user && signInOpen}
+        onOpenChange={(open) => {
+          if (!busy) setSignInOpen(open);
+        }}
+      >
+        <DialogContent className="sign-in-panel glass-panel w-[calc(100%-2rem)] max-w-sm rounded-2xl p-5 sm:p-6">
+          <DialogHeader className="pr-8 text-left">
+            <DialogTitle>Sign in to sync</DialogTitle>
+            <DialogDescription>
+              Sync is optional. You can keep using Gapwise without an account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => void startOAuth(signInWithMicrosoft)}
+              disabled={busy}
+              className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+            >
+              <MicrosoftIcon /> Continue with Microsoft
+            </button>
+            <button
+              type="button"
+              onClick={() => void startOAuth(signInWithGoogle)}
+              disabled={busy}
+              className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+            >
+              <GoogleIcon /> Continue with Google
+            </button>
+            <button
+              type="button"
+              onClick={() => void startOAuth(signInWithGitHub)}
+              disabled={busy}
+              className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+            >
+              <GitBranch className="h-4 w-4" aria-hidden="true" /> Continue with GitHub
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {message ? (
         <div
           role="status"

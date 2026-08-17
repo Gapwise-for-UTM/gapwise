@@ -22,9 +22,10 @@ function segmentEndpoint(
 }
 
 /**
- * Places a stop on the entrance used by its route instead of the building's
- * default entrance. The selected transition wins so its line always meets
- * both visible endpoint markers exactly.
+ * Timetable class markers use their stable canonical building coordinate rather
+ * than whichever route entrance happens to be active. Synthetic multi-id stops
+ * (for example the campus arrival/departure anchor) may still follow route
+ * endpoints so route geometry can meet those dedicated route markers exactly.
  */
 export function resolveMapAnchor(
   stopIds: string | readonly string[],
@@ -32,7 +33,11 @@ export function resolveMapAnchor(
   segments: readonly MapAnchorSegment[],
   selectedSegmentId: string | null,
 ): ResolvedMapAnchor {
-  const ids = new Set(typeof stopIds === "string" ? [stopIds] : stopIds);
+  if (typeof stopIds === "string") {
+    return { coordinate: fallback, source: "fallback" };
+  }
+
+  const ids = new Set(stopIds);
   const selected = segments.find((segment) => segment.id === selectedSegmentId);
   if (selected) {
     const coordinate = segmentEndpoint(selected, ids);
