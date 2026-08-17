@@ -1,8 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { watchForAppFailures } from "./helpers";
 
+type Box = { x: number; y: number; width: number; height: number };
+
+function boxesOverlap(a: Box, b: Box) {
+  return !(
+    a.x + a.width <= b.x ||
+    b.x + b.width <= a.x ||
+    a.y + a.height <= b.y ||
+    b.y + b.height <= a.y
+  );
+}
+
 test.describe("map-first Day Route", () => {
-  test("shows chronological time markers with non-overlapping controls", async ({
+  test("uses timetable semantics for markers, details, and control-safe route fitting", async ({
     page,
     baseURL,
   }) => {
@@ -37,6 +48,34 @@ test.describe("map-first Day Route", () => {
       expect(label.trim()).not.toMatch(/^\d+$/);
     }
 
+    const activities = await timeMarkers.evaluateAll((markers) =>
+      markers.map((marker) => marker.getAttribute("data-activity")),
+    );
+    expect(
+      activities.every(
+        (activity) => activity !== null && ["LEC", "TUT", "PRA", "OTHER"].includes(activity),
+      ),
+    ).toBe(true);
+
+    const lecture = timeMarkers.filter({ has: page.locator(':scope[data-activity="LEC"]') }).first();
+    const tutorial = timeMarkers.filter({ has: page.locator(':scope[data-activity="TUT"]') }).first();
+    if ((await lecture.count()) > 0 && (await tutorial.count()) > 0) {
+      const [lectureColor, tutorialColor] = await Promise.all([
+        lecture.evaluate((marker) => getComputedStyle(marker).backgroundColor),
+        tutorial.evaluate((marker) => getComputedStyle(marker).backgroundColor),
+      ]);
+      expect(lectureColor).not.toBe(tutorialColor);
+    }
+
+    await timeMarkers.nth(1).click();
+    const meetingPopover = page.locator(".map-meeting-popover");
+    await expect(meetingPopover).toBeVisible();
+    await expect(meetingPopover).toContainText(/DEM\d+/);
+    await expect(meetingPopover.getByText("Time", { exact: true })).toBeVisible();
+    await expect(meetingPopover.getByText("Location", { exact: true })).toBeVisible();
+    await expect(meetingPopover.getByText("Component", { exact: true })).toBeVisible();
+    await expect(meetingPopover.getByText("Day", { exact: true })).toBeVisible();
+
     await expect(page.locator(".maplibregl-ctrl-compass")).toHaveCount(0);
     const fitRoute = page.getByRole("button", { name: "Fit the active day route" });
     await expect(fitRoute).toBeVisible();
@@ -50,6 +89,20 @@ test.describe("map-first Day Route", () => {
     expect(navigationBox).not.toBeNull();
     expect(fitBox).not.toBeNull();
     expect(navigationBox!.y + navigationBox!.height).toBeLessThanOrEqual(fitBox!.y - 4);
+
+    await fitRoute.click();
+    await page.waitForTimeout(650);
+    const actionBox = await page.locator(".campus-map-actions").boundingBox();
+    expect(actionBox).not.toBeNull();
+    const markerBoxes = await timeMarkers.evaluateAll((markers) =>
+      markers.map((marker) => {
+        const box = marker.getBoundingClientRect();
+        return { x: box.x, y: box.y, width: box.width, height: box.height };
+      }),
+    );
+    for (const markerBox of markerBoxes) {
+      expect(boxesOverlap(markerBox, actionBox!)).toBe(false);
+    }
 
     failures.assertClean();
   });
