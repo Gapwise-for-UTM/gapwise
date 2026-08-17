@@ -1,8 +1,5 @@
-import path from "node:path";
 import { expect, test } from "@playwright/test";
 import { watchForAppFailures } from "./helpers";
-
-const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
 
 test.describe("map-first Day Route", () => {
   test("shows chronological time markers with non-overlapping controls", async ({
@@ -14,12 +11,17 @@ test.describe("map-first Day Route", () => {
     const failures = watchForAppFailures(page, baseURL);
 
     await page.goto("/");
-    const chooserPromise = page.waitForEvent("filechooser");
-    await page.getByRole("button", { name: "Import ACORN" }).click();
-    const chooser = await chooserPromise;
-    await chooser.setFiles(fixturePath);
-    await expect(page).toHaveURL(/\/today$/);
-    await page.goto("/route");
+    await page.getByRole("button", { name: "Try a demo" }).click();
+
+    if (test.info().project.name === "mobile-chromium") {
+      const nav = page.getByRole("navigation", { name: "Main" });
+      await expect(nav).toBeVisible();
+      await nav.getByRole("link", { name: "Map" }).click();
+    } else {
+      await expect(page.getByRole("heading", { name: "Demo timetable" })).toBeVisible();
+      const viewMode = page.getByRole("group", { name: "View mode" });
+      await viewMode.getByRole("button", { name: "Day route" }).click();
+    }
 
     await expect(page.getByText("Day order", { exact: true })).toBeVisible();
     await expect(
