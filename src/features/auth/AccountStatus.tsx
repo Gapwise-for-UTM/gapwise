@@ -237,7 +237,7 @@ export function AccountStatus({
             <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
           </button>
           {signInOpen ? (
-            <section className="sign-in-panel glass-panel absolute right-0 top-11 z-50 w-[min(22rem,calc(100vw-2rem))] rounded-2xl p-5">
+            <section className="sign-in-panel glass-panel fixed inset-x-4 top-1/2 z-[70] -translate-y-1/2 rounded-2xl p-5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-[min(22rem,calc(100vw-2rem))] sm:translate-y-0">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                   <h2 className="font-semibold">Sign in to sync</h2>
