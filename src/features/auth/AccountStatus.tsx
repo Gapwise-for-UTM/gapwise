@@ -33,13 +33,7 @@ import {
   signInWithMicrosoft,
   signOut,
 } from "./auth-service";
-
-const OPEN_SIGN_IN_EVENT = "gapwise:open-sign-in";
-
-export function requestGapwiseSignIn() {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event(OPEN_SIGN_IN_EVENT));
-}
+import { OPEN_SIGN_IN_EVENT } from "./sign-in-trigger";
 
 function MicrosoftIcon() {
   return (
