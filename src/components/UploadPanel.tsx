@@ -180,10 +180,7 @@ export function UploadPanel({
               className="mt-4 flex items-start gap-2 rounded-lg border border-accent/20 bg-accent/6 px-3.5 py-3 text-xs leading-5 text-muted-foreground"
             >
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-              <span>
-                Your calendar stays on this device — the original .ics file is never uploaded. No
-                account required.
-              </span>
+              <span>Your calendar stays on this device. No account required.</span>
             </p>
             <div className="mt-5 space-y-2.5">
               <button
