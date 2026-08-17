@@ -52,6 +52,15 @@ export function CampusExplorer({
   const explorerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLElement>(null);
+  const routeContentKey = useMemo(
+    () =>
+      mapProps.meetings
+        .map((meeting) => `${meeting.term}:${meeting.weekday}:${meeting.id}`)
+        .sort()
+        .join("|"),
+    [mapProps.meetings],
+  );
+  const previousRouteContentKeyRef = useRef(routeContentKey);
   const results = useMemo(() => searchCampusBuildings(query), [query]);
   const details = useMemo(
     () => getBuildingExplorerDetails(selectedBuildingCode),
@@ -78,6 +87,29 @@ export function CampusExplorer({
   useEffect(() => {
     if (mapDetailMeetingId && !mapDetailMeeting) setMapDetailMeetingId(null);
   }, [mapDetailMeeting, mapDetailMeetingId]);
+
+  useEffect(() => {
+    const previousKey = previousRouteContentKeyRef.current;
+    previousRouteContentKeyRef.current = routeContentKey;
+    if (previousKey === routeContentKey) return;
+
+    let firstFrame = 0;
+    let secondFrame = 0;
+    firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        const explorer = explorerRef.current;
+        if (!explorer) return;
+        const fitControl = explorer.querySelector<HTMLButtonElement>(
+          'button[aria-label="Fit the active day route"], button[aria-label="Return to campus overview"]',
+        );
+        fitControl?.click();
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [routeContentKey]);
 
   useEffect(() => {
     const explorer = explorerRef.current;
@@ -111,11 +143,7 @@ export function CampusExplorer({
     observer.observe(explorer);
     if (searchRef.current) observer.observe(searchRef.current);
     if (cardRef.current) observer.observe(cardRef.current);
-    window.addEventListener("resize", update);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", update);
-    };
+    return () => observer.disconnect();
   }, [details]);
 
   function selectResult(result: BuildingSearchResult) {

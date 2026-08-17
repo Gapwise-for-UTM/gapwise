@@ -17,12 +17,46 @@ export function UtmMonumentViewer({
   compact = false,
   decorative = false,
 }: UtmMonumentViewerProps) {
+  const [shouldLoadViewer, setShouldLoadViewer] = useState(false);
   const [viewerLoaded, setViewerLoaded] = useState(false);
   const [modelReady, setModelReady] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const figureRef = useRef<HTMLElement | null>(null);
   const viewerRef = useRef<ModelViewerElement | null>(null);
 
   useEffect(() => {
+    const figure = figureRef.current;
+    if (!figure) return;
+    if (!("IntersectionObserver" in window)) {
+      setShouldLoadViewer(true);
+      setIsVisible(true);
+      return;
+    }
+
+    const preloadObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setShouldLoadViewer(true);
+          preloadObserver.disconnect();
+        }
+      },
+      { rootMargin: "320px 0px" },
+    );
+    const visibilityObserver = new IntersectionObserver(
+      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
+      { threshold: 0.01 },
+    );
+    preloadObserver.observe(figure);
+    visibilityObserver.observe(figure);
+    return () => {
+      preloadObserver.disconnect();
+      visibilityObserver.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoadViewer) return;
     let mounted = true;
     void import("@google/model-viewer")
       .then(() => {
@@ -35,7 +69,7 @@ export function UtmMonumentViewer({
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [shouldLoadViewer]);
 
   useEffect(() => {
     if (!viewerLoaded) return;
@@ -74,6 +108,7 @@ export function UtmMonumentViewer({
 
   return (
     <figure
+      ref={figureRef}
       className={[
         "group relative isolate overflow-hidden rounded-xl border border-border/80",
         "bg-gradient-to-br from-card via-muted/30 to-card shadow-[var(--shadow-soft)]",
@@ -97,10 +132,10 @@ export function UtmMonumentViewer({
           ref={viewerRef}
           src="/models/utm-entrance-monument.glb?v=single-plaque-label-6"
           alt="A detailed three-dimensional reconstruction of the University of Toronto Mississauga entrance monument"
-          loading="eager"
+          loading="lazy"
           reveal="auto"
           camera-controls
-          auto-rotate={reducedMotion ? undefined : true}
+          auto-rotate={!reducedMotion && isVisible ? true : undefined}
           auto-rotate-delay="5000"
           rotation-per-second="4deg"
           camera-orbit={initialOrbit}
