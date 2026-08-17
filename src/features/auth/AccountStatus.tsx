@@ -34,6 +34,13 @@ import {
   signOut,
 } from "./auth-service";
 
+const OPEN_SIGN_IN_EVENT = "gapwise:open-sign-in";
+
+export function requestGapwiseSignIn() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(OPEN_SIGN_IN_EVENT));
+}
+
 function MicrosoftIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor" aria-hidden="true">
@@ -70,6 +77,18 @@ export function AccountStatus({
     const error = consumeOAuthError(window.location, window.history);
     if (error) setMessage("Sign-in did not complete. Please try again.");
   }, []);
+
+  useEffect(() => {
+    const openSignIn = () => {
+      if (!loading && !user && isSupabaseConfigured) setSignInOpen(true);
+    };
+    window.addEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
+    return () => window.removeEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
+  }, [loading, user]);
+
+  useEffect(() => {
+    if (user) setSignInOpen(false);
+  }, [user]);
 
   async function removeAccount() {
     if (busy) return;
