@@ -4,6 +4,17 @@ import {
   groupedVerticalMarkerOffsets,
 } from "@/features/routing/map-marker-layout";
 
+type MarkerCenter = { x: number; y: number };
+
+function markerBoundsOverlap(a: MarkerCenter, b: MarkerCenter, width = 64, height = 38) {
+  return !(
+    a.x + width / 2 <= b.x - width / 2 ||
+    b.x + width / 2 <= a.x - width / 2 ||
+    a.y + height / 2 <= b.y - height / 2 ||
+    b.y + height / 2 <= a.y - height / 2
+  );
+}
+
 describe("campus map marker layout", () => {
   test("separates stops with identical geographic screen anchors", () => {
     const points = Array.from({ length: 12 }, () => ({ x: 500, y: 300 }));
@@ -86,5 +97,30 @@ describe("campus map marker layout", () => {
       y: dv.reduce((sum, centre) => sum + centre.y, 0) / dv.length,
     };
     expect(Math.hypot(mnCenter.x - dvCenter.x, mnCenter.y - dvCenter.y)).toBeGreaterThanOrEqual(92);
+  });
+
+  test("keeps complete four-class building stacks from overlapping at close anchors", () => {
+    const points = [
+      { x: 100, y: 100, groupKey: "MN", order: 9 * 60 },
+      { x: 100, y: 100, groupKey: "MN", order: 10 * 60 },
+      { x: 100, y: 100, groupKey: "MN", order: 11 * 60 },
+      { x: 100, y: 100, groupKey: "MN", order: 12 * 60 },
+      { x: 112, y: 106, groupKey: "DV", order: 9 * 60 + 30 },
+      { x: 112, y: 106, groupKey: "DV", order: 10 * 60 + 30 },
+      { x: 112, y: 106, groupKey: "DV", order: 11 * 60 + 30 },
+      { x: 112, y: 106, groupKey: "DV", order: 12 * 60 + 30 },
+    ];
+    const offsets = groupedVerticalMarkerOffsets(points);
+    const centres = points.map((point, index) => ({
+      x: point.x + offsets[index]![0],
+      y: point.y + offsets[index]![1],
+      groupKey: point.groupKey,
+    }));
+
+    for (let a = 0; a < centres.length; a += 1) {
+      for (let b = a + 1; b < centres.length; b += 1) {
+        expect(markerBoundsOverlap(centres[a]!, centres[b]!)).toBe(false);
+      }
+    }
   });
 });
