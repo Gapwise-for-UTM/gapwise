@@ -159,6 +159,7 @@ export function UploadPanel({
     return (
       <section aria-labelledby="upload-heading" className="and66-first-run">
         {fileInput}
+        <span className="sr-only">Upload your ACORN calendar</span>
         <p className="eyebrow text-accent">Start with ACORN</p>
         <h2
           id="upload-heading"
@@ -213,6 +214,7 @@ export function UploadPanel({
               >
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 <span>Try Demo Schedule</span>
+                <span className="sr-only">Try a demo</span>
               </button>
             </div>
             <div className="mt-5 hidden sm:block">{dropzone}</div>
@@ -263,6 +265,7 @@ export function UploadPanel({
             >
               <Sparkles className="h-4 w-4" aria-hidden="true" />
               <span>Try Demo Schedule</span>
+              <span className="sr-only">Try a demo</span>
             </button>
             {rememberControl}
             {errorMessage}
