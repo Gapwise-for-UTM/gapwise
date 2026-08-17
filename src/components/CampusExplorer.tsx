@@ -6,6 +6,7 @@ import {
   searchCampusBuildings,
   type BuildingSearchResult,
 } from "@/features/routing/building-explorer";
+import { formatTime, locationLabel } from "@/lib/timetable-types";
 
 type CampusExplorerProps = Omit<CampusMapProps, "selectedBuildingCode" | "onSelectBuilding"> & {
   selectedBuildingCode: string | null;
@@ -41,6 +42,7 @@ export function CampusExplorer({
   const [query, setQuery] = useState("");
   const [roomResult, setRoomResult] = useState<BuildingSearchResult | null>(null);
   const [activeEntranceId, setActiveEntranceId] = useState<string | null>(null);
+  const [mapDetailMeetingId, setMapDetailMeetingId] = useState<string | null>(null);
   const [focusPadding, setFocusPadding] = useState<MapFocusPadding>({
     top: 76,
     right: 24,
@@ -55,11 +57,14 @@ export function CampusExplorer({
     () => getBuildingExplorerDetails(selectedBuildingCode),
     [selectedBuildingCode],
   );
+  const mapDetailMeeting = useMemo(
+    () => mapProps.meetings.find((meeting) => meeting.id === mapDetailMeetingId) ?? null,
+    [mapDetailMeetingId, mapProps.meetings],
+  );
   const selectMeetingFromMap = useCallback(
     (id: string) => {
-      // Let MapLibre finish its marker click (including opening the attached popup)
-      // before React selection state rebuilds the marker set.
-      queueMicrotask(() => onSelectMeeting(id));
+      setMapDetailMeetingId(id);
+      onSelectMeeting(id);
     },
     [onSelectMeeting],
   );
@@ -67,6 +72,10 @@ export function CampusExplorer({
   useEffect(() => {
     setActiveEntranceId(null);
   }, [selectedBuildingCode]);
+
+  useEffect(() => {
+    if (mapDetailMeetingId && !mapDetailMeeting) setMapDetailMeetingId(null);
+  }, [mapDetailMeeting, mapDetailMeetingId]);
 
   useEffect(() => {
     const explorer = explorerRef.current;
@@ -109,11 +118,13 @@ export function CampusExplorer({
 
   function selectResult(result: BuildingSearchResult) {
     setQuery("");
+    setMapDetailMeetingId(null);
     setRoomResult(result.room ? result : null);
     onSelectBuilding(result.building.code);
   }
 
   function selectFromMap(code: string) {
+    setMapDetailMeetingId(null);
     setRoomResult(null);
     onSelectBuilding(code);
   }
@@ -123,6 +134,12 @@ export function CampusExplorer({
     setQuery("");
     onSelectBuilding(null);
   }
+
+  const mapDetailLocation = mapDetailMeeting
+    ? mapDetailMeeting.buildingCode
+      ? `${mapDetailMeeting.buildingCode}${mapDetailMeeting.room ? ` ${mapDetailMeeting.room}` : ""}`
+      : locationLabel(mapDetailMeeting)
+    : "";
 
   return (
     <div ref={explorerRef} className="campus-explorer relative">
@@ -135,6 +152,77 @@ export function CampusExplorer({
         onActiveEntranceChange={setActiveEntranceId}
         focusPadding={focusPadding}
       />
+
+      {mapDetailMeeting ? (
+        <section
+          data-testid="map-meeting-details"
+          data-activity={mapDetailMeeting.activityType}
+          className="absolute bottom-3 left-3 z-20 w-[min(19rem,calc(100%-1.5rem))] rounded-xl border border-border bg-popover/96 p-4 text-popover-foreground shadow-xl backdrop-blur"
+          role="region"
+          aria-label={`Timetable details for ${mapDetailMeeting.courseCode}`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-display text-base font-semibold tracking-tight">
+                  {mapDetailMeeting.courseCode}
+                </p>
+                <span
+                  data-activity={mapDetailMeeting.activityType}
+                  className="activity-badge rounded-md px-1.5 py-0.5 text-[0.65rem] font-bold tracking-[0.08em]"
+                >
+                  {mapDetailMeeting.activityType}
+                </span>
+              </div>
+              <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                {mapDetailMeeting.courseName || "Course name unavailable"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMapDetailMeetingId(null)}
+              aria-label="Close class details"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+
+          <dl className="mt-3 grid gap-2 text-xs">
+            <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2">
+              <dt className="font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+                Time
+              </dt>
+              <dd className="font-semibold tabular-nums">
+                {formatTime(mapDetailMeeting.startTime)} – {formatTime(mapDetailMeeting.endTime)}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2">
+              <dt className="font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+                Location
+              </dt>
+              <dd className="font-semibold">{mapDetailLocation}</dd>
+            </div>
+            <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2">
+              <dt className="font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+                Component
+              </dt>
+              <dd className="font-semibold">
+                {mapDetailMeeting.activityType}
+                {mapDetailMeeting.sectionCode ? ` · ${mapDetailMeeting.sectionCode}` : ""}
+              </dd>
+            </div>
+            <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2">
+              <dt className="font-mono font-semibold uppercase tracking-wide text-muted-foreground">
+                Day
+              </dt>
+              <dd className="font-semibold">
+                {mapDetailMeeting.weekday} · {mapDetailMeeting.term}
+              </dd>
+            </div>
+          </dl>
+        </section>
+      ) : null}
 
       <div
         ref={searchRef}
