@@ -74,11 +74,11 @@ export function AccountStatus({
 
   useEffect(() => {
     const openSignIn = () => {
-      if (!loading && !user && isSupabaseConfigured) setSignInOpen(true);
+      if (!user && isSupabaseConfigured) setSignInOpen(true);
     };
     window.addEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
     return () => window.removeEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
-  }, [loading, user]);
+  }, [user]);
 
   useEffect(() => {
     if (user) setSignInOpen(false);
