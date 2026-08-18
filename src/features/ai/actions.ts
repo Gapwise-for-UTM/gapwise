@@ -18,7 +18,33 @@ const CATEGORIES: PersonalCategory[] = [
 ];
 const MAX_PERSONAL_ITEMS = 200;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+type JsonRecord = Record<string, unknown> & {
+  kind?: unknown;
+  durationMinutes?: unknown;
+  windowStart?: unknown;
+  windowEnd?: unknown;
+  title?: unknown;
+  category?: unknown;
+  term?: unknown;
+  weekday?: unknown;
+  startTime?: unknown;
+  endTime?: unknown;
+  locationBuildingCode?: unknown;
+  locationRoom?: unknown;
+  locationText?: unknown;
+  color?: unknown;
+  flexibility?: unknown;
+  schemaVersion?: unknown;
+  expectedRevision?: unknown;
+  item?: unknown;
+  itemId?: unknown;
+  patch?: unknown;
+  id?: unknown;
+  createdAt?: unknown;
+  action?: unknown;
+};
+
+function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
