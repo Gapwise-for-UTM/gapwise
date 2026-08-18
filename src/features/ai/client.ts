@@ -7,7 +7,7 @@ const viteEnv = (
   }
 ).env;
 
-const CANONICAL_GAPWISE_AI_ORIGIN = "https://gapwise-ai.vercel.app";
+const CANONICAL_GAPWISE_AI_ORIGIN = "https://ai.gapwise.ca";
 const CANONICAL_GAPWISE_HOSTS = new Set(["gapwise.ca", "www.gapwise.ca"]);
 
 function defaultProductionBaseUrl(): string {
