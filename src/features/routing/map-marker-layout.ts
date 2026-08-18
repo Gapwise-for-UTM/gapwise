@@ -62,18 +62,20 @@ export function collisionFreeMarkerOffsets(
 }
 
 /**
- * Stack classes in the same building vertically in chronological order while
- * leaving every building at its authoritative geographic anchor. We deliberately
- * do not move whole building groups to avoid cross-building label collisions:
- * geographic truth is more important than label deconfliction at extreme zoom.
+ * Stack classes vertically only when they belong to the same building and
+ * project to effectively the same routed entrance. Distinct entrances in one
+ * building remain at their own geographic anchors so an arrival-time marker is
+ * not pulled away from the route endpoint merely because another class uses a
+ * different door.
  *
- * With stable building anchors this layout is independent of pan/zoom projection,
- * which also removes the expensive ring-search work formerly performed while the
- * map was moving.
+ * Exact/same-entrance stacks remain chronological and stable across pan/zoom.
+ * Different buildings are never relocated to solve cross-building collisions:
+ * geographic truth remains more important than perfect label deconfliction at
+ * extreme zoom levels.
  */
 export function groupedVerticalMarkerOffsets(
   points: GroupedMarkerScreenPoint[],
-  _minGroupSeparationPx = 92,
+  sameAnchorRadiusPx = 8,
   _groupSpacingPx = 72,
   stackSpacingPx = 44,
 ): MarkerPixelOffset[] {
@@ -87,15 +89,29 @@ export function groupedVerticalMarkerOffsets(
   const offsets: MarkerPixelOffset[] = points.map(() => [0, 0]);
 
   for (const indices of groups.values()) {
-    const orderedIndices = [...indices].sort((a, b) => {
-      const orderDifference = points[a]!.order - points[b]!.order;
-      return orderDifference === 0 ? a - b : orderDifference;
-    });
+    const clusters: number[][] = [];
 
-    orderedIndices.forEach((pointIndex, slot) => {
-      const stackOffsetY = (slot - (orderedIndices.length - 1) / 2) * stackSpacingPx;
-      offsets[pointIndex] = [0, stackOffsetY];
-    });
+    for (const pointIndex of indices) {
+      const point = points[pointIndex]!;
+      const cluster = clusters.find((candidate) => {
+        const anchor = points[candidate[0]!]!;
+        return Math.hypot(point.x - anchor.x, point.y - anchor.y) <= sameAnchorRadiusPx;
+      });
+      if (cluster) cluster.push(pointIndex);
+      else clusters.push([pointIndex]);
+    }
+
+    for (const cluster of clusters) {
+      const orderedIndices = [...cluster].sort((a, b) => {
+        const orderDifference = points[a]!.order - points[b]!.order;
+        return orderDifference === 0 ? a - b : orderDifference;
+      });
+
+      orderedIndices.forEach((pointIndex, slot) => {
+        const stackOffsetY = (slot - (orderedIndices.length - 1) / 2) * stackSpacingPx;
+        offsets[pointIndex] = [0, stackOffsetY];
+      });
+    }
   }
 
   return offsets;
