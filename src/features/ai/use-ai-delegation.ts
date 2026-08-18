@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GapPreferences } from "@/features/gaps/types";
+import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
@@ -29,8 +30,7 @@ type ControllerInput = {
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   isDemo: boolean;
-  onPersonalItemsChange: (items: PersonalItem[]) => void;
-  onGapPreferencesChange: (preferences: GapPreferences) => void;
+  onPrivateDataChange: (payload: PrivateDataPayloadV1) => void;
 };
 
 export type AiDelegationController = {
@@ -219,7 +219,9 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
         setPermissions(DEFAULT_AI_PERMISSIONS);
         setMessage("AI access was revoked and the delegated snapshot/queued changes were deleted.");
       } catch {
-        setMessage("Gapwise could not revoke AI access right now. Try again before assuming access is removed.");
+        setMessage(
+          "Gapwise could not revoke AI access right now. Try again before assuming access is removed.",
+        );
       }
     });
   }, [serialize]);
@@ -263,8 +265,13 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
         };
         const result = await publishAiSnapshot(buildAiSnapshot(revision + 1, content));
 
-        state.onPersonalItemsChange(batch.personalItems);
-        state.onGapPreferencesChange(batch.gapPreferences);
+        state.onPrivateDataChange({
+          schemaVersion: 1,
+          schedule: state.meetings ?? [],
+          personalItems: batch.personalItems,
+          preferences: state.preferences,
+          gapPreferences: batch.gapPreferences,
+        });
         currentRevision.current = result.revision;
         lastPublishedFingerprint.current = aiSnapshotFingerprint(content);
         setStatus({
@@ -303,7 +310,16 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
       });
     }, SNAPSHOT_DEBOUNCE_MS);
     return () => window.clearTimeout(timeout);
-  }, [fingerprint, input.isDemo, input.meetings?.length, input.userId, permissions, publishCurrent, serialize, status.enabled]);
+  }, [
+    fingerprint,
+    input.isDemo,
+    input.meetings?.length,
+    input.userId,
+    permissions,
+    publishCurrent,
+    serialize,
+    status.enabled,
+  ]);
 
   useEffect(() => {
     if (!status.enabled || !input.userId || !isGapwiseAiConfigured) return;
