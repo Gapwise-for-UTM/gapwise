@@ -2,8 +2,13 @@
   --mobile-divider: color-mix(in oklab, var(--color-border) 82%, transparent);
   --mobile-grid: color-mix(in oklab, var(--color-accent) 4.5%, transparent);
   --mobile-accent-wash: color-mix(in oklab, var(--color-accent) 9%, transparent);
+
   background-color: var(--color-background);
-  background-image: radial-gradient(circle at 100% 12%, var(--mobile-accent-wash), transparent 30rem);
+  background-image: radial-gradient(
+    circle at 100% 12%,
+    var(--mobile-accent-wash),
+    transparent 30rem
+  );
   background-attachment: fixed;
 }
 
@@ -45,7 +50,9 @@
 
 .mobile-integrated-app .mobile-nav-item {
   position: relative;
-  transition: color 160ms ease, background-color 160ms ease;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease;
 }
 
 .mobile-integrated-app .mobile-nav-item[aria-current="page"]::before,
@@ -82,12 +89,18 @@
 }
 
 .mobile-integrated-app .today-signal > .grid.grid-cols-2 > button[aria-pressed="true"],
-.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 > button[aria-pressed="true"] {
+.mobile-integrated-app
+  section:has([aria-label="Route weekday"])
+  > .mt-3.flex.gap-1
+  > button[aria-pressed="true"] {
   color: var(--color-accent) !important;
 }
 
 .mobile-integrated-app .today-signal > .grid.grid-cols-2 > button[aria-pressed="true"]::after,
-.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 > button[aria-pressed="true"]::after {
+.mobile-integrated-app
+  section:has([aria-label="Route weekday"])
+  > .mt-3.flex.gap-1
+  > button[aria-pressed="true"]::after {
   position: absolute;
   inset-inline: 22%;
   bottom: -1px;
@@ -131,7 +144,10 @@
 }
 
 .mobile-integrated-app .today-signal > .flex:first-child > .button-primary,
-.mobile-integrated-app section:has([aria-label="Route weekday"]) > .flex:first-child > .button-secondary {
+.mobile-integrated-app
+  section:has([aria-label="Route weekday"])
+  > .flex:first-child
+  > .button-secondary {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -142,6 +158,7 @@
 
 .mobile-integrated-app .meeting-card {
   --meeting-accent: var(--color-muted-foreground);
+
   border: 0 !important;
   border-bottom: 1px solid var(--mobile-divider) !important;
   border-left: 0 !important;
@@ -175,7 +192,11 @@
 
 .mobile-integrated-app .meeting-card:hover,
 .mobile-integrated-app .meeting-card:focus-visible {
-  border-bottom-color: color-mix(in oklab, var(--meeting-accent) 46%, var(--mobile-divider)) !important;
+  border-bottom-color: color-mix(
+    in oklab,
+    var(--meeting-accent) 46%,
+    var(--mobile-divider)
+  ) !important;
   background: color-mix(in oklab, var(--meeting-accent) 11%, transparent) !important;
   transform: none !important;
 }
@@ -195,7 +216,8 @@
 .mobile-integrated-app .mobile-gap-card,
 .mobile-integrated-app .gap-card {
   border: 0 !important;
-  border-bottom: 1px dashed color-mix(in oklab, var(--color-gap) 40%, var(--mobile-divider)) !important;
+  border-bottom: 1px dashed
+    color-mix(in oklab, var(--color-gap) 40%, var(--mobile-divider)) !important;
   border-radius: 0 !important;
   background: color-mix(in oklab, var(--color-gap) 6%, transparent) !important;
   box-shadow: none !important;
@@ -213,6 +235,7 @@
 
 .mobile-integrated-app .day-route-stop-card {
   --meeting-accent: var(--color-accent);
+
   border: 0 !important;
   border-bottom: 2px solid transparent !important;
   border-radius: 0 !important;
