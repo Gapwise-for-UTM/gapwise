@@ -178,5 +178,7 @@ export async function revokeAiDelegation(): Promise<void> {
   await aiRequest("/api/delegation", { method: "DELETE" });
 
   const supabase = requireSupabaseClient();
-  await Promise.allSettled(clientIds.map((clientId) => supabase.auth.oauth.revokeGrant(clientId)));
+  await Promise.allSettled(
+    clientIds.map((clientId) => supabase.auth.oauth.revokeGrant({ clientId })),
+  );
 }
