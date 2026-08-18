@@ -1,21 +1,15 @@
 .mobile-integrated-app {
-  --mobile-divider: color-mix(in oklab, var(--color-border) 82%, transparent);
-  --mobile-grid: color-mix(in oklab, var(--color-accent) 4.5%, transparent);
-  --mobile-accent-wash: color-mix(in oklab, var(--color-accent) 9%, transparent);
+  --mobile-divider: var(--color-border);
 
   background-color: var(--color-background);
-  background-image: radial-gradient(
-    circle at 100% 12%,
-    var(--mobile-accent-wash),
-    transparent 30rem
-  );
+  background-image: radial-gradient(circle at top right, rgb(10 132 255 / 8%), transparent 28rem);
   background-attachment: fixed;
 }
 
 .mobile-integrated-app .app-nav,
 .mobile-integrated-app .mobile-bottom-nav {
   border-color: var(--mobile-divider);
-  background: color-mix(in oklab, var(--color-background) 91%, transparent);
+  background: var(--color-background);
   box-shadow: none;
   backdrop-filter: blur(18px) saturate(125%);
   -webkit-backdrop-filter: blur(18px) saturate(125%);
@@ -45,14 +39,12 @@
 
 .mobile-integrated-app [role="status"].surface {
   border-left: 2px solid var(--color-accent) !important;
-  background: color-mix(in oklab, var(--color-accent) 5%, transparent) !important;
+  background: rgb(10 132 255 / 6%) !important;
 }
 
 .mobile-integrated-app .mobile-nav-item {
   position: relative;
-  transition:
-    color 160ms ease,
-    background-color 160ms ease;
+  transition: color 160ms ease, background-color 160ms ease;
 }
 
 .mobile-integrated-app .mobile-nav-item[aria-current="page"]::before,
@@ -64,13 +56,12 @@
   height: 2px;
   border-radius: 999px;
   background: var(--color-accent);
-  box-shadow: 0 0 14px color-mix(in oklab, var(--color-accent) 70%, transparent);
+  box-shadow: 0 0 14px rgb(10 132 255 / 55%);
   content: "";
   transform: translateX(-50%);
 }
 
-.mobile-integrated-app .today-signal > .grid.grid-cols-2,
-.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 {
+.mobile-integrated-app .today-signal > .grid {
   gap: 0 !important;
   border: 0 !important;
   border-bottom: 1px solid var(--mobile-divider) !important;
@@ -79,8 +70,7 @@
   padding: 0 !important;
 }
 
-.mobile-integrated-app .today-signal > .grid.grid-cols-2 > button,
-.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 > button {
+.mobile-integrated-app .today-signal > .grid > button {
   position: relative;
   border-radius: 0 !important;
   background: transparent !important;
@@ -88,26 +78,18 @@
   color: var(--color-muted-foreground);
 }
 
-.mobile-integrated-app .today-signal > .grid.grid-cols-2 > button[aria-pressed="true"],
-.mobile-integrated-app
-  section:has([aria-label="Route weekday"])
-  > .mt-3.flex.gap-1
-  > button[aria-pressed="true"] {
+.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"] {
   color: var(--color-accent) !important;
 }
 
-.mobile-integrated-app .today-signal > .grid.grid-cols-2 > button[aria-pressed="true"]::after,
-.mobile-integrated-app
-  section:has([aria-label="Route weekday"])
-  > .mt-3.flex.gap-1
-  > button[aria-pressed="true"]::after {
+.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"]::after {
   position: absolute;
   inset-inline: 22%;
   bottom: -1px;
   height: 2px;
   border-radius: 999px;
   background: var(--color-accent);
-  box-shadow: 0 0 12px color-mix(in oklab, var(--color-accent) 58%, transparent);
+  box-shadow: 0 0 12px rgb(10 132 255 / 45%);
   content: "";
 }
 
@@ -139,15 +121,11 @@
   height: 2px;
   border-radius: 999px;
   background: var(--color-accent);
-  box-shadow: 0 0 12px color-mix(in oklab, var(--color-accent) 70%, transparent);
+  box-shadow: 0 0 12px rgb(10 132 255 / 55%);
   content: "";
 }
 
-.mobile-integrated-app .today-signal > .flex:first-child > .button-primary,
-.mobile-integrated-app
-  section:has([aria-label="Route weekday"])
-  > .flex:first-child
-  > .button-secondary {
+.mobile-integrated-app .today-signal .button-primary {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -163,7 +141,7 @@
   border-bottom: 1px solid var(--mobile-divider) !important;
   border-left: 0 !important;
   border-radius: 0 !important;
-  background: color-mix(in oklab, var(--meeting-accent) 7%, transparent) !important;
+  background: transparent !important;
   box-shadow: none !important;
   padding: 1rem 0.4rem !important;
   transform: none !important;
@@ -192,12 +170,8 @@
 
 .mobile-integrated-app .meeting-card:hover,
 .mobile-integrated-app .meeting-card:focus-visible {
-  border-bottom-color: color-mix(
-    in oklab,
-    var(--meeting-accent) 46%,
-    var(--mobile-divider)
-  ) !important;
-  background: color-mix(in oklab, var(--meeting-accent) 11%, transparent) !important;
+  border-bottom-color: var(--meeting-accent) !important;
+  background: rgb(255 255 255 / 2%) !important;
   transform: none !important;
 }
 
@@ -216,10 +190,9 @@
 .mobile-integrated-app .mobile-gap-card,
 .mobile-integrated-app .gap-card {
   border: 0 !important;
-  border-bottom: 1px dashed
-    color-mix(in oklab, var(--color-gap) 40%, var(--mobile-divider)) !important;
+  border-bottom: 1px dashed var(--color-gap) !important;
   border-radius: 0 !important;
-  background: color-mix(in oklab, var(--color-gap) 6%, transparent) !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
@@ -239,13 +212,13 @@
   border: 0 !important;
   border-bottom: 2px solid transparent !important;
   border-radius: 0 !important;
-  background: color-mix(in oklab, var(--meeting-accent) 5%, transparent) !important;
+  background: transparent !important;
   box-shadow: none !important;
 }
 
 .mobile-integrated-app .day-route-stop-card[aria-pressed="true"] {
   border-bottom-color: var(--meeting-accent) !important;
-  background: color-mix(in oklab, var(--meeting-accent) 10%, transparent) !important;
+  background: rgb(255 255 255 / 3%) !important;
 }
 
 .mobile-integrated-app .mobile-route-stop-time,
@@ -272,7 +245,7 @@
   box-shadow: none !important;
 }
 
-.mobile-integrated-app #mobile-today-title ~ .mt-4.flex.items-start.justify-between {
+.mobile-integrated-app #mobile-today-title ~ .mt-4 {
   border: 0 !important;
   border-top: 1px solid var(--mobile-divider) !important;
   border-radius: 0 !important;
