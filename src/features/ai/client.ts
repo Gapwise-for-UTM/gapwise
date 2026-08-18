@@ -31,6 +31,16 @@ export const isGapwiseAiConfigured = GAPWISE_AI_BASE_URL !== null;
 const MAX_RESPONSE_BYTES = 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 15_000;
 
+type ApiRecord = Record<string, unknown> & {
+  enabled?: unknown;
+  revision?: unknown;
+  updatedAt?: unknown;
+  permissions?: unknown;
+  actions?: unknown;
+  error?: unknown;
+  message?: unknown;
+};
+
 async function accessToken(): Promise<string> {
   const supabase = requireSupabaseClient();
   const { data, error } = await supabase.auth.getSession();
@@ -73,14 +83,12 @@ async function aiRequest(path: string, init: RequestInit = {}): Promise<unknown>
     const body = await readBoundedJson(response);
     if (!response.ok) {
       const message =
-        body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        isRecord(body) && typeof body.message === "string"
           ? body.message
           : "Gapwise AI request failed.";
       const error = new Error(message) as Error & { status?: number; code?: string };
       error.status = response.status;
-      if (body && typeof body === "object" && "error" in body && typeof body.error === "string") {
-        error.code = body.error;
-      }
+      if (isRecord(body) && typeof body.error === "string") error.code = body.error;
       throw error;
     }
     return body;
@@ -89,7 +97,7 @@ async function aiRequest(path: string, init: RequestInit = {}): Promise<unknown>
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is ApiRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
