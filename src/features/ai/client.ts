@@ -7,8 +7,16 @@ const viteEnv = (
   }
 ).env;
 
+const CANONICAL_GAPWISE_AI_ORIGIN = "https://gapwise-ai.vercel.app";
+const CANONICAL_GAPWISE_HOSTS = new Set(["gapwise.ca", "www.gapwise.ca"]);
+
+function defaultProductionBaseUrl(): string {
+  if (!import.meta.env.PROD || typeof window === "undefined") return "";
+  return CANONICAL_GAPWISE_HOSTS.has(window.location.hostname) ? CANONICAL_GAPWISE_AI_ORIGIN : "";
+}
+
 function configuredBaseUrl(): string | null {
-  const raw = viteEnv?.["VITE_GAPWISE_AI_URL"]?.trim() ?? "";
+  const raw = viteEnv?.["VITE_GAPWISE_AI_URL"]?.trim() || defaultProductionBaseUrl();
   if (!raw) return null;
   try {
     const url = new URL(raw);
