@@ -130,8 +130,7 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
       };
       const nextFingerprint = aiSnapshotFingerprint(content);
       if (!force && nextFingerprint === lastPublishedFingerprint.current) return;
-      const nextRevision = revision + 1;
-      const result = await publishAiSnapshot(buildAiSnapshot(nextRevision, content));
+      const result = await publishAiSnapshot(buildAiSnapshot(revision + 1, content));
       currentRevision.current = result.revision;
       lastPublishedFingerprint.current = nextFingerprint;
       setPermissions(nextPermissions);
@@ -194,11 +193,11 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
 
   const savePermissions = useCallback(
     async (nextPermissions: AiPermissions) => {
+      if (!status.enabled) {
+        await enable(nextPermissions);
+        return;
+      }
       await serialize(async () => {
-        if (!status.enabled) {
-          await enable(nextPermissions);
-          return;
-        }
         try {
           await publishCurrent(nextPermissions, true);
           setMessage("AI permissions were updated.");
@@ -267,8 +266,7 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
         state.onPersonalItemsChange(batch.personalItems);
         state.onGapPreferencesChange(batch.gapPreferences);
         currentRevision.current = result.revision;
-        const nextFingerprint = aiSnapshotFingerprint(content);
-        lastPublishedFingerprint.current = nextFingerprint;
+        lastPublishedFingerprint.current = aiSnapshotFingerprint(content);
         setStatus({
           enabled: true,
           revision: result.revision,
@@ -291,7 +289,7 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
   useEffect(() => {
     if (!status.enabled || !input.userId || !input.meetings?.length || input.isDemo) return;
     if (lastPublishedFingerprint.current === null) {
-      // The current browser may have restored fresher private state than the delegated copy.
+      // This browser may have restored fresher private state than the delegated copy.
       lastPublishedFingerprint.current = "";
     }
     if (fingerprint === lastPublishedFingerprint.current) return;
@@ -313,11 +311,10 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
       if (document.visibilityState === "visible" && navigator.onLine) void checkActions();
     };
     const interval = window.setInterval(poll, POLL_INTERVAL_MS);
-    const onFocus = () => poll();
-    window.addEventListener("focus", onFocus);
+    window.addEventListener("focus", poll);
     return () => {
       window.clearInterval(interval);
-      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("focus", poll);
     };
   }, [checkActions, input.userId, status.enabled]);
 
