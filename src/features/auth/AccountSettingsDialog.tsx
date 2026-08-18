@@ -63,10 +63,12 @@ export function AccountSettingsDialog({
                   <Link2 className="h-4 w-4 text-accent" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold">Connect ChatGPT, Claude, or another MCP client</p>
+                  <p className="text-sm font-semibold">
+                    Connect ChatGPT, Claude, or another MCP client
+                  </p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Add the Gapwise MCP endpoint in your AI client. OAuth sign-in and the permissions
-                    below decide what that client can actually read or change.
+                    Add the Gapwise MCP endpoint in your AI client. OAuth sign-in and the
+                    permissions below decide what that client can actually read or change.
                   </p>
                   <code className="mt-3 block overflow-x-auto rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-foreground">
                     {GAPWISE_MCP_URL}
