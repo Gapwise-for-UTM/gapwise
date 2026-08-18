@@ -1,0 +1,8 @@
+-- Reserved production migration version.
+--
+-- An interrupted pre-OAuth staging pass briefly created a generic custom
+-- access-token hook at this version. OAuth Server was still disabled and the
+-- hook was never enabled. The canonical migration intentionally does nothing:
+-- the approved-client audience hook from 20260818201423 is the only supported
+-- token hook. 20260818201633 defensively removes the obsolete function on any
+-- environment where it ever existed.
