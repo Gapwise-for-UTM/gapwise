@@ -4,6 +4,7 @@ import { aiSnapshotContent } from "@/features/ai/snapshot";
 import { DEFAULT_AI_PERMISSIONS } from "@/features/ai/types";
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
+import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 
 const meeting: Meeting = {
@@ -23,6 +24,29 @@ const meeting: Meeting = {
   notes: "must not be delegated",
 };
 
+const nextMeeting: Meeting = {
+  ...meeting,
+  id: "m2",
+  courseCode: "MAT157Y5",
+  courseName: "Analysis I",
+  startTime: 780,
+  endTime: 840,
+};
+
+const hiddenPersonal: PersonalItem = {
+  id: "private-appointment",
+  title: "Appointment",
+  category: "Appointment",
+  term: "Fall",
+  weekday: "Monday",
+  startTime: 700,
+  endTime: 720,
+  notes: "sensitive detail",
+  flexibility: { kind: "fixed" },
+  createdAt: "2026-08-18T16:00:00.000Z",
+  updatedAt: "2026-08-18T16:00:00.000Z",
+};
+
 describe("AI delegation", () => {
   test("academic snapshots omit notes and raw-only fields", () => {
     const content = aiSnapshotContent({
@@ -35,6 +59,53 @@ describe("AI delegation", () => {
     expect(content.schedule).toHaveLength(1);
     expect("notes" in content.schedule[0]!).toBe(false);
     expect(content.schedule[0]!.courseCode).toBe("CSC110Y5");
+    expect(content.gapPlans).toEqual([]);
+  });
+
+  test("delegates canonical Gapwise gap assessments only when explicitly enabled", () => {
+    const content = aiSnapshotContent({
+      meetings: [meeting, nextMeeting],
+      personalItems: [],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: { ...DEFAULT_AI_PERMISSIONS, readGapPlans: true },
+    });
+
+    expect(content.gapPlans).toHaveLength(1);
+    expect(content.gapPlans[0]?.startTime).toBe(660);
+    expect(content.gapPlans[0]?.endTime).toBe(780);
+    expect(content.gapPlans[0]?.assessment.routeStatus).toBe("same-room");
+    expect(content.gapPlans[0]?.assessment.confidenceLabel).toBe("high");
+  });
+
+  test("hidden personal items cannot leak through delegated gap boundaries", () => {
+    const hidden = aiSnapshotContent({
+      meetings: [meeting, nextMeeting],
+      personalItems: [hiddenPersonal],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: { ...DEFAULT_AI_PERMISSIONS, readGapPlans: true },
+    });
+    expect(hidden.personalItems).toEqual([]);
+    expect(hidden.gapPlans.map((gap) => [gap.startTime, gap.endTime])).toEqual([[660, 780]]);
+
+    const shared = aiSnapshotContent({
+      meetings: [meeting, nextMeeting],
+      personalItems: [hiddenPersonal],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: {
+        ...DEFAULT_AI_PERMISSIONS,
+        readGapPlans: true,
+        readPersonal: true,
+      },
+    });
+    expect(shared.personalItems).toHaveLength(1);
+    expect("notes" in shared.personalItems[0]!).toBe(false);
+    expect(shared.gapPlans.map((gap) => [gap.startTime, gap.endTime])).toEqual([
+      [660, 700],
+      [720, 780],
+    ]);
   });
 
   test("AI actions cannot invent an academic-meeting mutation kind", () => {
