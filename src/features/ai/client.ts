@@ -172,5 +172,11 @@ export async function revokeAiOAuthClientApprovals(): Promise<string[]> {
 }
 
 export async function revokeAiDelegation(): Promise<void> {
+  // Remove the database allowlist first. Even if OAuth grant revocation is unavailable,
+  // existing client tokens immediately lose access to every AI row under restrictive RLS.
+  const clientIds = await revokeAiOAuthClientApprovals();
   await aiRequest("/api/delegation", { method: "DELETE" });
+
+  const supabase = requireSupabaseClient();
+  await Promise.allSettled(clientIds.map((clientId) => supabase.auth.oauth.revokeGrant(clientId)));
 }
