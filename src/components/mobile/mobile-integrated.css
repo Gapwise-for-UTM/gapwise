@@ -2,7 +2,14 @@
   --mobile-divider: var(--color-border);
 
   background-color: var(--color-background);
-  background-image: radial-gradient(circle at top right, rgb(10 132 255 / 8%), transparent 28rem);
+  background-image:
+    radial-gradient(circle at top right, rgb(10 132 255 / 8%), transparent 28rem),
+    linear-gradient(rgb(10 132 255 / 3%) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(10 132 255 / 3%) 1px, transparent 1px);
+  background-size:
+    auto,
+    24px 24px,
+    24px 24px;
   background-attachment: fixed;
 }
 
@@ -61,7 +68,8 @@
   transform: translateX(-50%);
 }
 
-.mobile-integrated-app .today-signal > .grid {
+.mobile-integrated-app .today-signal > .grid,
+.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 {
   gap: 0 !important;
   border: 0 !important;
   border-bottom: 1px solid var(--mobile-divider) !important;
@@ -70,19 +78,29 @@
   padding: 0 !important;
 }
 
-.mobile-integrated-app .today-signal > .grid > button {
+.mobile-integrated-app .today-signal > .grid > button,
+.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 > button {
   position: relative;
+  border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  color: var(--color-muted-foreground);
+  color: var(--color-muted-foreground) !important;
 }
 
-.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"] {
+.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"],
+.mobile-integrated-app
+  section:has([aria-label="Route weekday"])
+  > .mt-3.flex.gap-1
+  > button[aria-pressed="true"] {
   color: var(--color-accent) !important;
 }
 
-.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"]::after {
+.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"]::after,
+.mobile-integrated-app
+  section:has([aria-label="Route weekday"])
+  > .mt-3.flex.gap-1
+  > button[aria-pressed="true"]::after {
   position: absolute;
   inset-inline: 22%;
   bottom: -1px;
@@ -125,7 +143,11 @@
   content: "";
 }
 
-.mobile-integrated-app .today-signal .button-primary {
+.mobile-integrated-app .today-signal .button-primary,
+.mobile-integrated-app
+  section:has([aria-label="Route weekday"])
+  > .flex:first-child
+  > .button-secondary {
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -241,7 +263,9 @@
   margin-inline: -0.25rem;
 }
 
-.mobile-integrated-app .campus-explorer .campus-map {
+.mobile-integrated-app .campus-explorer > .campus-map {
+  border: 0 !important;
+  border-radius: 0 !important;
   box-shadow: none !important;
 }
 

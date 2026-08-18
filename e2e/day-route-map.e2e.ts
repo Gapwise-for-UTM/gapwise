@@ -47,6 +47,15 @@ test.describe("map-first Day Route", () => {
       await viewMode.getByRole("button", { name: "Day route" }).click();
     }
 
+    const weekdayGroup = page.getByRole("group", { name: "Route weekday" });
+    await expect(weekdayGroup).toBeVisible();
+    await weekdayGroup
+      .getByRole("button", {
+        name: test.info().project.name === "mobile-chromium" ? "Mon" : "Monday",
+        exact: true,
+      })
+      .click();
+
     await expect(page.getByText("Day order", { exact: true })).toBeVisible();
     await expect(
       page.getByText("Times on the map match this left-to-right sequence."),
@@ -119,8 +128,6 @@ test.describe("map-first Day Route", () => {
       expect(boxesOverlap(markerBox, actionBox!)).toBe(false);
     }
 
-    const weekdayGroup = page.getByRole("group", { name: "Route weekday" });
-    await expect(weekdayGroup).toBeVisible();
     await page.evaluate(() => {
       (window as typeof window & { __gapwiseAutoFitClicks?: number }).__gapwiseAutoFitClicks = 0;
     });
