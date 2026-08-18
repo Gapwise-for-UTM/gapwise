@@ -27,6 +27,19 @@ function cors(origin: string | null): HeadersInit {
   };
 }
 
+function jwtHasOAuthClient(token: string): boolean {
+  const payload = token.split(".")[1];
+  if (!payload) return true;
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+    const claims = JSON.parse(atob(padded)) as Record<string, unknown>;
+    return typeof claims["client_id"] === "string" && claims["client_id"].length > 0;
+  } catch {
+    return true;
+  }
+}
+
 Deno.serve(async (request) => {
   const origin = request.headers.get("origin");
   const originAllowed = isAllowedOrigin(origin);
@@ -69,15 +82,14 @@ Deno.serve(async (request) => {
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const { data, error: authError } = await admin.auth.getUser(token);
-  if (authError || !data.user)
+  if (authError || !data.user || jwtHasOAuthClient(token))
     return new Response(JSON.stringify({ error: "Authentication required" }), {
       status: 401,
       headers,
     });
 
-  // The verified token is the only source of identity. One auth.users deletion atomically
-  // cascades through owned rows, both sides of every friendship/request, private invite
-  // hashes, and overlap rate-limit state. Retries remain safe.
+  // Browser-session tokens only. OAuth/MCP client tokens are deliberately rejected so
+  // delegated AI access can never inherit account-deletion authority.
   const { error } = await admin.auth.admin.deleteUser(data.user.id);
   if (error)
     return new Response(JSON.stringify({ error: "Deletion failed" }), { status: 500, headers });
