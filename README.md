@@ -33,14 +33,16 @@ The original calendar file is parsed locally in the browser. Gapwise builds time
 - **ACORN import and demo** — browser-local `.ics` parsing, import-first onboarding, weekly timetable, and dedicated mobile day views.
 - **Today** — current/next class context, gap state, leave-by guidance, and direct navigation actions.
 - **Gap Plan** — route-aware usable-time recommendations rather than a static timetable-only view.
-- **Day Route / campus explorer** — a map-first MapLibre experience with time-labelled class locations, chronological route progression, a left-to-right day sequence, canonical building geometry, mapped entrances, commute origins, and conservative route confidence.
+- **Day Route / campus explorer** — a map-first MapLibre experience with time-labelled class stops anchored to routed arrival entrances when route evidence exists, chronological route progression, a left-to-right day sequence, canonical building geometry, mapped entrances, commute origins, and conservative route confidence.
+- **Integrated mobile surface** — Today, Timetable, Gap Plan, and Map use a continuous phone canvas with typography, spacing, hairline dividers, and restrained glow instead of stacks of decorative rounded cards; first-run empty states are vertically balanced within the usable phone viewport.
+- **Consistent activity semantics** — LEC, TUT, and PRA retain the same semantic color in timetable rows/badges, Day Route sequence items, and map class markers/details.
 - **Map navigation tuned for phones and laptops** — north-stable interaction, collision-aware time labels, separated fit/location/zoom controls, reduced-motion support, and route fitting that respects manual pan/zoom.
 - **Residence, transit, parking, and pickup origins** — model realistic campus-day starts and returns.
 - **Opt-in live location** — foreground geolocation only; no background tracking.
 - **Optional encrypted private sync** — restore signed-in private state across devices while keeping guest mode first-class.
 - **Microsoft, Google, and GitHub OAuth** through Supabase Auth.
 - **Privacy-preserving friend overlap** — limited mutual free windows without exposing either student's timetable.
-- **Accessible/mobile interaction** — keyboard and screen-reader semantics, reduced-motion support, responsive phone layouts, PWA support, and light/dark themes.
+- **Accessible/mobile interaction** — keyboard and screen-reader semantics, reduced-motion support, responsive phone layouts, safe-area-aware bottom navigation, PWA support, and light/dark themes.
 - **Free and open source** — the live app links directly to this repository and the MIT License.
 
 ---
@@ -60,7 +62,7 @@ Routing is intentionally conservative:
 - **Approximate** — clearly labelled fallback guidance.
 - **Unavailable** — Gapwise refuses to invent a route it cannot justify.
 
-The Day Route map is a presentation of this same deterministic routing truth. Class markers show actual timetable times rather than synthetic stop numbers, route segments progress visually from earlier to later stops, and start/end commute anchors stay semantically distinct from classes.
+The Day Route map is a presentation of this same deterministic routing truth. Class markers show actual timetable times rather than synthetic stop numbers. When a routed approach exists, a class time is placed at the incoming route endpoint — the entrance the student reaches — and the first routed class falls back to its outgoing route origin when there is no incoming leg. If a later route leaves the same building through a different entrance, the class time stays at the arrival entrance rather than jumping with route selection, and Gapwise does not draw an unverified straight indoor connector between doors. Route segments still progress visually from earlier to later stops, while start/end commute anchors remain semantically distinct from classes.
 
 The next campus-data milestone is not broader guessed coverage. It is a smaller **field-verified routing dataset** with provenance and verification dates, followed by a lightweight correction/reporting loop.
 
@@ -181,7 +183,7 @@ bun run test:e2e
 
 Database/security changes also require the isolated Supabase checks documented in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
-The repository includes regression coverage for ACORN parsing/restoration, onboarding, gap planning, campus routing/geometry, time-marker collision layout, encrypted sync and user isolation, OAuth/account flows, accessibility, PWA behavior, and critical browser journeys.
+The repository includes regression coverage for ACORN parsing/restoration, onboarding, gap planning, campus routing/geometry, route-anchored time-marker behavior, time-marker collision layout, encrypted sync and user isolation, OAuth/account flows, accessibility, PWA behavior, and critical browser journeys.
 
 ---
 
@@ -202,14 +204,15 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md).
 
 ---
 
-## Current direction — 2026-08-17
+## Current direction — 2026-08-18
 
-Gapwise is in launch stabilization for UTM Orientation. The core product is working; the remaining roadmap is deliberately bounded around first-run reliability, real-user validation, and trustworthy routing.
+Gapwise is in launch stabilization for UTM Orientation. The core product is working; the remaining roadmap is deliberately bounded around first-run reliability, real-user validation, trustworthy routing, and launch-critical mobile clarity.
 
-Already shipped during the Aug 17 owner-approved maintenance window:
+Already shipped or owner-approved during the Aug 17–18 maintenance window:
 
 - **AND-66 first-run activation** — Import ACORN is the dominant action, account decisions are post-value, local parsing is explicit, successful imports hand off to Today, and mobile auth/timetable polish is live.
-- **Map-first Day Route UX** — chronological class times replace numbered map stops, route segments visually communicate progression, the map is the primary surface on mobile and desktop, and map controls are separated so zoom/fit/location actions do not overlap.
+- **Map-first Day Route UX** — chronological class times replace numbered map stops, routed class times align to the entrance reached by the route when available, route segments visually communicate progression, the map is the primary surface on mobile and desktop, and map controls are separated so zoom/fit/location actions do not overlap.
+- **Integrated mobile visual system (AND-75)** — the phone experience uses one continuous surface instead of decorative card stacks, keeps course rows free of timeline-dot/left-rail ornament, balances no-timetable states within the usable viewport, and shares LEC/TUT/PRA colors across timetable and map representations.
 - **Launch-safe dependency maintenance** — current minor/patch updates were consolidated and validated, `@types/node` is aligned with Node 24.x, and TypeScript 6 / Node 26 typings remain explicitly deferred.
 
 Next execution gates:

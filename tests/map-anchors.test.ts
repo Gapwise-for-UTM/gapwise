@@ -23,28 +23,34 @@ const segments: MapAnchorSegment[] = [
 ];
 
 describe("campus map route anchors", () => {
-  test("keeps timetable class markers on their canonical building coordinate", () => {
-    expect(resolveMapAnchor("first", [1, 2], segments, "first-to-middle")).toEqual({
-      coordinate: [1, 2],
-      source: "fallback",
+  test("anchors timetable classes to routed entrances when route evidence exists", () => {
+    expect(resolveMapAnchor("first", [1, 2], segments, null)).toEqual({
+      coordinate: [-79.67, 43.55],
+      source: "outgoing-route",
     });
-    expect(resolveMapAnchor("middle", [3, 4], segments, "first-to-middle")).toEqual({
-      coordinate: [3, 4],
-      source: "fallback",
+    expect(resolveMapAnchor("middle", [3, 4], segments, null)).toEqual({
+      coordinate: [-79.66, 43.55],
+      source: "incoming-route",
+    });
+    expect(resolveMapAnchor("last", [5, 6], segments, null)).toEqual({
+      coordinate: [-79.65, 43.552],
+      source: "incoming-route",
     });
   });
 
-  test("does not move a timetable class marker when another transition is selected", () => {
+  test("keeps a class time at its arrival entrance when the next route leaves elsewhere", () => {
     const fallback: [number, number] = [-79.655, 43.5515];
-    expect(resolveMapAnchor("middle", fallback, segments, "first-to-middle")).toEqual({
-      coordinate: fallback,
-      source: "fallback",
-    });
-    expect(resolveMapAnchor("middle", fallback, segments, "middle-to-last")).toEqual({
-      coordinate: fallback,
-      source: "fallback",
-    });
-    expect(resolveMapAnchor("middle", fallback, segments, null)).toEqual({
+    for (const selected of ["first-to-middle", "middle-to-last", null]) {
+      expect(resolveMapAnchor("middle", fallback, segments, selected)).toEqual({
+        coordinate: [-79.66, 43.55],
+        source: "incoming-route",
+      });
+    }
+  });
+
+  test("falls back to the canonical building coordinate when no route endpoint exists", () => {
+    const fallback: [number, number] = [-79.655, 43.5515];
+    expect(resolveMapAnchor("unrouted", fallback, segments, null)).toEqual({
       coordinate: fallback,
       source: "fallback",
     });
@@ -54,7 +60,7 @@ describe("campus map route anchors", () => {
     const homeSegments: MapAnchorSegment[] = [
       {
         id: "home-to-first",
-        fromId: "home:start",
+        fromId: "home-start",
         toId: "first",
         coordinates: [
           [-79.671, 43.549],
@@ -64,7 +70,7 @@ describe("campus map route anchors", () => {
       {
         id: "last-to-home",
         fromId: "last",
-        toId: "home:end",
+        toId: "home-end",
         coordinates: [
           [-79.65, 43.552],
           [-79.6712, 43.5492],
@@ -72,7 +78,7 @@ describe("campus map route anchors", () => {
       },
     ];
     expect(
-      resolveMapAnchor(["home:start", "home:end"], [0, 0], homeSegments, "last-to-home"),
+      resolveMapAnchor(["home-start", "home-end"], [0, 0], homeSegments, "last-to-home"),
     ).toEqual({ coordinate: [-79.6712, 43.5492], source: "selected-route" });
   });
 

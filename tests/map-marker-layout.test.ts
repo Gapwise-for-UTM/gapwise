@@ -39,7 +39,7 @@ describe("campus map marker layout", () => {
     }
   });
 
-  test("stacks same-building classes vertically from earliest to latest", () => {
+  test("stacks same-building classes vertically from earliest to latest at one entrance", () => {
     const points = [
       { x: 500, y: 300, groupKey: "MN", order: 14 * 60 },
       { x: 500, y: 300, groupKey: "MN", order: 9 * 60 },
@@ -56,6 +56,30 @@ describe("campus map marker layout", () => {
     expect(new Set(centres.map((centre) => centre.x)).size).toBe(1);
     expect(chronological[0]!.y).toBeLessThan(chronological[1]!.y);
     expect(chronological[1]!.y).toBeLessThan(chronological[2]!.y);
+  });
+
+  test("keeps distinct entrances in the same building on their routed anchors", () => {
+    const points = [
+      { x: 100, y: 100, groupKey: "MN", order: 9 * 60 },
+      { x: 132, y: 108, groupKey: "MN", order: 11 * 60 },
+    ];
+
+    expect(groupedVerticalMarkerOffsets(points)).toEqual([
+      [0, 0],
+      [0, 0],
+    ]);
+  });
+
+  test("still stacks near-identical projected entrances in the same building", () => {
+    const points = [
+      { x: 100, y: 100, groupKey: "MN", order: 9 * 60 },
+      { x: 104, y: 103, groupKey: "MN", order: 11 * 60 },
+    ];
+
+    expect(groupedVerticalMarkerOffsets(points)).toEqual([
+      [0, -22],
+      [0, 22],
+    ]);
   });
 
   test("does not relocate different buildings to avoid cross-building collisions", () => {
@@ -77,7 +101,7 @@ describe("campus map marker layout", () => {
     expect(offsets[3]![1]).toBe(22);
   });
 
-  test("keeps same-building offsets stable when projected coordinates change with zoom", () => {
+  test("keeps same-entrance offsets stable when projected coordinates change with zoom", () => {
     const near = [
       { x: 500, y: 300, groupKey: "IB", order: 9 * 60 },
       { x: 500, y: 300, groupKey: "IB", order: 11 * 60 },

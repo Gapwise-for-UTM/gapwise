@@ -21,11 +21,40 @@ function segmentEndpoint(
   return null;
 }
 
+function incomingEndpoint(
+  stopId: string,
+  segments: readonly MapAnchorSegment[],
+): MapCoordinate | null {
+  const incoming = segments.find(
+    (segment) => segment.toId === stopId && segment.coordinates.length > 0,
+  );
+  return incoming?.coordinates.at(-1) ?? null;
+}
+
+function outgoingEndpoint(
+  stopId: string,
+  segments: readonly MapAnchorSegment[],
+): MapCoordinate | null {
+  const outgoing = segments.find(
+    (segment) => segment.fromId === stopId && segment.coordinates.length > 0,
+  );
+  return outgoing?.coordinates[0] ?? null;
+}
+
 /**
- * Timetable class markers use their stable canonical building coordinate rather
- * than whichever route entrance happens to be active. Synthetic multi-id stops
- * (for example the campus arrival/departure anchor) may still follow route
- * endpoints so route geometry can meet those dedicated route markers exactly.
+ * A timetable class time belongs to the entrance the student reaches. When an
+ * incoming routed segment exists, anchor the class marker to that segment's
+ * destination endpoint. If the class is the first routed stop and has no
+ * incoming segment, use its outgoing route's origin endpoint instead.
+ *
+ * This deliberately keeps a class marker stable when the next transition leaves
+ * the same building through a different entrance. Gapwise does not invent a
+ * straight indoor connector between those entrances when the indoor path is not
+ * mapped; the outgoing route simply begins at its own verified/mapped endpoint.
+ *
+ * Synthetic multi-id stops (for example a campus arrival/departure anchor) keep
+ * the selected-route behavior so a shared commute marker can follow the active
+ * route endpoint.
  */
 export function resolveMapAnchor(
   stopIds: string | readonly string[],
@@ -34,6 +63,12 @@ export function resolveMapAnchor(
   selectedSegmentId: string | null,
 ): ResolvedMapAnchor {
   if (typeof stopIds === "string") {
+    const incoming = incomingEndpoint(stopIds, segments);
+    if (incoming) return { coordinate: incoming, source: "incoming-route" };
+
+    const outgoing = outgoingEndpoint(stopIds, segments);
+    if (outgoing) return { coordinate: outgoing, source: "outgoing-route" };
+
     return { coordinate: fallback, source: "fallback" };
   }
 

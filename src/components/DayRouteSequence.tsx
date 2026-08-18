@@ -87,6 +87,7 @@ export function DayRouteSequence({
                 type="button"
                 onClick={selectStop}
                 aria-pressed={selected}
+                data-activity={anchor ? undefined : meeting.activityType}
                 className={`day-route-stop-card min-w-[9.75rem] rounded-xl border px-3 py-2.5 text-left transition-colors ${
                   selected
                     ? "border-accent/60 bg-accent/10"
@@ -106,10 +107,10 @@ export function DayRouteSequence({
                   </>
                 ) : (
                   <>
-                    <time className="block font-mono text-sm font-bold tabular-nums text-accent">
+                    <time className="mobile-route-stop-time block font-mono text-sm font-bold tabular-nums text-accent">
                       {formatTime(meeting.startTime)}
                     </time>
-                    <span className="mt-1 block text-sm font-semibold">
+                    <span className="mobile-route-stop-title mt-1 block text-sm font-semibold">
                       {meeting.courseCode} {meeting.activityType}
                     </span>
                     <span className="mt-0.5 block max-w-[13rem] truncate text-xs text-muted-foreground">
