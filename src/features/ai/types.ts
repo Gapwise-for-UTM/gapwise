@@ -1,4 +1,4 @@
-import type { GapPreferences } from "@/features/gaps/types";
+import type { GapAssessment, GapPreferences } from "@/features/gaps/types";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { PersonalCategory, PersonalFlexibility, PersonalItem } from "@/lib/personal-types";
 import type {
@@ -13,6 +13,7 @@ export type AiPermissions = {
   readSchedule: true;
   readPersonal: boolean;
   writePersonal: boolean;
+  readGapPlans: boolean;
   readGapPreferences: boolean;
   writeGapPreferences: boolean;
   readRoutingPreferences: boolean;
@@ -24,6 +25,7 @@ export const DEFAULT_AI_PERMISSIONS: AiPermissions = {
   readSchedule: true,
   readPersonal: false,
   writePersonal: false,
+  readGapPlans: false,
   readGapPreferences: false,
   writeGapPreferences: false,
   readRoutingPreferences: false,
@@ -63,6 +65,18 @@ export type AiRoutingPreferences = Pick<
   | "campusAccessPointId"
 >;
 
+export type AiGapPlan = {
+  id: string;
+  term: Term;
+  weekday: Weekday;
+  startTime: number;
+  endTime: number;
+  durationMinutes: number;
+  previousMeetingId: string;
+  nextMeetingId: string;
+  assessment: GapAssessment;
+};
+
 export type AiSnapshot = {
   schemaVersion: 1;
   revision: number;
@@ -70,6 +84,7 @@ export type AiSnapshot = {
   permissions: AiPermissions;
   schedule: AiMeeting[];
   personalItems: AiPersonalItem[];
+  gapPlans: AiGapPlan[];
   gapPreferences: GapPreferences | null;
   routingPreferences: AiRoutingPreferences | null;
 };
