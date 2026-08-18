@@ -16,6 +16,7 @@ const CATEGORIES: PersonalCategory[] = [
   "Personal",
   "Other",
 ];
+const MAX_PERSONAL_ITEMS = 200;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -118,7 +119,9 @@ function parseDraft(value: unknown): PersonalItemDraft | null {
   };
   if (value.startTime !== undefined) draft.startTime = value.startTime as number;
   if (value.endTime !== undefined) draft.endTime = value.endTime as number;
-  if (value.locationBuildingCode !== undefined) draft.locationBuildingCode = value.locationBuildingCode as string | null;
+  if (value.locationBuildingCode !== undefined) {
+    draft.locationBuildingCode = value.locationBuildingCode as string | null;
+  }
   if (value.locationRoom !== undefined) draft.locationRoom = value.locationRoom as string | null;
   if (value.locationText !== undefined) draft.locationText = value.locationText as string | null;
   if (value.color !== undefined) draft.color = value.color;
@@ -151,8 +154,20 @@ function parsePatch(value: unknown): PersonalItemPatch | null {
   if (value.weekday !== undefined && !isWeekday(value.weekday)) return null;
   if (value.startTime !== undefined && !minute(value.startTime)) return null;
   if (value.endTime !== undefined && !minute(value.endTime)) return null;
-  if (!optionalText(value.locationBuildingCode) || !optionalText(value.locationRoom) || !optionalText(value.locationText)) return null;
-  if (!(value.color === undefined || value.color === null || (typeof value.color === "string" && value.color.length <= 32))) return null;
+  if (
+    !optionalText(value.locationBuildingCode) ||
+    !optionalText(value.locationRoom) ||
+    !optionalText(value.locationText)
+  )
+    return null;
+  if (
+    !(
+      value.color === undefined ||
+      value.color === null ||
+      (typeof value.color === "string" && value.color.length <= 32)
+    )
+  )
+    return null;
   const flexibility = value.flexibility === undefined ? undefined : parseFlexibility(value.flexibility);
   if (value.flexibility !== undefined && !flexibility) return null;
   return value as PersonalItemPatch;
@@ -177,11 +192,25 @@ function parseGapPatch(value: unknown): Partial<GapPreferences> | null {
 }
 
 function parseAction(value: unknown): AiAction | null {
-  if (!isRecord(value) || value.schemaVersion !== 1 || !Number.isSafeInteger(value.expectedRevision) || (value.expectedRevision as number) < 1) return null;
-  if (value.kind === "create_personal_item" && exactKeys(value, ["schemaVersion", "kind", "expectedRevision", "item"])) {
+  if (
+    !isRecord(value) ||
+    value.schemaVersion !== 1 ||
+    !Number.isSafeInteger(value.expectedRevision) ||
+    (value.expectedRevision as number) < 1
+  )
+    return null;
+  if (
+    value.kind === "create_personal_item" &&
+    exactKeys(value, ["schemaVersion", "kind", "expectedRevision", "item"])
+  ) {
     const item = parseDraft(value.item);
     return item
-      ? { schemaVersion: 1, kind: "create_personal_item", expectedRevision: value.expectedRevision as number, item }
+      ? {
+          schemaVersion: 1,
+          kind: "create_personal_item",
+          expectedRevision: value.expectedRevision as number,
+          item,
+        }
       : null;
   }
   if (
@@ -261,8 +290,15 @@ function buildPersonalItem(actionId: string, draft: PersonalItemDraft, now: stri
   return item;
 }
 
-function patchPersonalItem(item: PersonalItem, patch: PersonalItemPatch, now: string): PersonalItem | null {
-  const next: PersonalItem = { ...item, ...patch, updatedAt: now };
+function patchPersonalItem(
+  item: PersonalItem,
+  patch: PersonalItemPatch,
+  now: string,
+): PersonalItem | null {
+  const { color, ...rest } = patch;
+  const next: PersonalItem = { ...item, ...rest, updatedAt: now };
+  if (color === null) delete next.color;
+  else if (color !== undefined) next.color = color;
   if (patch.flexibility) next.flexibility = { ...patch.flexibility };
   if (next.flexibility.kind === "fixed") {
     if (!minute(next.startTime) || !minute(next.endTime) || next.endTime <= next.startTime) return null;
@@ -301,6 +337,10 @@ export function applyAiActionBatch(input: {
     if (action.kind === "create_personal_item") {
       const id = `ai-${pending.id}`;
       if (!personalItems.some((item) => item.id === id)) {
+        if (personalItems.length >= MAX_PERSONAL_ITEMS) {
+          rejected.push({ id: pending.id, code: "personal_item_limit" });
+          continue;
+        }
         personalItems.push(buildPersonalItem(pending.id, action.item, now));
       }
       applied.push(pending.id);
@@ -331,8 +371,7 @@ export function applyAiActionBatch(input: {
       applied.push(pending.id);
       continue;
     }
-    const next = sanitizeGapPreferences({ ...gapPreferences, ...action.patch });
-    gapPreferences = next;
+    gapPreferences = sanitizeGapPreferences({ ...gapPreferences, ...action.patch });
     applied.push(pending.id);
   }
 
