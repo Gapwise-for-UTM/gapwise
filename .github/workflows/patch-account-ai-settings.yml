@@ -6,12 +6,17 @@ on:
       - feat/account-ai-settings
     paths:
       - .github/workflows/patch-account-ai-settings.yml
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.head_ref == 'feat/account-ai-settings' || github.ref_name == 'feat/account-ai-settings'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
