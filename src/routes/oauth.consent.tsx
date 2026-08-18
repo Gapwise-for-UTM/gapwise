@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bot, GitBranch, ShieldCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { approveAiOAuthClient, isGapwiseAiConfigured } from "@/features/ai/client";
 import { useAuth } from "@/features/auth/use-auth";
 import {
   assertCanPersistAuthRedirect,
@@ -86,7 +87,7 @@ function OAuthConsentPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authorizationId || !user || !isSupabaseConfigured) return;
+    if (!authorizationId || !user || !isSupabaseConfigured || !isGapwiseAiConfigured) return;
     let active = true;
     const supabase = requireSupabaseClient();
     void supabase.auth.oauth
@@ -143,6 +144,11 @@ function OAuthConsentPage() {
     setMessage(null);
     try {
       const supabase = requireSupabaseClient();
+      if (decision === "approve") {
+        // Bind this exact OAuth client ID to the current Gapwise user before a token can
+        // ever reach the AI rows. Primary private-cloud/friend data reject OAuth tokens.
+        await approveAiOAuthClient(details.clientId, details.clientName);
+      }
       const response =
         decision === "approve"
           ? await supabase.auth.oauth.approveAuthorization(details.authorizationId)
@@ -154,7 +160,7 @@ function OAuthConsentPage() {
     } catch {
       setMessage(
         decision === "approve"
-          ? "Gapwise could not approve this connector. No new access was granted."
+          ? "Gapwise could not approve this connector. No OAuth access token was granted."
           : "Gapwise could not finish denying this request. Close this tab and cancel from the AI client.",
       );
       setLoading(false);
@@ -176,12 +182,12 @@ function OAuthConsentPage() {
     );
   }
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured || !isGapwiseAiConfigured) {
     return (
       <ConsentShell>
         <h1 className="font-display text-2xl font-semibold tracking-tight">OAuth is unavailable</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          This Gapwise deployment does not have account authentication configured.
+          This Gapwise deployment has not finished configuring the private AI bridge.
         </p>
       </ConsentShell>
     );
@@ -276,7 +282,7 @@ function OAuthConsentPage() {
 
       <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
         <strong className="text-foreground">OAuth sign-in does not automatically expose your timetable.</strong> It
-        authenticates this client as your Gapwise account. Timetable access is separately controlled by the AI
+        authenticates this exact client as your Gapwise account. Timetable access is separately controlled by the AI
         permissions in Gapwise settings, and imported academic classes remain read-only.
       </div>
 
