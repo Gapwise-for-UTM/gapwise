@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bot, Github, ShieldCheck, X } from "lucide-react";
+import { Bot, GitBranch, ShieldCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/features/auth/use-auth";
 import {
@@ -18,7 +18,19 @@ type ConsentDetails = {
   scopes: string[];
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+type OAuthRecord = Record<string, unknown> & {
+  authorization_id?: unknown;
+  client?: unknown;
+  client_id?: unknown;
+  client_name?: unknown;
+  redirect_uri?: unknown;
+  redirect_url?: unknown;
+  scope?: unknown;
+  id?: unknown;
+  name?: unknown;
+};
+
+function isRecord(value: unknown): value is OAuthRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -49,7 +61,9 @@ function consentDetails(value: unknown): ConsentDetails | null {
 export const Route = createFileRoute("/oauth/consent")({
   validateSearch: (search: Record<string, unknown>) => ({
     authorization_id:
-      typeof search.authorization_id === "string" ? search.authorization_id.slice(0, 512) : "",
+      typeof search["authorization_id"] === "string"
+        ? search["authorization_id"].slice(0, 512)
+        : "",
   }),
   head: () => ({
     meta: [
@@ -199,7 +213,7 @@ function OAuthConsentPage() {
             onClick={() => void signIn("github")}
             className="button-secondary inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold disabled:opacity-50"
           >
-            <Github className="h-4 w-4" aria-hidden="true" /> GitHub
+            <GitBranch className="h-4 w-4" aria-hidden="true" /> GitHub
           </button>
           <button
             type="button"
