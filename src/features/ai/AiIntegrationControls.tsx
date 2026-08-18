@@ -128,6 +128,13 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
           onChange={(checked) => set({ writePersonal: checked })}
         />
         <PermissionToggle
+          checked={draft.readGapPlans}
+          disabled={controller.busy}
+          label="Read Gapwise gap plans"
+          description="Shares Gapwise's own deterministic gap assessments: route confidence, travel and buffer time, leave-by time, and ranked study/meal/break/home recommendations. Hidden personal items are never used as gap boundaries unless personal-item sharing is also enabled."
+          onChange={(checked) => set({ readGapPlans: checked })}
+        />
+        <PermissionToggle
           checked={draft.readGapPreferences}
           disabled={controller.busy}
           label="Read gap-planning preferences"
