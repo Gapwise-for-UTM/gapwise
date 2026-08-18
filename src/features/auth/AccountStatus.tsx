@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, GitBranch, LogOut, Trash2, UserRound } from "lucide-react";
+import { ChevronDown, GitBranch, LogOut, Settings2, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -26,11 +26,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useBridgedAiDelegationController } from "@/features/ai/controller-bridge";
 import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
+import { AccountSettingsDialog } from "./AccountSettingsDialog";
 import {
   consumeOAuthError,
   deleteAccount,
@@ -67,9 +69,11 @@ export function AccountStatus({
   loading: boolean;
   onAccountDeleted: (clearLocal: boolean) => void;
 }) {
+  const aiController = useBridgedAiDelegationController();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [clearLocal, setClearLocal] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [cleanupUserId, setCleanupUserId] = useState<string | null>(null);
@@ -95,6 +99,7 @@ export function AccountStatus({
 
   useEffect(() => {
     if (user) setSignInOpen(false);
+    else setSettingsOpen(false);
   }, [user]);
 
   async function removeAccount() {
@@ -118,6 +123,7 @@ export function AccountStatus({
       onAccountDeleted(clearLocal);
       await signOut().catch(() => undefined);
       setDeleteOpen(false);
+      setSettingsOpen(false);
       if (localCleanupFailed) {
         setMessage(
           "Your account and cloud data were deleted, but this browser couldn't finish clearing encrypted local data. Retry local cleanup.",
@@ -158,6 +164,7 @@ export function AccountStatus({
     setMessage(null);
     try {
       await signOut();
+      setSettingsOpen(false);
     } catch {
       setMessage("You're signed out on this device, but the server could not be reached.");
     } finally {
@@ -193,11 +200,15 @@ export function AccountStatus({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64">
               <DropdownMenuLabel>
-                Account settings
+                Account
                 <span className="mt-1 block text-xs font-normal text-muted-foreground">
                   You’ll stay signed in on this device until you sign out.
                 </span>
               </DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
+                <Settings2 aria-hidden="true" /> Account settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem disabled={busy} onSelect={() => void leaveAccount()}>
                 <LogOut aria-hidden="true" /> Sign out
               </DropdownMenuItem>
@@ -210,6 +221,14 @@ export function AccountStatus({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <AccountSettingsDialog
+            open={settingsOpen}
+            onOpenChange={(open) => !busy && setSettingsOpen(open)}
+            identity={getAccountIdentity(user)}
+            aiController={aiController}
+          />
+
           <AlertDialog open={deleteOpen} onOpenChange={(open) => !busy && setDeleteOpen(open)}>
             <AlertDialogContent className="mx-4 w-[calc(100%-2rem)] rounded-xl">
               <AlertDialogHeader>
