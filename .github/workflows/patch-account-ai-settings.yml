@@ -1,0 +1,98 @@
+name: Wire account AI settings
+
+on:
+  push:
+    branches:
+      - feat/account-ai-settings
+    paths:
+      - .github/workflows/patch-account-ai-settings.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/account-ai-settings
+          fetch-depth: 0
+      - name: Patch app shell
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/routes/_app.tsx")
+          text = path.read_text()
+
+          import_needle = 'import { AccountStatus } from "@/features/auth/AccountStatus";\nimport { useAuth } from "@/features/auth/use-auth";'
+          import_replacement = 'import { AccountStatus } from "@/features/auth/AccountStatus";\nimport { useAuth } from "@/features/auth/use-auth";\nimport { useAiDelegation } from "@/features/ai/use-ai-delegation";'
+          assert text.count(import_needle) == 1, "expected AccountStatus/useAuth import block once"
+          text = text.replace(import_needle, import_replacement, 1)
+
+          callback_needle = '''  const applyPrivateData = useCallback((payload: PrivateDataPayloadV1) => {
+            latestMeetings.current = payload.schedule;
+            setMeetings(payload.schedule);
+            setPersonalItems(payload.personalItems);
+            setPreferences(payload.preferences);
+            setGapPreferences(payload.gapPreferences);
+            setWarnings([]);
+            setError(null);
+            setIsDemo(false);
+            lastEncryptedFingerprint.current = JSON.stringify(payload);
+          }, []);
+
+          useEffect(() => {'''
+          callback_replacement = '''  const applyPrivateData = useCallback((payload: PrivateDataPayloadV1) => {
+            latestMeetings.current = payload.schedule;
+            setMeetings(payload.schedule);
+            setPersonalItems(payload.personalItems);
+            setPreferences(payload.preferences);
+            setGapPreferences(payload.gapPreferences);
+            setWarnings([]);
+            setError(null);
+            setIsDemo(false);
+            lastEncryptedFingerprint.current = JSON.stringify(payload);
+          }, []);
+
+          const aiController = useAiDelegation({
+            userId: authenticatedUserId,
+            meetings,
+            personalItems,
+            preferences,
+            gapPreferences,
+            isDemo,
+            onPrivateDataChange: applyPrivateData,
+          });
+
+          useEffect(() => {'''
+          assert text.count(callback_needle) == 1, "expected applyPrivateData block once"
+          text = text.replace(callback_needle, callback_replacement, 1)
+
+          account_needle = '''            <AccountStatus
+              user={user}
+              loading={authLoading}
+              onAccountDeleted={handleAccountDeleted}
+            />'''
+          account_replacement = '''            <AccountStatus
+              user={user}
+              loading={authLoading}
+              aiController={aiController}
+              onAccountDeleted={handleAccountDeleted}
+            />'''
+          assert text.count(account_needle) == 2, f"expected 2 AccountStatus blocks, found {text.count(account_needle)}"
+          text = text.replace(account_needle, account_replacement)
+
+          path.write_text(text)
+          PY
+      - name: Remove one-off workflow
+        run: git rm .github/workflows/patch-account-ai-settings.yml
+      - name: Commit generated app-shell wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/_app.tsx
+          git commit -m "feat: keep AI delegation mounted in app shell"
+          git push origin HEAD:feat/account-ai-settings
