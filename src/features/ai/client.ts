@@ -39,6 +39,11 @@ type ApiRecord = Record<string, unknown> & {
   actions?: unknown;
   error?: unknown;
   message?: unknown;
+  approved?: unknown;
+  clientId?: unknown;
+  clients?: unknown;
+  revoked?: unknown;
+  clientIds?: unknown;
 };
 
 async function accessToken(): Promise<string> {
@@ -141,6 +146,29 @@ export async function completeAiAction(actionId: string, completion: AiActionCom
     method: "POST",
     body: JSON.stringify(completion),
   });
+}
+
+export async function approveAiOAuthClient(clientId: string, clientName: string): Promise<void> {
+  const body = await aiRequest("/api/delegation/clients", {
+    method: "POST",
+    body: JSON.stringify({ clientId, clientName }),
+  });
+  if (!isRecord(body) || body.approved !== true || body.clientId !== clientId) {
+    throw new Error("Gapwise AI OAuth client approval response is malformed.");
+  }
+}
+
+export async function revokeAiOAuthClientApprovals(): Promise<string[]> {
+  const body = await aiRequest("/api/delegation/clients", { method: "DELETE" });
+  if (
+    !isRecord(body) ||
+    body.revoked !== true ||
+    !Array.isArray(body.clientIds) ||
+    !body.clientIds.every((value) => typeof value === "string")
+  ) {
+    throw new Error("Gapwise AI OAuth revocation response is malformed.");
+  }
+  return body.clientIds as string[];
 }
 
 export async function revokeAiDelegation(): Promise<void> {
