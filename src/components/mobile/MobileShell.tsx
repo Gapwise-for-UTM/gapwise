@@ -1,6 +1,7 @@
 import { CalendarClock, LayoutGrid, MapPinned, Menu } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import "./mobile-integrated.css";
 
 export type MobileTab = "today" | "timetable" | "route" | "gaps";
 
@@ -44,7 +45,7 @@ export function MobileShell({
 
   return (
     <MobileRouteTargetContext.Provider value={routeTargetContext}>
-      <div className="app-shell flex min-h-[100dvh] flex-col bg-background text-foreground">
+      <div className="app-shell mobile-integrated-app flex min-h-[100dvh] flex-col bg-background text-foreground">
         <header className="app-nav sticky top-0 z-30 border-b" data-scrolled="true">
           <div className="flex min-h-[3.25rem] items-center gap-3 px-4 pt-[env(safe-area-inset-top)]">
             <span className="brand-mark-shell h-7 w-7">
