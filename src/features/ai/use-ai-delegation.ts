@@ -14,11 +14,7 @@ import {
   revokeAiDelegation,
 } from "./client";
 import { aiSnapshotFingerprint, buildAiSnapshot } from "./snapshot";
-import {
-  DEFAULT_AI_PERMISSIONS,
-  type AiDelegationStatus,
-  type AiPermissions,
-} from "./types";
+import { DEFAULT_AI_PERMISSIONS, type AiDelegationStatus, type AiPermissions } from "./types";
 
 const POLL_INTERVAL_MS = 60_000;
 const SNAPSHOT_DEBOUNCE_MS = 1_500;
@@ -182,7 +178,9 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
             permissions: requestedPermissions,
             updatedAt: result.updatedAt,
           });
-          setMessage("AI access is enabled. Connect ChatGPT or Claude using the Gapwise MCP server.");
+          setMessage(
+            "AI access is enabled. Connect ChatGPT or Claude using the Gapwise MCP server.",
+          );
         } catch {
           setMessage("Gapwise could not enable AI access. Nothing was shared.");
         }
@@ -202,7 +200,9 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
           await publishCurrent(nextPermissions, true);
           setMessage("AI permissions were updated.");
         } catch {
-          setMessage("Gapwise could not update AI permissions. Existing permissions are unchanged.");
+          setMessage(
+            "Gapwise could not update AI permissions. Existing permissions are unchanged.",
+          );
         }
       });
     },

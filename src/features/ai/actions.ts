@@ -57,7 +57,9 @@ function shortText(value: unknown): value is string {
 }
 
 function optionalText(value: unknown): value is string | null | undefined {
-  return value === undefined || value === null || (typeof value === "string" && value.length <= 240);
+  return (
+    value === undefined || value === null || (typeof value === "string" && value.length <= 240)
+  );
 }
 
 function minute(value: unknown): value is number {
@@ -132,7 +134,8 @@ function parseDraft(value: unknown): PersonalItemDraft | null {
   const flexibility = parseFlexibility(value.flexibility);
   if (!flexibility) return null;
   if (flexibility.kind === "fixed") {
-    if (!minute(value.startTime) || !minute(value.endTime) || value.endTime <= value.startTime) return null;
+    if (!minute(value.startTime) || !minute(value.endTime) || value.endTime <= value.startTime)
+      return null;
   } else if (value.startTime !== undefined || value.endTime !== undefined) {
     return null;
   }
@@ -186,15 +189,14 @@ function parsePatch(value: unknown): PersonalItemPatch | null {
     !optionalText(value.locationText)
   )
     return null;
-  if (
-    !(
-      value.color === undefined ||
-      value.color === null ||
-      (typeof value.color === "string" && value.color.length <= 32)
-    )
-  )
+  if (!(
+    value.color === undefined ||
+    value.color === null ||
+    (typeof value.color === "string" && value.color.length <= 32)
+  ))
     return null;
-  const flexibility = value.flexibility === undefined ? undefined : parseFlexibility(value.flexibility);
+  const flexibility =
+    value.flexibility === undefined ? undefined : parseFlexibility(value.flexibility);
   if (value.flexibility !== undefined && !flexibility) return null;
   return value as PersonalItemPatch;
 }
@@ -288,7 +290,8 @@ export function parsePendingAiActions(value: unknown): PendingAiAction[] | null 
   if (!Array.isArray(value) || value.length > 50) return null;
   const parsed: PendingAiAction[] = [];
   for (const entry of value) {
-    if (!isRecord(entry) || !shortText(entry.id) || typeof entry.createdAt !== "string") return null;
+    if (!isRecord(entry) || !shortText(entry.id) || typeof entry.createdAt !== "string")
+      return null;
     const action = parseAction(entry.action);
     if (!action) return null;
     parsed.push({ id: entry.id, createdAt: entry.createdAt, action });
@@ -309,7 +312,8 @@ function buildPersonalItem(actionId: string, draft: PersonalItemDraft, now: stri
   };
   if (draft.startTime !== undefined) item.startTime = draft.startTime;
   if (draft.endTime !== undefined) item.endTime = draft.endTime;
-  if (draft.locationBuildingCode !== undefined) item.locationBuildingCode = draft.locationBuildingCode;
+  if (draft.locationBuildingCode !== undefined)
+    item.locationBuildingCode = draft.locationBuildingCode;
   if (draft.locationRoom !== undefined) item.locationRoom = draft.locationRoom;
   if (draft.locationText !== undefined) item.locationText = draft.locationText;
   if (draft.color !== undefined) item.color = draft.color;
@@ -327,7 +331,8 @@ function patchPersonalItem(
   else if (color !== undefined) next.color = color;
   if (patch.flexibility) next.flexibility = { ...patch.flexibility };
   if (next.flexibility.kind === "fixed") {
-    if (!minute(next.startTime) || !minute(next.endTime) || next.endTime <= next.startTime) return null;
+    if (!minute(next.startTime) || !minute(next.endTime) || next.endTime <= next.startTime)
+      return null;
   } else {
     delete next.startTime;
     delete next.endTime;
@@ -348,7 +353,7 @@ export function applyAiActionBatch(input: {
   personalItems: PersonalItem[];
   gapPreferences: GapPreferences;
 }): AiActionBatchResult {
-  let personalItems = [...input.personalItems];
+  const personalItems = [...input.personalItems];
   let gapPreferences = input.gapPreferences;
   const applied: string[] = [];
   const rejected: Array<{ id: string; code: string }> = [];

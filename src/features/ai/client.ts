@@ -1,10 +1,5 @@
 import { requireSupabaseClient } from "@/lib/supabase";
-import type {
-  AiActionCompletion,
-  AiDelegationStatus,
-  AiSnapshot,
-  PendingAiAction,
-} from "./types";
+import type { AiActionCompletion, AiDelegationStatus, AiSnapshot, PendingAiAction } from "./types";
 
 const viteEnv = (
   import.meta as ImportMeta & {
@@ -55,7 +50,8 @@ async function accessToken(): Promise<string> {
 
 async function readBoundedJson(response: Response): Promise<unknown> {
   const declared = response.headers.get("content-length");
-  if (declared && Number(declared) > MAX_RESPONSE_BYTES) throw new Error("Gapwise AI response is too large.");
+  if (declared && Number(declared) > MAX_RESPONSE_BYTES)
+    throw new Error("Gapwise AI response is too large.");
   const text = await response.text();
   if (new TextEncoder().encode(text).byteLength > MAX_RESPONSE_BYTES) {
     throw new Error("Gapwise AI response is too large.");
@@ -122,12 +118,18 @@ export async function getAiDelegationStatus(): Promise<AiDelegationStatus> {
   return body as AiDelegationStatus;
 }
 
-export async function publishAiSnapshot(snapshot: AiSnapshot): Promise<{ revision: number; updatedAt: string }> {
+export async function publishAiSnapshot(
+  snapshot: AiSnapshot,
+): Promise<{ revision: number; updatedAt: string }> {
   const body = await aiRequest("/api/delegation/snapshot", {
     method: "PUT",
     body: JSON.stringify(snapshot),
   });
-  if (!isRecord(body) || !Number.isSafeInteger(body.revision) || typeof body.updatedAt !== "string") {
+  if (
+    !isRecord(body) ||
+    !Number.isSafeInteger(body.revision) ||
+    typeof body.updatedAt !== "string"
+  ) {
     throw new Error("Gapwise AI snapshot response is malformed.");
   }
   return { revision: body.revision as number, updatedAt: body.updatedAt };
@@ -141,7 +143,10 @@ export async function getPendingAiActions(): Promise<PendingAiAction[]> {
   return body.actions as PendingAiAction[];
 }
 
-export async function completeAiAction(actionId: string, completion: AiActionCompletion): Promise<void> {
+export async function completeAiAction(
+  actionId: string,
+  completion: AiActionCompletion,
+): Promise<void> {
   await aiRequest(`/api/delegation/actions/${encodeURIComponent(actionId)}/complete`, {
     method: "POST",
     body: JSON.stringify(completion),

@@ -95,7 +95,9 @@ function OAuthConsentPage() {
       .then(({ data, error }) => {
         if (!active) return;
         if (error) {
-          setMessage("This authorization request is invalid or has expired. Start the connection again from your AI client.");
+          setMessage(
+            "This authorization request is invalid or has expired. Start the connection again from your AI client.",
+          );
           return;
         }
         if (data && !("authorization_id" in data)) {
@@ -170,12 +172,17 @@ function OAuthConsentPage() {
   if (!authorizationId) {
     return (
       <ConsentShell>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">Invalid authorization request</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">
+          Invalid authorization request
+        </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          This page must be opened by a valid OAuth client. Start the Gapwise connection again from ChatGPT,
-          Claude, or another MCP client.
+          This page must be opened by a valid OAuth client. Start the Gapwise connection again from
+          ChatGPT, Claude, or another MCP client.
         </p>
-        <Link to="/" className="button-secondary mt-6 inline-flex min-h-11 items-center px-4 text-sm font-semibold">
+        <Link
+          to="/"
+          className="button-secondary mt-6 inline-flex min-h-11 items-center px-4 text-sm font-semibold"
+        >
           Return to Gapwise
         </Link>
       </ConsentShell>
@@ -207,10 +214,12 @@ function OAuthConsentPage() {
         <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-accent/20 bg-accent/8">
           <Bot className="h-5 w-5 text-accent" aria-hidden="true" />
         </div>
-        <h1 className="mt-5 font-display text-2xl font-semibold tracking-tight">Sign in before authorizing</h1>
+        <h1 className="mt-5 font-display text-2xl font-semibold tracking-tight">
+          Sign in before authorizing
+        </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          The AI connector will authenticate as your existing Gapwise account. Sign in here; Gapwise preserves this
-          authorization request and returns you to it after the provider redirect.
+          The AI connector will authenticate as your existing Gapwise account. Sign in here; Gapwise
+          preserves this authorization request and returns you to it after the provider redirect.
         </p>
         <div className="mt-6 grid gap-2 sm:grid-cols-3">
           <button
@@ -238,7 +247,11 @@ function OAuthConsentPage() {
             Microsoft
           </button>
         </div>
-        {message ? <p role="status" className="mt-4 text-xs leading-5 text-muted-foreground">{message}</p> : null}
+        {message ? (
+          <p role="status" className="mt-4 text-xs leading-5 text-muted-foreground">
+            {message}
+          </p>
+        ) : null}
       </ConsentShell>
     );
   }
@@ -260,19 +273,27 @@ function OAuthConsentPage() {
       <div className="mt-6 rounded-xl border border-border/70 p-4">
         <dl className="grid gap-3 text-sm">
           <div>
-            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Client</dt>
+            <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Client
+            </dt>
             <dd className="mt-1 break-all">{details?.clientName ?? "Loading…"}</dd>
           </div>
           {details ? (
             <>
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Requested OAuth scopes</dt>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Requested OAuth scopes
+                </dt>
                 <dd className="mt-1">{details.scopes.join(", ") || "email"}</dd>
               </div>
               {details.redirectUri ? (
                 <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Return URL</dt>
-                  <dd className="mt-1 break-all text-xs text-muted-foreground">{details.redirectUri}</dd>
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Return URL
+                  </dt>
+                  <dd className="mt-1 break-all text-xs text-muted-foreground">
+                    {details.redirectUri}
+                  </dd>
                 </div>
               ) : null}
             </>
@@ -281,9 +302,12 @@ function OAuthConsentPage() {
       </div>
 
       <div className="mt-4 rounded-xl border border-border/70 bg-muted/20 p-4 text-sm leading-6 text-muted-foreground">
-        <strong className="text-foreground">OAuth sign-in does not automatically expose your timetable.</strong> It
-        authenticates this exact client as your Gapwise account. Timetable access is separately controlled by the AI
-        permissions in Gapwise settings, and imported academic classes remain read-only.
+        <strong className="text-foreground">
+          OAuth sign-in does not automatically expose your timetable.
+        </strong>{" "}
+        It authenticates this exact client as your Gapwise account. Timetable access is separately
+        controlled by the AI permissions in Gapwise settings, and imported academic classes remain
+        read-only.
       </div>
 
       <div className="mt-6 flex flex-wrap gap-2">
@@ -305,9 +329,15 @@ function OAuthConsentPage() {
         </button>
       </div>
 
-      {message ? <p role="status" className="mt-4 text-xs leading-5 text-muted-foreground">{message}</p> : null}
+      {message ? (
+        <p role="status" className="mt-4 text-xs leading-5 text-muted-foreground">
+          {message}
+        </p>
+      ) : null}
       {details ? (
-        <p className="mt-5 break-all text-[0.68rem] text-muted-foreground">Client ID: {details.clientId}</p>
+        <p className="mt-5 break-all text-[0.68rem] text-muted-foreground">
+          Client ID: {details.clientId}
+        </p>
       ) : null}
     </ConsentShell>
   );

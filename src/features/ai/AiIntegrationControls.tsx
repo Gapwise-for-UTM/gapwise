@@ -66,7 +66,10 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
   }
 
   return (
-    <section className="rounded-xl border border-border/70 p-4" aria-labelledby="ai-integration-title">
+    <section
+      className="rounded-xl border border-border/70 p-4"
+      aria-labelledby="ai-integration-title"
+    >
       <div className="flex items-start gap-3">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/8">
           <Bot className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -83,9 +86,9 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
             ) : null}
           </div>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">
-            Share a minimized, encrypted-at-rest timetable copy with an AI connector you authorize. Your
-            original ACORN file, friends, precise location, account credentials, and Gapwise encryption
-            keys are never included.
+            Share a minimized, encrypted-at-rest timetable copy with an AI connector you authorize.
+            Your original ACORN file, friends, precise location, account credentials, and Gapwise
+            encryption keys are never included.
           </p>
         </div>
       </div>
@@ -94,9 +97,10 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
         <div className="flex gap-2">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
           <p>
-            The authorized AI provider can see timetable facts returned by its tools. Gapwise AI decrypts
-            the delegated copy transiently to answer those requests, so this is not zero-knowledge or
-            end-to-end encryption. <strong className="text-foreground">Academic classes are always read-only.</strong>
+            The authorized AI provider can see timetable facts returned by its tools. Gapwise AI
+            decrypts the delegated copy transiently to answer those requests, so this is not
+            zero-knowledge or end-to-end encryption.{" "}
+            <strong className="text-foreground">Academic classes are always read-only.</strong>
           </p>
         </div>
       </div>
@@ -191,7 +195,8 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
 
       {!controller.status.enabled && !controller.canEnable ? (
         <p className="mt-3 text-xs leading-5 text-muted-foreground">
-          Sign in and import a real ACORN timetable before enabling AI access. Demo schedules are never delegated.
+          Sign in and import a real ACORN timetable before enabling AI access. Demo schedules are
+          never delegated.
         </p>
       ) : null}
 
