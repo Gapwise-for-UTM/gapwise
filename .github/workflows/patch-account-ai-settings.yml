@@ -33,41 +33,41 @@ jobs:
           text = text.replace(import_needle, import_replacement, 1)
 
           callback_needle = '''  const applyPrivateData = useCallback((payload: PrivateDataPayloadV1) => {
-            latestMeetings.current = payload.schedule;
-            setMeetings(payload.schedule);
-            setPersonalItems(payload.personalItems);
-            setPreferences(payload.preferences);
-            setGapPreferences(payload.gapPreferences);
-            setWarnings([]);
-            setError(null);
-            setIsDemo(false);
-            lastEncryptedFingerprint.current = JSON.stringify(payload);
-          }, []);
+    latestMeetings.current = payload.schedule;
+    setMeetings(payload.schedule);
+    setPersonalItems(payload.personalItems);
+    setPreferences(payload.preferences);
+    setGapPreferences(payload.gapPreferences);
+    setWarnings([]);
+    setError(null);
+    setIsDemo(false);
+    lastEncryptedFingerprint.current = JSON.stringify(payload);
+  }, []);
 
-          useEffect(() => {'''
+  useEffect(() => {'''
           callback_replacement = '''  const applyPrivateData = useCallback((payload: PrivateDataPayloadV1) => {
-            latestMeetings.current = payload.schedule;
-            setMeetings(payload.schedule);
-            setPersonalItems(payload.personalItems);
-            setPreferences(payload.preferences);
-            setGapPreferences(payload.gapPreferences);
-            setWarnings([]);
-            setError(null);
-            setIsDemo(false);
-            lastEncryptedFingerprint.current = JSON.stringify(payload);
-          }, []);
+    latestMeetings.current = payload.schedule;
+    setMeetings(payload.schedule);
+    setPersonalItems(payload.personalItems);
+    setPreferences(payload.preferences);
+    setGapPreferences(payload.gapPreferences);
+    setWarnings([]);
+    setError(null);
+    setIsDemo(false);
+    lastEncryptedFingerprint.current = JSON.stringify(payload);
+  }, []);
 
-          const aiController = useAiDelegation({
-            userId: authenticatedUserId,
-            meetings,
-            personalItems,
-            preferences,
-            gapPreferences,
-            isDemo,
-            onPrivateDataChange: applyPrivateData,
-          });
+  const aiController = useAiDelegation({
+    userId: authenticatedUserId,
+    meetings,
+    personalItems,
+    preferences,
+    gapPreferences,
+    isDemo,
+    onPrivateDataChange: applyPrivateData,
+  });
 
-          useEffect(() => {'''
+  useEffect(() => {'''
           assert text.count(callback_needle) == 1, "expected applyPrivateData block once"
           text = text.replace(callback_needle, callback_replacement, 1)
 
