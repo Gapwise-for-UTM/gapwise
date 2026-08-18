@@ -5,41 +5,50 @@ select plan(5);
 
 select has_function(
   'public',
+  'gapwise_ai_access_token_hook',
+  array['jsonb'],
+  'approved-client MCP audience hook exists'
+);
+
+select hasnt_function(
+  'public',
   'custom_access_token_hook',
   array['jsonb'],
-  'MCP custom access-token hook exists'
+  'obsolete generic OAuth hook is absent'
 );
 
-select is(
-  public.custom_access_token_hook(
-    '{"user_id":"00000000-0000-4000-8000-000000000201","claims":{"sub":"00000000-0000-4000-8000-000000000201","aud":"authenticated","client_id":"chatgpt-client"},"authentication_method":"oauth_provider/authorization_code"}'::jsonb
-  )->'claims'->>'resource',
-  'https://ai.gapwise.ca/api/mcp',
-  'OAuth client tokens are bound to the canonical Gapwise MCP resource'
-);
+insert into auth.users (id, email)
+values ('00000000-0000-4000-8000-000000000211', 'ai-hook-owner@example.test');
 
 select is(
-  public.custom_access_token_hook(
-    '{"user_id":"00000000-0000-4000-8000-000000000201","claims":{"sub":"00000000-0000-4000-8000-000000000201","aud":"authenticated","client_id":"chatgpt-client"},"authentication_method":"oauth_provider/authorization_code"}'::jsonb
+  public.gapwise_ai_access_token_hook(
+    '{"user_id":"00000000-0000-4000-8000-000000000211","claims":{"sub":"00000000-0000-4000-8000-000000000211","aud":"authenticated","client_id":"unapproved-client"}}'::jsonb
   )->'claims'->>'aud',
   'authenticated',
-  'OAuth resource binding preserves Supabase normal audience'
+  'unapproved OAuth clients keep the normal Supabase audience'
+);
+
+insert into public.ai_oauth_clients (user_id, client_id, client_name)
+values (
+  '00000000-0000-4000-8000-000000000211',
+  'approved-client',
+  'Approved test client'
 );
 
 select is(
-  public.custom_access_token_hook(
-    '{"user_id":"00000000-0000-4000-8000-000000000201","claims":{"sub":"00000000-0000-4000-8000-000000000201","aud":"authenticated"},"authentication_method":"password"}'::jsonb
-  )->'claims'->>'resource',
-  null,
-  'ordinary Gapwise browser tokens are not MCP resource-bound'
-);
-
-select is(
-  public.custom_access_token_hook(
-    '{"user_id":"00000000-0000-4000-8000-000000000201","claims":{"sub":"00000000-0000-4000-8000-000000000201","aud":"authenticated","client_id":"claude-client","resource":"https://wrong.example/api/mcp"},"authentication_method":"token_refresh"}'::jsonb
-  )->'claims'->>'resource',
+  public.gapwise_ai_access_token_hook(
+    '{"user_id":"00000000-0000-4000-8000-000000000211","claims":{"sub":"00000000-0000-4000-8000-000000000211","aud":"authenticated","client_id":"approved-client"}}'::jsonb
+  )->'claims'->>'aud',
   'https://ai.gapwise.ca/api/mcp',
-  'OAuth refresh issuance cannot retain a stale or attacker-selected resource claim'
+  'approved OAuth clients receive the exact MCP audience'
+);
+
+select is(
+  public.gapwise_ai_access_token_hook(
+    '{"user_id":"00000000-0000-4000-8000-000000000211","claims":{"sub":"00000000-0000-4000-8000-000000000211","aud":"authenticated"}}'::jsonb
+  )->'claims'->>'aud',
+  'authenticated',
+  'ordinary Gapwise browser sessions keep the normal audience'
 );
 
 select * from finish();
