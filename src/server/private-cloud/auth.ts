@@ -75,12 +75,16 @@ export async function authenticateSupabaseRequest(request: Request): Promise<Aut
   const verifier = sharedVerifierClient();
   const { data, error } = await withAuthTimeout(verifier.auth.getClaims(accessToken));
   const subject = data?.claims.sub;
+  const oauthClientId = (data?.claims as Record<string, unknown> | undefined)?.["client_id"];
   if (
     error ||
     data?.claims.role !== "authenticated" ||
     typeof subject !== "string" ||
-    !UUID_PATTERN.test(subject)
+    !UUID_PATTERN.test(subject) ||
+    oauthClientId !== undefined
   ) {
+    // Private-cloud APIs are browser-session-only. OAuth/MCP clients get access
+    // exclusively through the separately encrypted Gapwise AI delegation bridge.
     throw new ApiError(401, "Authentication required.");
   }
   return {

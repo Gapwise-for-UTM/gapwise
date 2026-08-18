@@ -1,0 +1,170 @@
+import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
+import { planGapAssessment } from "@/features/gaps/assess-gap";
+import type { GapPreferences } from "@/features/gaps/types";
+import { createScheduleTransitionPlanner } from "@/features/routing/transition";
+import type { UserPreferences } from "@/features/sync/preferences";
+import { findGaps } from "@/lib/gaps";
+import type { PersonalItem } from "@/lib/personal-types";
+import { TERMS, type Meeting } from "@/lib/timetable-types";
+import type { AiPermissions, AiSnapshot } from "./types";
+
+function aiMeeting(meeting: Meeting): AiSnapshot["schedule"][number] {
+  const result: AiSnapshot["schedule"][number] = {
+    id: meeting.id,
+    courseCode: meeting.courseCode,
+    activityType: meeting.activityType,
+    sectionCode: meeting.sectionCode,
+    courseName: meeting.courseName,
+    startTime: meeting.startTime,
+    endTime: meeting.endTime,
+    weekday: meeting.weekday,
+    buildingCode: meeting.buildingCode,
+    room: meeting.room,
+    term: meeting.term,
+    locationUnknown: meeting.locationUnknown,
+  };
+  if (meeting.locationType) result.locationType = meeting.locationType;
+  if (meeting.dateRange) result.dateRange = { ...meeting.dateRange };
+  if (meeting.excludedDates) result.excludedDates = [...meeting.excludedDates];
+  if (meeting.recurrenceIntervalWeeks !== undefined) {
+    result.recurrenceIntervalWeeks = meeting.recurrenceIntervalWeeks;
+  }
+  return result;
+}
+
+function aiPersonalItem(item: PersonalItem): AiSnapshot["personalItems"][number] {
+  const result: AiSnapshot["personalItems"][number] = {
+    id: item.id,
+    title: item.title,
+    category: item.category,
+    term: item.term,
+    weekday: item.weekday,
+    flexibility: { ...item.flexibility },
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+  if (item.startTime !== undefined) result.startTime = item.startTime;
+  if (item.endTime !== undefined) result.endTime = item.endTime;
+  if (item.locationBuildingCode !== undefined) {
+    result.locationBuildingCode = item.locationBuildingCode;
+  }
+  if (item.locationRoom !== undefined) result.locationRoom = item.locationRoom;
+  if (item.locationText !== undefined) result.locationText = item.locationText;
+  if (item.color !== undefined) result.color = item.color;
+  return result;
+}
+
+function aiRoutingPreferences(preferences: UserPreferences): AiSnapshot["routingPreferences"] {
+  return {
+    mode: preferences.mode,
+    walkingSpeedMps: preferences.walkingSpeedMps,
+    transitionBufferMinutes: preferences.transitionBufferMinutes,
+    avoidStairs: preferences.avoidStairs,
+    preferIndoor: preferences.preferIndoor,
+    dayOrigin: preferences.dayOrigin,
+    residenceBuildingCode: preferences.residenceBuildingCode,
+    commuteMode: preferences.commuteMode,
+    campusAccessPointId: preferences.campusAccessPointId,
+  };
+}
+
+function fixedPersonalMeeting(item: PersonalItem): Meeting | null {
+  if (
+    item.flexibility.kind !== "fixed" ||
+    item.startTime === undefined ||
+    item.endTime === undefined
+  ) {
+    return null;
+  }
+  return {
+    id: item.id,
+    courseCode: item.title,
+    activityType: "OTHER",
+    sectionCode: "PERSONAL",
+    courseName: item.category,
+    startTime: item.startTime,
+    endTime: item.endTime,
+    weekday: item.weekday,
+    buildingCode: item.locationBuildingCode ?? null,
+    room: item.locationRoom ?? null,
+    term: item.term,
+    locationUnknown: !(item.locationBuildingCode || item.locationRoom),
+  };
+}
+
+function aiGapPlans(input: {
+  meetings: Meeting[];
+  personalItems: PersonalItem[];
+  preferences: UserPreferences;
+  gapPreferences: GapPreferences;
+  permissions: AiPermissions;
+}): AiSnapshot["gapPlans"] {
+  if (!input.permissions.readGapPlans) return [];
+
+  // Personal items affect a delegated gap only when the user also chose to share them.
+  // This prevents a gap boundary from leaking the existence/time of a hidden personal item.
+  const personalMeetings = input.permissions.readPersonal
+    ? input.personalItems
+        .map(fixedPersonalMeeting)
+        .filter((meeting): meeting is Meeting => meeting !== null)
+    : [];
+  const combined = [...input.meetings, ...personalMeetings];
+  const planTransition = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, combined);
+
+  return TERMS.flatMap((term) =>
+    findGaps(combined, term).map((gap) => {
+      const { assessment } = planGapAssessment(
+        gap,
+        input.preferences,
+        input.gapPreferences,
+        planTransition,
+      );
+      return {
+        id: gap.id,
+        term: gap.term,
+        weekday: gap.weekday,
+        startTime: gap.startTime,
+        endTime: gap.endTime,
+        durationMinutes: gap.durationMinutes,
+        previousMeetingId: gap.previous.id,
+        nextMeetingId: gap.next.id,
+        assessment,
+      };
+    }),
+  );
+}
+
+export function aiSnapshotContent(input: {
+  meetings: Meeting[];
+  personalItems: PersonalItem[];
+  preferences: UserPreferences;
+  gapPreferences: GapPreferences;
+  permissions: AiPermissions;
+}) {
+  return {
+    permissions: input.permissions,
+    schedule: input.meetings.map(aiMeeting),
+    personalItems: input.permissions.readPersonal ? input.personalItems.map(aiPersonalItem) : [],
+    gapPlans: aiGapPlans(input),
+    gapPreferences: input.permissions.readGapPreferences ? input.gapPreferences : null,
+    routingPreferences: input.permissions.readRoutingPreferences
+      ? aiRoutingPreferences(input.preferences)
+      : null,
+  };
+}
+
+export function aiSnapshotFingerprint(input: Parameters<typeof aiSnapshotContent>[0]): string {
+  return JSON.stringify(aiSnapshotContent(input));
+}
+
+export function buildAiSnapshot(
+  revision: number,
+  input: Parameters<typeof aiSnapshotContent>[0],
+): AiSnapshot {
+  return {
+    schemaVersion: 1,
+    revision,
+    generatedAt: new Date().toISOString(),
+    ...aiSnapshotContent(input),
+  };
+}

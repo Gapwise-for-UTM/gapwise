@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OAuthConsentRouteImport } from './routes/oauth.consent'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppGapsRouteImport } from './routes/_app.gaps'
@@ -16,6 +17,11 @@ import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
 import { Route as AppTodayRouteImport } from './routes/_app.today'
 import { Route as AppRouteIndexRouteImport } from './routes/_app/route/index'
 
+const OAuthConsentRoute = OAuthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
@@ -49,12 +55,14 @@ const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/gaps': typeof AppGapsRoute
+  '/oauth/consent': typeof OAuthConsentRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
   '/route/': typeof AppRouteIndexRoute
 }
 export interface FileRoutesByTo {
   '/gaps': typeof AppGapsRoute
+  '/oauth/consent': typeof OAuthConsentRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
   '/': typeof AppIndexRoute
@@ -62,6 +70,7 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/oauth/consent': typeof OAuthConsentRoute
   '/_app': typeof AppRouteWithChildren
   '/_app/gaps': typeof AppGapsRoute
   '/_app/timetable': typeof AppTimetableRoute
@@ -71,11 +80,12 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/gaps' | '/timetable' | '/today' | '/route/'
+  fullPaths: '/' | '/gaps' | '/oauth/consent' | '/timetable' | '/today' | '/route/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/gaps' | '/timetable' | '/today' | '/' | '/route'
+  to: '/gaps' | '/oauth/consent' | '/timetable' | '/today' | '/' | '/route'
   id:
     | '__root__'
+    | '/oauth/consent'
     | '/_app'
     | '/_app/gaps'
     | '/_app/timetable'
@@ -85,11 +95,19 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  OAuthConsentRoute: typeof OAuthConsentRoute
   AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/oauth/consent': {
+      id: '/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof OAuthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app': {
       id: '/_app'
       path: ''
@@ -154,6 +172,7 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
+  OAuthConsentRoute: OAuthConsentRoute,
   AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport

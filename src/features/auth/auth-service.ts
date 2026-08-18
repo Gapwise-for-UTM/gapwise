@@ -7,38 +7,47 @@ import {
 import { authStore } from "./auth-store";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 
-export async function signInWithGitHub(): Promise<void> {
+function authRedirectTarget(redirectTo?: string): string {
+  if (!redirectTo) return window.location.origin;
+  const target = new URL(redirectTo, window.location.origin);
+  if (target.origin !== window.location.origin) {
+    throw new Error("Authentication can only return to Gapwise.");
+  }
+  return target.href;
+}
+
+export async function signInWithGitHub(redirectTo?: string): Promise<void> {
   const supabase = requireSupabaseClient();
   assertCanPersistAuthRedirect();
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "github",
     options: {
-      redirectTo: window.location.origin,
+      redirectTo: authRedirectTarget(redirectTo),
     },
   });
   if (error) throw error;
 }
 
-export async function signInWithGoogle(): Promise<void> {
+export async function signInWithGoogle(redirectTo?: string): Promise<void> {
   const supabase = requireSupabaseClient();
   assertCanPersistAuthRedirect();
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: window.location.origin,
+      redirectTo: authRedirectTarget(redirectTo),
     },
   });
   if (error) throw error;
 }
 
-export async function signInWithMicrosoft(): Promise<void> {
+export async function signInWithMicrosoft(redirectTo?: string): Promise<void> {
   const supabase = requireSupabaseClient();
   assertCanPersistAuthRedirect();
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "azure",
     options: {
       scopes: "email",
-      redirectTo: window.location.origin,
+      redirectTo: authRedirectTarget(redirectTo),
     },
   });
   if (error) throw error;
