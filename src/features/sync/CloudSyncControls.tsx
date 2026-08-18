@@ -1,10 +1,10 @@
 import type { User } from "@supabase/supabase-js";
 import { CloudDownload, CloudUpload, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { AiIntegrationControls } from "@/features/ai/AiIntegrationControls";
 import { useAiDelegation } from "@/features/ai/use-ai-delegation";
 import type { GapPreferences } from "@/features/gaps/types";
-import { createPrivateDataPayload, type PrivateDataPayloadV1 } from "@/features/security/private-data";
+import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
@@ -40,8 +40,6 @@ export function CloudSyncControls({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const enabled = isSupabaseConfigured && Boolean(user);
-  const aiPendingPersonalItems = useRef(personalItems);
-  aiPendingPersonalItems.current = personalItems;
 
   const aiController = useAiDelegation({
     userId: user?.id ?? null,
@@ -50,19 +48,7 @@ export function CloudSyncControls({
     preferences,
     gapPreferences,
     isDemo: meetings === DEMO_MEETINGS,
-    onPersonalItemsChange: (items) => {
-      aiPendingPersonalItems.current = items;
-    },
-    onGapPreferencesChange: (nextGapPreferences) => {
-      onLoadPrivate(
-        createPrivateDataPayload({
-          schedule: meetings ?? [],
-          personalItems: aiPendingPersonalItems.current,
-          preferences,
-          gapPreferences: nextGapPreferences,
-        }),
-      );
-    },
+    onPrivateDataChange: onLoadPrivate,
   });
 
   async function run(action: () => Promise<string>) {
@@ -172,7 +158,7 @@ export function CloudSyncControls({
         ) : null}
       </section>
 
-      <AiIntegrationControls controller={aiController} />
+      {aiController.configured ? <AiIntegrationControls controller={aiController} /> : null}
     </div>
   );
 }
