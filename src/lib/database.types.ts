@@ -1,4 +1,4 @@
-// Generated from the connected Supabase project after Gate 6 plaintext retirement.
+// Generated from the connected Supabase project after the AI delegation schema rollout.
 // Regenerate after any later hosted schema change.
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
@@ -10,6 +10,111 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_delegations: {
+        Row: {
+          created_at: string;
+          crypto_version: number;
+          enabled: boolean;
+          permissions: Json;
+          revision: number;
+          snapshot_ciphertext: string;
+          snapshot_nonce: string;
+          snapshot_schema_version: number;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          crypto_version?: number;
+          enabled?: boolean;
+          permissions: Json;
+          revision: number;
+          snapshot_ciphertext: string;
+          snapshot_nonce: string;
+          snapshot_schema_version?: number;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          crypto_version?: number;
+          enabled?: boolean;
+          permissions?: Json;
+          revision?: number;
+          snapshot_ciphertext?: string;
+          snapshot_nonce?: string;
+          snapshot_schema_version?: number;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      ai_oauth_clients: {
+        Row: {
+          client_id: string;
+          client_name: string;
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          client_id: string;
+          client_name: string;
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          client_id?: string;
+          client_name?: string;
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      ai_pending_actions: {
+        Row: {
+          action_ciphertext: string;
+          action_nonce: string;
+          action_schema_version: number;
+          completed_at: string | null;
+          created_at: string;
+          crypto_version: number;
+          expected_revision: number;
+          id: string;
+          idempotency_key: string;
+          result_code: string | null;
+          status: string;
+          user_id: string;
+        };
+        Insert: {
+          action_ciphertext: string;
+          action_nonce: string;
+          action_schema_version?: number;
+          completed_at?: string | null;
+          created_at?: string;
+          crypto_version?: number;
+          expected_revision: number;
+          id?: string;
+          idempotency_key: string;
+          result_code?: string | null;
+          status?: string;
+          user_id: string;
+        };
+        Update: {
+          action_ciphertext?: string;
+          action_nonce?: string;
+          action_schema_version?: number;
+          completed_at?: string | null;
+          created_at?: string;
+          crypto_version?: number;
+          expected_revision?: number;
+          id?: string;
+          idempotency_key?: string;
+          result_code?: string | null;
+          status?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       crypto_key_envelopes: {
         Row: {
           created_at: string;
