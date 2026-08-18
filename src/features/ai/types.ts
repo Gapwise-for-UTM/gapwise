@@ -1,7 +1,13 @@
 import type { GapPreferences } from "@/features/gaps/types";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { PersonalCategory, PersonalFlexibility, PersonalItem } from "@/lib/personal-types";
-import type { ActivityType, MeetingDateRange, MeetingLocationType, Term, Weekday } from "@/lib/timetable-types";
+import type {
+  ActivityType,
+  MeetingDateRange,
+  MeetingLocationType,
+  Term,
+  Weekday,
+} from "@/lib/timetable-types";
 
 export type AiPermissions = {
   readSchedule: true;
@@ -12,13 +18,15 @@ export type AiPermissions = {
   readRoutingPreferences: boolean;
 };
 
+// Start with the smallest useful delegation. A user must explicitly opt into every
+// additional private category and every write capability.
 export const DEFAULT_AI_PERMISSIONS: AiPermissions = {
   readSchedule: true,
-  readPersonal: true,
+  readPersonal: false,
   writePersonal: false,
-  readGapPreferences: true,
+  readGapPreferences: false,
   writeGapPreferences: false,
-  readRoutingPreferences: true,
+  readRoutingPreferences: false,
 };
 
 export type AiMeeting = {
@@ -91,7 +99,7 @@ export type PersonalItemDraft = {
 
 export type PersonalItemPatch = Partial<
   Omit<PersonalItemDraft, "flexibility"> & { flexibility: PersonalFlexibility }
->;
+> & { color?: string | null };
 
 export type AiAction =
   | {
