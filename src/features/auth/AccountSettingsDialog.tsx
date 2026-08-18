@@ -1,4 +1,4 @@
-import { Bot, UserRound } from "lucide-react";
+import { Bot, Link2, UserRound } from "lucide-react";
 import { AiIntegrationControls } from "@/features/ai/AiIntegrationControls";
 import type { AiDelegationController } from "@/features/ai/use-ai-delegation";
 import {
@@ -10,6 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const GAPWISE_MCP_URL = "https://ai.gapwise.ca/api/mcp";
+
 export function AccountSettingsDialog({
   open,
   onOpenChange,
@@ -19,7 +21,7 @@ export function AccountSettingsDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   identity: string;
-  aiController: AiDelegationController;
+  aiController: AiDelegationController | null;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -54,14 +56,42 @@ export function AccountSettingsDialog({
             </section>
           </TabsContent>
 
-          <TabsContent value="ai" className="mt-4">
-            {aiController.configured ? (
-              <AiIntegrationControls controller={aiController} />
+          <TabsContent value="ai" className="mt-4 space-y-4">
+            <section className="rounded-xl border border-border/70 p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/8">
+                  <Link2 className="h-4 w-4 text-accent" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold">Connect ChatGPT, Claude, or another MCP client</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Add the Gapwise MCP endpoint in your AI client. OAuth sign-in and the permissions
+                    below decide what that client can actually read or change.
+                  </p>
+                  <code className="mt-3 block overflow-x-auto rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-foreground">
+                    {GAPWISE_MCP_URL}
+                  </code>
+                </div>
+              </div>
+            </section>
+
+            {aiController ? (
+              aiController.configured ? (
+                <AiIntegrationControls controller={aiController} />
+              ) : (
+                <section className="rounded-xl border border-border/70 p-4 sm:p-5">
+                  <p className="text-sm font-semibold">AI integrations unavailable</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    AI integration is not configured on this Gapwise deployment yet.
+                  </p>
+                </section>
+              )
             ) : (
               <section className="rounded-xl border border-border/70 p-4 sm:p-5">
-                <p className="text-sm font-semibold">AI integrations</p>
+                <p className="text-sm font-semibold">Load your timetable to manage AI access</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  AI integration is not configured on this Gapwise deployment yet.
+                  Gapwise needs your signed-in, real ACORN timetable in this browser before it can
+                  create or update the minimized AI snapshot. Demo schedules are never delegated.
                 </p>
               </section>
             )}
