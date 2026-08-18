@@ -14,9 +14,13 @@ export function registerAiDelegationController(controller: AiDelegationControlle
   currentController = controller;
   emit();
   return () => {
-    if (currentController !== controller) return;
-    currentController = null;
-    emit();
+    // A controller object is refreshed as its state changes. Defer clearing by one microtask so
+    // the replacement registration can win without briefly unmounting the Account settings UI.
+    queueMicrotask(() => {
+      if (currentController !== controller) return;
+      currentController = null;
+      emit();
+    });
   };
 }
 
