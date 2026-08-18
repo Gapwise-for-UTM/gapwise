@@ -13,7 +13,7 @@ const user = (values: Partial<User>): User => ({
 });
 
 describe("OAuth authentication", () => {
-  test("selects the configured providers and uses fragment-free PKCE callbacks", async () => {
+  test("selects the configured providers and uses same-origin PKCE callbacks", async () => {
     const [serviceSource, clientSource] = await Promise.all([
       readFile("src/features/auth/auth-service.ts", "utf8"),
       readFile("src/lib/supabase.ts", "utf8"),
@@ -22,7 +22,9 @@ describe("OAuth authentication", () => {
     expect(serviceSource).toContain('provider: "google"');
     expect(serviceSource).toContain('provider: "azure"');
     expect(serviceSource).toContain('scopes: "email"');
-    expect(serviceSource).toContain("redirectTo: window.location.origin");
+    expect(serviceSource).toContain("function authRedirectTarget");
+    expect(serviceSource).toContain("target.origin !== window.location.origin");
+    expect(serviceSource).toContain("redirectTo: authRedirectTarget(redirectTo)");
     expect(serviceSource).toContain("assertCanPersistAuthRedirect()");
     expect(clientSource).toContain("detectSessionInUrl: true");
     expect(clientSource).toContain('flowType: "pkce"');
