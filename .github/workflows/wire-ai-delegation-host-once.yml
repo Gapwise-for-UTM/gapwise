@@ -12,6 +12,7 @@ permissions:
 
 jobs:
   patch-and-remove:
+    # This workflow is intentionally self-removing after one deterministic source edit.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
