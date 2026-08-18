@@ -26,7 +26,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { AiDelegationController } from "@/features/ai/use-ai-delegation";
+import { useBridgedAiDelegationController } from "@/features/ai/controller-bridge";
 import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
@@ -63,14 +63,13 @@ function GoogleIcon() {
 export function AccountStatus({
   user,
   loading,
-  aiController,
   onAccountDeleted,
 }: {
   user: User | null;
   loading: boolean;
-  aiController: AiDelegationController;
   onAccountDeleted: (clearLocal: boolean) => void;
 }) {
+  const aiController = useBridgedAiDelegationController();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
