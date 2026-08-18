@@ -6,12 +6,17 @@ on:
       - feat/account-ai-settings-v2
     paths:
       - .github/workflows/wire-ai-delegation-host-once.yml
+  pull_request:
+    branches:
+      - main
+    types: [synchronize]
 
 permissions:
   contents: write
 
 jobs:
   patch-and-remove:
+    if: github.event_name == 'push' || github.head_ref == 'feat/account-ai-settings-v2'
     # This workflow is intentionally self-removing after one deterministic source edit.
     runs-on: ubuntu-latest
     steps:
