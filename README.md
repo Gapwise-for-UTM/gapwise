@@ -1,49 +1,128 @@
 <div align="center">
 
-<img src="public/logo-mark.svg" width="116" alt="Gapwise route-shaped G logo" />
+<img src="public/logo-mark.svg" width="120" alt="Gapwise route-shaped G logo" />
 
 # Gapwise for UTM
 
-### Make every gap on campus count.
+### Your timetable, your campus, your gaps — understood as one system.
 
-**A privacy-first timetable, gap planner, and campus navigation experience built specifically for University of Toronto Mississauga students.**
+**A privacy-first timetable, gap-planning, campus-navigation, and AI-delegation platform built specifically for University of Toronto Mississauga students.**
 
 [![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise.ca)
 [![CI](https://img.shields.io/github/actions/workflow/status/andrewmuratov/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/andrewmuratov/gapwise/actions/workflows/ci.yml)
-[![MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
+[![UTM](https://img.shields.io/badge/Campus-UTM-203B62?style=for-the-badge)](https://www.utm.utoronto.ca/)
 
-<sub>React 19 · TypeScript · TanStack Router · MapLibre · Supabase · Bun · Vercel</sub>
+<sub>React 19 · TypeScript · TanStack Router · MapLibre · Supabase · Bun · Vercel · MCP</sub>
 
 <br />
 
-**[Live app](https://gapwise.ca)** · **[Privacy](PRIVACY.md)** · **[Security](SECURITY.md)** · **[Contributing](CONTRIBUTING.md)** · **[Operations](docs/OPERATIONS.md)** · **[Campus survey](docs/CAMPUS_SURVEY.md)**
+**[Live app](https://gapwise.ca)** · **[Privacy](https://gapwise.ca/privacy.html)** · **[Terms](https://gapwise.ca/terms.html)** · **[Support](https://gapwise.ca/support.html)** · **[Security](SECURITY.md)** · **[Contributing](CONTRIBUTING.md)**
 
 </div>
 
 ---
 
-## What Gapwise does
+## What Gapwise is
 
-Gapwise turns an ACORN `.ics` timetable export into a useful UTM day-planning system: **what is next, when should I leave, where should I go, and what can I realistically do with the time between classes?**
+Gapwise turns an ACORN `.ics` timetable export into a UTM-specific day-planning system that can answer four practical questions:
 
-The original calendar file is parsed locally in the browser. Gapwise builds timetable views, identifies gaps, adds route-aware context, and exposes a campus map without requiring an account.
+> **What is next? Where do I need to go? How much of this gap is actually usable? What is the best feasible thing to do with it?**
 
-### Current product surface
+The original calendar file is parsed locally in the browser. From that source-backed timetable, Gapwise builds weekly/day views, identifies real bounded gaps, applies deterministic route and transition logic, and surfaces conservative recommendations without requiring an account.
+
+Signed-in users can optionally add encrypted private sync, friend-overlap features, and **explicit AI delegation** to compatible assistants through the separate provider-neutral Gapwise AI MCP service.
+
+### At a glance
+
+| Layer | What it does |
+| --- | --- |
+| **Timetable** | Parses ACORN locally and normalizes classes, sections, times, dates, rooms, and recurrence. |
+| **Gap engine** | Finds real bounded openings and computes usable activity time, setup/pack-up, travel, buffers, leave-by, arrival, recommendations, alternatives, and confidence. |
+| **Campus model** | Maintains canonical UTM building identity, geometry, entrances, provenance, and conservative routing semantics. |
+| **Day Route** | Turns the schedule into a chronological map-first campus journey. |
+| **Private sync** | Optionally encrypts user-owned private state before Supabase storage. |
+| **AI delegation** | Lets the user explicitly share a minimized, permissioned schedule/planning snapshot with MCP-capable assistants. |
+| **Public campus intelligence** | Exposes stateless building, routing, and gap-planning capabilities without exposing any student's timetable. |
+
+---
+
+## Product surface
 
 - **ACORN import and demo** — browser-local `.ics` parsing, import-first onboarding, weekly timetable, and dedicated mobile day views.
 - **Today** — current/next class context, gap state, leave-by guidance, and direct navigation actions.
-- **Gap Plan** — route-aware usable-time recommendations rather than a static timetable-only view.
-- **Day Route / campus explorer** — a map-first MapLibre experience with time-labelled class stops anchored to routed arrival entrances when route evidence exists, chronological route progression, a left-to-right day sequence, canonical building geometry, mapped entrances, commute origins, and conservative route confidence.
-- **Integrated mobile surface** — Today, Timetable, Gap Plan, and Map use a continuous phone canvas with typography, spacing, hairline dividers, and restrained glow instead of stacks of decorative rounded cards; first-run empty states are vertically balanced within the usable phone viewport.
-- **Consistent activity semantics** — LEC, TUT, and PRA retain the same semantic color in timetable rows/badges, Day Route sequence items, and map class markers/details.
-- **Map navigation tuned for phones and laptops** — north-stable interaction, collision-aware time labels, separated fit/location/zoom controls, reduced-motion support, and route fitting that respects manual pan/zoom.
+- **Gap Plan** — route-aware usable-time recommendations instead of treating every calendar opening as equally valuable.
+- **Day Route / campus explorer** — MapLibre-based chronological class stops, canonical buildings, mapped entrances, route evidence, commute origins, and conservative confidence states.
 - **Residence, transit, parking, and pickup origins** — model realistic campus-day starts and returns.
-- **Opt-in live location** — foreground geolocation only; no background tracking.
-- **Optional encrypted private sync** — restore signed-in private state across devices while keeping guest mode first-class.
+- **Personal timetable items** — add non-academic blocks without mutating imported academic meetings.
+- **Optional encrypted private sync** — restore signed-in private state across devices while guest mode remains first-class.
 - **Microsoft, Google, and GitHub OAuth** through Supabase Auth.
-- **Privacy-preserving friend overlap** — limited mutual free windows without exposing either student's timetable.
-- **Accessible/mobile interaction** — keyboard and screen-reader semantics, reduced-motion support, responsive phone layouts, safe-area-aware bottom navigation, PWA support, and light/dark themes.
-- **Free and open source** — the live app links directly to this repository and the MIT License.
+- **Privacy-preserving friend overlap** — intentionally lossy mutual free-window comparison rather than schedule sharing.
+- **Opt-in foreground live location** — no background tracking.
+- **Accessible/mobile interaction** — responsive layouts, safe areas, keyboard and screen-reader semantics, reduced-motion support, PWA behavior, and light/dark themes.
+- **Provider-neutral AI delegation** — use the same Gapwise MCP boundary from compatible assistants rather than building provider-specific timetable logic.
+
+---
+
+## Gapwise AI — grounded planning, not timetable hallucination
+
+Gapwise's AI architecture deliberately separates **deterministic truth** from **model reasoning**.
+
+```text
+Gapwise / UTM truth                      Assistant reasoning
+────────────────────                     ───────────────────
+class times + recurrence                 understand the user's goal
+canonical buildings                     compare trade-offs
+route engine                             choose which tools to call
+gap assessment                           explain the result
+permission model                         propose bounded changes
+write validation
+```
+
+A model should not estimate whether a student can make a transition or invent how much of a gap is usable when Gapwise can compute it.
+
+### Private delegated intelligence
+
+A signed-in user can explicitly enable AI access from Gapwise account settings. Delegation is separate from ordinary OAuth/login and remains least-privilege.
+
+Depending on the user's chosen permissions, the AI service can receive:
+
+- source-backed academic timetable facts (**always read-only**);
+- explicitly delegated personal timetable items;
+- deterministic Gapwise gap plans;
+- selected gap-planning preferences;
+- selected routing preferences;
+- bounded permission to queue personal-item or gap-preference changes.
+
+The AI delegation boundary excludes raw ACORN `.ics`, friend data, precise live location, account credentials, OAuth secrets, Gapwise's primary private-data DEK/KEK, and unrelated browser state.
+
+Writes are typed, revision-checked, idempotency-bounded, and independently revalidated before Gapwise applies them. There is **no academic-class mutation tool**.
+
+### Public deterministic campus intelligence — live
+
+Gapwise exposes a small anonymous/stateless production capability surface:
+
+```text
+GET  /api/utm-buildings
+GET  /api/utm-building?q=...
+POST /api/utm-route
+POST /api/utm-gap-plan
+```
+
+These endpoints power first-party consumers such as Gapwise AI and preserve Gapwise's existing route semantics:
+
+- canonical building resolution;
+- deterministic building-to-building routing using the existing engine;
+- `routed` / `approximate` / `unavailable` distinctions;
+- step-free fail-closed behavior;
+- verification/accessibility warnings and provenance;
+- deterministic gap-window assessment using the same Gapwise gap logic rather than model arithmetic;
+- no raw routing graph nodes/edges;
+- no user timetable, account, friend, sync, OAuth, raw `.ics`, or live-location data.
+
+The production MCP service composes this public data plane with explicitly delegated private schedule context without sending a student's timetable into the stateless routing API. A Claude end-to-end regression on August 19, 2026 verified that the public route/gap tools and private precomputed gap plan agree on deterministic timing and recommendation output while preserving different warning granularity where room-level data exists only on the private side.
+
+See [`docs/CLAUDE_CONNECTOR.md`](docs/CLAUDE_CONNECTOR.md) for connector setup, troubleshooting, and example prompts.
 
 ---
 
@@ -51,26 +130,22 @@ The original calendar file is parsed locally in the browser. Gapwise builds time
 
 Gapwise deliberately separates **visual geography**, **building identity**, and **navigation evidence**.
 
-`src/data/utm/building-footprints.ts` is the canonical building-identity layer. Recognized UTM buildings/facilities own explicit `Polygon` or `MultiPolygon` geometry; basemap polygons and nearest-entrance heuristics do not silently redefine a building.
-
-The canonical registry currently covers the complete 30-building/facility UTM inventory represented by the reviewed source data. Search, hover, click/tap selection, and map framing use that canonical geometry.
+The canonical UTM registry covers the 30-building/facility inventory represented by the reviewed source data. Building identity is explicit; basemap polygons and nearest-entrance heuristics do not silently redefine a building.
 
 Routing is intentionally conservative:
 
-- **Verified** — evidence-backed routing/entrance data.
-- **Inferred** — a mapped approach used when a verified public door point is unavailable.
-- **Approximate** — clearly labelled fallback guidance.
-- **Unavailable** — Gapwise refuses to invent a route it cannot justify.
+| State | Meaning |
+| --- | --- |
+| **Verified** | Evidence-backed routing/entrance data. |
+| **Inferred** | A mapped approach used when a verified public door point is unavailable. |
+| **Approximate** | Clearly labelled conservative fallback guidance. |
+| **Unavailable** | Gapwise refuses to invent a route it cannot justify. |
 
-The Day Route map is a presentation of this same deterministic routing truth. Class markers show actual timetable times rather than synthetic stop numbers. When a routed approach exists, a class time is placed at the incoming route endpoint — the entrance the student reaches — and the first routed class falls back to its outgoing route origin when there is no incoming leg. If a later route leaves the same building through a different entrance, the class time stays at the arrival entrance rather than jumping with route selection, and Gapwise does not draw an unverified straight indoor connector between doors. Route segments still progress visually from earlier to later stops, while start/end commute anchors remain semantically distinct from classes.
+Step-free requests are stricter: if the available graph cannot justify an accessible path, Gapwise reports the route as unavailable instead of silently falling back to stairs or an unverified approximation.
 
-The next campus-data milestone is not broader guessed coverage. It is a smaller **field-verified routing dataset** with provenance and verification dates, followed by a lightweight correction/reporting loop.
+The next major campus-data quality milestone is a smaller **field-verified routing dataset** with provenance and verification dates, followed by a lightweight correction/reporting loop.
 
 See [`docs/CAMPUS_MAP_GEOMETRY.md`](docs/CAMPUS_MAP_GEOMETRY.md) and [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md).
-
-### 3D architecture
-
-`src/data/utm/campus-models.ts` preserves a clean integration seam for future georeferenced GLB/GLTF models, but 3D model production is **not current roadmap work**. Canonical footprints remain authoritative for building identity. Revisit 3D only if real user evidence shows a meaningful navigation/comprehension benefit that justifies the performance and complexity cost.
 
 ---
 
@@ -79,48 +154,65 @@ See [`docs/CAMPUS_MAP_GEOMETRY.md`](docs/CAMPUS_MAP_GEOMETRY.md) and [`docs/CAMP
 The **original ACORN `.ics` file never leaves the browser**.
 
 ```text
-ACORN .ics
-    │
-    ▼
-Browser parsing ──────► timetable + gaps + routes
-    │
-    ├── guest mode ───► local state
-    │
-    └── optional signed-in sync
-            │
-            ▼
-      browser encryption
-            │
-            ▼
-         Supabase
-       (ciphertext +
-      minimal metadata)
+                         ┌──────────────────────────┐
+ACORN .ics ──local──────►│     Gapwise browser     │
+                         │ canonical private state  │
+                         └───────────┬──────────────┘
+                                     │
+              ┌──────────────────────┼──────────────────────┐
+              │                      │                      │
+              ▼                      ▼                      ▼
+        guest/local             encrypted sync       explicit AI delegation
+                                   │                      │
+                                   ▼                      ▼
+                                Supabase             minimized snapshot
+                              ciphertext               separate crypto
+                                                         domain
 ```
 
 Key properties:
 
-- core timetable, gap, recommendation, and route computation is local-first;
+- timetable import and normalization are local-first;
 - cloud sync is optional;
-- private payloads are encrypted in the browser before Supabase storage;
-- live location is opt-in and not background-tracked;
+- private sync payloads are encrypted in the browser before Supabase storage;
 - friend availability uses a separate deliberately lossy encrypted capsule;
-- account deletion removes the Supabase identity and user-owned application records and clears the current browser's private local state;
+- live location is opt-in and foreground-only;
+- AI delegation is an independent opt-in boundary with its own minimized schema and encryption domain;
+- imported academic meetings remain immutable to AI writes;
 - no advertising and no raw timetable/location/friend analytics;
 - production and preview environments must never share a key-encryption key.
 
-Gapwise uses defense in depth. It does **not** claim end-to-end encryption or zero knowledge: plaintext exists in the active browser, and the production Vercel key broker is inside the cryptographic trust boundary for key unwrapping.
+Gapwise does **not** claim zero knowledge or end-to-end encryption. Plaintext exists in the active browser, and trusted production services sit inside documented cryptographic boundaries where necessary.
 
-Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
+Read the public **[Privacy Notice](https://gapwise.ca/privacy.html)**, [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
+
+---
+
+## Claude connector
+
+The canonical remote MCP endpoint is:
+
+```text
+https://ai.gapwise.ca/api/mcp
+```
+
+Claude can connect to that endpoint through a custom remote connector. OAuth authenticates the exact client, while timetable access remains separately controlled by the user's Gapwise Account → AI permissions. The production connector currently exposes 17 tools: 13 read-only tools and 4 write/delete tools. Public campus tools work independently of private timetable delegation; private timetable tools fail closed when delegation is disabled.
+
+The connector is provider-neutral: Claude is a validated client, not a special scheduling backend. Other compatible MCP clients can use the same canonical service subject to their own client and publication requirements.
 
 ---
 
 ## Engineering model
 
-Gapwise's scheduling and routing engine is deterministic. React is a consumer of timetable, gap, routing, and campus-domain logic rather than the source of truth for those rules.
+Gapwise's schedule, gap, campus, and routing behavior is deterministic. React presents that logic; it is not the source of truth for it.
 
-The same verified domain logic is intended to support the web app today and, after the launch freeze, a small public REST/OpenAPI surface and remote MCP server without duplicating routing semantics per AI platform.
+The project follows three rules:
 
-AI tools accelerate implementation and review, but the architecture, privacy boundaries, UTM-specific semantics, routing model, verification policy, product decisions, and production maintenance remain deliberate project engineering decisions.
+1. **Do not duplicate deterministic logic per interface.** Web UI, public API, and MCP consumers should converge on the same Gapwise semantics.
+2. **Uncertainty is data.** Approximate/unavailable/accessibility-unknown states must survive through every layer instead of being polished into false certainty.
+3. **Privacy is architectural.** A reusable function or API capability does not imply permission to expose private student inputs.
+
+AI tools accelerate implementation and review, but UTM-specific semantics, privacy boundaries, verification policy, product decisions, and production maintenance remain explicit engineering decisions.
 
 ---
 
@@ -128,16 +220,16 @@ AI tools accelerate implementation and review, but the architecture, privacy bou
 
 - React 19.2 + TypeScript 5.x
 - TanStack Router / Start
-- Vite 8
-- Tailwind CSS 4
+- Vite 8 + Tailwind CSS 4
 - MapLibre GL 6
-- Supabase Auth/Postgres/RLS
+- Supabase Auth / Postgres / RLS
 - Bun 1.3.14
 - Playwright
-- Vercel + Vercel Analytics/Speed Insights
+- Vercel + Analytics / Speed Insights
 - GitHub Actions
+- Model Context Protocol integration through the separate Gapwise AI service
 
-`package.json` and `bun.lock` are the source of truth for exact dependency versions. The project currently targets **Node 24.x** for Node-based tooling; TypeScript 6 and Node 26 typings are deliberately deferred major migrations rather than launch-period dependency hygiene.
+`package.json` and `bun.lock` are the source of truth for exact dependency versions. The project targets **Node 24.x** where Node-based tooling is required.
 
 ---
 
@@ -157,7 +249,7 @@ bun run dev
 
 Guest mode works without backend configuration.
 
-Optional Supabase-backed features use browser-safe variables only:
+Optional Supabase-backed browser features use browser-safe variables only:
 
 ```dotenv
 VITE_SUPABASE_URL=https://your-project.supabase.co
@@ -170,7 +262,7 @@ Never place a service-role key, OAuth client secret, KEK, private key, or other 
 
 ## Verification
 
-Normal gates:
+Normal release gates:
 
 ```bash
 bun run typecheck
@@ -183,47 +275,43 @@ bun run test:e2e
 
 Database/security changes also require the isolated Supabase checks documented in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
-The repository includes regression coverage for ACORN parsing/restoration, onboarding, gap planning, campus routing/geometry, route-anchored time-marker behavior, time-marker collision layout, encrypted sync and user isolation, OAuth/account flows, accessibility, PWA behavior, and critical browser journeys.
+The CI workflow deliberately treats documentation-only changes as non-runtime changes: expensive browser and database suites are skipped, while formatting/document integrity still gets checked. Runtime changes continue through the complete release gates.
 
 ---
 
-## Development and deployment discipline
+## Development discipline
 
-`main` is production and Vercel deploys from it. Preview deployments and GitHub Actions are useful but finite resources, so **do not use pushes as a debugging loop**.
+`main` is production and Vercel deploys from it. Remote CI and preview capacity are finite, so pushes are not a debugging loop.
 
 For maintainer work:
 
 1. Start from the relevant Linear issue when one exists.
-2. Make and verify the complete focused change locally first.
-3. Batch coherent edits into a single deliberate branch update whenever practical.
-4. Push once for remote CI/preview validation instead of sending a sequence of formatting/test-fix commits.
-5. If a remote job fails for an environmental/flaky reason, rerun only the failed job/run when possible instead of creating a no-op commit.
-6. Squash-merge focused PRs to keep `main` readable and production deployment churn low.
+2. Inspect the current production/repository state before editing.
+3. Verify coherent work locally first.
+4. Prefer one focused branch update over chains of formatting/fix commits.
+5. Rerun failed remote jobs instead of creating no-op commits when possible.
+6. Squash-merge focused PRs and keep production deployment churn low.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md).
 
 ---
 
-## Current direction — 2026-08-18
+## Current direction — August 2026
 
-Gapwise is in launch stabilization for UTM Orientation. The core product is working; the remaining roadmap is deliberately bounded around first-run reliability, real-user validation, trustworthy routing, and launch-critical mobile clarity.
+Gapwise remains in launch stabilization for UTM Orientation. The Aug 18–19 AI work was an explicit, bounded exception because real MCP clients were available and the work could preserve the existing privacy model rather than redesign the product.
 
-Already shipped or owner-approved during the Aug 17–18 maintenance window:
+Production-verified now:
 
-- **AND-66 first-run activation** — Import ACORN is the dominant action, account decisions are post-value, local parsing is explicit, successful imports hand off to Today, and mobile auth/timetable polish is live.
-- **Map-first Day Route UX** — chronological class times replace numbered map stops, routed class times align to the entrance reached by the route when available, route segments visually communicate progression, the map is the primary surface on mobile and desktop, and map controls are separated so zoom/fit/location actions do not overlap.
-- **Integrated mobile visual system (AND-75)** — the phone experience uses one continuous surface instead of decorative card stacks, keeps course rows free of timeline-dot/left-rail ornament, balances no-timetable states within the usable viewport, and shares LEC/TUT/PRA colors across timetable and map representations.
-- **Launch-safe dependency maintenance** — current minor/patch updates were consolidated and validated, `@types/node` is aligned with Node 24.x, and TypeScript 6 / Node 26 typings remain explicitly deferred.
+- ACORN-first activation and mobile launch hardening;
+- map-first chronological Day Route and integrated mobile surfaces;
+- encrypted private sync and privacy-preserving friend overlap;
+- explicit private AI delegation with OAuth, minimized encrypted snapshots, scoped permissions, read-only academic meetings, and revision-safe queued personal changes;
+- provider-neutral AI decision tools for day/week context, availability, weekly opportunities, and plan-feasibility checking;
+- public/stateless campus intelligence for buildings, routing, and deterministic gap simulation;
+- the shared Gapwise AI MCP adapter and its four public campus tools;
+- Claude discovery of the full 17-tool surface and end-to-end composition of private timetable facts with public deterministic routing/gap computation.
 
-Next execution gates:
-
-1. **Sep 2 — AND-53 re-entry smoke check**: reconcile actual GitHub/Vercel/Supabase state, run real-device ACORN import checks, and re-verify the shipped onboarding/map behavior.
-2. **Sep 3 — P0 launch work**: parser compatibility hardening, five uncoached launch-gate sessions, only evidence-backed P0 fixes, then final flyer/QR output.
-3. **Sep 4–11 — Orientation launch**: prioritize observing and supporting real UTM students over speculative feature coding.
-4. **Sep 8–12 — tightly capped retention work**: Today hardening and, only if simple/justified, centralized `ZZ TBA` reserved-assessment handling.
-5. **Sep 15 — feature freeze**: after this date, only narrow security/privacy/data-loss/core-import/auth/routing correctness work interrupts academics.
-
-December is reserved for the first field-verified high-value routing dataset, then the transport-neutral domain/API/MCP foundation if capacity remains. Personal-schedule AI access, AI-specific OAuth, Web Push, native apps, broad social features, 3D production, multi-campus expansion, and architectural rewrites are not launch commitments.
+The immediate publication work is narrow: public support/legal documentation, reviewer fixtures, and connector-directory submission. The orientation plan still takes precedence over speculative feature expansion. After that release work, the project returns to launch validation, trustworthy campus data, and the Sep 15 maintenance-focused freeze.
 
 ---
 
@@ -231,7 +319,8 @@ December is reserved for the first field-verified high-value routing dataset, th
 
 ```text
 src/                 app routes, features, components, privacy/security, UTM data
-api/                 same-origin Vercel server endpoints
+src/server/          server-safe first-party capability adapters
+api/                 same-origin Vercel endpoints, including public campus intelligence
 supabase/            migrations and authenticated server functions
 e2e/                 Playwright browser release/regression coverage
 tests/               unit/integration/regression coverage
@@ -252,8 +341,8 @@ Original project code and documentation are available under the **[MIT License](
 
 <div align="center">
 
-**Built for the spaces between classes.**
+### Built for the spaces between classes.
 
-[Open Gapwise →](https://gapwise.ca)
+[**Open Gapwise →**](https://gapwise.ca)
 
 </div>
