@@ -1,6 +1,15 @@
 import { ROUTING_DEFAULTS, sanitizeRoutePreferences } from "../../config/routing.js";
+import { assessGap } from "../../features/gaps/assess-gap.js";
+import { sanitizeGapPreferences } from "../../features/gaps/preferences.js";
+import type { GapPreferences } from "../../features/gaps/types.js";
 import { findRoute } from "../../features/routing/engine.js";
-import type { RoutePreferences, RouteResult } from "../../features/routing/types.js";
+import type {
+  RoutePreferences,
+  RouteResult,
+  TransitionRoute,
+} from "../../features/routing/types.js";
+import type { UserPreferences } from "../../features/sync/preferences.js";
+import type { Gap, Meeting, Term, Weekday } from "../../lib/timetable-types.js";
 import {
   PUBLIC_CAMPUS_DATA_VERSION,
   publicCampusBuildings,
@@ -46,6 +55,27 @@ export type PublicRouteResponse = {
   floorChanges: number | null;
   warnings: string[];
   routeVerification: "verified" | "mixed" | "inferred" | "unavailable";
+};
+
+export type PublicGapPlanResponse = {
+  dataVersion: string;
+  gap: {
+    term: Term;
+    weekday: Weekday;
+    startTime: number;
+    endTime: number;
+    durationMinutes: number;
+    from: PublicBuildingView;
+    to: PublicBuildingView;
+  };
+  route: PublicRouteResponse;
+  gapPreferences: GapPreferences;
+  assessment: ReturnType<typeof assessGap>;
+};
+
+type PublicCampusError = {
+  error: "unknown_building" | "ambiguous_building";
+  message: string;
 };
 
 function unique<T>(values: T[]): T[] {
@@ -163,9 +193,7 @@ export function routeBetweenPublicBuildings(input: {
   from: string;
   to: string;
   preferences?: Partial<RoutePreferences> | null;
-}):
-  | PublicRouteResponse
-  | { error: "unknown_building" | "ambiguous_building"; message: string } {
+}): PublicRouteResponse | PublicCampusError {
   const fromResolution = resolvePublicBuilding(input.from);
   const toResolution = resolvePublicBuilding(input.to);
   if (fromResolution.status === "ambiguous" || toResolution.status === "ambiguous") {
@@ -286,5 +314,153 @@ export function routeBetweenPublicBuildings(input: {
       "Gapwise does not have enough mapped data to estimate this building-to-building route.",
     ],
     routeVerification: "unavailable",
+  };
+}
+
+function meetingForBoundary(input: {
+  id: string;
+  label: string;
+  buildingCode: string;
+  term: Term;
+  weekday: Weekday;
+  startTime: number;
+  endTime: number;
+}): Meeting {
+  return {
+    id: input.id,
+    courseCode: input.label,
+    activityType: "OTHER",
+    sectionCode: "",
+    courseName: input.label,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    weekday: input.weekday,
+    buildingCode: input.buildingCode,
+    room: null,
+    term: input.term,
+    locationUnknown: false,
+    locationType: "physical",
+  };
+}
+
+function transitionFromPublicRoute(route: PublicRouteResponse): TransitionRoute {
+  if (route.status === "unavailable") {
+    return {
+      status: "unavailable",
+      message: "Gapwise does not have a usable mapped route for this gap simulation.",
+      accuracy: "Location unavailable",
+      result: null,
+      displayCoordinates: [],
+      warnings: route.warnings,
+      approximateDistanceMeters: null,
+      approximateSeconds: null,
+    };
+  }
+  if (route.status === "same-building") {
+    return {
+      status: "approximate",
+      message: "Both boundaries are in the same building; room-to-room travel is not mapped.",
+      accuracy: "Approximate building-to-building estimate",
+      result: null,
+      displayCoordinates: [],
+      warnings: route.warnings,
+      approximateDistanceMeters: 0,
+      approximateSeconds: 0,
+    };
+  }
+  return {
+    status: route.status,
+    message:
+      route.status === "routed"
+        ? "Route calculated along Gapwise's bundled campus paths."
+        : "Approximate building-to-building estimate.",
+    accuracy: route.accuracy,
+    result: null,
+    displayCoordinates: [],
+    warnings: route.warnings,
+    approximateDistanceMeters: route.totalDistanceMeters,
+    approximateSeconds: route.estimatedSeconds,
+  };
+}
+
+function userRoutePreferences(route: PublicRouteResponse): UserPreferences {
+  return {
+    ...route.preferences,
+    avoidStairs: route.preferences.mode === "step-free",
+    preferIndoor: route.preferences.mode === "prefer-indoor",
+    dayOrigin: "commute",
+    residenceBuildingCode: null,
+    commuteMode: null,
+    campusAccessPointId: null,
+  };
+}
+
+export function planPublicGap(input: {
+  from: string;
+  to: string;
+  term: Term;
+  weekday: Weekday;
+  startTime: number;
+  endTime: number;
+  routePreferences?: Partial<RoutePreferences> | null;
+  gapPreferences?: Partial<GapPreferences> | null;
+}): PublicGapPlanResponse | PublicCampusError {
+  const route = routeBetweenPublicBuildings({
+    from: input.from,
+    to: input.to,
+    preferences: input.routePreferences,
+  });
+  if ("error" in route) return route;
+
+  const previous = meetingForBoundary({
+    id: "public-gap-origin",
+    label: "Gap origin",
+    buildingCode: route.from.code,
+    term: input.term,
+    weekday: input.weekday,
+    startTime: Math.max(0, input.startTime - 60),
+    endTime: input.startTime,
+  });
+  const next = meetingForBoundary({
+    id: "public-gap-destination",
+    label: "Gap destination",
+    buildingCode: route.to.code,
+    term: input.term,
+    weekday: input.weekday,
+    startTime: input.endTime,
+    endTime: Math.min(1440, input.endTime + 60),
+  });
+  const gap: Gap = {
+    id: "public-gap",
+    term: input.term,
+    weekday: input.weekday,
+    startTime: input.startTime,
+    endTime: input.endTime,
+    durationMinutes: input.endTime - input.startTime,
+    previous,
+    next,
+  };
+  const gapPreferences = sanitizeGapPreferences(input.gapPreferences);
+  const assessment = assessGap({
+    gap,
+    route: transitionFromPublicRoute(route),
+    routePreferences: userRoutePreferences(route),
+    gapPreferences,
+  });
+
+  return {
+    dataVersion: PUBLIC_CAMPUS_DATA_VERSION,
+    gap: {
+      term: input.term,
+      weekday: input.weekday,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      durationMinutes: gap.durationMinutes,
+      from: route.from,
+      to: route.to,
+    },
+    route,
+    gapPreferences,
+    assessment,
   };
 }
