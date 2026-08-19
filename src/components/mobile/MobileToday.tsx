@@ -1,14 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
-import {
-  CalendarClock,
-  Clock3,
-  Home,
-  MapPin,
-  Navigation,
-  Sparkles,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { CalendarClock, Clock3, Home, MapPin, Navigation, type LucideIcon } from "lucide-react";
+import { GapPlannerPreview } from "@/components/GapPlannerPreview";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import { useFirstValueArrival } from "@/features/onboarding/first-value";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
@@ -187,7 +179,6 @@ export function MobileToday({
   const firstValue = useFirstValueArrival(location.pathname.replace(/\/$/, "") === "/today");
   const { setRouteTargetId } = useMobileRouteTarget();
   const { eyebrow, title, detail, rows } = present(state, now, selectedTerm);
-  const canPlanGap = state.kind === "gap";
   const canOpenRoute =
     state.kind === "gap" || state.kind === "before-first" || state.kind === "in-class";
   const routeTargetId =
@@ -198,7 +189,6 @@ export function MobileToday({
         : state.kind === "in-class"
           ? (state.next?.id ?? state.current.id)
           : null;
-  const showGapHint = firstValue.showHint && state.kind === "gap";
 
   return (
     <div className="rise-in space-y-4">
@@ -247,54 +237,33 @@ export function MobileToday({
           </ul>
         ) : null}
 
-        {showGapHint ? (
-          <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-accent/25 bg-accent/6 px-3.5 py-3 text-sm leading-5">
-            <p>
-              You have a {formatCompactDuration(state.gap.durationMinutes)} gap here. Tap to plan
-              it.
-            </p>
-            <button
-              type="button"
-              onClick={firstValue.dismissHint}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Dismiss gap hint"
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
+        {state.kind === "gap" ? (
+          <GapPlannerPreview
+            assessment={state.assessment}
+            onOpenGapPlan={() => {
+              firstValue.acknowledge();
+              onOpenGapPlan();
+            }}
+            className="mt-5"
+          />
         ) : null}
 
-        {canPlanGap || canOpenRoute ? (
+        {canOpenRoute ? (
           <div className="mt-5 flex flex-col gap-2">
-            {canPlanGap ? (
-              <button
-                type="button"
-                onClick={() => {
-                  firstValue.acknowledge();
-                  onOpenGapPlan();
-                }}
-                className="button-primary inline-flex min-h-[2.875rem] items-center justify-center gap-2 px-4 text-sm font-semibold"
-              >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Plan this gap
-              </button>
-            ) : null}
-            {canOpenRoute ? (
-              <button
-                type="button"
-                onClick={() => {
-                  firstValue.acknowledge();
-                  setRouteTargetId(routeTargetId);
-                  onOpenDayRoute();
-                }}
-                className={`inline-flex min-h-[2.875rem] items-center justify-center gap-2 px-4 text-sm font-semibold ${
-                  canPlanGap ? "button-secondary" : "button-primary"
-                }`}
-              >
-                <Navigation className="h-4 w-4" aria-hidden="true" />
-                Navigate
-              </button>
-            ) : null}
+            <button
+              type="button"
+              onClick={() => {
+                firstValue.acknowledge();
+                setRouteTargetId(routeTargetId);
+                onOpenDayRoute();
+              }}
+              className={`inline-flex min-h-[2.875rem] items-center justify-center gap-2 px-4 text-sm font-semibold ${
+                state.kind === "gap" ? "button-secondary" : "button-primary"
+              }`}
+            >
+              <Navigation className="h-4 w-4" aria-hidden="true" />
+              Navigate
+            </button>
           </div>
         ) : null}
       </section>
