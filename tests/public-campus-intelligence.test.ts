@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   getPublicBuilding,
   listPublicBuildings,
+  planPublicGap,
   routeBetweenPublicBuildings,
 } from "../src/server/public-campus/service";
 
@@ -59,5 +60,59 @@ describe("public campus intelligence", () => {
     if ("error" in result) return;
     expect(result.status).toBe("same-building");
     expect(result.warnings.join(" ")).toContain("room-to-room");
+  });
+
+  it("uses the shared Gapwise assessment engine for a public gap window", () => {
+    const result = planPublicGap({
+      from: "MN",
+      to: "IB",
+      term: "Fall",
+      weekday: "Wednesday",
+      startTime: 11 * 60,
+      endTime: 13 * 60,
+      routePreferences: {
+        mode: "fastest",
+        walkingSpeedMps: 1.35,
+        transitionBufferMinutes: 5,
+      },
+      gapPreferences: {
+        setupMinutes: 4,
+        packUpMinutes: 3,
+        lunchWindowStart: 11 * 60 + 30,
+        lunchWindowEnd: 14 * 60 + 30,
+        mealDurationMinutes: 30,
+        riskTolerance: "low",
+      },
+    });
+
+    expect("error" in result).toBe(false);
+    if ("error" in result) return;
+    expect(result.gap.durationMinutes).toBe(120);
+    expect(result.route.from.code).toBe("MN");
+    expect(result.route.to.code).toBe("IB");
+    expect(result.assessment.primary.title.length).toBeGreaterThan(0);
+    expect(result.assessment.primary.activityMinutes).toBeGreaterThanOrEqual(0);
+    expect(result.assessment.leaveByMinutes).toBeLessThanOrEqual(13 * 60);
+    expect(JSON.stringify(result)).not.toContain('"nodes"');
+    expect(JSON.stringify(result)).not.toContain('"edges"');
+  });
+
+  it("keeps step-free gap simulation unavailable when accessibility cannot be verified", () => {
+    const result = planPublicGap({
+      from: "MN",
+      to: "IB",
+      term: "Fall",
+      weekday: "Wednesday",
+      startTime: 11 * 60,
+      endTime: 13 * 60,
+      routePreferences: { mode: "step-free" },
+    });
+
+    expect("error" in result).toBe(false);
+    if ("error" in result) return;
+    if (result.route.status === "unavailable") {
+      expect(result.assessment.routeStatus).toBe("unavailable");
+      expect(result.assessment.warnings.join(" ").toLowerCase()).toContain("step-free");
+    }
   });
 });
