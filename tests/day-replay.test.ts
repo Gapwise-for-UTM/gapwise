@@ -76,6 +76,28 @@ describe("Day Replay domain", () => {
     expect(segments[0]?.route.status).toBe("approximate");
   });
 
+  test("does not invent transition segments between overlapping classes", () => {
+    const overlapping = [
+      meeting("first", "Monday", 540, 660, "MN"),
+      meeting("overlap", "Monday", 600, 720, "IB"),
+      meeting("later", "Monday", 780, 840, "DH"),
+    ];
+    let planned = 0;
+    const countingPlanner: TransitionPlanner = (from, to, preferences) => {
+      planned += 1;
+      return planner(from, to, preferences);
+    };
+
+    const segments = buildDayReplaySegments(
+      overlapping,
+      DEFAULT_USER_PREFERENCES,
+      countingPlanner,
+    );
+
+    expect(segments.map((segment) => segment.id)).toEqual(["overlap--later"]);
+    expect(planned).toBe(1);
+  });
+
   test("tracks class, gap, and completed phases as simulated time advances", () => {
     const segments = buildDayReplaySegments(monday, DEFAULT_USER_PREFERENCES, planner);
 

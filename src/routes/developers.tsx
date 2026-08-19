@@ -58,6 +58,8 @@ console.log(plan.gapPlan.assessment.primary);`;
 
 type PlaygroundMode = "route" | "gap" | "buildings";
 
+const LIVE_REQUEST_TIMEOUT_MS = 5_000;
+
 const ENDPOINTS = [
   ["GET", "/api/utm-buildings", "Canonical building inventory and provenance"],
   ["GET", "/api/utm-building?q=MN", "Resolve one canonical UTM building"],
@@ -72,12 +74,14 @@ function DevelopersPage() {
   const [running, setRunning] = useState(false);
 
   async function runExample() {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), LIVE_REQUEST_TIMEOUT_MS);
     setRunning(true);
     setResult("");
     try {
       let response: Response;
       if (mode === "buildings") {
-        response = await fetch("/api/utm-buildings");
+        response = await fetch("/api/utm-buildings", { signal: controller.signal });
       } else if (mode === "gap") {
         response = await fetch("/api/utm-gap-plan", {
           method: "POST",
@@ -90,18 +94,32 @@ function DevelopersPage() {
             startTime: 660,
             endTime: 780,
           }),
+          signal: controller.signal,
         });
       } else {
         response = await fetch("/api/utm-route", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ from: "MN", to: "IB" }),
+          signal: controller.signal,
         });
       }
       setResult(JSON.stringify((await response.json()) as unknown, null, 2));
-    } catch {
-      setResult(JSON.stringify({ error: "The live example could not be reached." }, null, 2));
+    } catch (cause) {
+      const timedOut = cause instanceof DOMException && cause.name === "AbortError";
+      setResult(
+        JSON.stringify(
+          {
+            error: timedOut
+              ? "The live example timed out. Try again."
+              : "The live example could not be reached.",
+          },
+          null,
+          2,
+        ),
+      );
     } finally {
+      window.clearTimeout(timeout);
       setRunning(false);
     }
   }

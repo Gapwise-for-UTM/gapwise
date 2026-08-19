@@ -39,6 +39,7 @@ type ReplaySource = "remembered" | "local" | "demo" | null;
 function ReplayPage() {
   const { theme, toggleTheme } = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
+  const selectionTokenRef = useRef(0);
   const [meetings, setMeetings] = useState<Meeting[] | null>(null);
   const [source, setSource] = useState<ReplaySource>(null);
   const [term, setTerm] = useState<Term>("Fall");
@@ -48,9 +49,10 @@ function ReplayPage() {
 
   useEffect(() => {
     let active = true;
+    const token = ++selectionTokenRef.current;
     void loadGuestTimetable()
       .then((record) => {
-        if (!active || !record.meetings?.length) return;
+        if (!active || token !== selectionTokenRef.current || !record.meetings?.length) return;
         setMeetings(record.meetings);
         setTerm(chooseDefaultTerm(record.meetings, new Date()));
         setSource("remembered");
@@ -71,24 +73,31 @@ function ReplayPage() {
   );
 
   async function importCalendar(file: File) {
+    const token = ++selectionTokenRef.current;
     setError(null);
     setWarnings([]);
     if (!/\.ics$/i.test(file.name) && file.type !== "text/calendar") {
+      setLoading(false);
       setError("Choose an ACORN .ics calendar file.");
       return;
     }
     if (file.size > MAX_ICS_FILE_BYTES) {
+      setLoading(false);
       setError("That calendar is too large. Choose an .ics file under 2 MB.");
       return;
     }
     setLoading(true);
     try {
-      const result = parseIcs(await file.text());
+      const text = await file.text();
+      if (token !== selectionTokenRef.current) return;
+      const result = parseIcs(text);
+      if (token !== selectionTokenRef.current) return;
       setMeetings(result.meetings);
       setTerm(chooseDefaultTerm(result.meetings, new Date()));
       setWarnings(result.warnings);
       setSource("local");
     } catch (cause) {
+      if (token !== selectionTokenRef.current) return;
       setMeetings(null);
       setSource(null);
       setError(
@@ -97,11 +106,13 @@ function ReplayPage() {
           : "Gapwise couldn't read that calendar. Export a fresh .ics file from ACORN and try again.",
       );
     } finally {
-      setLoading(false);
+      if (token === selectionTokenRef.current) setLoading(false);
     }
   }
 
   function loadDemo() {
+    ++selectionTokenRef.current;
+    setLoading(false);
     setError(null);
     setWarnings([]);
     setMeetings(DEMO_MEETINGS);

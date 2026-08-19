@@ -39,14 +39,17 @@ export function buildDayReplaySegments(
   preferences: UserPreferences,
   planTransition: TransitionPlanner,
 ): DayReplaySegment[] {
-  return meetings.slice(0, -1).map((from, index) => {
+  return meetings.slice(0, -1).flatMap((from, index) => {
     const to = meetings[index + 1]!;
-    return {
-      id: `${from.id}--${to.id}`,
-      from,
-      to,
-      route: planTransition(from, to, preferences),
-    };
+    if (to.startTime < from.endTime) return [];
+    return [
+      {
+        id: `${from.id}--${to.id}`,
+        from,
+        to,
+        route: planTransition(from, to, preferences),
+      },
+    ];
   });
 }
 

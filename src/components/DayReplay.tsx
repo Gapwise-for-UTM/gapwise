@@ -104,14 +104,16 @@ export function DayReplay({
     if (!playing || !bounds) return;
     const step = PLAYBACK_STEPS.find((item) => item.value === speed)?.minutes ?? 10;
     const timer = window.setInterval(() => {
-      setMinute((current) => {
-        const next = Math.min(bounds.endMinute, current + step);
-        if (next >= bounds.endMinute) setPlaying(false);
-        return next;
-      });
+      setMinute((current) => Math.min(bounds.endMinute, current + step));
     }, 360);
     return () => window.clearInterval(timer);
   }, [bounds, playing, speed]);
+
+  useEffect(() => {
+    if (playing && bounds && minute >= bounds.endMinute) {
+      setPlaying(false);
+    }
+  }, [bounds, minute, playing]);
 
   if (!bounds || dayMeetings.length === 0) {
     return (

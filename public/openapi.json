@@ -173,6 +173,14 @@
   },
   "components": {
     "schemas": {
+      "Term": {
+        "type": "string",
+        "enum": ["Fall", "Winter", "Summer"]
+      },
+      "Weekday": {
+        "type": "string",
+        "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+      },
       "Provenance": {
         "type": "object",
         "required": ["source", "sourceUrl", "lastVerified", "verificationStatus"],
@@ -219,9 +227,19 @@
           }
         }
       },
+      "RoutePreferencesInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": { "type": "string", "enum": ["fastest", "prefer-indoor", "step-free"] },
+          "walkingSpeedMps": { "type": "number" },
+          "transitionBufferMinutes": { "type": "number" }
+        }
+      },
       "RoutePreferences": {
         "type": "object",
         "additionalProperties": false,
+        "required": ["mode", "walkingSpeedMps", "transitionBufferMinutes"],
         "properties": {
           "mode": { "type": "string", "enum": ["fastest", "prefer-indoor", "step-free"] },
           "walkingSpeedMps": { "type": "number" },
@@ -235,7 +253,7 @@
         "properties": {
           "from": { "type": "string" },
           "to": { "type": "string" },
-          "preferences": { "$ref": "#/components/schemas/RoutePreferences" }
+          "preferences": { "$ref": "#/components/schemas/RoutePreferencesInput" }
         }
       },
       "Route": {
@@ -248,7 +266,10 @@
           "status",
           "accuracy",
           "totalDistanceMeters",
+          "indoorDistanceMeters",
+          "outdoorDistanceMeters",
           "estimatedSeconds",
+          "floorChanges",
           "warnings",
           "routeVerification"
         ],
@@ -261,7 +282,16 @@
             "type": "string",
             "enum": ["same-building", "routed", "approximate", "unavailable"]
           },
-          "accuracy": { "type": "string" },
+          "accuracy": {
+            "type": "string",
+            "enum": [
+              "Same building",
+              "Verified outdoor route, indoor estimate",
+              "Mapped campus path, indoor estimate",
+              "Approximate building-to-building estimate",
+              "Location unavailable"
+            ]
+          },
           "totalDistanceMeters": { "type": ["number", "null"] },
           "indoorDistanceMeters": { "type": ["number", "null"] },
           "outdoorDistanceMeters": { "type": ["number", "null"] },
@@ -274,9 +304,37 @@
           }
         }
       },
+      "GapPreferencesInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "setupMinutes": { "type": "number" },
+          "packUpMinutes": { "type": "number" },
+          "lunchWindowStart": { "type": "number" },
+          "lunchWindowEnd": { "type": "number" },
+          "mealDurationMinutes": { "type": "number" },
+          "willingToLeaveCampus": { "type": "boolean" },
+          "oneWayHomeCommuteMinutes": { "type": ["number", "null"] },
+          "minimumHomeStayMinutes": { "type": "number" },
+          "homeTurnaroundMinutes": { "type": "number" },
+          "riskTolerance": { "type": "string", "enum": ["low", "medium", "high"] }
+        }
+      },
       "GapPreferences": {
         "type": "object",
         "additionalProperties": false,
+        "required": [
+          "setupMinutes",
+          "packUpMinutes",
+          "lunchWindowStart",
+          "lunchWindowEnd",
+          "mealDurationMinutes",
+          "willingToLeaveCampus",
+          "oneWayHomeCommuteMinutes",
+          "minimumHomeStayMinutes",
+          "homeTurnaroundMinutes",
+          "riskTolerance"
+        ],
         "properties": {
           "setupMinutes": { "type": "number" },
           "packUpMinutes": { "type": "number" },
@@ -297,15 +355,144 @@
         "properties": {
           "from": { "type": "string" },
           "to": { "type": "string" },
-          "term": { "type": "string", "enum": ["Fall", "Winter", "Summer"] },
-          "weekday": {
-            "type": "string",
-            "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-          },
+          "term": { "$ref": "#/components/schemas/Term" },
+          "weekday": { "$ref": "#/components/schemas/Weekday" },
           "startTime": { "type": "integer", "minimum": 0, "maximum": 1440 },
           "endTime": { "type": "integer", "minimum": 0, "maximum": 1440 },
-          "routePreferences": { "$ref": "#/components/schemas/RoutePreferences" },
-          "gapPreferences": { "$ref": "#/components/schemas/GapPreferences" }
+          "routePreferences": { "$ref": "#/components/schemas/RoutePreferencesInput" },
+          "gapPreferences": { "$ref": "#/components/schemas/GapPreferencesInput" }
+        }
+      },
+      "Gap": {
+        "type": "object",
+        "required": ["term", "weekday", "startTime", "endTime", "durationMinutes", "from", "to"],
+        "properties": {
+          "term": { "$ref": "#/components/schemas/Term" },
+          "weekday": { "$ref": "#/components/schemas/Weekday" },
+          "startTime": { "type": "integer" },
+          "endTime": { "type": "integer" },
+          "durationMinutes": { "type": "integer", "minimum": 0 },
+          "from": { "$ref": "#/components/schemas/Building" },
+          "to": { "$ref": "#/components/schemas/Building" }
+        }
+      },
+      "GapTimelineSegment": {
+        "type": "object",
+        "required": ["kind", "label", "minutes"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["setup", "activity", "travel", "buffer", "flex"]
+          },
+          "label": { "type": "string" },
+          "minutes": { "type": "number", "minimum": 0 }
+        }
+      },
+      "GapRecommendation": {
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "title",
+          "summary",
+          "score",
+          "activityMinutes",
+          "reasons",
+          "tags",
+          "timeline"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "action": {
+            "type": "string",
+            "enum": [
+              "tight-transition",
+              "quick-reset",
+              "focus-sprint",
+              "meal-window",
+              "study-block",
+              "deep-work-block",
+              "flexible-long-gap",
+              "leave-campus-candidate",
+              "go-home",
+              "location-dependent"
+            ]
+          },
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "score": { "type": "number" },
+          "activityMinutes": { "type": "number", "minimum": 0 },
+          "reasons": { "type": "array", "items": { "type": "string" } },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "same-room",
+                "same-building",
+                "nearby-route",
+                "lunch-time",
+                "route-verified",
+                "route-estimated",
+                "route-unavailable",
+                "location-unknown",
+                "high-transition-risk",
+                "indoor-route",
+                "step-free-route",
+                "good-for-commuting"
+              ]
+            }
+          },
+          "timeline": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/GapTimelineSegment" }
+          }
+        }
+      },
+      "GapAssessment": {
+        "type": "object",
+        "required": [
+          "primary",
+          "alternatives",
+          "confidence",
+          "confidenceLabel",
+          "travelMinutes",
+          "bufferMinutes",
+          "leaveByMinutes",
+          "arrivalMinutes",
+          "fallback",
+          "routeStatus",
+          "routeAccuracy",
+          "warnings"
+        ],
+        "properties": {
+          "primary": { "$ref": "#/components/schemas/GapRecommendation" },
+          "alternatives": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/GapRecommendation" }
+          },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "confidenceLabel": { "type": "string", "enum": ["high", "medium", "low"] },
+          "travelMinutes": { "type": ["number", "null"] },
+          "bufferMinutes": { "type": "number", "minimum": 0 },
+          "leaveByMinutes": { "type": "number" },
+          "arrivalMinutes": { "type": ["number", "null"] },
+          "fallback": { "type": "boolean" },
+          "routeStatus": {
+            "type": "string",
+            "enum": ["routed", "approximate", "same-room", "unavailable"]
+          },
+          "routeAccuracy": {
+            "type": "string",
+            "enum": [
+              "Verified indoor + outdoor route",
+              "Verified outdoor route, indoor estimate",
+              "Mapped campus path, indoor estimate",
+              "Approximate building-to-building estimate",
+              "Location unavailable"
+            ]
+          },
+          "warnings": { "type": "array", "items": { "type": "string" } }
         }
       },
       "GapPlan": {
@@ -313,13 +500,10 @@
         "required": ["dataVersion", "gap", "route", "gapPreferences", "assessment"],
         "properties": {
           "dataVersion": { "type": "string" },
-          "gap": { "type": "object" },
+          "gap": { "$ref": "#/components/schemas/Gap" },
           "route": { "$ref": "#/components/schemas/Route" },
           "gapPreferences": { "$ref": "#/components/schemas/GapPreferences" },
-          "assessment": {
-            "type": "object",
-            "description": "Deterministic Gapwise gap assessment. The shape includes a primary recommendation, alternatives, confidence, travel/buffer timing, leave-by timing, route status, and warnings."
-          }
+          "assessment": { "$ref": "#/components/schemas/GapAssessment" }
         }
       },
       "Error": {
