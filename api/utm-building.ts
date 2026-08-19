@@ -10,7 +10,10 @@ export default {
     const query = new URL(request.url).searchParams.get("q")?.trim() ?? "";
     if (!query || query.length > 240) {
       return jsonResponse(
-        { error: "invalid_request", message: "Supply a canonical building code or exact name in ?q=." },
+        {
+          error: "invalid_request",
+          message: "Supply a canonical building code or exact name in ?q=.",
+        },
         400,
       );
     }
@@ -31,6 +34,10 @@ export default {
         409,
       );
     }
-    return jsonResponse({ service: "gapwise-public-campus", building: result.building }, 200, "public, max-age=3600, must-revalidate");
+    return jsonResponse(
+      { service: "gapwise-public-campus", building: result.building },
+      200,
+      "public, max-age=3600, must-revalidate",
+    );
   },
 };
