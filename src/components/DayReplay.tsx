@@ -129,6 +129,10 @@ export function DayReplay({
   const snapshot = buildDayReplaySnapshot(dayMeetings, segments, minute);
   const visibleSegmentIds = new Set(snapshot.visibleSegmentIds);
   const visibleSegments = segments.filter((segment) => visibleSegmentIds.has(segment.id));
+  const visibleRouteLineCount = visibleSegments.filter(
+    (segment) => segment.route.displayCoordinates.length >= 2,
+  ).length;
+  const transitionsWithoutMapLine = visibleSegments.length - visibleRouteLineCount;
   const gapPlan = snapshot.gap
     ? planGapAssessment(snapshot.gap, preferences, gapPreferences, planTransition).assessment
     : null;
@@ -214,6 +218,9 @@ export function DayReplay({
                 {formatCompactDuration(gapPlan.primary.activityMinutes)} usable · leave by{" "}
                 {formatTime(gapPlan.leaveByMinutes)} · {Math.round(gapPlan.confidence * 100)}%
                 confidence
+              </p>
+              <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                Route: {gapPlan.routeAccuracy}
               </p>
             </div>
           ) : null}
@@ -320,8 +327,13 @@ export function DayReplay({
           />
           <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-1 pt-3 text-xs text-muted-foreground">
             <span>
-              {visibleSegments.length} route segment{visibleSegments.length === 1 ? "" : "s"}{" "}
-              revealed
+              {visibleRouteLineCount} route line{visibleRouteLineCount === 1 ? "" : "s"} visible
+              {transitionsWithoutMapLine > 0 ? (
+                <>
+                  {" "}· {transitionsWithoutMapLine} transition
+                  {transitionsWithoutMapLine === 1 ? "" : "s"} without a map line
+                </>
+              ) : null}
             </span>
             <span>Map and replay run in your browser</span>
           </div>
