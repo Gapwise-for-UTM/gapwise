@@ -58,8 +58,7 @@ describe("Gapwise Platform static assets", () => {
   test("executes the documented route and gap-plan SDK calls", async () => {
     const requests: Array<{ url: string; method: string; body: string | null }> = [];
     const mockFetch: typeof globalThis.fetch = async (input, init) => {
-      const url =
-        typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       const method = init?.method ?? "GET";
       const body = typeof init?.body === "string" ? init.body : null;
       requests.push({ url, method, body });
