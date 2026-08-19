@@ -62,9 +62,7 @@ describe("Gapwise Platform static assets", () => {
         headers?: Array<{ key?: string; value?: string }>;
       }>;
     };
-    const declarationRule = config.headers?.find(
-      (rule) => rule.source === "/sdk/gapwise-utm.d.ts",
-    );
+    const declarationRule = config.headers?.find((rule) => rule.source === "/sdk/gapwise-utm.d.ts");
     const contentType = declarationRule?.headers?.find(
       (header) => header.key?.toLowerCase() === "content-type",
     );
