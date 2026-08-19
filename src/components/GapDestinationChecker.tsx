@@ -1,10 +1,7 @@
 import { AlertTriangle, MapPin, Route } from "lucide-react";
 import { useMemo, useState } from "react";
 import { CAMPUS_BUILDINGS } from "@/data/utm/campus";
-import {
-  assessGapDestination,
-  type DestinationLeg,
-} from "@/features/gaps/destination-feasibility";
+import { assessGapDestination, type DestinationLeg } from "@/features/gaps/destination-feasibility";
 import type { GapPreferences } from "@/features/gaps/types";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
@@ -80,7 +77,10 @@ export function GapDestinationChecker({
           <MapPin className="h-4 w-4" aria-hidden="true" />
         </span>
         <div className="min-w-0">
-          <h3 id="gap-destination-title" className="font-display text-lg font-medium tracking-tight">
+          <h3
+            id="gap-destination-title"
+            className="font-display text-lg font-medium tracking-tight"
+          >
             Can I go there?
           </h3>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
@@ -90,7 +90,10 @@ export function GapDestinationChecker({
         </div>
       </div>
 
-      <label className="mt-4 block text-xs font-semibold text-muted-foreground" htmlFor="gap-destination">
+      <label
+        className="mt-4 block text-xs font-semibold text-muted-foreground"
+        htmlFor="gap-destination"
+      >
         Destination building
       </label>
       <select
@@ -184,8 +187,14 @@ export function GapDestinationChecker({
           {feasibility.warnings.length > 0 ? (
             <ul className="mt-3 space-y-1.5" aria-label="Destination feasibility warnings">
               {feasibility.warnings.map((warning) => (
-                <li key={warning} className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
-                  <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                <li
+                  key={warning}
+                  className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground"
+                >
+                  <AlertTriangle
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
+                    aria-hidden="true"
+                  />
                   <span>{warning}</span>
                 </li>
               ))}

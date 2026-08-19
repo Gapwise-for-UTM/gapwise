@@ -6,11 +6,7 @@ import type { Gap, Meeting } from "@/lib/timetable-types";
 import { assessGap } from "./assess-gap";
 import type { GapConfidence, GapPreferences } from "./types";
 
-export type DestinationLegStatus =
-  | "routed"
-  | "approximate"
-  | "same-building"
-  | "unavailable";
+export type DestinationLegStatus = "routed" | "approximate" | "same-building" | "unavailable";
 
 export type DestinationLeg = {
   status: DestinationLegStatus;
