@@ -1,11 +1,11 @@
-import { ROUTING_DEFAULTS } from "@/config/routing";
+import { ROUTING_DEFAULTS } from "../../config/routing.js";
 import type {
   RoutePreferences,
   RouteResult,
   RoutingEdge,
   RoutingGraph,
   RoutingNode,
-} from "./types";
+} from "./types.js";
 
 type Traversal = { edge: RoutingEdge; from: string; to: string };
 type QueueEntry = { id: string; priority: number };

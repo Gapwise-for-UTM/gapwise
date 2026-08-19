@@ -1,12 +1,17 @@
-import { getResidenceBuilding } from "@/data/utm/campus";
-import type { UserPreferences } from "@/features/sync/preferences";
-import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
+import { UTM_BUILDINGS } from "../../data/utm/building-registry.js";
+import type { UserPreferences } from "../sync/preferences.js";
+import type { Meeting, Term, Weekday } from "../../lib/timetable-types.js";
 
 const HOME_MEETING_PREFIX = "gapwise-home:";
 
 export function selectedResidence(preferences: UserPreferences) {
   if (preferences.dayOrigin !== "residence") return null;
-  return getResidenceBuilding(preferences.residenceBuildingCode);
+  const code = preferences.residenceBuildingCode;
+  if (!code) return null;
+  return (
+    UTM_BUILDINGS.find((building) => building.category === "residence" && building.code === code) ??
+    null
+  );
 }
 
 export function createResidenceMeeting({

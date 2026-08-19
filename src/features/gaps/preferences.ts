@@ -1,5 +1,5 @@
-import type { GapPreferences, RiskTolerance } from "./types";
-import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
+import type { GapPreferences, RiskTolerance } from "./types.js";
+import { isEncryptedPrivateCloudAuthoritative } from "../security/private-cloud-mode.js";
 
 const STORAGE_KEY = "gapwise-gap-preferences-v2";
 type BrowserStorage = Pick<Storage, "getItem" | "removeItem">;
