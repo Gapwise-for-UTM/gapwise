@@ -59,7 +59,10 @@ export default {
         preferences = optionalPreferences(body["preferences"]);
       } catch {
         return jsonResponse(
-          { error: "invalid_request", message: "preferences contains an invalid route preference." },
+          {
+            error: "invalid_request",
+            message: "preferences contains an invalid route preference.",
+          },
           400,
         );
       }
