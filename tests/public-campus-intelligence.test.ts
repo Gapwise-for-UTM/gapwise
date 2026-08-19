@@ -48,9 +48,9 @@ describe("public campus intelligence", () => {
   });
 
   it("fails closed for an unknown building and never guesses", () => {
-    expect(
-      routeBetweenPublicBuildings({ from: "MN", to: "Imaginary Hall" }),
-    ).toMatchObject({ error: "unknown_building" });
+    expect(routeBetweenPublicBuildings({ from: "MN", to: "Imaginary Hall" })).toMatchObject({
+      error: "unknown_building",
+    });
   });
 
   it("does not claim room-to-room routing for the same building", () => {
