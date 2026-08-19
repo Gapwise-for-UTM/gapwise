@@ -10,8 +10,8 @@ test("Today checks canonical destinations inside a live gap on mobile Safari", a
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await page.clock.setFixedTime(new Date("2026-09-07T15:30:00.000Z"));
 
-  await page.goto("/");
-  await page.getByRole("button", { name: "Try Demo Schedule" }).click();
+  await page.goto("/today");
+  await page.getByRole("button", { name: "Try a demo" }).click();
   await expect(page).toHaveURL(/\/today$/);
   await expect(page.getByRole("heading", { name: "Can I go there?" })).toBeVisible();
   await expect(

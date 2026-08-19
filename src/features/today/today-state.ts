@@ -23,6 +23,12 @@ export type ResidenceTrip = {
   inbound: TransitionRoute;
 };
 
+export type GapDestinationContext = {
+  preferences: UserPreferences;
+  gapPreferences: GapPreferences;
+  planTransition: TransitionPlanner;
+};
+
 export type TodayState =
   | { kind: "before"; first: TodayOccurrence }
   | { kind: "ended"; next: TodayOccurrence | null }
@@ -41,6 +47,7 @@ export type TodayState =
       assessment: GapAssessment;
       route: TransitionRoute;
       residenceTrip?: ResidenceTrip | undefined;
+      destinationContext: GapDestinationContext;
     }
   | { kind: "done"; next: TodayOccurrence | null }
   | { kind: "no-classes"; next: TodayOccurrence | null };
@@ -146,7 +153,12 @@ export function buildTodayState({
       next,
     };
     const plan = planGapAssessment(gap, preferences, gapPreferences, planTransition);
-    return { kind: "gap", gap, ...plan };
+    return {
+      kind: "gap",
+      gap,
+      ...plan,
+      destinationContext: { preferences, gapPreferences, planTransition },
+    };
   }
 
   if (next) return { kind: "before-first", next };
