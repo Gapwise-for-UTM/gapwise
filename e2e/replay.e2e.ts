@@ -63,7 +63,7 @@ test("Day Replay demonstrates deterministic gaps, route uncertainty, playback, t
 
   const terms = page.getByRole("group", { name: "Replay term" });
   await terms.getByRole("button", { name: "Winter" }).click();
-  await expect(page.getByText("DEM250H5")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^DEM250H5\b/ })).toBeVisible();
 
   await page.locator('input[type="file"][accept*=".ics"]').setInputFiles(fixturePath);
   await expect(page.getByText("Local ACORN import")).toBeVisible();
