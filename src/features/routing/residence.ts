@@ -8,7 +8,10 @@ export function selectedResidence(preferences: UserPreferences) {
   if (preferences.dayOrigin !== "residence") return null;
   const code = preferences.residenceBuildingCode;
   if (!code) return null;
-  return UTM_BUILDINGS.find((building) => building.category === "residence" && building.code === code) ?? null;
+  return (
+    UTM_BUILDINGS.find((building) => building.category === "residence" && building.code === code) ??
+    null
+  );
 }
 
 export function createResidenceMeeting({
