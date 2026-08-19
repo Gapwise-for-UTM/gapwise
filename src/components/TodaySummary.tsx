@@ -1,14 +1,7 @@
 import { useLocation } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  CalendarClock,
-  Home,
-  Navigation,
-  Sparkles,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { ArrowRight, CalendarClock, Home, Navigation, type LucideIcon } from "lucide-react";
 import { memo } from "react";
+import { GapPlannerPreview } from "@/components/GapPlannerPreview";
 import type { GapPreferences } from "@/features/gaps/types";
 import { useFirstValueArrival } from "@/features/onboarding/first-value";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
@@ -149,10 +142,10 @@ export const TodaySummary = memo(function TodaySummary({
       break;
   }
 
-  const canPlanGap = summary.kind === "gap";
+  const showPlanner = onTodayRoute && summary.kind === "gap";
+  const canPlanGap = summary.kind === "gap" && !showPlanner;
   const canOpenRoute =
     summary.kind === "gap" || summary.kind === "before-first" || summary.kind === "in-class";
-  const showGapHint = firstValue.showHint && summary.kind === "gap";
 
   return (
     <>
@@ -187,21 +180,15 @@ export const TodaySummary = memo(function TodaySummary({
           </p>
         ) : null}
 
-        {showGapHint ? (
-          <div className="mt-4 flex items-start justify-between gap-3 rounded-lg border border-accent/25 bg-accent/6 px-3.5 py-3 text-sm">
-            <p>
-              You have a {formatCompactDuration(summary.gap.durationMinutes)} gap here. Tap to plan
-              it.
-            </p>
-            <button
-              type="button"
-              onClick={firstValue.dismissHint}
-              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Dismiss gap hint"
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
+        {showPlanner ? (
+          <GapPlannerPreview
+            assessment={summary.assessment}
+            onOpenGapPlan={() => {
+              firstValue.acknowledge();
+              onOpenGapPlan();
+            }}
+            className="mt-4"
+          />
         ) : null}
 
         {canPlanGap || canOpenRoute ? (
@@ -215,7 +202,6 @@ export const TodaySummary = memo(function TodaySummary({
                 }}
                 className="button-primary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold"
               >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
                 Plan this gap
               </button>
             ) : null}
@@ -227,7 +213,7 @@ export const TodaySummary = memo(function TodaySummary({
                   onOpenDayRoute();
                 }}
                 className={`inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold ${
-                  canPlanGap ? "button-secondary" : "button-primary"
+                  canPlanGap ? "button-secondary" : showPlanner ? "button-secondary" : "button-primary"
                 }`}
               >
                 <Navigation className="h-4 w-4" aria-hidden="true" />

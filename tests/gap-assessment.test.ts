@@ -138,7 +138,7 @@ describe("intelligent gap assessment", () => {
     expect(assessment.confidenceLabel).toBe("low");
   });
 
-  test("recognizes a lunch-time meal opportunity", () => {
+  test("recognizes a lunch-time meal opportunity with a split meal/flexible timeline", () => {
     const assessment = assessGap({
       gap: gap({ startTime: 12 * 60, endTime: 13 * 60 + 30, durationMinutes: 90 }),
       route: sameRoomRoute,
@@ -146,11 +146,59 @@ describe("intelligent gap assessment", () => {
       gapPreferences: DEFAULT_GAP_PREFERENCES,
     });
 
+    const meal = [assessment.primary, ...assessment.alternatives].find(
+      (candidate) => candidate.action === "meal-window",
+    );
+    expect(meal).toBeDefined();
+    expect(meal?.timeline.map((segment) => segment.label)).toEqual([
+      "Settle in",
+      "Meal",
+      "Study or reset",
+      "Pack up",
+      "Buffer",
+    ]);
     expect(
-      [assessment.primary, ...assessment.alternatives].some(
-        (candidate) => candidate.action === "meal-window",
-      ),
-    ).toBe(true);
+      meal?.timeline
+        .filter((segment) => segment.kind === "activity" || segment.kind === "flex")
+        .reduce((total, segment) => total + segment.minutes, 0),
+    ).toBe(meal?.activityMinutes);
+  });
+
+  test("adds a deterministic focus-and-reset plan when a long usable block supports it", () => {
+    const assessment = assessGap({
+      gap: gap({ startTime: 15 * 60, endTime: 17 * 60, durationMinutes: 120 }),
+      route: sameRoomRoute,
+      routePreferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+    });
+
+    expect(assessment.primary.action).toBe("flexible-long-gap");
+    expect(assessment.primary.title).toBe("Focus, then reset");
+    expect(assessment.primary.timeline.map((segment) => segment.label)).toEqual([
+      "Settle in",
+      "Focused work",
+      "Reset",
+      "Pack up",
+      "Buffer",
+    ]);
+    expect(
+      assessment.primary.timeline
+        .filter((segment) => segment.kind === "activity" || segment.kind === "flex")
+        .reduce((total, segment) => total + segment.minutes, 0),
+    ).toBe(assessment.primary.activityMinutes);
+  });
+
+  test("keeps the existing lunch recommendation primary for the common two-hour midday gap", () => {
+    const assessment = assessGap({
+      gap: gap({ startTime: 11 * 60, endTime: 13 * 60, durationMinutes: 120 }),
+      route: sameRoomRoute,
+      routePreferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+    });
+
+    expect(assessment.primary.action).toBe("meal-window");
+    expect(assessment.alternatives[0]?.action).toBe("flexible-long-gap");
+    expect(assessment.alternatives[1]?.action).toBe("study-block");
   });
 
   test("recommends going home only when the configured round trip is worthwhile", () => {

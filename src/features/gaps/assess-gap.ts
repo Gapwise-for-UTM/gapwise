@@ -133,9 +133,8 @@ function applyActivityOverhead(usableMinutes: number, setupMinutes: number, pack
   };
 }
 
-function standardTimeline(
-  activityLabel: string,
-  activityMinutes: number,
+function compositeTimeline(
+  activitySegments: GapTimelineSegment[],
   setupMinutes: number,
   packUpMinutes: number,
   travelMinutes: number | null,
@@ -143,9 +142,7 @@ function standardTimeline(
 ): GapTimelineSegment[] {
   const segments: GapTimelineSegment[] = [];
   if (setupMinutes > 0) segments.push({ kind: "setup", label: "Settle in", minutes: setupMinutes });
-  if (activityMinutes > 0) {
-    segments.push({ kind: "activity", label: activityLabel, minutes: activityMinutes });
-  }
+  segments.push(...activitySegments.filter((segment) => segment.minutes > 0));
   if (packUpMinutes > 0) {
     segments.push({ kind: "setup", label: "Pack up", minutes: packUpMinutes });
   }
@@ -164,6 +161,25 @@ function standardTimeline(
       segments.push({ kind: "buffer", label: "Buffer", minutes: bufferMinutes });
   }
   return segments;
+}
+
+function standardTimeline(
+  activityLabel: string,
+  activityMinutes: number,
+  setupMinutes: number,
+  packUpMinutes: number,
+  travelMinutes: number | null,
+  bufferMinutes: number,
+): GapTimelineSegment[] {
+  return compositeTimeline(
+    activityMinutes > 0
+      ? [{ kind: "activity", label: activityLabel, minutes: activityMinutes }]
+      : [],
+    setupMinutes,
+    packUpMinutes,
+    travelMinutes,
+    bufferMinutes,
+  );
 }
 
 export type GapDurationCategory = "very-short" | "short" | "medium" | "long";
@@ -242,9 +258,9 @@ function productivityCopy(action: GapAction) {
       };
     case "flexible-long-gap":
       return {
-        title: "Long break",
-        summary: "Enough for deep work, lunch, or leaving campus for a while.",
-        label: "Long break",
+        title: "Focus, then reset",
+        summary: "Split a longer window between meaningful work and deliberate recovery.",
+        label: "Focus + reset",
       };
     default:
       return {
@@ -368,6 +384,16 @@ function makeMealCandidate(
   const midpoint = (input.gap.startTime + input.gap.endTime) / 2;
   const lunchMidpoint = (preferences.lunchWindowStart + preferences.lunchWindowEnd) / 2;
   const midpointBonus = Math.max(0, 5 - Math.abs(midpoint - lunchMidpoint) / 30);
+  const activitySegments: GapTimelineSegment[] = [
+    { kind: "activity", label: "Meal", minutes: preferences.mealDurationMinutes },
+  ];
+  if (spareMinutes > 0) {
+    activitySegments.push({
+      kind: "flex",
+      label: spareMinutes >= 20 ? "Study or reset" : "Flexible time",
+      minutes: spareMinutes,
+    });
+  }
 
   return {
     id: "meal-window",
@@ -388,9 +414,50 @@ function makeMealCandidate(
       input.route.accuracy,
     ],
     tags: unique([...baseTags, "lunch-time"]),
-    timeline: standardTimeline(
-      spareMinutes >= 20 ? "Meal + flexible time" : "Meal",
-      activityMinutes,
+    timeline: compositeTimeline(
+      activitySegments,
+      setupMinutes,
+      packUpMinutes,
+      travelMinutes,
+      bufferMinutes,
+    ),
+  };
+}
+
+function makeFlexibleLongGapCandidate(
+  input: GapAssessmentInput,
+  activityMinutes: number,
+  setupMinutes: number,
+  packUpMinutes: number,
+  travelMinutes: number | null,
+  bufferMinutes: number,
+  baseTags: GapTag[],
+): GapRecommendation | null {
+  if (activityMinutes < 75) return null;
+
+  const resetMinutes = Math.min(30, Math.max(15, Math.round(activityMinutes * 0.22)));
+  const focusMinutes = activityMinutes - resetMinutes;
+  if (focusMinutes < 45) return null;
+
+  return {
+    id: "flexible-long-gap",
+    action: "flexible-long-gap",
+    title: "Focus, then reset",
+    summary: `${formatDuration(focusMinutes)} of focused work, then ${formatDuration(resetMinutes)} to reset before the next class.`,
+    score: SCORE.flexibleLongGap,
+    activityMinutes,
+    reasons: [
+      "The usable window is long enough to split without giving up the protected transition.",
+      `${formatDuration(focusMinutes)} stays together as one meaningful focus block.`,
+      `${formatDuration(resetMinutes)} is deliberately left low-intensity instead of filling every minute with work.`,
+      input.route.accuracy,
+    ],
+    tags: unique(baseTags),
+    timeline: compositeTimeline(
+      [
+        { kind: "activity", label: "Focused work", minutes: focusMinutes },
+        { kind: "flex", label: "Reset", minutes: resetMinutes },
+      ],
       setupMinutes,
       packUpMinutes,
       travelMinutes,
@@ -584,6 +651,17 @@ export function assessGap(input: GapAssessmentInput): GapAssessment {
     baseTags,
   );
   if (meal) candidates.push(meal);
+
+  const flexible = makeFlexibleLongGapCandidate(
+    input,
+    overhead.activityMinutes,
+    overhead.setupMinutes,
+    overhead.packUpMinutes,
+    travelMinutes,
+    timing.bufferMinutes,
+    baseTags,
+  );
+  if (flexible) candidates.push(flexible);
 
   const home = makeHomeCandidate(input, timing.bufferMinutes, baseTags);
   if (home) candidates.push(home);
