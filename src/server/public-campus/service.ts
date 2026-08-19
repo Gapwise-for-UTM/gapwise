@@ -368,13 +368,17 @@ function transitionFromPublicRoute(route: PublicRouteResponse): TransitionRoute 
       approximateSeconds: 0,
     };
   }
+  const accuracy =
+    route.accuracy === "Same building"
+      ? "Approximate building-to-building estimate"
+      : route.accuracy;
   return {
     status: route.status,
     message:
       route.status === "routed"
         ? "Route calculated along Gapwise's bundled campus paths."
         : "Approximate building-to-building estimate.",
-    accuracy: route.accuracy,
+    accuracy,
     result: null,
     displayCoordinates: [],
     warnings: route.warnings,
@@ -408,7 +412,7 @@ export function planPublicGap(input: {
   const route = routeBetweenPublicBuildings({
     from: input.from,
     to: input.to,
-    preferences: input.routePreferences,
+    preferences: input.routePreferences ?? null,
   });
   if ("error" in route) return route;
 
