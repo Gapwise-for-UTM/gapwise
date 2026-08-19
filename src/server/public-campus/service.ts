@@ -52,8 +52,12 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
-function buildingAccessibility(building: PublicCampusBuilding): PublicBuildingView["accessibility"] {
-  if (building.entrances.some((entrance) => entrance.accessibility === "accessible")) return "accessible";
+function buildingAccessibility(
+  building: PublicCampusBuilding,
+): PublicBuildingView["accessibility"] {
+  if (building.entrances.some((entrance) => entrance.accessibility === "accessible")) {
+    return "accessible";
+  }
   if (
     building.entrances.length > 0 &&
     building.entrances.every((entrance) => entrance.accessibility === "not_accessible")
@@ -159,19 +163,23 @@ export function routeBetweenPublicBuildings(input: {
   from: string;
   to: string;
   preferences?: Partial<RoutePreferences> | null;
-}): PublicRouteResponse | { error: "unknown_building" | "ambiguous_building"; message: string } {
+}):
+  | PublicRouteResponse
+  | { error: "unknown_building" | "ambiguous_building"; message: string } {
   const fromResolution = resolvePublicBuilding(input.from);
   const toResolution = resolvePublicBuilding(input.to);
   if (fromResolution.status === "ambiguous" || toResolution.status === "ambiguous") {
     return {
       error: "ambiguous_building",
-      message: "A building name matched more than one canonical UTM building. Use the canonical building code.",
+      message:
+        "A building name matched more than one canonical UTM building. Use the canonical building code.",
     };
   }
   if (fromResolution.status !== "found" || toResolution.status !== "found") {
     return {
       error: "unknown_building",
-      message: "Gapwise could not resolve one or both building names to a canonical UTM building.",
+      message:
+        "Gapwise could not resolve one or both building names to a canonical UTM building.",
     };
   }
 
@@ -208,7 +216,8 @@ export function routeBetweenPublicBuildings(input: {
       ...base,
       status: "routed",
       accuracy:
-        mapped.nodes.some((node) => node.kind === "room") || mapped.edges.some((edge) => edge.environment === "indoor")
+        mapped.nodes.some((node) => node.kind === "room") ||
+        mapped.edges.some((edge) => edge.environment === "indoor")
           ? "Verified outdoor route, indoor estimate"
           : "Mapped campus path, indoor estimate",
       totalDistanceMeters: mapped.totalDistanceMeters,
@@ -245,7 +254,8 @@ export function routeBetweenPublicBuildings(input: {
     const direct = distanceMeters(from.navigationPoint, to.navigationPoint);
     const approximateDistance = direct * 1.2;
     const approximateSeconds =
-      approximateDistance / preferences.walkingSpeedMps + ROUTING_DEFAULTS.buildingEntryExitSeconds * 2;
+      approximateDistance / preferences.walkingSpeedMps +
+      ROUTING_DEFAULTS.buildingEntryExitSeconds * 2;
     return {
       ...base,
       status: "approximate",
@@ -272,7 +282,9 @@ export function routeBetweenPublicBuildings(input: {
     outdoorDistanceMeters: null,
     estimatedSeconds: null,
     floorChanges: null,
-    warnings: ["Gapwise does not have enough mapped data to estimate this building-to-building route."],
+    warnings: [
+      "Gapwise does not have enough mapped data to estimate this building-to-building route.",
+    ],
     routeVerification: "unavailable",
   };
 }
