@@ -6,9 +6,7 @@ import {
   Code2,
   Database,
   Download,
-  ExternalLink,
   FileJson2,
-  Github,
   MapPinned,
   Play,
   Route as RouteIcon,
@@ -26,12 +24,12 @@ export const Route = createFileRoute("/developers")({
       {
         name: "description",
         content:
-          "Build on Gapwise's public UTM building, routing, and deterministic gap-planning data with an OpenAPI contract, zero-dependency client, and open dataset snapshot.",
+          "Build on Gapwise public UTM building, routing, and deterministic gap-planning data.",
       },
       { property: "og:title", content: "Gapwise Platform" },
       {
         property: "og:description",
-        content: "Public UTM campus intelligence, an open dataset, and a zero-dependency developer client.",
+        content: "Public UTM campus intelligence, open data, and a zero-dependency client.",
       },
     ],
   }),
@@ -60,10 +58,17 @@ console.log(plan.gapPlan.assessment.primary);`;
 
 type PlaygroundMode = "route" | "gap" | "buildings";
 
+const ENDPOINTS = [
+  ["GET", "/api/utm-buildings", "Canonical building inventory and provenance"],
+  ["GET", "/api/utm-building?q=MN", "Resolve one canonical UTM building"],
+  ["POST", "/api/utm-route", "Deterministic building-to-building route"],
+  ["POST", "/api/utm-gap-plan", "Route-aware deterministic gap assessment"],
+] as const;
+
 function DevelopersPage() {
   const { theme, toggleTheme } = useTheme();
   const [mode, setMode] = useState<PlaygroundMode>("route");
-  const [result, setResult] = useState<string>("");
+  const [result, setResult] = useState("");
   const [running, setRunning] = useState(false);
 
   async function runExample() {
@@ -93,14 +98,21 @@ function DevelopersPage() {
           body: JSON.stringify({ from: "MN", to: "IB" }),
         });
       }
-      const body = (await response.json()) as unknown;
-      setResult(JSON.stringify(body, null, 2));
+      setResult(JSON.stringify((await response.json()) as unknown, null, 2));
     } catch {
       setResult(JSON.stringify({ error: "The live example could not be reached." }, null, 2));
     } finally {
       setRunning(false);
     }
   }
+
+  const sample =
+    result ||
+    (mode === "gap"
+      ? GAP_EXAMPLE
+      : mode === "buildings"
+        ? "GET https://gapwise.ca/api/utm-buildings"
+        : SDK_EXAMPLE);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -138,7 +150,7 @@ function DevelopersPage() {
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground">
                 Use the deterministic building, routing, and gap-planning layer behind Gapwise
-                without importing a student's timetable or requesting private account access.
+                without importing a student timetable or requesting private account access.
               </p>
               <div className="mt-7 flex flex-wrap gap-2">
                 <a
@@ -161,7 +173,7 @@ function DevelopersPage() {
                   rel="noreferrer"
                   className="button-secondary inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold"
                 >
-                  <Github className="h-4 w-4" aria-hidden="true" />
+                  <Code2 className="h-4 w-4" aria-hidden="true" />
                   Source
                 </a>
               </div>
@@ -174,10 +186,10 @@ function DevelopersPage() {
               <pre className="overflow-x-auto p-5 text-[0.75rem] leading-6 text-foreground">
                 <code>{SDK_EXAMPLE}</code>
               </pre>
-              <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
+              <p className="flex items-center gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                 Browser ESM · standard fetch · no API key for public campus data
-              </div>
+              </p>
             </div>
           </div>
         </section>
@@ -185,26 +197,10 @@ function DevelopersPage() {
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              {
-                icon: Database,
-                value: "30",
-                label: "canonical UTM buildings",
-              },
-              {
-                icon: RouteIcon,
-                value: "4",
-                label: "bounded public endpoints",
-              },
-              {
-                icon: ShieldCheck,
-                value: "0",
-                label: "student records required",
-              },
-              {
-                icon: FileJson2,
-                value: "1",
-                label: "versioned open snapshot",
-              },
+              { icon: Database, value: "30", label: "canonical UTM buildings" },
+              { icon: RouteIcon, value: "4", label: "bounded public endpoints" },
+              { icon: ShieldCheck, value: "0", label: "student records required" },
+              { icon: FileJson2, value: "1", label: "versioned open snapshot" },
             ].map((item) => {
               const Icon = item.icon;
               return (
@@ -224,17 +220,11 @@ function DevelopersPage() {
                 Four small primitives. One shared engine.
               </h2>
               <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">
-                These endpoints expose the same bounded campus logic used by Gapwise's own product
-                surfaces. Responses label routing coverage and uncertainty instead of inventing
-                missing indoor or accessibility data.
+                Responses label routing coverage and uncertainty instead of inventing missing indoor
+                or accessibility data.
               </p>
               <div className="mt-6 space-y-2">
-                {[
-                  ["GET", "/api/utm-buildings", "Canonical building inventory and provenance"],
-                  ["GET", "/api/utm-building?q=MN", "Resolve one canonical UTM building"],
-                  ["POST", "/api/utm-route", "Deterministic building-to-building route"],
-                  ["POST", "/api/utm-gap-plan", "Route-aware deterministic gap assessment"],
-                ].map(([method, path, detail]) => (
+                {ENDPOINTS.map(([method, path, detail]) => (
                   <div
                     key={path}
                     className="surface flex flex-col gap-1 p-4 sm:flex-row sm:items-center sm:gap-4"
@@ -258,8 +248,8 @@ function DevelopersPage() {
                   Call production on purpose.
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Nothing runs just because this page loaded. Choose an example, then execute one
-                  bounded request against the public API.
+                  Nothing runs because this page loaded. Execute one bounded request when you want
+                  to inspect a real response.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {[
@@ -297,70 +287,52 @@ function DevelopersPage() {
                   {running ? "Running…" : "Run live example"}
                 </button>
                 <pre className="mt-4 max-h-[28rem] min-h-52 overflow-auto rounded-xl border border-border bg-background/70 p-4 text-[0.68rem] leading-5 text-muted-foreground">
-                  <code>
-                    {result ||
-                      (mode === "gap"
-                        ? GAP_EXAMPLE
-                        : mode === "buildings"
-                          ? "GET https://gapwise.ca/api/utm-buildings"
-                          : SDK_EXAMPLE)}
-                  </code>
+                  <code>{sample}</code>
                 </pre>
               </div>
             </section>
           </div>
 
-          <section className="mt-12">
-            <p className="eyebrow text-accent">Open UTM data</p>
-            <div className="mt-3 grid gap-4 lg:grid-cols-3">
-              <article className="surface p-5 lg:col-span-2">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/8 text-accent">
-                    <Database className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <h2 className="font-display text-xl font-semibold tracking-tight">
-                      A provenance-preserving campus snapshot
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      The versioned JSON contains the canonical building inventory, aliases,
-                      routing-coverage status, entrance counts, accessibility status, and source
-                      provenance already exposed by the public API.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <a
-                    href="/data/utm-campus-v1.json"
-                    className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 text-xs font-semibold"
-                  >
-                    <Download className="h-3.5 w-3.5" aria-hidden="true" />
-                    JSON snapshot
-                  </a>
-                  <a
-                    href="https://github.com/andrewmuratov/gapwise/tree/main/src/data/utm"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 text-xs font-semibold"
-                  >
-                    <MapPinned className="h-3.5 w-3.5" aria-hidden="true" />
-                    Routing source files
-                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                  </a>
-                </div>
-              </article>
-              <article className="surface p-5">
-                <p className="flex items-center gap-2 text-sm font-semibold">
-                  <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
-                  Licensing stays explicit
-                </p>
-                <p className="mt-3 text-xs leading-6 text-muted-foreground">
-                  Gapwise code is MIT. Upstream data keeps its own licensing and attribution
-                  requirements. OpenStreetMap-derived records require OpenStreetMap attribution and
-                  ODbL compliance; the snapshot preserves source URLs and verification state.
-                </p>
-              </article>
-            </div>
+          <section className="mt-12 grid gap-4 lg:grid-cols-3">
+            <article className="surface p-5 lg:col-span-2">
+              <p className="eyebrow text-accent">Open UTM data</p>
+              <h2 className="mt-3 font-display text-2xl font-semibold tracking-tight">
+                A versioned public campus snapshot.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
+                Download canonical building identity, aliases, routing coverage, entrance counts,
+                accessibility status, and normalized source provenance. The richer graph inputs stay
+                inspectable in the public repository.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <a
+                  href="/data/utm-campus-v1.json"
+                  className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 text-xs font-semibold"
+                >
+                  <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                  JSON snapshot
+                </a>
+                <a
+                  href="https://github.com/andrewmuratov/gapwise/tree/main/src/data/utm"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 text-xs font-semibold"
+                >
+                  <MapPinned className="h-3.5 w-3.5" aria-hidden="true" />
+                  Routing source files
+                </a>
+              </div>
+            </article>
+            <article className="surface p-5">
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <ShieldCheck className="h-4 w-4 text-accent" aria-hidden="true" />
+                Licensing stays explicit
+              </p>
+              <p className="mt-3 text-xs leading-6 text-muted-foreground">
+                Gapwise code is MIT. Upstream data retains its own requirements. OpenStreetMap-derived
+                records require OpenStreetMap attribution and ODbL compliance.
+              </p>
+            </article>
           </section>
 
           <section className="mt-12 grid gap-4 md:grid-cols-3">
@@ -368,21 +340,21 @@ function DevelopersPage() {
               {
                 icon: Code2,
                 title: "Use the tiny client",
-                body: "Import a static ESM module from gapwise.ca. It is a thin typed wrapper over the public HTTP contract, not another backend.",
+                body: "Import a static ESM wrapper over the public HTTP contract.",
                 href: "/sdk/gapwise-utm.js",
                 link: "JavaScript client",
               },
               {
                 icon: Braces,
                 title: "Generate your own client",
-                body: "Use the OpenAPI 3.1 document with your preferred generator, validation stack, or API tooling.",
+                body: "Use the OpenAPI 3.1 contract with your preferred tooling.",
                 href: "/openapi.json",
                 link: "OpenAPI JSON",
               },
               {
                 icon: Sparkles,
-                title: "See the product consume it",
-                body: "Day Replay demonstrates the same deterministic campus model as a visual, fully client-side schedule simulation.",
+                title: "Watch a campus day unfold",
+                body: "Day Replay uses the same deterministic campus model in the browser.",
                 href: "/replay",
                 link: "Open Day Replay",
               },
