@@ -206,8 +206,7 @@ export function routeBetweenPublicBuildings(input: {
   if (fromResolution.status !== "found" || toResolution.status !== "found") {
     return {
       error: "unknown_building",
-      message:
-        "Gapwise could not resolve one or both building names to a canonical UTM building.",
+      message: "Gapwise could not resolve one or both building names to a canonical UTM building.",
     };
   }
 
