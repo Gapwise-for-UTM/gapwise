@@ -61,9 +61,10 @@ const unavailableRoute: TransitionRoute = {
 };
 
 describe("gap destination feasibility", () => {
-  test("checks both legs with the existing campus router and returns usable destination time", () => {
+  test("checks both legs with the existing campus router and preserves the protected budget", () => {
+    const currentGap = gap();
     const result = assessGapDestination({
-      gap: gap(),
+      gap: currentGap,
       destinationBuildingCode: "RAWC",
       preferences: DEFAULT_USER_PREFERENCES,
       gapPreferences: DEFAULT_GAP_PREFERENCES,
@@ -77,7 +78,16 @@ describe("gap destination feasibility", () => {
     expect(result?.inbound.status).not.toBe("unavailable");
     expect(result?.totalTravelMinutes).toBeGreaterThan(0);
     expect(result?.activityMinutes).toBeGreaterThan(0);
-    expect(result?.leaveDestinationByMinutes).toBeLessThan(840);
+    expect(result?.leaveDestinationByMinutes).toBeLessThan(currentGap.endTime);
+
+    expect(result?.arrivalNextClassMinutes).toBe(currentGap.endTime - (result?.bufferMinutes ?? 0));
+    expect(
+      (result?.totalTravelMinutes ?? 0) +
+        (result?.bufferMinutes ?? 0) +
+        (result?.setupMinutes ?? 0) +
+        (result?.packUpMinutes ?? 0) +
+        (result?.activityMinutes ?? 0),
+    ).toBe(currentGap.durationMinutes);
   });
 
   test("treats a same-building leg as zero without claiming room-to-room routing", () => {
