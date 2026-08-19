@@ -165,7 +165,12 @@ export function assessGapDestination(input: {
   if (!routingDestination) {
     const warning = `Gapwise recognizes ${destination.code}, but mapped routing coverage is unavailable; it will not guess either travel leg.`;
     const unavailable = unavailableIdentityLeg(warning);
-    return unavailableResult(destination, unavailable, unavailable, preferences.transitionBufferMinutes);
+    return unavailableResult(
+      destination,
+      unavailable,
+      unavailable,
+      preferences.transitionBufferMinutes,
+    );
   }
 
   const syntheticDestination = destinationMeeting(gap, destination.code, destination.name);
