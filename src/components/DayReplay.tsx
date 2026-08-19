@@ -209,9 +209,9 @@ export function DayReplay({
               </p>
               <p className="mt-2 font-semibold">{gapPlan.primary.title}</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                {formatCompactDuration(gapPlan.primary.activityMinutes)} usable · leave by {formatTime(
-                  gapPlan.leaveByMinutes,
-                )} · {Math.round(gapPlan.confidence * 100)}% confidence
+                {formatCompactDuration(gapPlan.primary.activityMinutes)} usable · leave by{" "}
+                {formatTime(gapPlan.leaveByMinutes)} · {Math.round(gapPlan.confidence * 100)}%
+                confidence
               </p>
             </div>
           ) : null}
@@ -232,7 +232,9 @@ export function DayReplay({
                     }`}
                   >
                     <span className="min-w-0">
-                      <span className="block truncate text-sm font-semibold">{meeting.courseCode}</span>
+                      <span className="block truncate text-sm font-semibold">
+                        {meeting.courseCode}
+                      </span>
                       <span className="mt-0.5 block truncate text-xs text-muted-foreground">
                         {formatTime(meeting.startTime)} · {locationLabel(meeting)}
                       </span>
@@ -315,7 +317,10 @@ export function DayReplay({
             className="h-[55dvh] min-h-[28rem] max-h-[42rem]"
           />
           <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-1 pt-3 text-xs text-muted-foreground">
-            <span>{visibleSegments.length} route segment{visibleSegments.length === 1 ? "" : "s"} revealed</span>
+            <span>
+              {visibleSegments.length} route segment{visibleSegments.length === 1 ? "" : "s"}{" "}
+              revealed
+            </span>
             <span>Map and replay run in your browser</span>
           </div>
         </section>

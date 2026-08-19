@@ -329,8 +329,8 @@ function DevelopersPage() {
                 Licensing stays explicit
               </p>
               <p className="mt-3 text-xs leading-6 text-muted-foreground">
-                Gapwise code is MIT. Upstream data retains its own requirements. OpenStreetMap-derived
-                records require OpenStreetMap attribution and ODbL compliance.
+                Gapwise code is MIT. Upstream data retains its own requirements.
+                OpenStreetMap-derived records require OpenStreetMap attribution and ODbL compliance.
               </p>
             </article>
           </section>

@@ -15,12 +15,7 @@ describe("Gapwise Platform static assets", () => {
 
     expect(spec.openapi).toBe("3.1.0");
     expect(Object.keys(spec.paths).sort()).toEqual(
-      [
-        "/api/utm-building",
-        "/api/utm-buildings",
-        "/api/utm-gap-plan",
-        "/api/utm-route",
-      ].sort(),
+      ["/api/utm-building", "/api/utm-buildings", "/api/utm-gap-plan", "/api/utm-route"].sort(),
     );
   });
 
