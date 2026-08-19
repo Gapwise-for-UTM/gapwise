@@ -13,26 +13,33 @@ function optionalPreferences(value: unknown): Partial<RoutePreferences> | null {
   if (value === undefined || value === null) return null;
   const object = exactObject(value);
   const preferences: Partial<RoutePreferences> = {};
-  if (object.mode !== undefined) {
-    if (object.mode !== "fastest" && object.mode !== "prefer-indoor" && object.mode !== "step-free") {
+  if (object["mode"] !== undefined) {
+    if (
+      object["mode"] !== "fastest" &&
+      object["mode"] !== "prefer-indoor" &&
+      object["mode"] !== "step-free"
+    ) {
       throw new Error("invalid mode");
     }
-    preferences.mode = object.mode;
+    preferences.mode = object["mode"];
   }
-  if (object.walkingSpeedMps !== undefined) {
-    if (typeof object.walkingSpeedMps !== "number" || !Number.isFinite(object.walkingSpeedMps)) {
+  if (object["walkingSpeedMps"] !== undefined) {
+    if (
+      typeof object["walkingSpeedMps"] !== "number" ||
+      !Number.isFinite(object["walkingSpeedMps"])
+    ) {
       throw new Error("invalid walkingSpeedMps");
     }
-    preferences.walkingSpeedMps = object.walkingSpeedMps;
+    preferences.walkingSpeedMps = object["walkingSpeedMps"];
   }
-  if (object.transitionBufferMinutes !== undefined) {
+  if (object["transitionBufferMinutes"] !== undefined) {
     if (
-      typeof object.transitionBufferMinutes !== "number" ||
-      !Number.isFinite(object.transitionBufferMinutes)
+      typeof object["transitionBufferMinutes"] !== "number" ||
+      !Number.isFinite(object["transitionBufferMinutes"])
     ) {
       throw new Error("invalid transitionBufferMinutes");
     }
-    preferences.transitionBufferMinutes = object.transitionBufferMinutes;
+    preferences.transitionBufferMinutes = object["transitionBufferMinutes"];
   }
   return preferences;
 }
@@ -45,11 +52,11 @@ export default {
     }
     try {
       const body = exactObject(await readBoundedJson(request));
-      const from = requireString(body.from, "from");
-      const to = requireString(body.to, "to");
+      const from = requireString(body["from"], "from");
+      const to = requireString(body["to"], "to");
       let preferences: Partial<RoutePreferences> | null;
       try {
-        preferences = optionalPreferences(body.preferences);
+        preferences = optionalPreferences(body["preferences"]);
       } catch {
         return jsonResponse(
           { error: "invalid_request", message: "preferences contains an invalid route preference." },
