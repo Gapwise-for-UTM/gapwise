@@ -1,6 +1,7 @@
 import { useLocation } from "@tanstack/react-router";
 import { ArrowRight, CalendarClock, Home, Navigation, type LucideIcon } from "lucide-react";
 import { memo } from "react";
+import { GapDestinationChecker } from "@/components/GapDestinationChecker";
 import { GapPlannerPreview } from "@/components/GapPlannerPreview";
 import type { GapPreferences } from "@/features/gaps/types";
 import { useFirstValueArrival } from "@/features/onboarding/first-value";
@@ -181,14 +182,21 @@ export const TodaySummary = memo(function TodaySummary({
         ) : null}
 
         {showPlanner ? (
-          <GapPlannerPreview
-            assessment={summary.assessment}
-            onOpenGapPlan={() => {
-              firstValue.acknowledge();
-              onOpenGapPlan();
-            }}
-            className="mt-4"
-          />
+          <div className="mt-4 space-y-3">
+            <GapPlannerPreview
+              assessment={summary.assessment}
+              onOpenGapPlan={() => {
+                firstValue.acknowledge();
+                onOpenGapPlan();
+              }}
+            />
+            <GapDestinationChecker
+              gap={summary.gap}
+              preferences={preferences}
+              gapPreferences={gapPreferences}
+              planTransition={planTransition}
+            />
+          </div>
         ) : null}
 
         {canPlanGap || canOpenRoute ? (

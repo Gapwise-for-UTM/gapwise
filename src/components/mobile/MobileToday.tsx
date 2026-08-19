@@ -1,5 +1,6 @@
 import { useLocation } from "@tanstack/react-router";
 import { CalendarClock, Clock3, Home, MapPin, Navigation, type LucideIcon } from "lucide-react";
+import { GapDestinationChecker } from "@/components/GapDestinationChecker";
 import { GapPlannerPreview } from "@/components/GapPlannerPreview";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import { useFirstValueArrival } from "@/features/onboarding/first-value";
@@ -238,14 +239,21 @@ export function MobileToday({
         ) : null}
 
         {state.kind === "gap" ? (
-          <GapPlannerPreview
-            assessment={state.assessment}
-            onOpenGapPlan={() => {
-              firstValue.acknowledge();
-              onOpenGapPlan();
-            }}
-            className="mt-5"
-          />
+          <div className="mt-5 space-y-3">
+            <GapPlannerPreview
+              assessment={state.assessment}
+              onOpenGapPlan={() => {
+                firstValue.acknowledge();
+                onOpenGapPlan();
+              }}
+            />
+            <GapDestinationChecker
+              gap={state.gap}
+              preferences={state.destinationContext.preferences}
+              gapPreferences={state.destinationContext.gapPreferences}
+              planTransition={state.destinationContext.planTransition}
+            />
+          </div>
         ) : null}
 
         {canOpenRoute ? (
