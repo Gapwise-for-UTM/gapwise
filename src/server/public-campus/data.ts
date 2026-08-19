@@ -119,7 +119,9 @@ export function publicCampusBuildings(): PublicCampusBuilding[] {
     const buildingEntrances = entrances
       .filter((feature) => feature.properties.buildingCode === building.code)
       .map(toPublicEntrance);
-    const routableEntrances = buildingEntrances.filter((entrance) => nodeIds.has(entrance.routingNodeId));
+    const routableEntrances = buildingEntrances.filter((entrance) =>
+      nodeIds.has(entrance.routingNodeId),
+    );
     const indoorRoomNodeCount = graph.nodes.filter(
       (node) => node.kind === "room" && node.buildingCode === building.code,
     ).length;
