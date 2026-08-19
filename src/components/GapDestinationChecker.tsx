@@ -1,6 +1,6 @@
 import { AlertTriangle, MapPin, Route } from "lucide-react";
 import { useMemo, useState } from "react";
-import { CAMPUS_BUILDINGS } from "@/data/utm/campus";
+import { UTM_BUILDINGS } from "@/data/utm/building-registry";
 import { assessGapDestination, type DestinationLeg } from "@/features/gaps/destination-feasibility";
 import type { GapPreferences } from "@/features/gaps/types";
 import type { TransitionPlanner } from "@/features/routing/transition";
@@ -42,7 +42,7 @@ export function GapDestinationChecker({
 }) {
   const [destinationCode, setDestinationCode] = useState("");
   const buildings = useMemo(
-    () => [...CAMPUS_BUILDINGS].sort((a, b) => a.name.localeCompare(b.name)),
+    () => [...UTM_BUILDINGS].sort((a, b) => a.name.localeCompare(b.name)),
     [],
   );
   const feasibility = useMemo(
@@ -84,8 +84,8 @@ export function GapDestinationChecker({
             Can I go there?
           </h3>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Choose a mapped UTM building. Gapwise checks both legs of this gap with the same
-            deterministic routing engine.
+            Choose a canonical UTM building. Gapwise checks both legs of this gap with the same
+            deterministic routing engine and fails closed where routing coverage is missing.
           </p>
         </div>
       </div>
@@ -102,7 +102,7 @@ export function GapDestinationChecker({
         onChange={(event) => setDestinationCode(event.target.value)}
         className="mt-1.5 min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <option value="">Choose a mapped building</option>
+        <option value="">Choose a building</option>
         {buildings.map((building) => (
           <option key={building.code} value={building.code}>
             {building.code} — {building.name}
@@ -110,7 +110,7 @@ export function GapDestinationChecker({
         ))}
       </select>
       <p className="mt-2 text-[11px] leading-5 text-muted-foreground">
-        Travel feasibility only — no amenity claim.
+        Travel feasibility only — no amenity or building-access claim.
       </p>
 
       {feasibility ? (

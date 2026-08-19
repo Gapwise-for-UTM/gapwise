@@ -1,3 +1,4 @@
+import { getRecognizedBuilding } from "@/data/utm/building-registry";
 import { getCampusBuilding } from "@/data/utm/campus";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { RouteAccuracy, TransitionRoute } from "@/features/routing/types";
@@ -54,6 +55,16 @@ function sameBuildingLeg(): DestinationLeg {
   };
 }
 
+function unavailableIdentityLeg(warning: string): DestinationLeg {
+  return {
+    status: "unavailable",
+    route: null,
+    travelMinutes: null,
+    accuracy: "Location unavailable",
+    warnings: [warning],
+  };
+}
+
 function plannedLeg(route: TransitionRoute): DestinationLeg {
   return {
     status: route.status === "same-room" ? "same-building" : route.status,
@@ -104,10 +115,36 @@ function confidenceLabel(value: number): GapConfidence {
   return "low";
 }
 
+function unavailableResult(
+  destination: { code: string; name: string },
+  outbound: DestinationLeg,
+  inbound: DestinationLeg,
+  bufferMinutes: number,
+): GapDestinationFeasibility {
+  const confidence = Math.min(legConfidence(outbound), legConfidence(inbound));
+  return {
+    status: "unavailable",
+    destination,
+    outbound,
+    inbound,
+    totalTravelMinutes: null,
+    bufferMinutes,
+    setupMinutes: 0,
+    packUpMinutes: 0,
+    activityMinutes: 0,
+    leaveDestinationByMinutes: null,
+    arrivalNextClassMinutes: null,
+    confidence,
+    confidenceLabel: confidenceLabel(confidence),
+    warnings: unique([...outbound.warnings, ...inbound.warnings]),
+  };
+}
+
 /**
- * Deterministically checks whether a mapped UTM building fits inside an existing gap.
- * The calculation deliberately reuses the route planner for both legs and the existing
- * gap engine for its risk-adjusted transition-buffer policy.
+ * Deterministically checks whether a canonical UTM building fits inside an existing gap.
+ * The calculation reuses the route planner for both legs and the existing gap engine for
+ * its risk-adjusted transition-buffer policy. Recognized buildings without routing coverage
+ * remain selectable and fail closed instead of being silently omitted or guessed.
  */
 export function assessGapDestination(input: {
   gap: Gap;
@@ -117,8 +154,19 @@ export function assessGapDestination(input: {
   planTransition: TransitionPlanner;
 }): GapDestinationFeasibility | null {
   const { gap, preferences, gapPreferences, planTransition } = input;
-  const destination = getCampusBuilding(input.destinationBuildingCode);
-  if (!destination) return null;
+  const destinationIdentity = getRecognizedBuilding(input.destinationBuildingCode);
+  if (!destinationIdentity) return null;
+
+  const destination = {
+    code: destinationIdentity.code,
+    name: destinationIdentity.name,
+  };
+  const routingDestination = getCampusBuilding(destination.code);
+  if (!routingDestination) {
+    const warning = `Gapwise recognizes ${destination.code}, but mapped routing coverage is unavailable; it will not guess either travel leg.`;
+    const unavailable = unavailableIdentityLeg(warning);
+    return unavailableResult(destination, unavailable, unavailable, preferences.transitionBufferMinutes);
+  }
 
   const syntheticDestination = destinationMeeting(gap, destination.code, destination.name);
   const outbound =
@@ -130,30 +178,13 @@ export function assessGapDestination(input: {
       ? sameBuildingLeg()
       : plannedLeg(planTransition(syntheticDestination, gap.next, preferences));
 
-  const warnings = unique([...outbound.warnings, ...inbound.warnings]);
   if (
     outbound.status === "unavailable" ||
     inbound.status === "unavailable" ||
     outbound.travelMinutes === null ||
     inbound.travelMinutes === null
   ) {
-    const confidence = Math.min(legConfidence(outbound), legConfidence(inbound));
-    return {
-      status: "unavailable",
-      destination: { code: destination.code, name: destination.name },
-      outbound,
-      inbound,
-      totalTravelMinutes: null,
-      bufferMinutes: preferences.transitionBufferMinutes,
-      setupMinutes: 0,
-      packUpMinutes: 0,
-      activityMinutes: 0,
-      leaveDestinationByMinutes: null,
-      arrivalNextClassMinutes: null,
-      confidence,
-      confidenceLabel: confidenceLabel(confidence),
-      warnings,
-    };
+    return unavailableResult(destination, outbound, inbound, preferences.transitionBufferMinutes);
   }
 
   const bufferMinutes =
@@ -186,7 +217,7 @@ export function assessGapDestination(input: {
 
   return {
     status,
-    destination: { code: destination.code, name: destination.name },
+    destination,
     outbound,
     inbound,
     totalTravelMinutes,
@@ -198,6 +229,6 @@ export function assessGapDestination(input: {
     arrivalNextClassMinutes,
     confidence,
     confidenceLabel: confidenceLabel(confidence),
-    warnings,
+    warnings: unique([...outbound.warnings, ...inbound.warnings]),
   };
 }

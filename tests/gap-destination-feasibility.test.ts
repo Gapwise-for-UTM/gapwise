@@ -150,11 +150,33 @@ describe("gap destination feasibility", () => {
     expect(result?.activityMinutes).toBe(0);
   });
 
-  test("does not resolve an identity-only or unknown destination as routable", () => {
+  test("keeps identity-only canonical destinations visible but unavailable", () => {
+    let calls = 0;
+    const result = assessGapDestination({
+      gap: gap(),
+      destinationBuildingCode: "IC",
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      planTransition: () => {
+        calls += 1;
+        return unavailableRoute;
+      },
+    });
+
+    expect(result).not.toBeNull();
+    expect(result?.destination.code).toBe("IC");
+    expect(result?.status).toBe("unavailable");
+    expect(result?.outbound.status).toBe("unavailable");
+    expect(result?.inbound.status).toBe("unavailable");
+    expect(result?.warnings.join(" ")).toContain("mapped routing coverage is unavailable");
+    expect(calls).toBe(0);
+  });
+
+  test("rejects a non-canonical destination instead of guessing", () => {
     expect(
       assessGapDestination({
         gap: gap(),
-        destinationBuildingCode: "IC",
+        destinationBuildingCode: "ZZZ",
         preferences: DEFAULT_USER_PREFERENCES,
         gapPreferences: DEFAULT_GAP_PREFERENCES,
         planTransition: () => unavailableRoute,
