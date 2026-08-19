@@ -21,6 +21,12 @@ function legStatusLabel(leg: DestinationLeg) {
   }
 }
 
+function feasibilityStatusLabel(status: "feasible" | "tight" | "unavailable") {
+  if (status === "feasible") return "Fits";
+  if (status === "tight") return "Tight";
+  return "Unavailable";
+}
+
 function travelLabel(leg: DestinationLeg) {
   if (leg.travelMinutes === null) return "Unknown";
   if (leg.travelMinutes === 0) return "0 min";
@@ -119,12 +125,12 @@ export function GapDestinationChecker({
             <div>
               <p className="font-semibold">{summary}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {feasibility.destination.name} · {Math.round(feasibility.confidence * 100)}%
-                confidence
+                {feasibility.destination.name} · {feasibility.confidenceLabel} confidence (
+                {Math.round(feasibility.confidence * 100)}%)
               </p>
             </div>
             <span className="rounded-full border border-border bg-secondary/45 px-2.5 py-1 font-mono text-[0.58rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-              {feasibility.status}
+              {feasibilityStatusLabel(feasibility.status)}
             </span>
           </div>
 

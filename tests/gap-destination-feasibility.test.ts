@@ -49,6 +49,17 @@ function gap(overrides: Partial<Gap> = {}): Gap {
   };
 }
 
+const approximateRoute: TransitionRoute = {
+  status: "approximate",
+  message: "Estimate",
+  accuracy: "Approximate building-to-building estimate",
+  result: null,
+  displayCoordinates: [],
+  warnings: ["Estimated"],
+  approximateDistanceMeters: 200,
+  approximateSeconds: 180,
+};
+
 const unavailableRoute: TransitionRoute = {
   status: "unavailable",
   message: "No verified route",
@@ -60,6 +71,9 @@ const unavailableRoute: TransitionRoute = {
   approximateSeconds: null,
 };
 
+const realPlanner: TransitionPlanner = (from, to, preferences) =>
+  planMeetingTransition(from, to, UTM_ROUTING_GRAPH, preferences);
+
 describe("gap destination feasibility", () => {
   test("checks both legs with the existing campus router and preserves the protected budget", () => {
     const currentGap = gap();
@@ -68,8 +82,7 @@ describe("gap destination feasibility", () => {
       destinationBuildingCode: "RAWC",
       preferences: DEFAULT_USER_PREFERENCES,
       gapPreferences: DEFAULT_GAP_PREFERENCES,
-      planTransition: (from, to, preferences) =>
-        planMeetingTransition(from, to, UTM_ROUTING_GRAPH, preferences),
+      planTransition: realPlanner,
     });
 
     expect(result).not.toBeNull();
@@ -79,7 +92,6 @@ describe("gap destination feasibility", () => {
     expect(result?.totalTravelMinutes).toBeGreaterThan(0);
     expect(result?.activityMinutes).toBeGreaterThan(0);
     expect(result?.leaveDestinationByMinutes).toBeLessThan(currentGap.endTime);
-
     expect(result?.arrivalNextClassMinutes).toBe(currentGap.endTime - (result?.bufferMinutes ?? 0));
     expect(
       (result?.totalTravelMinutes ?? 0) +
@@ -90,38 +102,53 @@ describe("gap destination feasibility", () => {
     ).toBe(currentGap.durationMinutes);
   });
 
-  test("treats a same-building leg as zero without claiming room-to-room routing", () => {
-    const result = assessGapDestination({
+  test("treats either physical same-building leg as zero without claiming room-to-room routing", () => {
+    const outboundSameBuilding = assessGapDestination({
       gap: gap(),
       destinationBuildingCode: "DV",
       preferences: DEFAULT_USER_PREFERENCES,
       gapPreferences: DEFAULT_GAP_PREFERENCES,
-      planTransition: (from, to, preferences) =>
-        planMeetingTransition(from, to, UTM_ROUTING_GRAPH, preferences),
+      planTransition: realPlanner,
+    });
+    const inboundSameBuilding = assessGapDestination({
+      gap: gap(),
+      destinationBuildingCode: "IB",
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      planTransition: realPlanner,
     });
 
-    expect(result?.outbound.status).toBe("same-building");
-    expect(result?.outbound.travelMinutes).toBe(0);
-    expect(result?.outbound.route).toBeNull();
-    expect(result?.warnings.join(" ")).toContain("not claiming room-to-room indoor travel");
+    expect(outboundSameBuilding?.outbound.status).toBe("same-building");
+    expect(outboundSameBuilding?.outbound.travelMinutes).toBe(0);
+    expect(outboundSameBuilding?.outbound.route).toBeNull();
+    expect(outboundSameBuilding?.warnings.join(" ")).toContain(
+      "not claiming room-to-room indoor travel",
+    );
+    expect(inboundSameBuilding?.inbound.status).toBe("same-building");
+    expect(inboundSameBuilding?.inbound.travelMinutes).toBe(0);
+  });
+
+  test("preserves the low-risk buffer policy for approximate return legs", () => {
+    const result = assessGapDestination({
+      gap: gap(),
+      destinationBuildingCode: "RAWC",
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      planTransition: () => approximateRoute,
+    });
+
+    expect(result?.status).toBe("feasible");
+    expect(result?.outbound.status).toBe("approximate");
+    expect(result?.inbound.status).toBe("approximate");
+    expect(result?.bufferMinutes).toBe(DEFAULT_USER_PREFERENCES.transitionBufferMinutes + 5);
+    expect(result?.confidenceLabel).toBe("medium");
   });
 
   test("fails closed when either leg is unavailable", () => {
     let calls = 0;
     const planner: TransitionPlanner = () => {
       calls += 1;
-      return calls === 1
-        ? {
-            status: "approximate",
-            message: "Estimate",
-            accuracy: "Approximate building-to-building estimate",
-            result: null,
-            displayCoordinates: [],
-            warnings: ["Estimated"],
-            approximateDistanceMeters: 200,
-            approximateSeconds: 180,
-          }
-        : unavailableRoute;
+      return calls === 1 ? approximateRoute : unavailableRoute;
     };
     const result = assessGapDestination({
       gap: gap(),
@@ -137,14 +164,30 @@ describe("gap destination feasibility", () => {
     expect(result?.warnings).toContain("No fully accessible mapped route could be verified.");
   });
 
+  test("does not bypass unknown or online class locations through the same-building shortcut", () => {
+    const previous = meeting({
+      id: "previous-online",
+      buildingCode: "DV",
+      room: null,
+      locationUnknown: false,
+      locationType: "online",
+    });
+    const result = assessGapDestination({
+      gap: gap({ previous }),
+      destinationBuildingCode: "DV",
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      planTransition: realPlanner,
+    });
+
+    expect(result?.status).toBe("unavailable");
+    expect(result?.outbound.status).toBe("unavailable");
+  });
+
   test("marks a destination tight when travel and protected time consume the gap", () => {
     const slowRoute: TransitionRoute = {
-      status: "approximate",
+      ...approximateRoute,
       message: "Slow estimate",
-      accuracy: "Approximate building-to-building estimate",
-      result: null,
-      displayCoordinates: [],
-      warnings: ["Estimated"],
       approximateDistanceMeters: 1000,
       approximateSeconds: 20 * 60,
     };

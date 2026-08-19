@@ -3,7 +3,7 @@ import { getCampusBuilding } from "@/data/utm/campus";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { RouteAccuracy, TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
-import type { Gap, Meeting } from "@/lib/timetable-types";
+import { meetingLocationType, type Gap, type Meeting } from "@/lib/timetable-types";
 import { assessGap } from "./assess-gap";
 import type { GapConfidence, GapPreferences } from "./types";
 
@@ -174,12 +174,14 @@ export function assessGapDestination(input: {
   }
 
   const syntheticDestination = destinationMeeting(gap, destination.code, destination.name);
+  const previousIsPhysical = meetingLocationType(gap.previous) === "physical";
+  const nextIsPhysical = meetingLocationType(gap.next) === "physical";
   const outbound =
-    gap.previous.buildingCode?.toUpperCase() === destination.code
+    previousIsPhysical && gap.previous.buildingCode?.toUpperCase() === destination.code
       ? sameBuildingLeg()
       : plannedLeg(planTransition(gap.previous, syntheticDestination, preferences));
   const inbound =
-    gap.next.buildingCode?.toUpperCase() === destination.code
+    nextIsPhysical && gap.next.buildingCode?.toUpperCase() === destination.code
       ? sameBuildingLeg()
       : plannedLeg(planTransition(syntheticDestination, gap.next, preferences));
 
