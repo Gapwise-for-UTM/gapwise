@@ -305,7 +305,6 @@ function AppLayout() {
   }, []);
 
   useEffect(() => {
-    // Remove retired plaintext storage before checking the encrypted guest record.
     loadRememberedRecord<unknown>();
     let active = true;
     void loadGuestTimetable()
@@ -867,7 +866,7 @@ function AppLayout() {
               state={todayState}
               now={todayNow}
               selectedTerm={term}
-              meetingCount={meetings.length}
+              meetingCount={termMeetings.length}
               gapCount={gaps.length}
               isDemo={isDemo}
               onOpenGapPlan={() => {
