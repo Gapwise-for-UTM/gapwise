@@ -55,6 +55,7 @@ test("developer playground handles modes, API errors, and timeout recovery", asy
   await page.getByRole("button", { name: "Building inventory" }).click();
   await run.click();
   await expect(output).toContainText('"buildings"');
+  guard.assertClean();
 
   behavior = "api-error";
   await run.click();
@@ -67,7 +68,8 @@ test("developer playground handles modes, API errors, and timeout recovery", asy
   await expect(run).toBeEnabled();
 
   behavior = "success";
+  const recoveryGuard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await run.click();
   await expect(output).toContainText('"buildings"');
-  guard.assertClean();
+  recoveryGuard.assertClean();
 });

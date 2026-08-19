@@ -88,11 +88,7 @@ describe("Day Replay domain", () => {
       return planner(from, to, preferences);
     };
 
-    const segments = buildDayReplaySegments(
-      overlapping,
-      DEFAULT_USER_PREFERENCES,
-      countingPlanner,
-    );
+    const segments = buildDayReplaySegments(overlapping, DEFAULT_USER_PREFERENCES, countingPlanner);
 
     expect(segments.map((segment) => segment.id)).toEqual(["overlap--later"]);
     expect(planned).toBe(1);
