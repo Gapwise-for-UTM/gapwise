@@ -1,12 +1,5 @@
 import { useLocation } from "@tanstack/react-router";
-import {
-  CalendarClock,
-  Clock3,
-  Home,
-  MapPin,
-  Navigation,
-  type LucideIcon,
-} from "lucide-react";
+import { CalendarClock, Clock3, Home, MapPin, Navigation, type LucideIcon } from "lucide-react";
 import { GapPlannerPreview } from "@/components/GapPlannerPreview";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import { useFirstValueArrival } from "@/features/onboarding/first-value";

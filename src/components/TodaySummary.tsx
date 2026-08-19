@@ -213,7 +213,11 @@ export const TodaySummary = memo(function TodaySummary({
                   onOpenDayRoute();
                 }}
                 className={`inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold ${
-                  canPlanGap ? "button-secondary" : showPlanner ? "button-secondary" : "button-primary"
+                  canPlanGap
+                    ? "button-secondary"
+                    : showPlanner
+                      ? "button-secondary"
+                      : "button-primary"
                 }`}
               >
                 <Navigation className="h-4 w-4" aria-hidden="true" />

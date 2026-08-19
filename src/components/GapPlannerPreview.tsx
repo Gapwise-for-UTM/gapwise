@@ -49,9 +49,7 @@ function routeStatusLabel(status: GapAssessment["routeStatus"]) {
 }
 
 function isRoundTripRecommendation(recommendation: GapRecommendation) {
-  return (
-    recommendation.action === "go-home" || recommendation.action === "leave-campus-candidate"
-  );
+  return recommendation.action === "go-home" || recommendation.action === "leave-campus-candidate";
 }
 
 export function GapPlannerPreview({
@@ -178,7 +176,10 @@ export function GapPlannerPreview({
           </p>
           {warning ? (
             <p className="mt-1 flex items-start gap-1.5">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+              <AlertTriangle
+                className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
+                aria-hidden="true"
+              />
               <span>{warning}</span>
             </p>
           ) : null}
