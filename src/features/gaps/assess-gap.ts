@@ -1,9 +1,9 @@
-import { calculateGapTiming } from "@/lib/gaps";
-import { formatDuration, meetingLocationType } from "@/lib/timetable-types";
-import type { TransitionPlanner } from "@/features/routing/transition";
-import { createResidenceMeeting, selectedResidence } from "@/features/routing/residence";
-import type { UserPreferences } from "@/features/sync/preferences";
-import type { Gap } from "@/lib/timetable-types";
+import { calculateGapTiming } from "../../lib/gaps.js";
+import { formatDuration, meetingLocationType } from "../../lib/timetable-types.js";
+import type { TransitionPlanner } from "../routing/transition.js";
+import { createResidenceMeeting, selectedResidence } from "../routing/residence.js";
+import type { UserPreferences } from "../sync/preferences.js";
+import type { Gap } from "../../lib/timetable-types.js";
 import type {
   GapAction,
   GapAssessment,
@@ -13,7 +13,7 @@ import type {
   GapRecommendation,
   GapTag,
   GapTimelineSegment,
-} from "./types";
+} from "./types.js";
 
 const SCORE = {
   locationDependent: 110,

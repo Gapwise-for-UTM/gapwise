@@ -1,5 +1,5 @@
-import { type Gap, type Meeting, type Term, WEEKDAYS } from "./timetable-types";
-import type { RouteResult } from "@/features/routing/types";
+import { type Gap, type Meeting, type Term, WEEKDAYS } from "./timetable-types.js";
+import type { RouteResult } from "../features/routing/types.js";
 
 export const USABLE_BUFFER_MINUTES = 15;
 
