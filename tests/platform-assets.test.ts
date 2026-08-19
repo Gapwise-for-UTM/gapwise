@@ -55,6 +55,21 @@ describe("Gapwise Platform static assets", () => {
     expect(sdk).toContain("export const gapwise");
   });
 
+  test("serves TypeScript declarations as text rather than MPEG transport stream", async () => {
+    const config = (await Bun.file("vercel.json").json()) as {
+      headers?: Array<{
+        source?: string;
+        headers?: Array<{ key?: string; value?: string }>;
+      }>;
+    };
+    const declarationRule = config.headers?.find((rule) => rule.source === "/sdk/gapwise-utm.d.ts");
+    const contentType = declarationRule?.headers?.find(
+      (header) => header.key?.toLowerCase() === "content-type",
+    );
+
+    expect(contentType?.value).toBe("text/plain; charset=utf-8");
+  });
+
   test("executes the documented route and gap-plan SDK calls", async () => {
     const requests: Array<{ url: string; method: string; body: string | null }> = [];
     const mockFetch: typeof globalThis.fetch = async (input, init) => {
