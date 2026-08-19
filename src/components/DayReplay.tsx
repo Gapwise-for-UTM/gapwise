@@ -133,6 +133,14 @@ export function DayReplay({
     (segment) => segment.route.displayCoordinates.length >= 2,
   ).length;
   const transitionsWithoutMapLine = visibleSegments.length - visibleRouteLineCount;
+  const routeVisibilityLabel = [
+    `${visibleRouteLineCount} route line${visibleRouteLineCount === 1 ? "" : "s"} visible`,
+    transitionsWithoutMapLine > 0
+      ? `${transitionsWithoutMapLine} transition${transitionsWithoutMapLine === 1 ? "" : "s"} without a map line`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const gapPlan = snapshot.gap
     ? planGapAssessment(snapshot.gap, preferences, gapPreferences, planTransition).assessment
     : null;
@@ -326,15 +334,7 @@ export function DayReplay({
             className="h-[55dvh] min-h-[28rem] max-h-[42rem]"
           />
           <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-1 pt-3 text-xs text-muted-foreground">
-            <span>
-              {visibleRouteLineCount} route line{visibleRouteLineCount === 1 ? "" : "s"} visible
-              {transitionsWithoutMapLine > 0 ? (
-                <>
-                  {" "}· {transitionsWithoutMapLine} transition
-                  {transitionsWithoutMapLine === 1 ? "" : "s"} without a map line
-                </>
-              ) : null}
-            </span>
+            <span>{routeVisibilityLabel}</span>
             <span>Map and replay run in your browser</span>
           </div>
         </section>
