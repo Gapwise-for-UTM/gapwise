@@ -8,9 +8,10 @@ async function setReplayMinute(page: Page, minute: number) {
   const slider = page.getByRole("slider", { name: "Replay time" });
   await slider.evaluate((element, value) => {
     const input = element as HTMLInputElement;
-    input.value = String(value);
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    if (!setter) throw new Error("HTMLInputElement value setter is unavailable");
+    setter.call(input, String(value));
     input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
   }, minute);
   await expect(slider).toHaveValue(String(minute));
 }
