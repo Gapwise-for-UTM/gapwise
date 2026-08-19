@@ -1,0 +1,346 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Gapwise Public Campus API",
+    "version": "1.0.0",
+    "description": "Bounded, read-only public UTM campus intelligence used by Gapwise. This API does not expose private student timetables, friend data, credentials, or live location. Returned routing and accessibility coverage must be interpreted together with status, accuracy, warnings, and provenance fields.",
+    "contact": {
+      "name": "Gapwise",
+      "url": "https://gapwise.ca/developers"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://gapwise.ca",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    { "name": "Buildings" },
+    { "name": "Routing" },
+    { "name": "Gap planning" }
+  ],
+  "paths": {
+    "/api/utm-buildings": {
+      "get": {
+        "tags": ["Buildings"],
+        "operationId": "listUtmBuildings",
+        "summary": "List canonical UTM buildings",
+        "responses": {
+          "200": {
+            "description": "Canonical building inventory with routing coverage and provenance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["service", "buildings"],
+                  "properties": {
+                    "service": { "const": "gapwise-public-campus" },
+                    "buildings": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Building" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/utm-building": {
+      "get": {
+        "tags": ["Buildings"],
+        "operationId": "getUtmBuilding",
+        "summary": "Resolve one canonical UTM building",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "minLength": 1 },
+            "description": "Canonical building code, name, or recognized alias."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved building.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["service", "building"],
+                  "properties": {
+                    "service": { "const": "gapwise-public-campus" },
+                    "building": { "$ref": "#/components/schemas/Building" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/ApiError" },
+          "409": { "$ref": "#/components/responses/ApiError" }
+        }
+      }
+    },
+    "/api/utm-route": {
+      "post": {
+        "tags": ["Routing"],
+        "operationId": "routeBetweenUtmBuildings",
+        "summary": "Plan a deterministic building-to-building campus route",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RouteRequest" },
+              "examples": {
+                "mnToIb": {
+                  "value": { "from": "MN", "to": "IB" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Route result. Always inspect status, accuracy, routeVerification, and warnings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["service", "route"],
+                  "properties": {
+                    "service": { "const": "gapwise-public-campus" },
+                    "route": { "$ref": "#/components/schemas/Route" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ApiError" },
+          "404": { "$ref": "#/components/responses/ApiError" },
+          "409": { "$ref": "#/components/responses/ApiError" }
+        }
+      }
+    },
+    "/api/utm-gap-plan": {
+      "post": {
+        "tags": ["Gap planning"],
+        "operationId": "planUtmGap",
+        "summary": "Assess a bounded campus gap with deterministic route and timing logic",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GapPlanRequest" },
+              "examples": {
+                "wednesdayTwoHourGap": {
+                  "value": {
+                    "from": "MN",
+                    "to": "IB",
+                    "term": "Fall",
+                    "weekday": "Wednesday",
+                    "startTime": 660,
+                    "endTime": 780
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic gap assessment and underlying route.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["service", "gapPlan"],
+                  "properties": {
+                    "service": { "const": "gapwise-public-campus" },
+                    "gapPlan": { "$ref": "#/components/schemas/GapPlan" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ApiError" },
+          "404": { "$ref": "#/components/responses/ApiError" },
+          "409": { "$ref": "#/components/responses/ApiError" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Provenance": {
+        "type": "object",
+        "required": ["source", "sourceUrl", "lastVerified", "verificationStatus"],
+        "properties": {
+          "source": { "type": "string" },
+          "sourceUrl": { "type": "string", "format": "uri" },
+          "lastVerified": { "type": "string" },
+          "verificationStatus": {
+            "type": "string",
+            "enum": ["verified", "inferred", "unknown"]
+          }
+        }
+      },
+      "Building": {
+        "type": "object",
+        "required": [
+          "code",
+          "name",
+          "category",
+          "aliases",
+          "routingCoverage",
+          "entranceCount",
+          "verifiedEntranceCount",
+          "accessibility",
+          "indoorRoomNodeCount",
+          "provenance"
+        ],
+        "properties": {
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string", "enum": ["academic", "residence", "facility"] },
+          "aliases": { "type": "array", "items": { "type": "string" } },
+          "routingCoverage": { "type": "string", "enum": ["mapped", "identity-only"] },
+          "entranceCount": { "type": "integer", "minimum": 0 },
+          "verifiedEntranceCount": { "type": "integer", "minimum": 0 },
+          "accessibility": {
+            "type": "string",
+            "enum": ["accessible", "not_accessible", "unknown"]
+          },
+          "indoorRoomNodeCount": { "type": "integer", "minimum": 0 },
+          "provenance": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/Provenance" }
+          }
+        }
+      },
+      "RoutePreferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "mode": { "type": "string", "enum": ["fastest", "prefer-indoor", "step-free"] },
+          "walkingSpeedMps": { "type": "number" },
+          "transitionBufferMinutes": { "type": "number" }
+        }
+      },
+      "RouteRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "preferences": { "$ref": "#/components/schemas/RoutePreferences" }
+        }
+      },
+      "Route": {
+        "type": "object",
+        "required": [
+          "dataVersion",
+          "from",
+          "to",
+          "preferences",
+          "status",
+          "accuracy",
+          "totalDistanceMeters",
+          "estimatedSeconds",
+          "warnings",
+          "routeVerification"
+        ],
+        "properties": {
+          "dataVersion": { "type": "string" },
+          "from": { "$ref": "#/components/schemas/Building" },
+          "to": { "$ref": "#/components/schemas/Building" },
+          "preferences": { "$ref": "#/components/schemas/RoutePreferences" },
+          "status": {
+            "type": "string",
+            "enum": ["same-building", "routed", "approximate", "unavailable"]
+          },
+          "accuracy": { "type": "string" },
+          "totalDistanceMeters": { "type": ["number", "null"] },
+          "indoorDistanceMeters": { "type": ["number", "null"] },
+          "outdoorDistanceMeters": { "type": ["number", "null"] },
+          "estimatedSeconds": { "type": ["number", "null"] },
+          "floorChanges": { "type": ["integer", "null"] },
+          "warnings": { "type": "array", "items": { "type": "string" } },
+          "routeVerification": {
+            "type": "string",
+            "enum": ["verified", "mixed", "inferred", "unavailable"]
+          }
+        }
+      },
+      "GapPreferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "setupMinutes": { "type": "number" },
+          "packUpMinutes": { "type": "number" },
+          "lunchWindowStart": { "type": "number" },
+          "lunchWindowEnd": { "type": "number" },
+          "mealDurationMinutes": { "type": "number" },
+          "willingToLeaveCampus": { "type": "boolean" },
+          "oneWayHomeCommuteMinutes": { "type": ["number", "null"] },
+          "minimumHomeStayMinutes": { "type": "number" },
+          "homeTurnaroundMinutes": { "type": "number" },
+          "riskTolerance": { "type": "string", "enum": ["low", "medium", "high"] }
+        }
+      },
+      "GapPlanRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to", "term", "weekday", "startTime", "endTime"],
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "term": { "type": "string", "enum": ["Fall", "Winter", "Summer"] },
+          "weekday": {
+            "type": "string",
+            "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+          },
+          "startTime": { "type": "integer", "minimum": 0, "maximum": 1440 },
+          "endTime": { "type": "integer", "minimum": 0, "maximum": 1440 },
+          "routePreferences": { "$ref": "#/components/schemas/RoutePreferences" },
+          "gapPreferences": { "$ref": "#/components/schemas/GapPreferences" }
+        }
+      },
+      "GapPlan": {
+        "type": "object",
+        "required": ["dataVersion", "gap", "route", "gapPreferences", "assessment"],
+        "properties": {
+          "dataVersion": { "type": "string" },
+          "gap": { "type": "object" },
+          "route": { "$ref": "#/components/schemas/Route" },
+          "gapPreferences": { "$ref": "#/components/schemas/GapPreferences" },
+          "assessment": {
+            "type": "object",
+            "description": "Deterministic Gapwise gap assessment. The shape includes a primary recommendation, alternatives, confidence, travel/buffer timing, leave-by timing, route status, and warnings."
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error", "message"],
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "ApiError": {
+        "description": "Bounded API error.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      }
+    }
+  },
+  "x-data-license-note": "Gapwise source code is MIT. Public responses contain source-provenance metadata and may include OpenStreetMap-derived records subject to OpenStreetMap attribution and the ODbL. The MIT license does not override upstream data licenses."
+}
