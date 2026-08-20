@@ -128,9 +128,7 @@ export function buildWorkWindows(
   const parsedNotBefore = context.horizon.notBefore
     ? Date.parse(context.horizon.notBefore)
     : Number.NaN;
-  const notBefore = Number.isFinite(parsedNotBefore)
-    ? parsedNotBefore
-    : Number.NEGATIVE_INFINITY;
+  const notBefore = Number.isFinite(parsedNotBefore) ? parsedNotBefore : Number.NEGATIVE_INFINITY;
   const activeBlocks = context.existingBlocks.filter(
     (block) => block.status === "accepted" && block.locked,
   );
