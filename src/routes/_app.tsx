@@ -1,4 +1,4 @@
-import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   CalendarRange,
@@ -16,14 +16,17 @@ import {
 import { BubbleTabs } from "@/components/BubbleTabs";
 import { GapPlan } from "@/components/GapPlan";
 import PersonalItemForm from "@/components/PersonalItemForm";
-import { loadPersonalItems, savePersonalItems } from "@/features/personal/persistence";
+import { loadPersonalItems } from "@/features/personal/persistence";
+import { usePersonalItemCommands } from "@/features/personal/use-personal-item-commands";
+import { useAppNavigation, type AppDestination } from "@/features/navigation/use-app-navigation";
+import { useSelectedScheduleContext } from "@/features/schedule/use-selected-schedule-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
 import { TodaySummary } from "@/components/TodaySummary";
 import { UploadPanel } from "@/components/UploadPanel";
 import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
 import { MobileMoreSheet } from "@/components/mobile/MobileMoreSheet";
-import { MobileShell, type MobileTab } from "@/components/mobile/MobileShell";
+import { MobileShell } from "@/components/mobile/MobileShell";
 import { MobileTimetable } from "@/components/mobile/MobileTimetable";
 import { MobileToday } from "@/components/mobile/MobileToday";
 import { useTodayState } from "@/features/today/use-today-state";
@@ -33,7 +36,6 @@ import { AccountStatus } from "@/features/auth/AccountStatus";
 import { useAuth } from "@/features/auth/use-auth";
 import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
 import { ResidenceSettings } from "@/features/sync/ResidenceSettings";
-import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import {
   DEFAULT_GAP_PREFERENCES,
   loadGapPreferences,
@@ -47,34 +49,15 @@ import {
   saveLocalUserPreferences,
   type UserPreferences,
 } from "@/features/sync/preferences";
-import { loadRememberedRecord, useIntroDismissed, useTheme } from "@/hooks/use-preferences";
+import { useIntroDismissed, useTheme } from "@/hooks/use-preferences";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
-import { chooseDefaultTerm } from "@/lib/calendar-awareness";
-import { findGaps } from "@/lib/gaps";
-import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
 import { emitClickSpark } from "@/lib/micro-interactions";
-import { composeTermSchedule } from "@/lib/personal-scheduler";
-import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
-import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
-import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
-import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
-import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
+import type { Meeting } from "@/lib/timetable-types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
-import {
-  clearPrivateCloudLocalUser,
-  isEncryptedSyncOptedIn,
-  saveEncryptedPrivateState,
-} from "@/features/sync/encrypted-sync-service";
-import {
-  clearGuestTimetable,
-  loadGuestTimetable,
-  saveGuestTimetable,
-  type GuestTimetableRestoration,
-} from "@/features/security/guest-timetable";
-import {
-  isCloudRestoreSuppressed,
-  setCloudRestoreSuppressed,
-} from "@/features/sync/restore-preference";
+import { useEncryptedAutosave } from "@/features/sync/use-encrypted-autosave";
+import { useAuthenticatedRestoration } from "@/features/sync/use-authenticated-restoration";
+import { useGuestTimetableRestoration } from "@/features/sync/use-guest-timetable-restoration";
+import { useTimetableCommands } from "@/features/timetable/use-timetable-commands";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -84,25 +67,6 @@ const EMPTY_MEETINGS: Meeting[] = [];
 export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
-
-type AppDestination = "home" | MobileTab;
-
-const DESTINATION_PATHS = {
-  home: "/",
-  today: "/today",
-  timetable: "/timetable",
-  gaps: "/gaps",
-  route: "/route",
-} as const satisfies Record<AppDestination, string>;
-
-function destinationFromPath(pathname: string): AppDestination {
-  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
-  if (normalized === "/today") return "today";
-  if (normalized === "/timetable") return "timetable";
-  if (normalized === "/gaps") return "gaps";
-  if (normalized === "/route") return "route";
-  return "home";
-}
 
 const STEPS = [
   {
@@ -181,13 +145,6 @@ function ProductEmptyState({
 }
 
 function AppLayout() {
-  const navigate = useNavigate();
-  const routerLocation = useRouterState({ select: (state) => state.location });
-  const destination = destinationFromPath(routerLocation.pathname);
-  const selectedBuildingCode =
-    destination === "route" && typeof routerLocation.search["building"] === "string"
-      ? routerLocation.search["building"]
-      : null;
   const { theme, toggleTheme } = useTheme();
   const { dismissed, dismiss } = useIntroDismissed();
   const { user, loading: authLoading, error: authError } = useAuth();
@@ -196,22 +153,18 @@ function AppLayout() {
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [remember, setRemember] = useState(false);
-  const [term, setTerm] = useState<Term>("Fall");
-  const [openedViews, setOpenedViews] = useState({ gaps: false, route: false });
+  const {
+    record: guestRestoration,
+    setRecord: setGuestRestoration,
+    remember,
+    setRemember,
+  } = useGuestTimetableRestoration();
   const [isDemo, setIsDemo] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(loadLocalUserPreferences);
   const [gapPreferences, setGapPreferences] = useState<GapPreferences>(loadGapPreferences);
-  const [editingPersonal, setEditingPersonal] = useState<
-    import("@/lib/personal-types").PersonalItem | null
-  >(null);
-  const [guestRestoration, setGuestRestoration] = useState<GuestTimetableRestoration | null>(null);
-  const [restoration, setRestoration] = useState<RestorationState>("waiting-for-auth");
-  const [restorationMessage, setRestorationMessage] = useState<string | null>(null);
   const [personalItems, setPersonalItems] = useState<import("@/lib/personal-types").PersonalItem[]>(
     () => loadPersonalItems(),
   );
-  const [showAddPersonal, setShowAddPersonal] = useState(false);
   const updateUserPreferences = useCallback((next: UserPreferences) => {
     setPreferences(saveLocalUserPreferences(next));
   }, []);
@@ -221,41 +174,71 @@ function AppLayout() {
   const [isScrolled, setIsScrolled] = useState(false);
   const isMobile = useIsMobile();
   const [moreOpen, setMoreOpen] = useState(false);
-  const restoredSource = useRef<"memory" | "local" | "cloud" | "none">("none");
-  const latestMeetings = useRef<Meeting[] | null>(meetings);
-  const mounted = useRef(false);
-  const requestVersion = useRef(0);
-  const requestedUser = useRef<string | null>(null);
-  const previousUser = useRef<string | null>(null);
   const replacementInputRef = useRef<HTMLInputElement>(null);
-  const lastEncryptedFingerprint = useRef<string | null>(null);
-  const allowInitialHomeRedirect = useRef(destination === "home");
   const authenticatedUserId = user?.id ?? null;
-  const planTransition = useMemo(
-    () => createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings ?? []),
-    [meetings],
-  );
+  const {
+    destination,
+    selectedBuildingCode,
+    openedViews,
+    mobileTab,
+    view,
+    navigateToday,
+    showView,
+    selectBuilding,
+    openGapPlan,
+    openDayRoute,
+  } = useAppNavigation(Boolean(meetings?.length));
+  const personalCommands = usePersonalItemCommands(personalItems, setPersonalItems);
+  const {
+    term,
+    setTerm,
+    terms,
+    schedule: termMeetings,
+    gaps,
+    planTransition,
+  } = useSelectedScheduleContext(meetings, personalItems);
 
-  latestMeetings.current = meetings;
-
-  const applyPrivateData = useCallback((payload: PrivateDataPayloadV1) => {
-    latestMeetings.current = payload.schedule;
-    setMeetings(payload.schedule);
-    setPersonalItems(payload.personalItems);
-    setPreferences(payload.preferences);
-    setGapPreferences(payload.gapPreferences);
-    setWarnings([]);
-    setError(null);
-    setIsDemo(false);
-    lastEncryptedFingerprint.current = JSON.stringify(payload);
-  }, []);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
+  const {
+    restoration,
+    setRestoration,
+    restorationMessage,
+    setRestorationMessage,
+    restoredSource,
+    latestMeetings,
+    lastEncryptedFingerprint,
+    applyPrivateData,
+  } = useAuthenticatedRestoration({
+    authLoading,
+    authError,
+    userId: authenticatedUserId,
+    guest: guestRestoration,
+    meetings,
+    setMeetings,
+    setPersonalItems,
+    setPreferences,
+    setGapPreferences,
+    setWarnings,
+    setError,
+    setIsDemo,
+  });
+  const timetableCommands = useTimetableCommands({
+    meetings,
+    setMeetings,
+    setWarnings,
+    setError,
+    setLoading,
+    remember,
+    setRemember,
+    setGuestRestoration,
+    userId: authenticatedUserId,
+    isDemo,
+    setIsDemo,
+    latestMeetings,
+    restoredSource,
+    setRestoration,
+    setRestorationMessage,
+    applyPrivateData,
+  });
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -303,428 +286,22 @@ function AppLayout() {
       window.removeEventListener("online", setOnline);
       window.removeEventListener("offline", setOffline);
     };
-  }, []);
+  }, [lastEncryptedFingerprint]);
 
-  useEffect(() => {
-    loadRememberedRecord<unknown>();
-    let active = true;
-    void loadGuestTimetable()
-      .then((record) => {
-        if (!active) return;
-        setGuestRestoration(record);
-        setRemember(record.remember);
-      })
-      .catch(() => {
-        if (!active) return;
-        setGuestRestoration({ remember: false, meetings: null, updatedAt: null });
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (authLoading || guestRestoration === null) {
-      setRestoration("waiting-for-auth");
-      return;
-    }
-    const userId = authenticatedUserId;
-    if (!userId) {
-      const returningFromAccount = previousUser.current !== null;
-      cloudRestoration.cancel(previousUser.current);
-      requestVersion.current += 1;
-      requestedUser.current = null;
-      let currentMeetings = latestMeetings.current;
-      if (
-        previousUser.current &&
-        (restoredSource.current === "cloud" || isEncryptedPrivateCloudAuthoritative)
-      ) {
-        currentMeetings = null;
-        latestMeetings.current = null;
-        setMeetings(null);
-        if (isEncryptedPrivateCloudAuthoritative) {
-          setPersonalItems([]);
-          setPreferences(DEFAULT_USER_PREFERENCES);
-          setGapPreferences(DEFAULT_GAP_PREFERENCES);
-          lastEncryptedFingerprint.current = null;
-        }
-      }
-      previousUser.current = null;
-      const guestRecord = guestRestoration.meetings
-        ? {
-            data: guestRestoration.meetings,
-            updatedAt: guestRestoration.updatedAt,
-          }
-        : null;
-      const choice = chooseRestoration(
-        restoredSource.current === "memory" ? currentMeetings : null,
-        guestRecord,
-        null,
-      );
-      if (choice.meetings && choice.source !== "memory") {
-        latestMeetings.current = choice.meetings;
-        setMeetings(choice.meetings);
-      }
-      restoredSource.current = choice.source;
-      setRestoration(authError ? "failed" : choice.state);
-      if (authError) {
-        setRestorationMessage(
-          "We couldn't restore your signed-in session. Cloud restore is unavailable.",
-        );
-      } else if (returningFromAccount) {
-        setRestorationMessage(null);
-      }
-      return;
-    }
-
-    if (previousUser.current !== userId) {
-      cloudRestoration.cancel(previousUser.current);
-      requestVersion.current += 1;
-      requestedUser.current = null;
-      if (
-        previousUser.current &&
-        (restoredSource.current === "cloud" || isEncryptedPrivateCloudAuthoritative)
-      ) {
-        latestMeetings.current = null;
-        setMeetings(null);
-        if (isEncryptedPrivateCloudAuthoritative) {
-          setPersonalItems([]);
-          setPreferences(DEFAULT_USER_PREFERENCES);
-          setGapPreferences(DEFAULT_GAP_PREFERENCES);
-          lastEncryptedFingerprint.current = null;
-        }
-      }
-      previousUser.current = userId;
-    }
-
-    if (isCloudRestoreSuppressed(userId)) {
-      requestedUser.current = userId;
-      setRestoration("no-cloud-data");
+  useEncryptedAutosave({
+    userId: authenticatedUserId,
+    meetings,
+    personalItems,
+    preferences,
+    gapPreferences,
+    isDemo,
+    isOnline,
+    restoredFingerprint: lastEncryptedFingerprint,
+    onFailure: () =>
       setRestorationMessage(
-        "Automatic cloud restore is paused on this browser. Use Load private data when you want it back.",
-      );
-      return;
-    }
-
-    if (latestMeetings.current?.length && restoredSource.current === "memory") {
-      setRestoration("restored-memory");
-      return;
-    }
-    if (requestedUser.current === userId) return;
-    requestedUser.current = userId;
-    const version = ++requestVersion.current;
-    setRestoration("checking-cloud");
-    setRestorationMessage(null);
-    void cloudRestoration
-      .restore(userId)
-      .then((cloud) => {
-        if (
-          !mounted.current ||
-          requestVersion.current !== version ||
-          previousUser.current !== userId
-        )
-          return;
-        const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
-        const choice = chooseRestoration(memory, null, cloud);
-        if (choice.meetings && choice.source !== "memory") {
-          latestMeetings.current = choice.meetings;
-          setMeetings(choice.meetings);
-        }
-        if (choice.source === "cloud" && cloud?.privateData) {
-          applyPrivateData(cloud.privateData);
-        }
-        restoredSource.current = choice.source;
-        setRestoration(choice.state);
-        if (choice.state === "cloud-version-available") {
-          setRestorationMessage("A cloud version is available; your local timetable was kept.");
-        } else if (choice.source === "cloud" && cloud?.persistentKeys === false) {
-          setRestorationMessage(
-            "Encrypted data restored. This browser cannot persist non-extractable keys, so another broker check will be needed after reload.",
-          );
-        }
-      })
-      .catch((restoreError: unknown) => {
-        if (isRestorationAbort(restoreError)) return;
-        if (
-          !mounted.current ||
-          requestVersion.current !== version ||
-          previousUser.current !== userId
-        )
-          return;
-        const memory = restoredSource.current === "memory" ? latestMeetings.current : null;
-        const choice = chooseRestoration(memory, null, null);
-        if (choice.meetings && choice.source !== "memory") {
-          latestMeetings.current = choice.meetings;
-          setMeetings(choice.meetings);
-        }
-        restoredSource.current = choice.source;
-        setRestoration("failed");
-        setRestorationMessage(
-          "We couldn't restore your cloud timetable. Your local timetable is unchanged.",
-        );
-      });
-  }, [applyPrivateData, authLoading, authError, authenticatedUserId, guestRestoration]);
-
-  const terms = useMemo(() => {
-    if (!meetings) return [] as Term[];
-    return TERMS.filter((t) => meetings.some((m) => m.term === t));
-  }, [meetings]);
-
-  useEffect(() => {
-    if (terms.length > 0 && !terms.includes(term)) setTerm(terms[0]!);
-  }, [terms, term]);
-
-  useEffect(() => {
-    if (meetings?.length) setTerm(chooseDefaultTerm(meetings, new Date()));
-  }, [meetings]);
-
-  useEffect(() => {
-    if (!allowInitialHomeRedirect.current) return;
-    if (destination !== "home") {
-      allowInitialHomeRedirect.current = false;
-      return;
-    }
-    if (!meetings?.length) return;
-    allowInitialHomeRedirect.current = false;
-    void navigate({ to: "/timetable", replace: true });
-  }, [destination, meetings, navigate]);
-
-  useEffect(() => {
-    if (
-      !isEncryptedPrivateCloudAuthoritative ||
-      !authenticatedUserId ||
-      meetings === null ||
-      isDemo ||
-      !isEncryptedSyncOptedIn(authenticatedUserId)
-    ) {
-      return;
-    }
-    const input = { schedule: meetings, personalItems, preferences, gapPreferences };
-    const fingerprint = JSON.stringify({ schemaVersion: 1, ...input });
-    if (fingerprint === lastEncryptedFingerprint.current) return;
-    const timeout = window.setTimeout(() => {
-      lastEncryptedFingerprint.current = fingerprint;
-      void saveEncryptedPrivateState(authenticatedUserId, input, {
-        requireExistingOptIn: true,
-        localOnly: !isOnline,
-      }).catch(() => {
-        if (lastEncryptedFingerprint.current === fingerprint) {
-          lastEncryptedFingerprint.current = null;
-        }
-        setRestorationMessage(
-          "Encrypted local data was kept, but cloud sync could not finish. Try again when connected.",
-        );
-      });
-    }, 750);
-    return () => window.clearTimeout(timeout);
-  }, [authenticatedUserId, gapPreferences, isDemo, isOnline, meetings, personalItems, preferences]);
-
-  const termMeetings = useMemo(
-    () => composeTermSchedule(meetings ?? EMPTY_MEETINGS, personalItems, term),
-    [meetings, personalItems, term],
-  );
-
-  const gaps = useMemo(() => findGaps(termMeetings, term), [termMeetings, term]);
-
-  const persistPersonal = (next: typeof personalItems) => {
-    setPersonalItems(next);
-    try {
-      savePersonalItems(next);
-    } catch {
-      // ignore
-    }
-  };
-
-  const addOrUpdatePersonal = (item: import("@/lib/personal-types").PersonalItem) => {
-    const existing = personalItems.find((p) => p.id === item.id);
-    if (existing) {
-      persistPersonal(personalItems.map((p) => (p.id === item.id ? item : p)));
-    } else {
-      persistPersonal([...personalItems, item]);
-    }
-  };
-
-  const deletePersonal = (id: string) => {
-    persistPersonal(personalItems.filter((p) => p.id !== id));
-  };
-
-  async function handleFile(file: File) {
-    const previousMeetings = latestMeetings.current;
-    setError(null);
-    if (!/\.ics$/i.test(file.name) && file.type !== "text/calendar") {
-      const message = "That file type isn't supported. Please choose a .ics calendar file.";
-      if (previousMeetings?.length) setRestorationMessage(`Update failed · ${message}`);
-      else setError(message);
-      return;
-    }
-    if (file.size > MAX_ICS_FILE_BYTES) {
-      const message = "That calendar is too large. Please choose an .ics file under 2 MB.";
-      if (previousMeetings?.length) setRestorationMessage(`Update failed · ${message}`);
-      else setError(message);
-      return;
-    }
-    setRestorationMessage(null);
-    setLoading(true);
-    try {
-      const text = await file.text();
-      const result = parseIcs(text);
-      let persistenceWarning: string | null = null;
-      if (remember && !authenticatedUserId) {
-        try {
-          await saveGuestTimetable(result.meetings);
-          setGuestRestoration({
-            remember: true,
-            meetings: result.meetings,
-            updatedAt: new Date().toISOString(),
-          });
-        } catch {
-          setRemember(false);
-          persistenceWarning =
-            "This browser could not keep an encrypted device copy. Your open timetable is unchanged.";
-        }
-      }
-      setMeetings(result.meetings);
-      latestMeetings.current = result.meetings;
-      restoredSource.current = "memory";
-      setRestoration("restored-memory");
-      if (previousMeetings?.length) {
-        const previousById = new Map(previousMeetings.map((meeting) => [meeting.id, meeting]));
-        const nextIds = new Set(result.meetings.map((meeting) => meeting.id));
-        const added = result.meetings.filter((meeting) => !previousById.has(meeting.id)).length;
-        const removed = previousMeetings.filter((meeting) => !nextIds.has(meeting.id)).length;
-        const changed = result.meetings.filter((meeting) => {
-          const previous = previousById.get(meeting.id);
-          return previous && JSON.stringify(previous) !== JSON.stringify(meeting);
-        }).length;
-        const changes = [
-          added ? `${added} added` : null,
-          removed ? `${removed} removed` : null,
-          changed ? `${changed} updated` : null,
-        ].filter(Boolean);
-        setRestorationMessage(
-          persistenceWarning ??
-            `Timetable updated · ${changes.length ? changes.join(" · ") : "no meeting changes"}`,
-        );
-      } else {
-        setRestorationMessage(persistenceWarning);
-      }
-      setWarnings(result.warnings);
-      setIsDemo(false);
-    } catch (err) {
-      const message =
-        err instanceof IcsParseError
-          ? err.message
-          : "Something went wrong while reading that calendar. Try exporting it from ACORN again.";
-      if (previousMeetings?.length) {
-        setRestorationMessage(`Update failed · ${message}`);
-      } else {
-        setMeetings(null);
-        latestMeetings.current = null;
-        restoredSource.current = "none";
-        setWarnings([]);
-        setError(message);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function loadDemo() {
-    setError(null);
-    setWarnings([]);
-    setMeetings(DEMO_MEETINGS);
-    latestMeetings.current = DEMO_MEETINGS;
-    restoredSource.current = "memory";
-    setRestoration("restored-memory");
-    setRestorationMessage(null);
-    setIsDemo(true);
-  }
-
-  function clearTimetableView() {
-    setMeetings(null);
-    latestMeetings.current = null;
-    restoredSource.current = "none";
-    setRestoration("no-cloud-data");
-    setRestorationMessage(null);
-    setWarnings([]);
-    setError(null);
-    setIsDemo(false);
-  }
-
-  async function removeTimetableFromBrowser() {
-    try {
-      if (authenticatedUserId) {
-        await clearPrivateCloudLocalUser(authenticatedUserId);
-        setCloudRestoreSuppressed(authenticatedUserId, true);
-      } else {
-        await clearGuestTimetable();
-        setGuestRestoration({ remember: false, meetings: null, updatedAt: null });
-        setRemember(false);
-      }
-      clearTimetableView();
-    } catch {
-      setRestorationMessage(
-        "This browser could not clear its encrypted local copy, so the timetable was left in place.",
-      );
-    }
-  }
-
-  function confirmRemoveTimetable() {
-    const cloudNote = authenticatedUserId
-      ? " Your encrypted cloud copy will remain available from Load private data."
-      : "";
-    if (
-      window.confirm(
-        `Remove this timetable and its encrypted local copy from this browser?${cloudNote}`,
-      )
-    ) {
-      void removeTimetableFromBrowser();
-    }
-  }
-
-  function loadCloudTimetable(cloudMeetings: Meeting[]) {
-    setMeetings(cloudMeetings);
-    latestMeetings.current = cloudMeetings;
-    setWarnings([]);
-    setError(null);
-    setIsDemo(false);
-    if (authenticatedUserId) setCloudRestoreSuppressed(authenticatedUserId, false);
-    restoredSource.current = "cloud";
-    setRestoration("restored-cloud");
-  }
-
-  function loadPrivateData(payload: PrivateDataPayloadV1) {
-    if (authenticatedUserId) setCloudRestoreSuppressed(authenticatedUserId, false);
-    applyPrivateData(payload);
-    restoredSource.current = "cloud";
-    setRestoration("restored-cloud");
-    setRestorationMessage(null);
-  }
-
-  function handleRemember(value: boolean) {
-    setRemember(value);
-    if (authenticatedUserId) return;
-    setRestorationMessage(
-      value ? "Setting up encrypted device restore…" : "Removing the encrypted device copy…",
-    );
-    void (value ? saveGuestTimetable(isDemo ? null : meetings) : clearGuestTimetable())
-      .then(() => {
-        setGuestRestoration({
-          remember: value,
-          meetings: value && !isDemo ? meetings : null,
-          updatedAt: value && meetings && !isDemo ? new Date().toISOString() : null,
-        });
-        setRestorationMessage(
-          value
-            ? "Encrypted device restore is on for this browser."
-            : "Encrypted device restore is off and its local copy was removed.",
-        );
-      })
-      .catch(() => {
-        setRemember(!value);
-        setRestorationMessage("Secure device storage is unavailable in this browser.");
-      });
-  }
+        "Encrypted local data was kept, but cloud sync could not finish. Try again when connected.",
+      ),
+  });
 
   function updateGapPreferences(next: GapPreferences) {
     const sanitized = sanitizeGapPreferences(next);
@@ -732,54 +309,28 @@ function AppLayout() {
     saveGapPreferences(sanitized);
   }
 
-  const showView = useCallback(
-    (nextView: "timetable" | "gaps" | "route") => {
-      if (nextView !== "timetable") {
-        setOpenedViews((current) =>
-          current[nextView] ? current : { ...current, [nextView]: true },
-        );
+  const handleAccountDeleted = useCallback(
+    (_clearLocal: boolean) => {
+      setMeetings(null);
+      latestMeetings.current = null;
+      restoredSource.current = "none";
+      setRestoration("no-cloud-data");
+      setRestorationMessage(null);
+      if (isEncryptedPrivateCloudAuthoritative) {
+        setPersonalItems([]);
+        setPreferences(DEFAULT_USER_PREFERENCES);
+        setGapPreferences(DEFAULT_GAP_PREFERENCES);
+        lastEncryptedFingerprint.current = null;
       }
-      void navigate({ to: DESTINATION_PATHS[nextView] });
     },
-    [navigate],
+    [
+      lastEncryptedFingerprint,
+      latestMeetings,
+      restoredSource,
+      setRestoration,
+      setRestorationMessage,
+    ],
   );
-
-  useEffect(() => {
-    if (destination !== "gaps" && destination !== "route") return;
-    setOpenedViews((current) =>
-      current[destination] ? current : { ...current, [destination]: true },
-    );
-  }, [destination]);
-
-  const selectBuilding = useCallback(
-    (code: string | null) => {
-      if (code === null && selectedBuildingCode === null) return;
-      void navigate({
-        to: "/route",
-        search: code ? { building: code } : {},
-        replace: destination === "route",
-        resetScroll: false,
-      });
-    },
-    [destination, navigate, selectedBuildingCode],
-  );
-
-  const openGapPlan = useCallback(() => showView("gaps"), [showView]);
-  const openDayRoute = useCallback(() => showView("route"), [showView]);
-
-  const handleAccountDeleted = useCallback((_clearLocal: boolean) => {
-    setMeetings(null);
-    latestMeetings.current = null;
-    restoredSource.current = "none";
-    setRestoration("no-cloud-data");
-    setRestorationMessage(null);
-    if (isEncryptedPrivateCloudAuthoritative) {
-      setPersonalItems([]);
-      setPreferences(DEFAULT_USER_PREFERENCES);
-      setGapPreferences(DEFAULT_GAP_PREFERENCES);
-      lastEncryptedFingerprint.current = null;
-    }
-  }, []);
 
   const { now: todayNow, state: todayState } = useTodayState({
     meetings: termMeetings,
@@ -788,10 +339,6 @@ function AppLayout() {
     gapPreferences,
     planTransition,
   });
-
-  const mobileTab: MobileTab = destination === "home" ? "today" : destination;
-  const view: "timetable" | "gaps" | "route" =
-    destination === "gaps" || destination === "route" ? destination : "timetable";
 
   if (isMobile && destination !== "home") {
     return (
@@ -803,11 +350,7 @@ function AppLayout() {
             type="file"
             accept=".ics,text/calendar"
             hidden
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) void handleFile(file);
-              event.target.value = "";
-            }}
+            onChange={timetableCommands.handleFileInputChange}
           />
           {restorationMessage ? (
             <p className="surface mb-4 p-4 text-sm text-muted-foreground">{restorationMessage}</p>
@@ -817,7 +360,7 @@ function AppLayout() {
               destination={mobileTab}
               loading={loading}
               onImport={() => replacementInputRef.current?.click()}
-              onDemo={loadDemo}
+              onDemo={timetableCommands.loadDemo}
             />
           ) : null}
           {meetings && mobileTab === "today" ? (
@@ -850,15 +393,10 @@ function AppLayout() {
                 openDayRoute();
               }}
               onAddPersonal={() => {
-                setEditingPersonal(null);
-                setShowAddPersonal(true);
+                personalCommands.openCreate();
               }}
-              onEditPersonal={(id) => {
-                const item = personalItems.find((personal) => personal.id === id) ?? null;
-                setEditingPersonal(item);
-                setShowAddPersonal(true);
-              }}
-              onDeletePersonal={deletePersonal}
+              onEditPersonal={personalCommands.openEdit}
+              onDeletePersonal={personalCommands.remove}
             />
           ) : null}
           {meetings && mobileTab === "gaps" ? (
@@ -907,7 +445,7 @@ function AppLayout() {
           onUpdateTimetable={() => replacementInputRef.current?.click()}
           onRemoveTimetable={() => {
             setMoreOpen(false);
-            confirmRemoveTimetable();
+            timetableCommands.confirmRemove();
           }}
           syncControls={
             meetings ? (
@@ -917,8 +455,8 @@ function AppLayout() {
                 personalItems={personalItems}
                 preferences={preferences}
                 gapPreferences={gapPreferences}
-                onLoad={loadCloudTimetable}
-                onLoadPrivate={loadPrivateData}
+                onLoad={timetableCommands.loadCloud}
+                onLoadPrivate={timetableCommands.loadPrivate}
                 restorationState={restoration}
               />
             ) : null
@@ -937,14 +475,11 @@ function AppLayout() {
           />
         </MobileMoreSheet>
         <PersonalItemForm
-          open={showAddPersonal}
-          onOpenChange={(open) => {
-            setShowAddPersonal(open);
-            if (!open) setEditingPersonal(null);
-          }}
-          initial={editingPersonal}
+          open={personalCommands.formOpen}
+          onOpenChange={personalCommands.setOpen}
+          initial={personalCommands.editingItem}
           defaultTerm={term}
-          onSave={addOrUpdatePersonal}
+          onSave={personalCommands.save}
         />
       </>
     );
@@ -1048,12 +583,12 @@ function AppLayout() {
                   ) : null}
                   <UploadPanel
                     variant="hero"
-                    onFile={handleFile}
-                    onDemo={loadDemo}
+                    onFile={timetableCommands.importFile}
+                    onDemo={timetableCommands.loadDemo}
                     loading={loading}
                     error={error}
                     remember={remember}
-                    onRememberChange={handleRemember}
+                    onRememberChange={timetableCommands.setRemembered}
                     rememberAvailable={!authenticatedUserId}
                   />
                   <p className="mt-8 border-t border-border pt-5 text-center font-mono text-[0.625rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
@@ -1117,8 +652,8 @@ function AppLayout() {
                 personalItems={personalItems}
                 preferences={preferences}
                 gapPreferences={gapPreferences}
-                onLoad={loadCloudTimetable}
-                onLoadPrivate={loadPrivateData}
+                onLoad={timetableCommands.loadCloud}
+                onLoadPrivate={timetableCommands.loadPrivate}
                 restorationState={restoration}
               />
             </div>
@@ -1131,17 +666,13 @@ function AppLayout() {
               type="file"
               accept=".ics,text/calendar"
               hidden
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void handleFile(file);
-                event.target.value = "";
-              }}
+              onChange={timetableCommands.handleFileInputChange}
             />
             <ProductEmptyState
               destination={destination}
               loading={loading}
               onImport={() => replacementInputRef.current?.click()}
-              onDemo={loadDemo}
+              onDemo={timetableCommands.loadDemo}
             />
           </>
         ) : !meetings ? (
@@ -1223,11 +754,7 @@ function AppLayout() {
                   type="file"
                   accept=".ics,text/calendar"
                   hidden
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) void handleFile(file);
-                    event.target.value = "";
-                  }}
+                  onChange={timetableCommands.handleFileInputChange}
                 />
                 <button
                   type="button"
@@ -1240,7 +767,7 @@ function AppLayout() {
                 </button>
                 <button
                   type="button"
-                  onClick={confirmRemoveTimetable}
+                  onClick={timetableCommands.confirmRemove}
                   aria-label="Remove timetable"
                   title="Remove timetable"
                   className="button-secondary inline-flex h-10 w-10 items-center justify-center text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
@@ -1310,7 +837,7 @@ function AppLayout() {
                 ]}
                 value={destination}
                 onChange={(next) => {
-                  if (next === "today") void navigate({ to: "/today" });
+                  if (next === "today") navigateToday();
                   else showView(next);
                 }}
                 className="w-full sm:w-[36rem]"
@@ -1343,7 +870,7 @@ function AppLayout() {
                           type="button"
                           onClick={(event) => {
                             emitClickSpark(event);
-                            setShowAddPersonal(true);
+                            personalCommands.openCreate();
                           }}
                           className="button-primary click-spark inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
                         >
@@ -1351,68 +878,32 @@ function AppLayout() {
                         </button>
                       }
                       onRouteToMeeting={() => showView("route")}
-                      onEditPersonal={(id) => {
-                        const it = personalItems.find((p) => p.id === id) ?? null;
-                        setEditingPersonal(it);
-                        setShowAddPersonal(true);
-                      }}
-                      onDeletePersonal={(id) => deletePersonal(id)}
-                      onCreatePersonal={({ weekday, startTime, endTime }) => {
-                        const id = `p-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-                        const item: import("@/lib/personal-types").PersonalItem = {
+                      onEditPersonal={personalCommands.openEdit}
+                      onDeletePersonal={personalCommands.remove}
+                      onCreatePersonal={({ weekday, startTime, endTime }) =>
+                        personalCommands.createAt({
+                          term,
+                          weekday: weekday as import("@/lib/timetable-types").Weekday,
+                          startTime,
+                          endTime,
+                        })
+                      }
+                      onMovePersonal={(id, weekday, startTime, endTime) =>
+                        personalCommands.move(
                           id,
-                          title: "New",
-                          category: "Personal",
-                          term: term,
-                          weekday: weekday as import("@/lib/timetable-types").Weekday,
+                          weekday as import("@/lib/timetable-types").Weekday,
                           startTime,
                           endTime,
-                          locationBuildingCode: null,
-                          locationRoom: null,
-                          locationText: null,
-                          notes: null,
-                          color: "#5b21b6",
-                          flexibility: { kind: "fixed" },
-                          createdAt: new Date().toISOString(),
-                          updatedAt: new Date().toISOString(),
-                        };
-                        addOrUpdatePersonal(item);
-                        setEditingPersonal(item);
-                        setShowAddPersonal(true);
-                      }}
-                      onMovePersonal={(id, weekday, startTime, endTime) => {
-                        const it = personalItems.find((p) => p.id === id);
-                        if (!it) return;
-                        const updated = {
-                          ...it,
-                          weekday: weekday as import("@/lib/timetable-types").Weekday,
-                          startTime,
-                          endTime,
-                          updatedAt: new Date().toISOString(),
-                        };
-                        addOrUpdatePersonal(updated);
-                      }}
-                      onResizePersonal={(id, startTime, endTime) => {
-                        const it = personalItems.find((p) => p.id === id);
-                        if (!it) return;
-                        const updated = {
-                          ...it,
-                          startTime,
-                          endTime,
-                          updatedAt: new Date().toISOString(),
-                        };
-                        addOrUpdatePersonal(updated);
-                      }}
+                        )
+                      }
+                      onResizePersonal={personalCommands.resize}
                     />
                     <PersonalItemForm
-                      open={showAddPersonal}
-                      onOpenChange={(open) => {
-                        setShowAddPersonal(open);
-                        if (!open) setEditingPersonal(null);
-                      }}
-                      initial={editingPersonal}
+                      open={personalCommands.formOpen}
+                      onOpenChange={personalCommands.setOpen}
+                      initial={personalCommands.editingItem}
                       defaultTerm={term}
-                      onSave={(item) => addOrUpdatePersonal(item)}
+                      onSave={personalCommands.save}
                     />
                   </div>
                   {openedViews.gaps ? (
@@ -1465,8 +956,8 @@ function AppLayout() {
                 personalItems={personalItems}
                 preferences={preferences}
                 gapPreferences={gapPreferences}
-                onLoad={loadCloudTimetable}
-                onLoadPrivate={loadPrivateData}
+                onLoad={timetableCommands.loadCloud}
+                onLoadPrivate={timetableCommands.loadPrivate}
                 restorationState={restoration}
               />
             </div>

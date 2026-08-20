@@ -1,5 +1,5 @@
 import type { PersonalItem } from "./personal-types";
-import type { Meeting, Term } from "./timetable-types";
+import { TERMS, type Meeting, type Term } from "./timetable-types";
 
 export function fixedPersonalItemToMeeting(item: PersonalItem): Meeting | null {
   if (
@@ -36,13 +36,23 @@ export function composeTermSchedule(
   personalItems: readonly PersonalItem[],
   term: Term,
 ): Meeting[] {
-  const academic = meetings.filter((meeting) => meeting.term === term);
+  return composeSchedule(meetings, personalItems).filter((meeting) => meeting.term === term);
+}
+
+/** Normalized deterministic schedule context shared by UI, planning, and delegated AI reads. */
+export function composeSchedule(
+  meetings: readonly Meeting[],
+  personalItems: readonly PersonalItem[],
+): Meeting[] {
   const personal = personalItems
-    .filter((item) => item.term === term)
     .map(fixedPersonalItemToMeeting)
     .filter((meeting): meeting is Meeting => meeting !== null);
 
-  return [...academic, ...personal];
+  return [...meetings, ...personal];
+}
+
+export function availableScheduleTerms(meetings: readonly Meeting[]): Term[] {
+  return TERMS.filter((term) => meetings.some((meeting) => meeting.term === term));
 }
 
 export function snapToIncrement(minute: number, increment = 15) {

@@ -89,14 +89,14 @@ describe("account deletion and encrypted-only cloud security", () => {
   });
 
   test("authoritative encrypted mode clears cross-account and plaintext browser state", async () => {
-    const [route, preferences, remembered] = await Promise.all([
-      readFile("src/routes/_app.tsx", "utf8"),
+    const [restoration, decisions, preferences, remembered] = await Promise.all([
+      readFile("src/features/sync/use-authenticated-restoration.ts", "utf8"),
+      readFile("src/features/sync/restoration-decisions.ts", "utf8"),
       readFile("src/features/sync/preferences.ts", "utf8"),
       readFile("src/hooks/use-preferences.ts", "utf8"),
     ]);
-    expect(
-      route.match(/restoredSource\.current === "cloud" \|\| isEncryptedPrivateCloudAuthoritative/g),
-    ).toHaveLength(2);
+    expect(restoration.match(/shouldClearAccountState\(/g)).toHaveLength(2);
+    expect(decisions).toContain('source === "cloud" || privateCloudAuthoritative');
     expect(preferences).toContain("storage?.removeItem(LOCAL_PREFERENCES_KEY)");
     expect(remembered).toContain("window.localStorage.removeItem(TIMETABLE_KEY)");
     expect(remembered).toContain("window.localStorage.removeItem(REMEMBER_KEY)");

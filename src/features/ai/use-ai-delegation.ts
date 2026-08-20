@@ -245,6 +245,7 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
           revision,
           personalItems: state.personalItems,
           gapPreferences: state.gapPreferences,
+          permissions,
         });
 
         for (const rejected of batch.rejected) {
