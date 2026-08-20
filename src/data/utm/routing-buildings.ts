@@ -41,6 +41,47 @@ export type CampusBuilding = {
   indoorMapped: boolean;
 };
 
+/**
+ * Validate that every entrance exposed as routable actually anchors to a node
+ * in the assembled campus graph. Keep this separate from entrance parsing so
+ * routing-buildings does not depend on campus.ts and create an import cycle.
+ */
+export function campusBuildingRoutingIssues(
+  buildings: readonly CampusBuilding[],
+  graphNodeIds: ReadonlySet<string>,
+): string[] {
+  const issues: string[] = [];
+
+  for (const building of buildings) {
+    const entranceNodeIds = new Set(building.entrances.map((entrance) => entrance.routingNodeId));
+    if (!entranceNodeIds.has(building.entranceNodeId)) {
+      issues.push(
+        `Building “${building.code}” primary entrance node “${building.entranceNodeId}” is not one of its entrance routing nodes.`,
+      );
+    }
+
+    for (const entrance of building.entrances) {
+      if (!graphNodeIds.has(entrance.routingNodeId)) {
+        issues.push(
+          `Building “${building.code}” entrance “${entrance.id}” references missing routing node “${entrance.routingNodeId}”.`,
+        );
+      }
+    }
+  }
+
+  return issues;
+}
+
+export function assertCampusBuildingRoutingIntegrity(
+  buildings: readonly CampusBuilding[],
+  graphNodeIds: ReadonlySet<string>,
+): void {
+  const issues = campusBuildingRoutingIssues(buildings, graphNodeIds);
+  if (issues.length > 0) {
+    throw new Error(`Campus building routing validation failed:\n- ${issues.join("\n- ")}`);
+  }
+}
+
 type EntranceFeature = {
   id: string;
   geometry: { type: "Point"; coordinates: [number, number] };
