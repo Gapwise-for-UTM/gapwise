@@ -1,7 +1,7 @@
 import type { AcademicPlanningContext, PlannedWorkBlock } from "./types";
 import type { Meeting } from "@/lib/timetable-types";
 import { needsScheduledWork } from "./types";
-import { buildWorkWindows } from "./windows";
+import { buildWorkWindows, torontoDateForInstant } from "./windows";
 
 export interface StudyPlanProposal {
   blocks: PlannedWorkBlock[];
@@ -9,6 +9,7 @@ export interface StudyPlanProposal {
   warnings: string[];
   revision: string;
 }
+
 function hash(value: string) {
   let h = 2166136261;
   for (let i = 0; i < value.length; i++) {
@@ -17,70 +18,102 @@ function hash(value: string) {
   }
   return (h >>> 0).toString(36);
 }
-function fingerprint(c: AcademicPlanningContext) {
+
+function fingerprint(context: AcademicPlanningContext) {
   return hash(
     JSON.stringify({
-      h: c.horizon,
-      m: c.academicMeetings,
-      p: c.fixedPersonalCommitments,
-      c: c.coursework,
-      b: c.existingBlocks,
-      x: c.preferences,
+      h: context.horizon,
+      m: context.academicMeetings,
+      p: context.fixedPersonalCommitments,
+      c: context.coursework,
+      b: context.existingBlocks,
+      x: context.preferences,
     }),
   );
 }
+
+function acceptedMinutesForCoursework(
+  context: AcademicPlanningContext,
+  courseworkId: string,
+  dueAt: string | null,
+) {
+  const deadline = dueAt ? Date.parse(dueAt) : Infinity;
+  return context.existingBlocks
+    .filter(
+      (block) =>
+        block.courseworkId === courseworkId &&
+        block.status === "accepted" &&
+        block.locked &&
+        Date.parse(block.end) <= deadline,
+    )
+    .reduce((total, block) => total + block.allocatedMinutes, 0);
+}
+
 export function createStudyPlan(
   context: AcademicPlanningContext,
   routeMinutes: (from: Meeting, to: Meeting) => number | null,
 ): StudyPlanProposal {
   const revision = fingerprint(context);
-  const windows = buildWorkWindows(context, routeMinutes).map((w) => ({
-    ...w,
-    cursor: Date.parse(w.start),
-    remaining: w.availableMinutes,
+  const windows = buildWorkWindows(context, routeMinutes).map((window) => ({
+    ...window,
+    cursor: Date.parse(window.start),
+    remaining: window.availableMinutes,
   }));
   const items = context.coursework.filter(needsScheduledWork).sort((a, b) => {
-    const ad = a.dueAt ?? "9999",
-      bd = b.dueAt ?? "9999";
+    const ad = a.dueAt ?? "9999";
+    const bd = b.dueAt ?? "9999";
     return (
       ad.localeCompare(bd) ||
-      { high: 0, normal: 1, low: 2 }[a.priority] - { high: 0, normal: 1, low: 2 }[b.priority] ||
+      { high: 0, normal: 1, low: 2 }[a.priority] -
+        { high: 0, normal: 1, low: 2 }[b.priority] ||
       a.id.localeCompare(b.id)
     );
   });
   const blocks: PlannedWorkBlock[] = [];
   const unscheduledMinutes: Record<string, number> = {};
   const daily = new Map<string, number>();
+
+  for (const block of context.existingBlocks) {
+    if (block.status !== "accepted" || !block.locked) continue;
+    const day = torontoDateForInstant(block.start);
+    daily.set(day, (daily.get(day) ?? 0) + block.allocatedMinutes);
+  }
+
   for (const item of items) {
-    let remaining = item.workEstimate.remainingMinutes;
+    let remaining = Math.max(
+      0,
+      item.workEstimate.remainingMinutes -
+        acceptedMinutesForCoursework(context, item.id, item.dueAt),
+    );
     const preferLong = context.courseProfiles
-      .find((p) => p.courseId === item.courseId)
+      .find((profile) => profile.courseId === item.courseId)
       ?.characteristics.includes("prefers_long_sessions");
     const candidates = [...windows]
-      .filter((w) => !item.dueAt || w.cursor < Date.parse(item.dueAt))
+      .filter((window) => !item.dueAt || window.cursor < Date.parse(item.dueAt))
       .sort(
         (a, b) =>
           (preferLong ? b.remaining - a.remaining : 0) ||
           a.cursor - b.cursor ||
           a.id.localeCompare(b.id),
       );
-    for (const w of candidates) {
+
+    for (const window of candidates) {
       if (remaining < context.preferences.minimumBlockMinutes) break;
-      const day = new Date(w.cursor).toISOString().slice(0, 10);
+      const day = torontoDateForInstant(new Date(window.cursor));
       const cap = context.preferences.maxDailyMinutes - (daily.get(day) ?? 0);
       const deadline = item.dueAt
-        ? Math.floor((Date.parse(item.dueAt) - w.cursor) / 60000)
+        ? Math.floor((Date.parse(item.dueAt) - window.cursor) / 60_000)
         : Infinity;
       const minutes = Math.min(
         remaining,
-        w.remaining,
+        window.remaining,
         context.preferences.maximumBlockMinutes,
         cap,
         deadline,
       );
       if (minutes < context.preferences.minimumBlockMinutes) continue;
-      const start = new Date(w.cursor).toISOString(),
-        end = new Date(w.cursor + minutes * 60000).toISOString();
+      const start = new Date(window.cursor).toISOString();
+      const end = new Date(window.cursor + minutes * 60_000).toISOString();
       const id = `study:${hash(`${revision}|${item.id}|${start}|${minutes}`)}`;
       blocks.push({
         id,
@@ -92,20 +125,22 @@ export function createStudyPlan(
         origin: "deterministic_planner",
         locked: false,
         revision,
-        reasons: [item.dueAt ? "due_soon" : "work_remaining", w.kind],
+        reasons: [item.dueAt ? "due_soon" : "work_remaining", window.kind],
       });
       remaining -= minutes;
-      w.cursor += minutes * 60000;
-      w.remaining -= minutes;
+      window.cursor += minutes * 60_000;
+      window.remaining -= minutes;
       daily.set(day, (daily.get(day) ?? 0) + minutes);
     }
     unscheduledMinutes[item.id] = remaining;
   }
-  const warnings = Object.values(unscheduledMinutes).some((v) => v > 0)
+
+  const warnings = Object.values(unscheduledMinutes).some((value) => value > 0)
     ? ["Some work does not fit before its deadline in this horizon."]
     : [];
   return { blocks, unscheduledMinutes, warnings, revision };
 }
+
 export function transitionBlock(
   block: PlannedWorkBlock,
   status: PlannedWorkBlock["status"],
