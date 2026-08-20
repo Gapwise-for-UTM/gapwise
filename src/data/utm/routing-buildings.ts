@@ -13,7 +13,19 @@ export type BuildingEntrance = {
   label: string;
   kind: EntranceKind;
   coordinates: [number, number];
-  osmNodeId: number;
+  /**
+   * Internal graph identity. This may point at an OSM-backed node today or a
+   * field-survey/custom node in the future.
+   */
+  routingNodeId: string;
+  /**
+   * Compatibility field for current callers. It is optional by design and
+   * must not be used as the entrance's canonical identity.
+   */
+  osmNodeId?: number;
+  externalIds?: {
+    osmNodeId?: number;
+  };
   accessibility: AccessibilityStatus;
   notes?: string;
   metadata: SourceMetadata;
@@ -36,7 +48,12 @@ type EntranceFeature = {
     buildingCode: string;
     label: string;
     kind: EntranceKind;
-    osmNodeId: number;
+    /**
+     * Legacy/current OSM linkage. New entrance identities are not required to
+     * have one; an explicit routingNodeId may be used instead.
+     */
+    osmNodeId?: number;
+    routingNodeId?: string;
     accessibility: AccessibilityStatus;
     notes?: string;
     source: string;
@@ -48,13 +65,24 @@ type EntranceFeature = {
 
 const entranceFeatures = (JSON.parse(entranceDataRaw) as { features: EntranceFeature[] }).features;
 
-function toEntrance(feature: EntranceFeature): BuildingEntrance {
+function resolveRoutingNodeId(feature: EntranceFeature): string | null {
+  if (feature.properties.routingNodeId) return feature.properties.routingNodeId;
+  if (feature.properties.osmNodeId !== undefined) {
+    return `osm-node-${feature.properties.osmNodeId}`;
+  }
+  return null;
+}
+
+function toEntrance(feature: EntranceFeature): BuildingEntrance | null {
+  const routingNodeId = resolveRoutingNodeId(feature);
+  if (!routingNodeId) return null;
+
   const entrance: BuildingEntrance = {
     id: feature.id,
     label: feature.properties.label,
     kind: feature.properties.kind,
     coordinates: feature.geometry.coordinates,
-    osmNodeId: feature.properties.osmNodeId,
+    routingNodeId,
     accessibility: feature.properties.accessibility,
     metadata: {
       source: feature.properties.source,
@@ -63,6 +91,10 @@ function toEntrance(feature: EntranceFeature): BuildingEntrance {
       verificationStatus: feature.properties.verificationStatus,
     },
   };
+  if (feature.properties.osmNodeId !== undefined) {
+    entrance.osmNodeId = feature.properties.osmNodeId;
+    entrance.externalIds = { osmNodeId: feature.properties.osmNodeId };
+  }
   if (feature.properties.notes) entrance.notes = feature.properties.notes;
   return entrance;
 }
@@ -72,7 +104,8 @@ export const CAMPUS_BUILDINGS: CampusBuilding[] = UTM_BUILDINGS.flatMap(
   (building): CampusBuilding[] => {
     const entrances = entranceFeatures
       .filter((feature) => feature.properties.buildingCode === building.code)
-      .map(toEntrance);
+      .map(toEntrance)
+      .filter((entrance): entrance is BuildingEntrance => entrance !== null);
     if (entrances.length === 0) return [];
     const primary = entrances[0]!;
     return [
@@ -82,7 +115,7 @@ export const CAMPUS_BUILDINGS: CampusBuilding[] = UTM_BUILDINGS.flatMap(
         category: building.category,
         entrances,
         navigationPoint: primary.coordinates,
-        entranceNodeId: `osm-node-${primary.osmNodeId}`,
+        entranceNodeId: primary.routingNodeId,
         indoorMapped: false,
       } satisfies CampusBuilding,
     ];
