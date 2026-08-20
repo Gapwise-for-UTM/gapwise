@@ -1,9 +1,6 @@
 import { expect, test } from "bun:test";
 import { findGaps } from "@/lib/gaps";
-import {
-  composeTermSchedule,
-  fixedPersonalItemToMeeting,
-} from "@/lib/personal-scheduler";
+import { composeTermSchedule, fixedPersonalItemToMeeting } from "@/lib/personal-scheduler";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 
@@ -143,21 +140,17 @@ test("composeTermSchedule does not mutate source schedule data", () => {
 test("adding a personal fixed item splits a gap", () => {
   const meetings: Meeting[] = [meeting("a", 9 * 60, 11 * 60), meeting("b", 14 * 60, 15 * 60)];
   const gapsBefore = findGaps(meetings, "Fall");
-  expect(gapsBefore.some((gap) => gap.startTime === 11 * 60 && gap.endTime === 14 * 60)).toBe(
-    true,
-  );
+  expect(gapsBefore.some((gap) => gap.startTime === 11 * 60 && gap.endTime === 14 * 60)).toBe(true);
 
   const personalMeeting = fixedPersonalItemToMeeting(personalItem());
   expect(personalMeeting).not.toBeNull();
   const combined = personalMeeting ? meetings.concat(personalMeeting) : meetings;
   const gapsAfter = findGaps(combined, "Fall");
 
-  expect(gapsAfter.some((gap) => gap.startTime === 11 * 60 && gap.endTime === 14 * 60)).toBe(
-    false,
+  expect(gapsAfter.some((gap) => gap.startTime === 11 * 60 && gap.endTime === 14 * 60)).toBe(false);
+  expect(gapsAfter.some((gap) => gap.startTime === 12 * 60 + 30 && gap.endTime === 14 * 60)).toBe(
+    true,
   );
-  expect(
-    gapsAfter.some((gap) => gap.startTime === 12 * 60 + 30 && gap.endTime === 14 * 60),
-  ).toBe(true);
 });
 
 test("deleting a personal item removes it from the personal item list", () => {
