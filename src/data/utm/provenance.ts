@@ -1,7 +1,5 @@
 export type CampusSourceId =
-  | "utm-facilities-buildings"
-  | "utm-facilities-snow-ice"
-  | "utm-housing-welcome-home";
+  "utm-facilities-buildings" | "utm-facilities-snow-ice" | "utm-housing-welcome-home";
 
 export type CampusSourceRecord = {
   id: CampusSourceId;
