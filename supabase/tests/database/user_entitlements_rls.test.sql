@@ -3,7 +3,7 @@ select plan(6);
 select has_table('public', 'user_entitlements', 'entitlement table exists');
 select policies_are('public', 'user_entitlements', array['users read own entitlement']);
 select table_privs_are('public', 'user_entitlements', 'authenticated', array['SELECT']);
-select col_is_pk('public', 'user_entitlements', 'user_id');
+select col_is_pk('public', 'user_entitlements', 'user_id', 'user_id is the primary key');
 select throws_ok($$ insert into public.user_entitlements(user_id,tier) values(gen_random_uuid(),'free') $$, '23514');
 select throws_ok($$ insert into public.user_entitlements(user_id,tier,expires_at) values(gen_random_uuid(),'founder',now()) $$, '23514');
 select * from finish();
