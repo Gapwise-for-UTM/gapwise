@@ -66,8 +66,7 @@ export function createStudyPlan(
     const bd = b.dueAt ?? "9999";
     return (
       ad.localeCompare(bd) ||
-      { high: 0, normal: 1, low: 2 }[a.priority] -
-        { high: 0, normal: 1, low: 2 }[b.priority] ||
+      { high: 0, normal: 1, low: 2 }[a.priority] - { high: 0, normal: 1, low: 2 }[b.priority] ||
       a.id.localeCompare(b.id)
     );
   });
@@ -84,7 +83,8 @@ export function createStudyPlan(
   for (const item of items) {
     let remaining = Math.max(
       0,
-      item.workEstimate.remainingMinutes - acceptedMinutesForCoursework(context, item.id, item.dueAt),
+      item.workEstimate.remainingMinutes -
+        acceptedMinutesForCoursework(context, item.id, item.dueAt),
     );
     const preferLong = context.courseProfiles
       .find((profile) => profile.courseId === item.courseId)
