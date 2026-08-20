@@ -4,6 +4,7 @@ import { UTM_BUILDINGS } from "@/data/utm/building-registry";
 import { CAMPUS_BUILDINGS, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES } from "@/data/utm/official-entrance-candidates";
 import { CAMPUS_SOURCE_RECORDS } from "@/data/utm/provenance";
+import type { BuildingEntrance } from "@/data/utm/routing-buildings";
 import { findRoute } from "@/features/routing/engine";
 
 describe("UTM ingress provenance v2", () => {
@@ -98,6 +99,23 @@ describe("UTM ingress provenance v2", () => {
   });
 
   test("uses routing-node identity independently from optional OSM external IDs", () => {
+    const fieldSurveyEntrance: BuildingEntrance = {
+      id: "mn:entrance:field-survey-example",
+      label: "Field-survey example",
+      kind: "entrance",
+      coordinates: [-79.6654, 43.5513],
+      routingNodeId: "survey-node-mn-field-survey-example",
+      accessibility: "unknown",
+      metadata: {
+        source: "Gapwise field survey",
+        sourceUrl: "https://gapwise.ca",
+        lastVerified: "2026-08-20",
+        verificationStatus: "verified",
+      },
+    };
+    expect(fieldSurveyEntrance.osmNodeId).toBeUndefined();
+    expect(fieldSurveyEntrance.routingNodeId).toBe("survey-node-mn-field-survey-example");
+
     for (const building of CAMPUS_BUILDINGS) {
       for (const entrance of building.entrances) {
         expect(entrance.routingNodeId.length).toBeGreaterThan(0);
