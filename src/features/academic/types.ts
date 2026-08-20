@@ -4,21 +4,9 @@ export const CAMPUS_TIME_ZONE = "America/Toronto" as const;
 
 export type Confidence = "low" | "medium" | "high";
 export type CourseworkKind =
-  | "assignment"
-  | "quiz"
-  | "exam"
-  | "reading"
-  | "lab"
-  | "project"
-  | "discussion"
-  | "other";
+  "assignment" | "quiz" | "exam" | "reading" | "lab" | "project" | "discussion" | "other";
 export type SubmissionState =
-  | "unknown"
-  | "unsubmitted"
-  | "submitted"
-  | "graded"
-  | "missing"
-  | "late";
+  "unknown" | "unsubmitted" | "submitted" | "graded" | "missing" | "late";
 export type LocalProgress = "not_started" | "in_progress" | "completed_manually";
 export type EstimateProvenance =
   | "user_supplied"
