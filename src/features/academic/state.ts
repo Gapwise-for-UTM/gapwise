@@ -5,6 +5,7 @@ export interface AcademicState {
   blocks: PlannedWorkBlock[];
   proposalRevision: string | null;
 }
+
 export const EMPTY_ACADEMIC_STATE: AcademicState = {
   coursework: [],
   blocks: [],
@@ -57,6 +58,34 @@ export function createManualCoursework(
       confidence: "high",
       provenance: "user_supplied",
     },
+  };
+}
+
+export function setManualCourseworkCompletion(
+  state: AcademicState,
+  courseworkId: string,
+  completed: boolean,
+): AcademicState {
+  const item = state.coursework.find((candidate) => candidate.id === courseworkId);
+  if (!item) throw new Error("Coursework was not found.");
+  return {
+    ...state,
+    coursework: state.coursework.map((candidate) =>
+      candidate.id === courseworkId
+        ? {
+            ...candidate,
+            localProgress: completed ? "completed_manually" : "in_progress",
+          }
+        : candidate,
+    ),
+    blocks: completed
+      ? state.blocks.map((block) =>
+          block.courseworkId === courseworkId && block.status === "accepted"
+            ? { ...block, status: "cancelled", locked: false }
+            : block,
+        )
+      : state.blocks,
+    proposalRevision: null,
   };
 }
 
