@@ -63,10 +63,19 @@ export interface CourseworkItem {
   requiresAnotherAttempt?: boolean;
 }
 
+/**
+ * Provider-confirmed states that mean the current attempt no longer needs work scheduled.
+ * `late` is intentionally complete here: Canvas reports it only for an already-submitted
+ * attempt that happened after the due time. A reopened/new attempt is represented separately.
+ */
+export function isProviderSubmissionComplete(state: SubmissionState): boolean {
+  return state === "submitted" || state === "graded" || state === "late";
+}
+
 export function needsScheduledWork(item: CourseworkItem): boolean {
   if (item.requiresAnotherAttempt) return true;
   if (item.localProgress === "completed_manually") return false;
-  return item.submissionState !== "submitted" && item.submissionState !== "graded";
+  return !isProviderSubmissionComplete(item.submissionState);
 }
 
 export type BlockStatus = "proposed" | "accepted" | "completed" | "missed" | "cancelled";
