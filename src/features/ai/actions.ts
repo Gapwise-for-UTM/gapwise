@@ -1,8 +1,15 @@
 import { sanitizeGapPreferences } from "@/features/gaps/preferences";
 import type { GapPreferences } from "@/features/gaps/types";
+import { deletePersonalItem, upsertPersonalItem } from "@/features/personal/operations";
 import type { PersonalCategory, PersonalFlexibility, PersonalItem } from "@/lib/personal-types";
 import { TERMS, WEEKDAYS, type Term, type Weekday } from "@/lib/timetable-types";
-import type { AiAction, PendingAiAction, PersonalItemDraft, PersonalItemPatch } from "./types";
+import type {
+  AiAction,
+  AiPermissions,
+  PendingAiAction,
+  PersonalItemDraft,
+  PersonalItemPatch,
+} from "./types";
 
 const CATEGORIES: PersonalCategory[] = [
   "Study",
@@ -352,8 +359,9 @@ export function applyAiActionBatch(input: {
   revision: number;
   personalItems: PersonalItem[];
   gapPreferences: GapPreferences;
+  permissions: Pick<AiPermissions, "writePersonal" | "writeGapPreferences">;
 }): AiActionBatchResult {
-  const personalItems = [...input.personalItems];
+  let personalItems = [...input.personalItems];
   let gapPreferences = input.gapPreferences;
   const applied: string[] = [];
   const rejected: Array<{ id: string; code: string }> = [];
@@ -365,6 +373,14 @@ export function applyAiActionBatch(input: {
       rejected.push({ id: pending.id, code: "stale_revision" });
       continue;
     }
+    const permitted =
+      action.kind === "update_gap_preferences"
+        ? input.permissions.writeGapPreferences
+        : input.permissions.writePersonal;
+    if (!permitted) {
+      rejected.push({ id: pending.id, code: "permission_denied" });
+      continue;
+    }
     if (action.kind === "create_personal_item") {
       const id = `ai-${pending.id}`;
       if (!personalItems.some((item) => item.id === id)) {
@@ -372,7 +388,10 @@ export function applyAiActionBatch(input: {
           rejected.push({ id: pending.id, code: "personal_item_limit" });
           continue;
         }
-        personalItems.push(buildPersonalItem(pending.id, action.item, now));
+        personalItems = upsertPersonalItem(
+          personalItems,
+          buildPersonalItem(pending.id, action.item, now),
+        );
       }
       applied.push(pending.id);
       continue;
@@ -388,7 +407,7 @@ export function applyAiActionBatch(input: {
         rejected.push({ id: pending.id, code: "invalid_personal_item" });
         continue;
       }
-      personalItems[index] = next;
+      personalItems = upsertPersonalItem(personalItems, next);
       applied.push(pending.id);
       continue;
     }
@@ -398,7 +417,7 @@ export function applyAiActionBatch(input: {
         rejected.push({ id: pending.id, code: "personal_item_missing" });
         continue;
       }
-      personalItems.splice(index, 1);
+      personalItems = deletePersonalItem(personalItems, action.itemId);
       applied.push(pending.id);
       continue;
     }

@@ -1,6 +1,7 @@
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
+import { querySchedulePosition, scheduleForWeekday } from "@/lib/schedule-context";
 import type { Gap, Meeting, Term, Weekday } from "@/lib/timetable-types";
 
 export type DayReplayPhase = "before" | "class" | "gap" | "after";
@@ -29,9 +30,7 @@ export function dayReplayMeetings(
   term: Term,
   weekday: Weekday,
 ): Meeting[] {
-  return meetings
-    .filter((meeting) => meeting.term === term && meeting.weekday === weekday)
-    .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime || a.id.localeCompare(b.id));
+  return scheduleForWeekday(meetings, term, weekday);
 }
 
 export function buildDayReplaySegments(
@@ -68,30 +67,12 @@ export function buildDayReplaySnapshot(
   segments: readonly DayReplaySegment[],
   minute: number,
 ): DayReplaySnapshot {
-  const current =
-    meetings.find((meeting) => meeting.startTime <= minute && meeting.endTime > minute) ?? null;
-  const previous = [...meetings].reverse().find((meeting) => meeting.endTime <= minute) ?? null;
-  const next = meetings.find((meeting) => meeting.startTime > minute) ?? null;
-
-  let phase: DayReplayPhase;
-  if (current) phase = "class";
-  else if (!previous) phase = "before";
-  else if (!next) phase = "after";
-  else phase = "gap";
-
-  const gap =
-    phase === "gap" && previous && next && next.startTime > previous.endTime
-      ? {
-          id: `replay-${previous.id}-${next.id}`,
-          term: previous.term,
-          weekday: previous.weekday,
-          startTime: previous.endTime,
-          endTime: next.startTime,
-          durationMinutes: next.startTime - previous.endTime,
-          previous,
-          next,
-        }
-      : null;
+  const position = querySchedulePosition(meetings, minute);
+  const current = position.currentCommitment;
+  const previous = position.previousCommitment;
+  const next = position.nextCommitment;
+  const gap = position.currentGap;
+  const phase: DayReplayPhase = position.phase === "commitment" ? "class" : position.phase;
 
   const selectedSegmentId = gap ? `${gap.previous.id}--${gap.next.id}` : null;
   const visibleSegmentIds = segments

@@ -4,9 +4,9 @@ import type { GapPreferences } from "@/features/gaps/types";
 import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { findGaps } from "@/lib/gaps";
-import { fixedPersonalItemToMeeting } from "@/lib/personal-scheduler";
+import { availableScheduleTerms, composeSchedule } from "@/lib/personal-scheduler";
 import type { PersonalItem } from "@/lib/personal-types";
-import { TERMS, type Meeting } from "@/lib/timetable-types";
+import type { Meeting } from "@/lib/timetable-types";
 import type { AiPermissions, AiSnapshot } from "./types";
 
 function aiMeeting(meeting: Meeting): AiSnapshot["schedule"][number] {
@@ -80,15 +80,13 @@ function aiGapPlans(input: {
 
   // Personal items affect a delegated gap only when the user also chose to share them.
   // This prevents a gap boundary from leaking the existence/time of a hidden personal item.
-  const personalMeetings = input.permissions.readPersonal
-    ? input.personalItems
-        .map(fixedPersonalItemToMeeting)
-        .filter((meeting): meeting is Meeting => meeting !== null)
-    : [];
-  const combined = [...input.meetings, ...personalMeetings];
+  const combined = composeSchedule(
+    input.meetings,
+    input.permissions.readPersonal ? input.personalItems : [],
+  );
   const planTransition = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, combined);
 
-  return TERMS.flatMap((term) =>
+  return availableScheduleTerms(combined).flatMap((term) =>
     findGaps(combined, term).map((gap) => {
       const { assessment } = planGapAssessment(
         gap,

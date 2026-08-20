@@ -12,6 +12,7 @@ import {
   termStatus,
 } from "@/lib/calendar-awareness";
 import { calculateLeaveBy } from "@/lib/gaps";
+import { querySchedulePosition } from "@/lib/schedule-context";
 import type { Gap, Meeting, Term } from "@/lib/timetable-types";
 import { formatTime, termForMonth, WEEKDAYS } from "@/lib/timetable-types";
 
@@ -126,9 +127,11 @@ export function buildTodayState({
         .sort((a, b) => a.startTime - b.startTime)
     : [];
   const minute = minutesNow(now);
-  const current = day.find((meeting) => meeting.startTime <= minute && meeting.endTime > minute);
-  const previous = [...day].reverse().find((meeting) => meeting.endTime <= minute) ?? null;
-  const next = day.find((meeting) => meeting.startTime > minute) ?? null;
+  const {
+    currentCommitment: current,
+    nextCommitment: next,
+    currentGap,
+  } = querySchedulePosition(day, minute);
 
   if (current) {
     if (!next) return { kind: "in-class", current, next: null };
@@ -141,21 +144,11 @@ export function buildTodayState({
     return { kind: "in-class", current, next, route, leaveBy };
   }
 
-  if (previous && next) {
-    const gap: Gap = {
-      id: `${selectedTerm}-${weekday}-${previous.id}-${next.id}`,
-      term: selectedTerm,
-      weekday: weekday!,
-      startTime: previous.endTime,
-      endTime: next.startTime,
-      durationMinutes: next.startTime - previous.endTime,
-      previous,
-      next,
-    };
-    const plan = planGapAssessment(gap, preferences, gapPreferences, planTransition);
+  if (currentGap) {
+    const plan = planGapAssessment(currentGap, preferences, gapPreferences, planTransition);
     return {
       kind: "gap",
-      gap,
+      gap: currentGap,
       ...plan,
       destinationContext: { preferences, gapPreferences, planTransition },
     };

@@ -48,6 +48,7 @@ type AuthSnapshot = {
 type EncryptedFixture = {
   meetings: Meeting[];
   updatedAt: string;
+  privateData?: PrivateDataPayloadV1;
 };
 
 const authenticatedUser = {
@@ -57,6 +58,7 @@ const authenticatedUser = {
   aud: "authenticated",
   created_at: "2026-08-01T00:00:00.000Z",
 } as User;
+const secondAuthenticatedUser = { ...authenticatedUser, id: "user-2" } as User;
 
 let authSnapshot: AuthSnapshot = { user: null, loading: true, error: null };
 const authSubscribers = new Set<() => void>();
@@ -97,7 +99,7 @@ mock.module("@/features/sync/encrypted-sync-service", () => ({
     const record = await loadImplementation(userId);
     return record
       ? {
-          payload: payload(record.meetings),
+          payload: record.privateData ?? payload(record.meetings),
           source: "cloud" as const,
           updatedAt: record.updatedAt,
           persistentKeys: true,
@@ -401,6 +403,62 @@ describe("route-level encrypted timetable restoration", () => {
 
     expect(pageText()).not.toContain("STALE101H5");
     expect(loadCalls).toEqual([authenticatedUser.id]);
+  });
+
+  test("rejects user A restore results after switching to user B", async () => {
+    const first = deferred<EncryptedFixture | null>();
+    const second = deferred<EncryptedFixture | null>();
+    authSnapshot = { user: authenticatedUser, loading: false, error: null };
+    loadImplementation = async (userId) =>
+      userId === authenticatedUser.id ? first.promise : second.promise;
+
+    await mountRoute();
+    await waitFor(() => loadCalls.includes(authenticatedUser.id), "user A restore to start");
+    await setAuth({ user: secondAuthenticatedUser, loading: false, error: null });
+    await waitFor(() => loadCalls.includes(secondAuthenticatedUser.id), "user B restore to start");
+
+    first.resolve({
+      meetings: [meeting({ id: "user-a", courseCode: "USERA101H5" })],
+      updatedAt: "2026-08-01T12:00:00.000Z",
+    });
+    second.resolve({
+      meetings: [meeting({ id: "user-b", courseCode: "USERB101H5" })],
+      updatedAt: "2026-08-01T12:00:00.000Z",
+    });
+    await waitFor(() => pageText().includes("USERB101H5"), "user B timetable");
+
+    expect(pageText()).not.toContain("USERA101H5");
+    expect(loadCalls).toEqual([authenticatedUser.id, secondAuthenticatedUser.id]);
+  });
+
+  test("applies personal items from the same encrypted private payload as the schedule", async () => {
+    const cloud = meeting({ id: "cloud-private", courseCode: "PRIVATE101H5" });
+    authSnapshot = { user: authenticatedUser, loading: false, error: null };
+    loadImplementation = async () => ({
+      meetings: [cloud],
+      updatedAt: "2026-08-01T12:00:00.000Z",
+      privateData: {
+        ...payload([cloud]),
+        personalItems: [
+          {
+            id: "restored-personal",
+            title: "Restored study block",
+            category: "Study",
+            term: "Fall",
+            weekday: "Monday",
+            startTime: 11 * 60,
+            endTime: 12 * 60,
+            flexibility: { kind: "fixed" },
+            createdAt: "2026-08-01T00:00:00.000Z",
+            updatedAt: "2026-08-01T00:00:00.000Z",
+          },
+        ],
+      },
+    });
+
+    await mountRoute();
+    await waitFor(() => pageText().includes("Restored study block"), "the restored personal item");
+    expect(pageText()).toContain("PRIVATE101H5");
   });
 
   test("keeps the weekly grid mounted while switching schedule views", async () => {

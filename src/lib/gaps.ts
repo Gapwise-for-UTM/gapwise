@@ -1,5 +1,6 @@
 import { type Gap, type Meeting, type Term, WEEKDAYS } from "./timetable-types.js";
 import type { RouteResult } from "../features/routing/types.js";
+import { gapBetween, scheduleForWeekday } from "./schedule-context.js";
 
 export const USABLE_BUFFER_MINUTES = 15;
 
@@ -57,9 +58,9 @@ export function calculateGapTiming(
 export function findGaps(meetings: Meeting[], term: Term): Gap[] {
   const gaps: Gap[] = [];
   for (const weekday of WEEKDAYS) {
-    const day = meetings
-      .filter((m) => m.term === term && m.weekday === weekday)
-      .sort((a, b) => a.startTime - b.startTime || b.endTime - a.endTime);
+    const day = scheduleForWeekday(meetings, term, weekday).sort(
+      (a, b) => a.startTime - b.startTime || b.endTime - a.endTime,
+    );
 
     let previous = day[0];
     for (let i = 1; previous && i < day.length; i += 1) {
@@ -73,16 +74,8 @@ export function findGaps(meetings: Meeting[], term: Term): Gap[] {
         previous = next;
         continue;
       }
-      gaps.push({
-        id: `${term}-${weekday}-${previous.id}-${next.id}`,
-        term,
-        weekday,
-        startTime: previous.endTime,
-        endTime: next.startTime,
-        durationMinutes,
-        previous,
-        next,
-      });
+      const gap = gapBetween(previous, next);
+      if (gap) gaps.push(gap);
       previous = next;
     }
   }

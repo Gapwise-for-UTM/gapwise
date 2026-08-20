@@ -1,6 +1,18 @@
 import { expect, test } from "bun:test";
 import { findGaps } from "@/lib/gaps";
-import { composeTermSchedule, fixedPersonalItemToMeeting } from "@/lib/personal-scheduler";
+import {
+  availableScheduleTerms,
+  composeSchedule,
+  composeTermSchedule,
+  fixedPersonalItemToMeeting,
+} from "@/lib/personal-scheduler";
+import {
+  createFixedPersonalItem,
+  deletePersonalItem,
+  movePersonalItem,
+  resizePersonalItem,
+  upsertPersonalItem,
+} from "@/features/personal/operations";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 
@@ -137,6 +149,24 @@ test("composeTermSchedule does not mutate source schedule data", () => {
   expect(JSON.stringify(personal)).toBe(personalBefore);
 });
 
+test("composeSchedule exposes one normalized all-term context without flexible items", () => {
+  const academic = [
+    meeting("fall", 9 * 60, 10 * 60),
+    meeting("winter", 9 * 60, 10 * 60, "Tuesday", "Winter"),
+  ];
+  const personal = [
+    personalItem({ id: "fixed" }),
+    personalItem({ id: "flexible", flexibility: { kind: "flexible", durationMinutes: 60 } }),
+  ];
+
+  expect(composeSchedule(academic, personal).map((item) => item.id)).toEqual([
+    "fall",
+    "winter",
+    "fixed",
+  ]);
+  expect(availableScheduleTerms(composeSchedule(academic, personal))).toEqual(["Fall", "Winter"]);
+});
+
 test("adding a personal fixed item splits a gap", () => {
   const meetings: Meeting[] = [meeting("a", 9 * 60, 11 * 60), meeting("b", 14 * 60, 15 * 60)];
   const gapsBefore = findGaps(meetings, "Fall");
@@ -159,7 +189,59 @@ test("deleting a personal item removes it from the personal item list", () => {
     personalItem({ id: "p2", title: "Workout", category: "Exercise" }),
   ];
 
-  const next = personalItems.filter((item) => item.id !== "p1");
+  const next = deletePersonalItem(personalItems, "p1");
   expect(next).toHaveLength(1);
   expect(next[0]?.id).toBe("p2");
+});
+
+test("upserting personal items appends new records and replaces matching records in place", () => {
+  const first = personalItem({ id: "p1" });
+  const second = personalItem({ id: "p2", title: "Workout" });
+
+  expect(upsertPersonalItem([first], second)).toEqual([first, second]);
+  expect(upsertPersonalItem([first, second], { ...first, title: "Focused study" })).toEqual([
+    { ...first, title: "Focused study" },
+    second,
+  ]);
+});
+
+test("personal timing operations preserve identity and record their update time", () => {
+  const source = personalItem();
+  const moved = movePersonalItem(source, "Wednesday", 13 * 60, 14 * 60, "moved-at");
+  const resized = resizePersonalItem(moved, 13 * 60, 14 * 60 + 30, "resized-at");
+
+  expect(moved).toMatchObject({
+    id: source.id,
+    weekday: "Wednesday",
+    startTime: 13 * 60,
+    endTime: 14 * 60,
+    updatedAt: "moved-at",
+  });
+  expect(resized).toMatchObject({
+    id: source.id,
+    startTime: 13 * 60,
+    endTime: 14 * 60 + 30,
+    updatedAt: "resized-at",
+  });
+  expect(source.weekday).toBe("Monday");
+});
+
+test("fixed personal creation defaults are owned by the personal domain boundary", () => {
+  expect(
+    createFixedPersonalItem({
+      id: "created",
+      term: "Fall",
+      weekday: "Tuesday",
+      startTime: 600,
+      endTime: 660,
+      timestamp: "created-at",
+    }),
+  ).toMatchObject({
+    id: "created",
+    title: "New",
+    category: "Personal",
+    flexibility: { kind: "fixed" },
+    createdAt: "created-at",
+    updatedAt: "created-at",
+  });
 });

@@ -131,6 +131,7 @@ describe("AI delegation", () => {
       revision: 5,
       personalItems: [],
       gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: { writePersonal: true, writeGapPreferences: false },
       actions: [
         {
           id: "00000000-0000-4000-8000-000000000002",
@@ -181,15 +182,51 @@ describe("AI delegation", () => {
       revision: 1,
       personalItems: [],
       gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: { writePersonal: true, writeGapPreferences: false },
       actions: [action],
     });
     const second = applyAiActionBatch({
       revision: 1,
       personalItems: first.personalItems,
       gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: { writePersonal: true, writeGapPreferences: false },
       actions: [action],
     });
     expect(first.personalItems[0]!.id).toBe(`ai-${action.id}`);
     expect(second.personalItems).toHaveLength(1);
+  });
+
+  test("client action application enforces current write permissions", () => {
+    const result = applyAiActionBatch({
+      revision: 1,
+      personalItems: [],
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: { writePersonal: false, writeGapPreferences: false },
+      actions: [
+        {
+          id: "00000000-0000-4000-8000-000000000004",
+          createdAt: "2026-08-18T16:30:00.000Z",
+          action: {
+            schemaVersion: 1,
+            kind: "create_personal_item",
+            expectedRevision: 1,
+            item: {
+              title: "Blocked write",
+              category: "Study",
+              term: "Fall",
+              weekday: "Monday",
+              startTime: 720,
+              endTime: 780,
+              flexibility: { kind: "fixed" },
+            },
+          },
+        },
+      ],
+    });
+
+    expect(result.personalItems).toEqual([]);
+    expect(result.rejected).toEqual([
+      { id: "00000000-0000-4000-8000-000000000004", code: "permission_denied" },
+    ]);
   });
 });
