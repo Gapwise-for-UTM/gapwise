@@ -45,48 +45,68 @@ const UNKNOWN_PUBLIC_ACCESS = factEvidence(
   "Priority snow-clearing status does not, by itself, establish unrestricted public access.",
 );
 
-/**
- * Authoritative entrance identities that are deliberately not part of the
- * routing graph. Matching one to a door coordinate or routing node requires a
- * separate geometry/field-verification step.
- *
- * The source lists "Erindale Hall: Main, Rear x 2". This is represented as one
- * named Rear candidate with instances=2 rather than fabricating Rear 1/Rear 2
- * identities that the source does not distinguish.
- */
-export const OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES: readonly OfficialEntranceCandidate[] = [
-  { id: "utm:entrance-candidate:ax:main", buildingCode: "AX", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:wc:rear", buildingCode: "WC", label: "Rear", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:cct:main", buildingCode: "CCT", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:cct:link", buildingCode: "CCT", label: "Link", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:cct:connection-with-dv", buildingCode: "CCT", label: "Connection with DV", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:dh:main", buildingCode: "DH", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:dh:field-side", buildingCode: "DH", label: "Field side", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:dw:main", buildingCode: "DW", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:hm:main", buildingCode: "HM", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:hb:main", buildingCode: "HB", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:hb:rear", buildingCode: "HB", label: "Rear", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:ib:main", buildingCode: "IB", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:ib:north", buildingCode: "IB", label: "North", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:ib:south", buildingCode: "IB", label: "South", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:mn:main", buildingCode: "MN", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:mn:field-side", buildingCode: "MN", label: "Field side", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:mn:lot-1", buildingCode: "MN", label: "Lot #1", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:nsb:main", buildingCode: "NSB", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:nsb:rear", buildingCode: "NSB", label: "Rear", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:rawc:main", buildingCode: "RAWC", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:bg:main", buildingCode: "BG", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:xr:five-minute-walk-side", buildingCode: "XR", label: "5 Minute Walk side", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:xr:academic-annex-side", buildingCode: "XR", label: "Academic Annex side", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:dv:main", buildingCode: "DV", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:dv:end-of-five-minute-walk", buildingCode: "DV", label: "End of 5 Minute Walk", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:dv:connection-with-cct", buildingCode: "DV", label: "Connection with CCT", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:eh:main", buildingCode: "EH", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:eh:rear", buildingCode: "EH", label: "Rear", instances: 2, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:oph:main", buildingCode: "OPH", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:oph:rear", buildingCode: "OPH", label: "Rear", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
-  { id: "utm:entrance-candidate:rih:main", buildingCode: "RIH", label: "Main", instances: 1, routingStatus: "non_routable_candidate", coordinates: null, routingNodeId: null, evidence: { existence: BARRIER_FREE_EXISTENCE, barrierFree: BARRIER_FREE_ACCESSIBILITY, geometry: UNKNOWN_GEOMETRY, publicAccess: UNKNOWN_PUBLIC_ACCESS } },
+type CandidateIdentity = readonly [
+  stableId: string,
+  buildingCode: string,
+  label: string,
+  instances?: number,
 ];
+
+/**
+ * The official source names 31 distinct entrance identities across buildings
+ * in the current Gapwise registry. Erindale Hall's "Rear x 2" is one named
+ * identity with multiplicity two; the source does not distinguish Rear 1/2.
+ */
+const BARRIER_FREE_IDENTITIES: readonly CandidateIdentity[] = [
+  ["ax:main", "AX", "Main"],
+  ["wc:rear", "WC", "Rear"],
+  ["cct:main", "CCT", "Main"],
+  ["cct:link", "CCT", "Link"],
+  ["cct:connection-with-dv", "CCT", "Connection with DV"],
+  ["dh:main", "DH", "Main"],
+  ["dh:field-side", "DH", "Field side"],
+  ["dw:main", "DW", "Main"],
+  ["hm:main", "HM", "Main"],
+  ["hb:main", "HB", "Main"],
+  ["hb:rear", "HB", "Rear"],
+  ["ib:main", "IB", "Main"],
+  ["ib:north", "IB", "North"],
+  ["ib:south", "IB", "South"],
+  ["mn:main", "MN", "Main"],
+  ["mn:field-side", "MN", "Field side"],
+  ["mn:lot-1", "MN", "Lot #1"],
+  ["nsb:main", "NSB", "Main"],
+  ["nsb:rear", "NSB", "Rear"],
+  ["rawc:main", "RAWC", "Main"],
+  ["bg:main", "BG", "Main"],
+  ["xr:five-minute-walk-side", "XR", "5 Minute Walk side"],
+  ["xr:academic-annex-side", "XR", "Academic Annex side"],
+  ["dv:main", "DV", "Main"],
+  ["dv:end-of-five-minute-walk", "DV", "End of 5 Minute Walk"],
+  ["dv:connection-with-cct", "DV", "Connection with CCT"],
+  ["eh:main", "EH", "Main"],
+  ["eh:rear", "EH", "Rear", 2],
+  ["oph:main", "OPH", "Main"],
+  ["oph:rear", "OPH", "Rear"],
+  ["rih:main", "RIH", "Main"],
+];
+
+export const OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES: readonly OfficialEntranceCandidate[] =
+  BARRIER_FREE_IDENTITIES.map(([stableId, buildingCode, label, instances = 1]) => ({
+    id: `utm:entrance-candidate:${stableId}`,
+    buildingCode,
+    label,
+    instances,
+    routingStatus: "non_routable_candidate",
+    coordinates: null,
+    routingNodeId: null,
+    evidence: {
+      existence: BARRIER_FREE_EXISTENCE,
+      barrierFree: BARRIER_FREE_ACCESSIBILITY,
+      geometry: UNKNOWN_GEOMETRY,
+      publicAccess: UNKNOWN_PUBLIC_ACCESS,
+    },
+  }));
 
 export function officialEntranceCandidatesForBuilding(
   buildingCode: string,
