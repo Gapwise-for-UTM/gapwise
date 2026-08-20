@@ -4,7 +4,11 @@ import { UTM_BUILDINGS } from "@/data/utm/building-registry";
 import { CAMPUS_BUILDINGS, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES } from "@/data/utm/official-entrance-candidates";
 import { CAMPUS_SOURCE_RECORDS } from "@/data/utm/provenance";
-import type { BuildingEntrance } from "@/data/utm/routing-buildings";
+import {
+  assertCampusBuildingRoutingIntegrity,
+  type BuildingEntrance,
+  type CampusBuilding,
+} from "@/data/utm/routing-buildings";
 import { findRoute } from "@/features/routing/engine";
 
 describe("UTM ingress provenance v2", () => {
@@ -116,6 +120,9 @@ describe("UTM ingress provenance v2", () => {
     expect(fieldSurveyEntrance.osmNodeId).toBeUndefined();
     expect(fieldSurveyEntrance.routingNodeId).toBe("survey-node-mn-field-survey-example");
 
+    const graphNodeIds = new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id));
+    expect(() => assertCampusBuildingRoutingIntegrity(CAMPUS_BUILDINGS, graphNodeIds)).not.toThrow();
+
     for (const building of CAMPUS_BUILDINGS) {
       for (const entrance of building.entrances) {
         expect(entrance.routingNodeId.length).toBeGreaterThan(0);
@@ -126,6 +133,38 @@ describe("UTM ingress provenance v2", () => {
       }
       expect(building.entranceNodeId).toBe(building.entrances[0]!.routingNodeId);
     }
+  });
+
+  test("fails closed when an explicit entrance routing-node identity is dangling", () => {
+    const invalidEntrance: BuildingEntrance = {
+      id: "test:entrance",
+      label: "Synthetic entrance",
+      kind: "entrance",
+      coordinates: [-79.6654, 43.5513],
+      routingNodeId: "survey-node-missing",
+      osmNodeId: 123,
+      externalIds: { osmNodeId: 123 },
+      accessibility: "unknown",
+      metadata: {
+        source: "Synthetic test",
+        sourceUrl: "https://gapwise.ca",
+        lastVerified: "2026-08-20",
+        verificationStatus: "verified",
+      },
+    };
+    const invalidBuilding: CampusBuilding = {
+      code: "TEST",
+      name: "Synthetic test building",
+      category: "academic",
+      entrances: [invalidEntrance],
+      navigationPoint: invalidEntrance.coordinates,
+      entranceNodeId: invalidEntrance.routingNodeId,
+      indoorMapped: false,
+    };
+
+    expect(() =>
+      assertCampusBuildingRoutingIntegrity([invalidBuilding], new Set(["osm-node-123"])),
+    ).toThrow("survey-node-missing");
   });
 
   test("adds official codes, room prefixes, and shared-complex metadata without parser changes", () => {
