@@ -20,9 +20,11 @@ function hash(value: string) {
 }
 
 function fingerprint(context: AcademicPlanningContext) {
+  const { notBefore: _notBefore, ...stableHorizon } = context.horizon;
   return hash(
     JSON.stringify({
-      h: context.horizon,
+      h: stableHorizon,
+      r: context.routingRevision ?? null,
       m: context.academicMeetings,
       p: context.fixedPersonalCommitments,
       c: context.coursework,
