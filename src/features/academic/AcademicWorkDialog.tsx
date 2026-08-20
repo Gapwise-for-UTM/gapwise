@@ -19,6 +19,9 @@ import type { Meeting } from "@/lib/timetable-types";
 import type { Entitlement } from "@/features/entitlements/entitlements";
 import { canUseFeature } from "@/features/entitlements/entitlements";
 import { addDate, torontoLocalDateTimeInstant } from "./windows";
+import { DEFAULT_ROUTE_PREFERENCES } from "@/config/routing";
+import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
+import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 
 const format = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Toronto",
@@ -43,8 +46,8 @@ export function AcademicWorkDialog({
   onChange: (state: AcademicState) => void;
   meetings: Meeting[];
   entitlement: Entitlement;
-  routeMinutes: (from: Meeting, to: Meeting) => number | null;
-  routingRevision: string;
+  routeMinutes?: ((from: Meeting, to: Meeting) => number | null) | undefined;
+  routingRevision?: string | undefined;
 }) {
   const [proposal, setProposal] = useState<StudyPlanProposal | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -54,6 +57,19 @@ export function AcademicWorkDialog({
   const [hours, setHours] = useState("2");
   const [priority, setPriority] = useState<"normal" | "high">("normal");
   const allowed = canUseFeature(entitlement, "academic_planner");
+  const fallbackRouteMinutes = useMemo(() => {
+    const planner = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings);
+    return (from: Meeting, to: Meeting) => {
+      const route = planner(from, to, DEFAULT_ROUTE_PREFERENCES);
+      if (route.status === "unavailable") return null;
+      const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds ?? 0;
+      return Math.ceil(seconds / 60) + DEFAULT_ROUTE_PREFERENCES.transitionBufferMinutes;
+    };
+  }, [meetings]);
+  const effectiveRouteMinutes = routeMinutes ?? fallbackRouteMinutes;
+  const effectiveRoutingRevision =
+    routingRevision ??
+    `${DEFAULT_ROUTE_PREFERENCES.mode}:${DEFAULT_ROUTE_PREFERENCES.walkingSpeedMps}:${DEFAULT_ROUTE_PREFERENCES.transitionBufferMinutes}`;
   const context = useMemo<AcademicPlanningContext>(() => {
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Toronto",
@@ -69,7 +85,7 @@ export function AcademicWorkDialog({
         dayEndMinute: 21 * 60,
         timeZone: "America/Toronto",
       },
-      routingRevision,
+      routingRevision: effectiveRoutingRevision,
       academicMeetings: meetings.filter(
         (meeting) => meeting.sectionCode !== "PERSONAL" && meeting.sectionCode !== "STUDY",
       ),
@@ -85,7 +101,7 @@ export function AcademicWorkDialog({
         maxDailyMinutes: 240,
       },
     };
-  }, [meetings, routingRevision, state]);
+  }, [effectiveRoutingRevision, meetings, state]);
 
   const contextForNow = (): AcademicPlanningContext => ({
     ...context,
@@ -122,7 +138,7 @@ export function AcademicWorkDialog({
   }
 
   function build() {
-    const next = createStudyPlan(contextForNow(), routeMinutes);
+    const next = createStudyPlan(contextForNow(), effectiveRouteMinutes);
     setProposal(next);
     setMessage(next.blocks.length ? null : "No valid work time was found in the next two weeks.");
   }
@@ -134,7 +150,7 @@ export function AcademicWorkDialog({
       setMessage("This plan has started to pass. Rebuild it with your current time.");
       return;
     }
-    const current = createStudyPlan(contextForNow(), routeMinutes);
+    const current = createStudyPlan(contextForNow(), effectiveRouteMinutes);
     if (current.revision !== proposal.revision) {
       setMessage("Your schedule changed. Rebuild this plan.");
       return;
