@@ -1,4 +1,5 @@
 import type { CourseworkItem, CourseworkKind, SubmissionState } from "./types";
+import { isProviderSubmissionComplete } from "./types";
 import { resolveWorkEstimate } from "./workload";
 
 export interface CanvasAssignmentSnapshot {
@@ -109,21 +110,21 @@ export function reconcileCoursework(
       if (prior.title !== fresh.title || prior.providerUpdatedAt !== fresh.providerUpdatedAt)
         changes.push({ courseworkId: fresh.id, type: "assignment_changed" });
       if (
-        prior.submissionState !== fresh.submissionState &&
+        !isProviderSubmissionComplete(prior.submissionState) &&
         (fresh.submissionState === "submitted" || fresh.submissionState === "late")
       )
         changes.push({ courseworkId: fresh.id, type: "became_submitted" });
       if (prior.submissionState !== "graded" && fresh.submissionState === "graded")
         changes.push({ courseworkId: fresh.id, type: "became_graded" });
       if (
-        ["submitted", "graded"].includes(prior.submissionState) &&
-        !["submitted", "graded", "late"].includes(fresh.submissionState)
+        isProviderSubmissionComplete(prior.submissionState) &&
+        !isProviderSubmissionComplete(fresh.submissionState)
       )
         changes.push({ courseworkId: fresh.id, type: "reopened" });
       if (
         fresh.dueAt &&
         fresh.dueAt < now &&
-        !["submitted", "graded", "late"].includes(fresh.submissionState) &&
+        !isProviderSubmissionComplete(fresh.submissionState) &&
         (!prior.dueAt || prior.dueAt >= now)
       )
         changes.push({ courseworkId: fresh.id, type: "became_overdue" });
