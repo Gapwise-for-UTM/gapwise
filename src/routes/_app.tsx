@@ -53,6 +53,7 @@ import { chooseDefaultTerm } from "@/lib/calendar-awareness";
 import { findGaps } from "@/lib/gaps";
 import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
 import { emitClickSpark } from "@/lib/micro-interactions";
+import { composeTermSchedule } from "@/lib/personal-scheduler";
 import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
 import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
@@ -518,54 +519,12 @@ function AppLayout() {
     return () => window.clearTimeout(timeout);
   }, [authenticatedUserId, gapPreferences, isDemo, isOnline, meetings, personalItems, preferences]);
 
-  const termMeetings = useMemo(() => {
-    const academic = (meetings ?? []).filter((m) => m.term === term);
-    const personalAsMeetings = personalItems
-      .filter((p) => p.term === term && p.flexibility.kind === "fixed")
-      .map((p) => ({
-        id: p.id,
-        courseCode: p.title,
-        activityType: "OTHER" as const,
-        sectionCode: "PERSONAL",
-        courseName: p.category,
-        startTime: p.startTime ?? 0,
-        endTime: p.endTime ?? 0,
-        weekday: p.weekday,
-        buildingCode: p.locationBuildingCode ?? null,
-        room: p.locationRoom ?? null,
-        term: p.term,
-        locationUnknown: !(p.locationBuildingCode || p.locationRoom),
-        notes: p.notes ?? undefined,
-        color: p.color ?? undefined,
-      })) as Meeting[];
-    return [...academic, ...personalAsMeetings];
-  }, [meetings, personalItems, term]);
-
-  const gaps = useMemo(
-    () =>
-      findGaps(
-        (meetings ?? []).concat(
-          personalItems
-            .filter((p) => p.term === term && p.flexibility.kind === "fixed")
-            .map((p) => ({
-              id: p.id,
-              courseCode: p.title,
-              activityType: "OTHER" as const,
-              sectionCode: "PERSONAL",
-              courseName: p.category,
-              startTime: p.startTime ?? 0,
-              endTime: p.endTime ?? 0,
-              weekday: p.weekday,
-              buildingCode: p.locationBuildingCode ?? null,
-              room: p.locationRoom ?? null,
-              term: p.term,
-              locationUnknown: !(p.locationBuildingCode || p.locationRoom),
-            })) as Meeting[],
-        ),
-        term,
-      ),
+  const termMeetings = useMemo(
+    () => composeTermSchedule(meetings ?? EMPTY_MEETINGS, personalItems, term),
     [meetings, personalItems, term],
   );
+
+  const gaps = useMemo(() => findGaps(termMeetings, term), [termMeetings, term]);
 
   const persistPersonal = (next: typeof personalItems) => {
     setPersonalItems(next);
