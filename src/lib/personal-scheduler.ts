@@ -1,5 +1,49 @@
 import type { PersonalItem } from "./personal-types";
-import type { Meeting } from "./timetable-types";
+import type { Meeting, Term } from "./timetable-types";
+
+export function fixedPersonalItemToMeeting(item: PersonalItem): Meeting | null {
+  if (
+    item.flexibility.kind !== "fixed" ||
+    item.startTime === undefined ||
+    item.endTime === undefined
+  ) {
+    return null;
+  }
+
+  const meeting: Meeting = {
+    id: item.id,
+    courseCode: item.title,
+    activityType: "OTHER",
+    sectionCode: "PERSONAL",
+    courseName: item.category,
+    startTime: item.startTime,
+    endTime: item.endTime,
+    weekday: item.weekday,
+    buildingCode: item.locationBuildingCode ?? null,
+    room: item.locationRoom ?? null,
+    term: item.term,
+    locationUnknown: !(item.locationBuildingCode || item.locationRoom),
+  };
+
+  if (item.notes !== undefined && item.notes !== null) meeting.notes = item.notes;
+  if (item.color !== undefined) meeting.color = item.color;
+
+  return meeting;
+}
+
+export function composeTermSchedule(
+  meetings: readonly Meeting[],
+  personalItems: readonly PersonalItem[],
+  term: Term,
+): Meeting[] {
+  const academic = meetings.filter((meeting) => meeting.term === term);
+  const personal = personalItems
+    .filter((item) => item.term === term)
+    .map(fixedPersonalItemToMeeting)
+    .filter((meeting): meeting is Meeting => meeting !== null);
+
+  return [...academic, ...personal];
+}
 
 export function snapToIncrement(minute: number, increment = 15) {
   return Math.round(minute / increment) * increment;

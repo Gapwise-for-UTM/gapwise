@@ -4,6 +4,7 @@ import type { GapPreferences } from "@/features/gaps/types";
 import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { findGaps } from "@/lib/gaps";
+import { fixedPersonalItemToMeeting } from "@/lib/personal-scheduler";
 import type { PersonalItem } from "@/lib/personal-types";
 import { TERMS, type Meeting } from "@/lib/timetable-types";
 import type { AiPermissions, AiSnapshot } from "./types";
@@ -68,30 +69,6 @@ function aiRoutingPreferences(preferences: UserPreferences): AiSnapshot["routing
   };
 }
 
-function fixedPersonalMeeting(item: PersonalItem): Meeting | null {
-  if (
-    item.flexibility.kind !== "fixed" ||
-    item.startTime === undefined ||
-    item.endTime === undefined
-  ) {
-    return null;
-  }
-  return {
-    id: item.id,
-    courseCode: item.title,
-    activityType: "OTHER",
-    sectionCode: "PERSONAL",
-    courseName: item.category,
-    startTime: item.startTime,
-    endTime: item.endTime,
-    weekday: item.weekday,
-    buildingCode: item.locationBuildingCode ?? null,
-    room: item.locationRoom ?? null,
-    term: item.term,
-    locationUnknown: !(item.locationBuildingCode || item.locationRoom),
-  };
-}
-
 function aiGapPlans(input: {
   meetings: Meeting[];
   personalItems: PersonalItem[];
@@ -105,7 +82,7 @@ function aiGapPlans(input: {
   // This prevents a gap boundary from leaking the existence/time of a hidden personal item.
   const personalMeetings = input.permissions.readPersonal
     ? input.personalItems
-        .map(fixedPersonalMeeting)
+        .map(fixedPersonalItemToMeeting)
         .filter((meeting): meeting is Meeting => meeting !== null)
     : [];
   const combined = [...input.meetings, ...personalMeetings];
