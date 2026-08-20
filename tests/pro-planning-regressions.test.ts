@@ -89,9 +89,7 @@ describe("Pro planning release regressions", () => {
       () => 0,
     );
     expect(
-      windows.every(
-        (window) => Date.parse(window.start) >= Date.parse("2026-09-07T16:00:00Z"),
-      ),
+      windows.every((window) => Date.parse(window.start) >= Date.parse("2026-09-07T16:00:00Z")),
     ).toBeTrue();
   });
 
