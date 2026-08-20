@@ -10,6 +10,26 @@ export type Database = {
   };
   public: {
     Tables: {
+      user_entitlements: {
+        Row: {
+          user_id: string;
+          tier: string;
+          source: string;
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          tier: string;
+          source?: string;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: { tier?: string; source?: string; expires_at?: string | null; updated_at?: string };
+        Relationships: [];
+      };
       ai_delegations: {
         Row: {
           created_at: string;

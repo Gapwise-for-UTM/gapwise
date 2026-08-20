@@ -99,7 +99,11 @@ export interface AcademicPlanningContext {
     dayStartMinute: number;
     dayEndMinute: number;
     timeZone: typeof CAMPUS_TIME_ZONE;
+    /** Earliest instant that may receive new work. Used to avoid proposing blocks in the past. */
+    notBefore?: string;
   };
+  /** Stable key for route preferences that affect usable time, without exposing planner internals. */
+  routingRevision?: string;
   academicMeetings: readonly Meeting[];
   fixedPersonalCommitments: readonly Meeting[];
   coursework: readonly CourseworkItem[];

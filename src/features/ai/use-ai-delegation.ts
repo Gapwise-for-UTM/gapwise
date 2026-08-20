@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { GapPreferences } from "@/features/gaps/types";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
+import type { AcademicState } from "@/features/academic/state";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
@@ -26,6 +27,7 @@ type ControllerInput = {
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   isDemo: boolean;
+  academic: AcademicState;
   onPrivateDataChange: (payload: PrivateDataPayloadV1) => void;
 };
 
@@ -272,6 +274,7 @@ export function useAiDelegation(input: ControllerInput): AiDelegationController 
           personalItems: batch.personalItems,
           preferences: state.preferences,
           gapPreferences: batch.gapPreferences,
+          academic: state.academic,
         });
         currentRevision.current = result.revision;
         lastPublishedFingerprint.current = aiSnapshotFingerprint(content);

@@ -6,6 +6,8 @@ import { TERMS, WEEKDAYS } from "@/lib/timetable-types";
 import { deserializeSchedule, serializeSchedule } from "@/features/sync/schedule-serialization";
 import { sanitizeUserPreferences, type UserPreferences } from "@/features/sync/preferences";
 import { PRIVATE_DATA_SCHEMA_VERSION } from "./crypto-context.js";
+import type { AcademicState } from "@/features/academic/state";
+import { EMPTY_ACADEMIC_STATE } from "@/features/academic/state";
 
 const PERSONAL_CATEGORIES: PersonalCategory[] = [
   "Study",
@@ -24,11 +26,12 @@ const MAX_SHORT_TEXT = 240;
 const MAX_NOTES_TEXT = 2_000;
 
 export type PrivateDataPayloadV1 = {
-  schemaVersion: typeof PRIVATE_DATA_SCHEMA_VERSION;
+  schemaVersion: 1 | typeof PRIVATE_DATA_SCHEMA_VERSION;
   schedule: Meeting[];
   personalItems: PersonalItem[];
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
+  academic: AcademicState;
 };
 
 const PRIVATE_PAYLOAD_KEYS = [
@@ -37,7 +40,55 @@ const PRIVATE_PAYLOAD_KEYS = [
   "personalItems",
   "preferences",
   "gapPreferences",
+  "academic",
 ] as const;
+
+function validateAcademic(value: unknown): AcademicState {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value["coursework"]) ||
+    !Array.isArray(value["blocks"]) ||
+    (value["proposalRevision"] !== null && typeof value["proposalRevision"] !== "string") ||
+    value["coursework"].length > 200 ||
+    value["blocks"].length > 1000
+  ) {
+    throw new Error("Private academic data is malformed.");
+  }
+  // Academic records originate in typed local domain operations. Keep the encrypted codec
+  // deliberately strict about collection shape and JSON safety without accepting provider blobs.
+  const json = JSON.parse(JSON.stringify(value)) as AcademicState;
+  for (const item of json.coursework) {
+    if (
+      !item ||
+      typeof item.id !== "string" ||
+      typeof item.title !== "string" ||
+      typeof item.courseCode !== "string" ||
+      !["canvas", "quercus", "other"].includes(item.provider?.provider)
+    ) {
+      throw new Error("Private coursework is malformed.");
+    }
+    if (
+      !Number.isInteger(item.workEstimate?.remainingMinutes) ||
+      item.workEstimate.remainingMinutes < 0 ||
+      item.workEstimate.remainingMinutes > 10_080
+    )
+      throw new Error("Private coursework estimate is malformed.");
+  }
+  for (const block of json.blocks) {
+    if (
+      !block ||
+      typeof block.id !== "string" ||
+      typeof block.courseworkId !== "string" ||
+      !Number.isInteger(block.allocatedMinutes) ||
+      block.allocatedMinutes < 1 ||
+      block.allocatedMinutes > 1440 ||
+      !Number.isFinite(Date.parse(block.start)) ||
+      !Number.isFinite(Date.parse(block.end))
+    )
+      throw new Error("Private planned work is malformed.");
+  }
+  return json;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -198,6 +249,7 @@ export function createPrivateDataPayload(input: {
   personalItems: PersonalItem[];
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
+  academic?: AcademicState;
 }): PrivateDataPayloadV1 {
   if (input.personalItems.length > MAX_PERSONAL_ITEMS) {
     throw new Error("Private data payload exceeds the personal item cap.");
@@ -208,6 +260,7 @@ export function createPrivateDataPayload(input: {
     personalItems: input.personalItems.map(validatePersonalItem),
     preferences: requireCanonicalPreferences(input.preferences),
     gapPreferences: requireCanonicalGapPreferences(input.gapPreferences),
+    academic: validateAcademic(input.academic ?? EMPTY_ACADEMIC_STATE),
   };
 }
 
@@ -215,8 +268,10 @@ export function validatePrivateDataPayload(value: unknown): PrivateDataPayloadV1
   if (
     !isRecord(value) ||
     !hasOnlyKeys(value, PRIVATE_PAYLOAD_KEYS) ||
-    !PRIVATE_PAYLOAD_KEYS.every((key) => Object.hasOwn(value, key)) ||
-    value["schemaVersion"] !== PRIVATE_DATA_SCHEMA_VERSION ||
+    !["schemaVersion", "schedule", "personalItems", "preferences", "gapPreferences"].every((key) =>
+      Object.hasOwn(value, key),
+    ) ||
+    ![1, PRIVATE_DATA_SCHEMA_VERSION].includes(value["schemaVersion"] as number) ||
     !Array.isArray(value["personalItems"]) ||
     value["personalItems"].length > MAX_PERSONAL_ITEMS
   ) {
@@ -228,5 +283,8 @@ export function validatePrivateDataPayload(value: unknown): PrivateDataPayloadV1
     personalItems: value["personalItems"].map(validatePersonalItem),
     preferences: requireCanonicalPreferences(value["preferences"]),
     gapPreferences: requireCanonicalGapPreferences(value["gapPreferences"]),
+    academic: Object.hasOwn(value, "academic")
+      ? validateAcademic(value["academic"])
+      : EMPTY_ACADEMIC_STATE,
   };
 }

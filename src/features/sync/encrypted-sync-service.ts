@@ -69,7 +69,8 @@ type EncryptedCapsuleMetadata = Pick<
   | "revision"
 >;
 
-export type PrivateCloudState = Omit<PrivateDataPayloadV1, "schemaVersion">;
+export type PrivateCloudState = Omit<PrivateDataPayloadV1, "schemaVersion" | "academic"> &
+  Partial<Pick<PrivateDataPayloadV1, "academic">>;
 
 export type PrivateCloudRestoration = {
   payload: PrivateDataPayloadV1;
