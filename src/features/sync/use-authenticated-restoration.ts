@@ -23,6 +23,8 @@ import { isCloudRestoreSuppressed } from "@/features/sync/restore-preference";
 import type { GapPreferences } from "@/features/gaps/types";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
+import type { AcademicState } from "@/features/academic/state";
+import { EMPTY_ACADEMIC_STATE } from "@/features/academic/state";
 
 type RestorationInput = {
   authLoading: boolean;
@@ -37,6 +39,7 @@ type RestorationInput = {
   setWarnings: Dispatch<SetStateAction<string[]>>;
   setError: Dispatch<SetStateAction<string | null>>;
   setIsDemo: Dispatch<SetStateAction<boolean>>;
+  setAcademic: Dispatch<SetStateAction<AcademicState>>;
 };
 
 /**
@@ -57,6 +60,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
     setWarnings,
     setError,
     setIsDemo,
+    setAcademic,
   } = input;
   const [restoration, setRestoration] = useState<RestorationState>("waiting-for-auth");
   const [restorationMessage, setRestorationMessage] = useState<string | null>(null);
@@ -77,6 +81,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
       setPersonalItems(payload.personalItems);
       setPreferences(payload.preferences);
       setGapPreferences(payload.gapPreferences);
+      setAcademic(payload.academic ?? EMPTY_ACADEMIC_STATE);
       setWarnings([]);
       setError(null);
       setIsDemo(false);
@@ -86,6 +91,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
     [
       setError,
       setGapPreferences,
+      setAcademic,
       setIsDemo,
       setMeetings,
       setPersonalItems,
@@ -120,6 +126,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
           setPersonalItems([]);
           setPreferences(DEFAULT_USER_PREFERENCES);
           setGapPreferences(DEFAULT_GAP_PREFERENCES);
+          setAcademic(EMPTY_ACADEMIC_STATE);
           lastEncryptedFingerprint.current = null;
         }
       }
@@ -159,6 +166,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
           setPersonalItems([]);
           setPreferences(DEFAULT_USER_PREFERENCES);
           setGapPreferences(DEFAULT_GAP_PREFERENCES);
+          setAcademic(EMPTY_ACADEMIC_STATE);
           lastEncryptedFingerprint.current = null;
         }
       }
@@ -249,6 +257,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
     authLoading,
     guest,
     setGapPreferences,
+    setAcademic,
     setMeetings,
     setPersonalItems,
     setPreferences,

@@ -689,6 +689,11 @@
     transform: translateY(-1px);
   }
 
+  .meeting-card[data-planned-work="true"] {
+    --meeting-accent: var(--color-accent);
+    border-style: dashed;
+  }
+
   .meeting-card:focus-visible {
     border-left-color: var(--meeting-accent);
     box-shadow:

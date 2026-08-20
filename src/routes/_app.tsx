@@ -58,6 +58,14 @@ import { useEncryptedAutosave } from "@/features/sync/use-encrypted-autosave";
 import { useAuthenticatedRestoration } from "@/features/sync/use-authenticated-restoration";
 import { useGuestTimetableRestoration } from "@/features/sync/use-guest-timetable-restoration";
 import { useTimetableCommands } from "@/features/timetable/use-timetable-commands";
+import { AcademicWorkDialog } from "@/features/academic/AcademicWorkDialog";
+import {
+  EMPTY_ACADEMIC_STATE,
+  createManualCoursework,
+  type AcademicState,
+} from "@/features/academic/state";
+import { plannedWorkMeetings } from "@/features/academic/integration";
+import { useEntitlement } from "@/features/entitlements/use-entitlement";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -160,6 +168,8 @@ function AppLayout() {
     setRemember,
   } = useGuestTimetableRestoration();
   const [isDemo, setIsDemo] = useState(false);
+  const [academic, setAcademic] = useState<AcademicState>(EMPTY_ACADEMIC_STATE);
+  const [academicOpen, setAcademicOpen] = useState(false);
   const [preferences, setPreferences] = useState<UserPreferences>(loadLocalUserPreferences);
   const [gapPreferences, setGapPreferences] = useState<GapPreferences>(loadGapPreferences);
   const [personalItems, setPersonalItems] = useState<import("@/lib/personal-types").PersonalItem[]>(
@@ -176,6 +186,7 @@ function AppLayout() {
   const [moreOpen, setMoreOpen] = useState(false);
   const replacementInputRef = useRef<HTMLInputElement>(null);
   const authenticatedUserId = user?.id ?? null;
+  const entitlement = useEntitlement(authenticatedUserId, isDemo);
   const {
     destination,
     selectedBuildingCode,
@@ -220,6 +231,7 @@ function AppLayout() {
     setWarnings,
     setError,
     setIsDemo,
+    setAcademic,
   });
   const timetableCommands = useTimetableCommands({
     meetings,
@@ -294,6 +306,7 @@ function AppLayout() {
     personalItems,
     preferences,
     gapPreferences,
+    academic,
     isDemo,
     isOnline,
     restoredFingerprint: lastEncryptedFingerprint,
@@ -320,6 +333,7 @@ function AppLayout() {
         setPersonalItems([]);
         setPreferences(DEFAULT_USER_PREFERENCES);
         setGapPreferences(DEFAULT_GAP_PREFERENCES);
+        setAcademic(EMPTY_ACADEMIC_STATE);
         lastEncryptedFingerprint.current = null;
       }
     },
@@ -339,6 +353,29 @@ function AppLayout() {
     gapPreferences,
     planTransition,
   });
+  const timetableWithWork = useMemo(
+    () => [...termMeetings, ...plannedWorkMeetings(academic, term)],
+    [academic, term, termMeetings],
+  );
+  useEffect(() => {
+    if (!isDemo || academic.coursework.length) return;
+    const due = new Date();
+    due.setDate(due.getDate() + 5);
+    due.setHours(23, 59, 0, 0);
+    setAcademic({
+      ...EMPTY_ACADEMIC_STATE,
+      coursework: [
+        createManualCoursework({
+          courseCode: "DEM101H5",
+          title: "Problem Set",
+          kind: "assignment",
+          dueAt: due.toISOString(),
+          estimatedMinutes: 180,
+          priority: "normal",
+        }),
+      ],
+    });
+  }, [academic.coursework.length, isDemo]);
 
   if (isMobile && destination !== "home") {
     return (
@@ -381,7 +418,7 @@ function AppLayout() {
           ) : null}
           {meetings && mobileTab === "timetable" ? (
             <MobileTimetable
-              meetings={termMeetings}
+              meetings={timetableWithWork}
               term={term}
               terms={terms}
               gaps={gaps}
@@ -455,6 +492,7 @@ function AppLayout() {
                 personalItems={personalItems}
                 preferences={preferences}
                 gapPreferences={gapPreferences}
+                academic={academic}
                 onLoad={timetableCommands.loadCloud}
                 onLoadPrivate={timetableCommands.loadPrivate}
                 restorationState={restoration}
@@ -462,6 +500,23 @@ function AppLayout() {
             ) : null
           }
         >
+          <button
+            type="button"
+            onClick={() => {
+              setMoreOpen(false);
+              setAcademicOpen(true);
+            }}
+            className="button-secondary min-h-10 px-3 text-sm font-semibold"
+          >
+            Academic work
+          </button>
+          <span className="rounded-full border border-border px-3 py-2 text-xs font-semibold">
+            {entitlement.tier === "founder"
+              ? "Gapwise Pro · Founder access"
+              : entitlement.tier === "pro"
+                ? "Gapwise Pro"
+                : "Gapwise Free"}
+          </span>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <ResidenceSettings
             user={user}
@@ -474,6 +529,14 @@ function AppLayout() {
             onAccountDeleted={handleAccountDeleted}
           />
         </MobileMoreSheet>
+        <AcademicWorkDialog
+          open={academicOpen}
+          onOpenChange={setAcademicOpen}
+          state={academic}
+          onChange={setAcademic}
+          meetings={termMeetings}
+          entitlement={entitlement}
+        />
         <PersonalItemForm
           open={personalCommands.formOpen}
           onOpenChange={personalCommands.setOpen}
@@ -652,6 +715,7 @@ function AppLayout() {
                 personalItems={personalItems}
                 preferences={preferences}
                 gapPreferences={gapPreferences}
+                academic={academic}
                 onLoad={timetableCommands.loadCloud}
                 onLoadPrivate={timetableCommands.loadPrivate}
                 restorationState={restoration}
@@ -863,19 +927,28 @@ function AppLayout() {
                 <>
                   <div hidden={destination !== "timetable"}>
                     <TimetableGrid
-                      meetings={termMeetings}
+                      meetings={timetableWithWork}
                       gaps={gaps}
                       headerAction={
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            emitClickSpark(event);
-                            personalCommands.openCreate();
-                          }}
-                          className="button-primary click-spark inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
-                        >
-                          Add personal
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setAcademicOpen(true)}
+                            className="button-secondary px-3 py-1.5 text-xs font-semibold"
+                          >
+                            Academic work
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              emitClickSpark(event);
+                              personalCommands.openCreate();
+                            }}
+                            className="button-primary click-spark inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
+                          >
+                            Add personal
+                          </button>
+                        </div>
                       }
                       onRouteToMeeting={() => showView("route")}
                       onEditPersonal={personalCommands.openEdit}
@@ -956,6 +1029,7 @@ function AppLayout() {
                 personalItems={personalItems}
                 preferences={preferences}
                 gapPreferences={gapPreferences}
+                academic={academic}
                 onLoad={timetableCommands.loadCloud}
                 onLoadPrivate={timetableCommands.loadPrivate}
                 restorationState={restoration}
@@ -980,6 +1054,15 @@ function AppLayout() {
           </div>
         ) : null}
       </main>
+
+      <AcademicWorkDialog
+        open={academicOpen}
+        onOpenChange={setAcademicOpen}
+        state={academic}
+        onChange={setAcademic}
+        meetings={termMeetings}
+        entitlement={entitlement}
+      />
 
       <footer className="mt-4 border-t border-border bg-card/30">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 text-sm text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6">

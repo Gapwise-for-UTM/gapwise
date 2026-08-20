@@ -139,6 +139,7 @@ function MeetingCard({
   onDelete?: ((meetingId: string) => void) | undefined;
 }) {
   const isPersonal = meeting.sectionCode === "PERSONAL";
+  const isStudy = meeting.sectionCode === "STUDY";
   return (
     <div
       role="button"
@@ -148,6 +149,7 @@ function MeetingCard({
       aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
       title={`${meeting.courseCode} · ${meeting.courseName}`}
       data-activity={meeting.activityType}
+      data-planned-work={isStudy ? "true" : undefined}
       style={meeting.color ? ({ "--meeting-accent": meeting.color } as CSSProperties) : undefined}
       className={`meeting-card group relative flex h-full w-full touch-manipulation flex-col items-stretch justify-start overflow-hidden rounded-lg px-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 active:scale-[0.99] ${
         compact ? "py-1.5" : "py-2"
@@ -180,14 +182,24 @@ function MeetingCard({
         </div>
       ) : null}
       <div className="flex min-w-0 items-center gap-1.5">
-        <MapPin
-          className="card-pin h-3.5 w-3.5 shrink-0 text-muted-foreground"
-          aria-hidden="true"
-        />
+        {isStudy ? (
+          <BookOpen className="card-pin h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+        ) : (
+          <MapPin
+            className="card-pin h-3.5 w-3.5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+        )}
         <span className="truncate text-xs font-extrabold tracking-[-0.01em] text-foreground">
           {meeting.courseCode}
         </span>
-        <ActivityBadge type={meeting.activityType} />
+        {isStudy ? (
+          <span className="activity-badge rounded-md px-1.5 py-0.5 text-[0.6rem] font-bold">
+            STUDY
+          </span>
+        ) : (
+          <ActivityBadge type={meeting.activityType} />
+        )}
       </div>
       <p
         className={`truncate text-[0.7rem] font-medium tabular-nums text-muted-foreground ${
@@ -197,7 +209,7 @@ function MeetingCard({
         {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
       </p>
       <p className="truncate text-[0.7rem] font-semibold text-foreground">
-        {locationLabel(meeting)}
+        {isStudy ? meeting.notes : locationLabel(meeting)}
       </p>
       {!compact ? (
         <p className="mt-0.5 line-clamp-2 text-[0.7rem] leading-[1.25] text-muted-foreground">

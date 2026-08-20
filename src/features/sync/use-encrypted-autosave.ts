@@ -8,6 +8,7 @@ import type { GapPreferences } from "@/features/gaps/types";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 import type { UserPreferences } from "@/features/sync/preferences";
+import type { AcademicState } from "@/features/academic/state";
 
 type AutosaveInput = {
   userId: string | null;
@@ -15,6 +16,7 @@ type AutosaveInput = {
   personalItems: PersonalItem[];
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
+  academic: AcademicState;
   isDemo: boolean;
   isOnline: boolean;
   restoredFingerprint: MutableRefObject<string | null>;
@@ -27,6 +29,7 @@ export function useEncryptedAutosave({
   personalItems,
   preferences,
   gapPreferences,
+  academic,
   isDemo,
   isOnline,
   restoredFingerprint,
@@ -45,8 +48,8 @@ export function useEncryptedAutosave({
     ) {
       return;
     }
-    const input = { schedule: meetings, personalItems, preferences, gapPreferences };
-    const fingerprint = JSON.stringify({ schemaVersion: 1, ...input });
+    const input = { schedule: meetings, personalItems, preferences, gapPreferences, academic };
+    const fingerprint = JSON.stringify({ schemaVersion: 2, ...input });
     if (fingerprint === restoredFingerprint.current) return;
     const timeout = window.setTimeout(() => {
       restoredFingerprint.current = fingerprint;
@@ -61,6 +64,7 @@ export function useEncryptedAutosave({
     return () => window.clearTimeout(timeout);
   }, [
     gapPreferences,
+    academic,
     isDemo,
     isOnline,
     meetings,

@@ -5,6 +5,7 @@ import { registerAiDelegationController } from "@/features/ai/controller-bridge"
 import { useAiDelegation } from "@/features/ai/use-ai-delegation";
 import type { GapPreferences } from "@/features/gaps/types";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
+import type { AcademicState } from "@/features/academic/state";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
@@ -25,6 +26,7 @@ export function CloudSyncControls({
   personalItems,
   preferences,
   gapPreferences,
+  academic,
   onLoadPrivate,
   restorationState,
 }: {
@@ -33,6 +35,7 @@ export function CloudSyncControls({
   personalItems: PersonalItem[];
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
+  academic: AcademicState;
   onLoad: (meetings: Meeting[]) => void;
   onLoadPrivate: (payload: PrivateDataPayloadV1) => void;
   restorationState: RestorationState;
@@ -46,6 +49,7 @@ export function CloudSyncControls({
     personalItems,
     preferences,
     gapPreferences,
+    academic,
     isDemo: meetings === DEMO_MEETINGS,
     onPrivateDataChange: onLoadPrivate,
   });
