@@ -6,138 +6,301 @@
 
 ### Make every gap on campus count.
 
-**A privacy-first timetable, gap planner, and campus navigation experience built specifically for University of Toronto Mississauga students.**
+**A privacy-first student context and campus-intelligence platform built for University of Toronto Mississauga.**
 
 [![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise.ca)
 [![CI](https://img.shields.io/github/actions/workflow/status/andrewmuratov/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/andrewmuratov/gapwise/actions/workflows/ci.yml)
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://gapwise.ca/openapi.json)
 [![MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
 
-<sub>React 19 · TypeScript · TanStack Router · MapLibre · Supabase · Bun · Vercel</sub>
+<sub>React 19 · TypeScript · TanStack Router/Start · MapLibre · Supabase · Bun · Vercel</sub>
 
 <br />
 
-**[Live app](https://gapwise.ca)** · **[Privacy](PRIVACY.md)** · **[Security](SECURITY.md)** · **[Contributing](CONTRIBUTING.md)** · **[Operations](docs/OPERATIONS.md)** · **[Campus survey](docs/CAMPUS_SURVEY.md)**
+**[Live app](https://gapwise.ca)** · **[Today](https://gapwise.ca/today)** · **[Day Replay](https://gapwise.ca/replay)** · **[Developers](https://gapwise.ca/developers)** · **[OpenAPI](https://gapwise.ca/openapi.json)** · **[Open UTM data](https://gapwise.ca/data/utm-campus-v1.json)**
 
 </div>
 
 ---
 
-## What Gapwise does
+## What Gapwise is
 
-Gapwise turns an ACORN `.ics` timetable export into a useful UTM day-planning system: **what is next, when should I leave, where should I go, and what can I realistically do with the time between classes?**
+Gapwise turns a UTM ACORN `.ics` timetable export into a local-first system for understanding a student's day: **what is next, where do I need to go, when should I leave, and what can I realistically do with the time between classes?**
 
-The original calendar file is parsed locally in the browser. Gapwise builds timetable views, identifies gaps, adds route-aware context, and exposes a campus map without requiring an account.
+The original calendar file is parsed entirely in the browser. From that normalized schedule, Gapwise builds timetable views, detects gaps, computes route-aware activity budgets, produces leave-by timing, and renders campus navigation without requiring an account.
 
-### Current product surface
+The project now has three connected surfaces:
 
-- **ACORN import and demo** — browser-local `.ics` parsing, import-first onboarding, weekly timetable, and dedicated mobile day views.
-- **Today** — current/next class context, gap state, leave-by guidance, and direct navigation actions.
-- **Gap Plan** — route-aware usable-time recommendations rather than a static timetable-only view.
-- **Day Route / campus explorer** — a map-first MapLibre experience with time-labelled class stops anchored to routed arrival entrances when route evidence exists, chronological route progression, a left-to-right day sequence, canonical building geometry, mapped entrances, commute origins, and conservative route confidence.
-- **Integrated mobile surface** — Today, Timetable, Gap Plan, and Map use a continuous phone canvas with typography, spacing, hairline dividers, and restrained glow instead of stacks of decorative rounded cards; first-run empty states are vertically balanced within the usable phone viewport.
-- **Consistent activity semantics** — LEC, TUT, and PRA retain the same semantic color in timetable rows/badges, Day Route sequence items, and map class markers/details.
-- **Map navigation tuned for phones and laptops** — north-stable interaction, collision-aware time labels, separated fit/location/zoom controls, reduced-motion support, and route fitting that respects manual pan/zoom.
-- **Residence, transit, parking, and pickup origins** — model realistic campus-day starts and returns.
-- **Opt-in live location** — foreground geolocation only; no background tracking.
-- **Optional encrypted private sync** — restore signed-in private state across devices while keeping guest mode first-class.
-- **Microsoft, Google, and GitHub OAuth** through Supabase Auth.
-- **Privacy-preserving friend overlap** — limited mutual free windows without exposing either student's timetable.
-- **Accessible/mobile interaction** — keyboard and screen-reader semantics, reduced-motion support, responsive phone layouts, safe-area-aware bottom navigation, PWA support, and light/dark themes.
-- **Free and open source** — the live app links directly to this repository and the MIT License.
+| Surface | Purpose |
+| --- | --- |
+| **Student app** | Timetable, Today, gap planning, campus routing, destination feasibility, encrypted sync, and Day Replay |
+| **Gapwise Platform** | Public UTM building/routing/gap API, OpenAPI 3.1 contract, zero-dependency JS/TS SDK, and versioned open campus snapshot |
+| **Gapwise AI** | Optional permissioned MCP access to explicitly delegated student context plus the public campus-intelligence tools |
+
+The architectural rule is simple: **Gapwise owns the facts and deterministic calculations. Interfaces—including AI assistants—consume that truth rather than recreating it.**
 
 ---
 
-## Campus data and routing
+## Student experience
 
-Gapwise deliberately separates **visual geography**, **building identity**, and **navigation evidence**.
+### ACORN import
 
-`src/data/utm/building-footprints.ts` is the canonical building-identity layer. Recognized UTM buildings/facilities own explicit `Polygon` or `MultiPolygon` geometry; basemap polygons and nearest-entrance heuristics do not silently redefine a building.
+- Import a UTM ACORN `.ics` export directly in the browser.
+- The raw calendar file is never uploaded to Gapwise.
+- Guest mode is first-class; an account is not required for the core app.
+- A synthetic demo timetable is available for trying the product without personal data.
 
-The canonical registry currently covers the complete 30-building/facility UTM inventory represented by the reviewed source data. Search, hover, click/tap selection, and map framing use that canonical geometry.
+### Today
 
-Routing is intentionally conservative:
+Today turns the current schedule state into an actionable view:
 
-- **Verified** — evidence-backed routing/entrance data.
-- **Inferred** — a mapped approach used when a verified public door point is unavailable.
-- **Approximate** — clearly labelled fallback guidance.
-- **Unavailable** — Gapwise refuses to invent a route it cannot justify.
+- current and next class context;
+- current gap and deterministic recommendation;
+- route state, travel time, protected transition buffer, and leave-by timing;
+- direct navigation actions;
+- safe handling of unknown, online, TBA, approximate, and inaccessible/unverified routing states.
 
-The Day Route map is a presentation of this same deterministic routing truth. Class markers show actual timetable times rather than synthetic stop numbers. When a routed approach exists, a class time is placed at the incoming route endpoint — the entrance the student reaches — and the first routed class falls back to its outgoing route origin when there is no incoming leg. If a later route leaves the same building through a different entrance, the class time stays at the arrival entrance rather than jumping with route selection, and Gapwise does not draw an unverified straight indoor connector between doors. Route segments still progress visually from earlier to later stops, while start/end commute anchors remain semantically distinct from classes.
+### “Can I go there?”
 
-The next campus-data milestone is not broader guessed coverage. It is a smaller **field-verified routing dataset** with provenance and verification dates, followed by a lightweight correction/reporting loop.
+During a bounded gap, a student can choose a canonical UTM building and ask whether a visit is actually feasible before the next class.
 
-See [`docs/CAMPUS_MAP_GEOMETRY.md`](docs/CAMPUS_MAP_GEOMETRY.md) and [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md).
+Gapwise evaluates both legs:
 
-### 3D architecture
+```text
+previous class → chosen building → next class
+```
 
-`src/data/utm/campus-models.ts` preserves a clean integration seam for future georeferenced GLB/GLTF models, but 3D model production is **not current roadmap work**. Canonical footprints remain authoritative for building identity. Revisit 3D only if real user evidence shows a meaningful navigation/comprehension benefit that justifies the performance and complexity cost.
+The result accounts for travel, transition protection, setup/pack-up overhead, usable destination time, latest leave time, route confidence, and warnings. Same-building results are building-level only; Gapwise does not pretend it has room-to-room indoor routing where it does not.
+
+### Timetable + gap planning
+
+The timetable is not only a calendar renderer. Gapwise derives the spaces between classes and runs deterministic gap assessment using schedule boundaries, routing, user preferences, protected buffers, and uncertainty.
+
+Recommendations can distinguish short transitions, reset windows, focus/study blocks, meals, longer flexible gaps, and commute/home candidates without asking an LLM to perform timetable arithmetic.
+
+### Campus map and Day Route
+
+Gapwise uses a canonical UTM building registry, mapped/inferred entrances, and a deterministic routing graph to present a chronological campus day.
+
+- class markers carry actual timetable times;
+- route segments progress through the day in order;
+- route arrival entrances remain distinct from building identity;
+- commute origins can represent residence, transit, parking, or pickup/drop-off;
+- foreground live location is optional and never background-tracked;
+- step-free routing fails closed when a verified accessible route is unavailable.
+
+### Day Replay
+
+**[Day Replay](https://gapwise.ca/replay)** simulates a selected campus day entirely in the browser.
+
+Use the synthetic demo schedule or import an `.ics` locally, then scrub or play through:
+
+- classes;
+- gaps and transitions;
+- route progression;
+- deterministic gap recommendations;
+- usable time;
+- leave-by/arrival timing;
+- routed, approximate, same-building, and unavailable states.
+
+No replay-specific database, worker, cron job, hosted model, or timetable upload is required.
 
 ---
 
-## Privacy and security model
+## Gapwise Platform
+
+Gapwise exposes a deliberately small public campus-intelligence surface for UTM projects. It uses the same deterministic building, routing, and gap-planning semantics as the product rather than maintaining a second implementation.
+
+### Developer resources
+
+- **Developer hub:** https://gapwise.ca/developers
+- **OpenAPI 3.1:** https://gapwise.ca/openapi.json
+- **Versioned UTM snapshot:** https://gapwise.ca/data/utm-campus-v1.json
+- **JavaScript SDK:** https://gapwise.ca/sdk/gapwise-utm.js
+- **TypeScript declarations:** https://gapwise.ca/sdk/gapwise-utm.d.ts
+- **Platform documentation:** [`docs/GAPWISE_PLATFORM.md`](docs/GAPWISE_PLATFORM.md)
+
+### Public API
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/utm-buildings` | Canonical UTM building inventory, routing coverage, accessibility state, and provenance |
+| `GET` | `/api/utm-building?q=MN` | Resolve one building by canonical code, official name, or known alias |
+| `POST` | `/api/utm-route` | Deterministic building-to-building routing |
+| `POST` | `/api/utm-gap-plan` | Deterministic route-aware gap assessment for an explicit free window |
+
+The public API is campus-only. It does **not** expose student timetables, accounts, friends, credentials, private sync state, AI delegation, or precise live location.
+
+### Zero-dependency JS/TS client
+
+```js
+import { gapwise } from "https://gapwise.ca/sdk/gapwise-utm.js";
+
+const route = await gapwise.route({
+  from: "MN",
+  to: "IB",
+});
+
+console.log(route.route.status, route.route.estimatedSeconds);
+```
+
+Gap planning uses the same thin client:
+
+```js
+const plan = await gapwise.planGap({
+  from: "MN",
+  to: "IB",
+  term: "Fall",
+  weekday: "Wednesday",
+  startTime: 660,
+  endTime: 780,
+});
+
+console.log(plan.gapPlan.assessment.primary);
+```
+
+The SDK is intentionally a small wrapper around `fetch`. Projects that prefer generated clients can use the OpenAPI contract directly.
+
+### Open UTM data
+
+The current public snapshot contains **30 canonical UTM buildings/facilities** with identity, aliases, routing-coverage state, entrance-count summaries, accessibility state, and normalized provenance.
+
+Gapwise source code is MIT licensed, but upstream data retains its own terms. OpenStreetMap-derived records require OpenStreetMap attribution and ODbL compliance; the MIT license does not override those obligations.
+
+---
+
+## Gapwise AI
+
+Gapwise AI is a separate provider-neutral **Model Context Protocol (MCP)** service at:
+
+```text
+https://ai.gapwise.ca/api/mcp
+```
+
+It exists so an authorized assistant can use exact Gapwise context without receiving unrestricted access to a student's account or becoming the source of truth for schedule/routing calculations.
+
+### Grounding model
+
+```text
+Gapwise deterministic truth                    Assistant
+──────────────────────────                    ─────────
+schedule facts            ─┐
+gap assessments           ─┼─> permissioned MCP ─> reasoning / advice
+routing + uncertainty     ─┤
+public campus data        ─┘
+```
+
+Assistant advice and inference are deliberately distinct from values supplied by Gapwise. An assistant may reason over a returned route or gap plan; it should not relabel its own estimate as a Gapwise fact.
+
+### Delegation and privacy boundary
+
+AI access is **explicit opt-in and separate from OAuth sign-in**. Demo schedules are never delegated.
+
+When a signed-in user enables AI access, Gapwise publishes only the minimized categories that the integration is designed to share. The UI exposes separate controls for personal items, gap plans/preferences, routing preferences, and bounded personal/preference writes.
+
+The delegated snapshot excludes:
+
+- the raw ACORN `.ics` file;
+- friend data;
+- precise/live location;
+- account credentials;
+- Gapwise private-data encryption keys;
+- unrelated browser state.
+
+Academic meetings are always **read-only** to AI. Personal-item and gap-preference changes are typed, permission-checked, revision-bound, idempotency-bounded, and queued for Gapwise rather than allowing an MCP client to arbitrarily rewrite the primary timetable payload.
+
+Gapwise AI is **not** zero-knowledge: authorized plaintext exists transiently in the service when a private tool needs to answer an authorized request. Its delegated data is encrypted at rest with a separate key domain, and the MCP runtime does not require a Supabase service-role key.
+
+> **External-client status:** the production MCP service is live and the private Claude OAuth/delegation path has previously been exercised with real Gapwise timetable/gap data. Fresh public-campus composition regression and full ChatGPT compatibility/read-write-revoke validation remain release gates before representing universal client support or making the separate AI repository public.
+
+---
+
+## Deterministic by design
+
+Gapwise deliberately does not make an LLM responsible for the calculations that define whether a student can physically make the next class.
+
+Deterministic domain logic owns:
+
+- calendar normalization and recurrence;
+- class/gap boundary arithmetic;
+- building identity resolution;
+- campus routing;
+- walking-time estimation;
+- transition buffers;
+- gap activity budgets;
+- “Can I go there?” feasibility;
+- leave-by and arrival timing;
+- route verification/accessibility uncertainty.
+
+React renders these decisions. The public API exposes them. Gapwise AI consumes them. None of those surfaces should silently implement a separate version of the same math.
+
+---
+
+## Routing and uncertainty
+
+Gapwise separates **building identity**, **visual geography**, and **navigation evidence**.
+
+Canonical building identity comes from the reviewed UTM registry in `src/data/utm/`. Route coverage then carries explicit confidence instead of silently treating every building pair as equally known.
+
+Typical states include:
+
+- **routed / verified or mixed** — an evidence-backed mapped path is available;
+- **approximate / inferred** — useful guidance exists, but its limits remain visible;
+- **same-building** — no building-to-building leg is required; this is not a room-to-room claim;
+- **unavailable** — Gapwise does not have enough justified routing evidence and refuses to invent a path.
+
+Accessibility uncertainty is preserved through UI, API, Replay, and AI surfaces. In step-free mode, missing accessible evidence fails closed.
+
+See [`docs/CAMPUS_MAP_GEOMETRY.md`](docs/CAMPUS_MAP_GEOMETRY.md), [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md), and [`docs/GAPWISE_PLATFORM.md`](docs/GAPWISE_PLATFORM.md).
+
+---
+
+## Privacy and security
 
 The **original ACORN `.ics` file never leaves the browser**.
 
-```text
-ACORN .ics
-    │
-    ▼
-Browser parsing ──────► timetable + gaps + routes
-    │
-    ├── guest mode ───► local state
-    │
-    └── optional signed-in sync
-            │
-            ▼
-      browser encryption
-            │
-            ▼
-         Supabase
-       (ciphertext +
-      minimal metadata)
+```mermaid
+flowchart LR
+    A[ACORN .ics] -->|local parse| B[Gapwise browser]
+    B --> C[Timetable / gaps / routes / Replay]
+    B -->|optional browser encryption| D[(Supabase private sync)]
+    B -->|explicit minimized delegation| E[Gapwise AI]
+    E -->|OAuth + MCP| F[Authorized assistant]
+    G[Public UTM data] --> H[Gapwise public API]
+    H --> I[Developers / SDK / public MCP tools]
 ```
 
 Key properties:
 
-- core timetable, gap, recommendation, and route computation is local-first;
+- guest mode and local timetable parsing are first-class;
 - cloud sync is optional;
-- private payloads are encrypted in the browser before Supabase storage;
-- live location is opt-in and not background-tracked;
-- friend availability uses a separate deliberately lossy encrypted capsule;
-- account deletion removes the Supabase identity and user-owned application records and clears the current browser's private local state;
+- private sync payloads are encrypted in the browser before storage;
+- live location is opt-in and foreground-only;
+- friend overlap is deliberately lossy and separate from raw timetable sharing;
+- AI delegation is explicit, minimized, revocable, and separate from ordinary sign-in;
 - no advertising and no raw timetable/location/friend analytics;
 - production and preview environments must never share a key-encryption key.
 
-Gapwise uses defense in depth. It does **not** claim end-to-end encryption or zero knowledge: plaintext exists in the active browser, and the production Vercel key broker is inside the cryptographic trust boundary for key unwrapping.
+Gapwise uses defense in depth and documents its trust boundaries precisely. It does **not** claim zero knowledge or end-to-end encryption for every feature.
 
 Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
 
 ---
 
-## Engineering model
-
-Gapwise's scheduling and routing engine is deterministic. React is a consumer of timetable, gap, routing, and campus-domain logic rather than the source of truth for those rules.
-
-The same verified domain logic is intended to support the web app today and, after the launch freeze, a small public REST/OpenAPI surface and remote MCP server without duplicating routing semantics per AI platform.
-
-AI tools accelerate implementation and review, but the architecture, privacy boundaries, UTM-specific semantics, routing model, verification policy, product decisions, and production maintenance remain deliberate project engineering decisions.
-
----
-
 ## Tech stack
 
-- React 19.2 + TypeScript 5.x
-- TanStack Router / Start
-- Vite 8
-- Tailwind CSS 4
-- MapLibre GL 6
-- Supabase Auth/Postgres/RLS
-- Bun 1.3.14
-- Playwright
-- Vercel + Vercel Analytics/Speed Insights
-- GitHub Actions
+- **React 19.2** + TypeScript 5.8
+- **TanStack Router / Start**
+- **Vite 8**
+- **Tailwind CSS 4**
+- **MapLibre GL 6**
+- **Supabase Auth / Postgres / RLS**
+- **Bun 1.3.14**
+- **Playwright** + axe-core browser coverage
+- **Vercel** + Analytics / Speed Insights
+- **GitHub Actions**
 
-`package.json` and `bun.lock` are the source of truth for exact dependency versions. The project currently targets **Node 24.x** for Node-based tooling; TypeScript 6 and Node 26 typings are deliberately deferred major migrations rather than launch-period dependency hygiene.
+`package.json` and `bun.lock` are the source of truth for exact dependency versions. Node-based tooling targets **Node 24.x**.
 
 ---
 
@@ -170,7 +333,7 @@ Never place a service-role key, OAuth client secret, KEK, private key, or other 
 
 ## Verification
 
-Normal gates:
+Normal release gates:
 
 ```bash
 bun run typecheck
@@ -183,63 +346,45 @@ bun run test:e2e
 
 Database/security changes also require the isolated Supabase checks documented in [`docs/OPERATIONS.md`](docs/OPERATIONS.md).
 
-The repository includes regression coverage for ACORN parsing/restoration, onboarding, gap planning, campus routing/geometry, route-anchored time-marker behavior, time-marker collision layout, encrypted sync and user isolation, OAuth/account flows, accessibility, PWA behavior, and critical browser journeys.
+Regression coverage includes ACORN parsing/restoration, onboarding, Today/gap planning, destination feasibility, routing/geometry, Day Replay, public platform assets/SDK behavior, encrypted sync and user isolation, OAuth/account flows, accessibility, PWA behavior, and desktop/mobile/iPad browser journeys.
+
+`main` is production. Focused changes go through pull requests and should not reach `main` until the relevant release gates are green.
 
 ---
 
-## Development and deployment discipline
+## Current release — August 20, 2026
 
-`main` is production and Vercel deploys from it. Preview deployments and GitHub Actions are useful but finite resources, so **do not use pushes as a debugging loop**.
+The current production release includes:
 
-For maintainer work:
+- Gapwise Platform and the public UTM campus API;
+- OpenAPI 3.1, the zero-dependency JS/TS client, and the versioned 30-building snapshot;
+- browser-side Day Replay;
+- deterministic “Can I go there?” destination feasibility on Today, including the mobile surface;
+- the permissioned Gapwise AI integration surface and provider-neutral MCP service;
+- explicit AI grounding provenance so Gapwise-supplied facts remain distinguishable from assistant advice/inference.
 
-1. Start from the relevant Linear issue when one exists.
-2. Make and verify the complete focused change locally first.
-3. Batch coherent edits into a single deliberate branch update whenever practical.
-4. Push once for remote CI/preview validation instead of sending a sequence of formatting/test-fix commits.
-5. If a remote job fails for an environmental/flaky reason, rerun only the failed job/run when possible instead of creating a no-op commit.
-6. Squash-merge focused PRs to keep `main` readable and production deployment churn low.
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md).
-
----
-
-## Current direction — 2026-08-18
-
-Gapwise is in launch stabilization for UTM Orientation. The core product is working; the remaining roadmap is deliberately bounded around first-run reliability, real-user validation, trustworthy routing, and launch-critical mobile clarity.
-
-Already shipped or owner-approved during the Aug 17–18 maintenance window:
-
-- **AND-66 first-run activation** — Import ACORN is the dominant action, account decisions are post-value, local parsing is explicit, successful imports hand off to Today, and mobile auth/timetable polish is live.
-- **Map-first Day Route UX** — chronological class times replace numbered map stops, routed class times align to the entrance reached by the route when available, route segments visually communicate progression, the map is the primary surface on mobile and desktop, and map controls are separated so zoom/fit/location actions do not overlap.
-- **Integrated mobile visual system (AND-75)** — the phone experience uses one continuous surface instead of decorative card stacks, keeps course rows free of timeline-dot/left-rail ornament, balances no-timetable states within the usable viewport, and shares LEC/TUT/PRA colors across timetable and map representations.
-- **Launch-safe dependency maintenance** — current minor/patch updates were consolidated and validated, `@types/node` is aligned with Node 24.x, and TypeScript 6 / Node 26 typings remain explicitly deferred.
-
-Next execution gates:
-
-1. **Sep 2 — AND-53 re-entry smoke check**: reconcile actual GitHub/Vercel/Supabase state, run real-device ACORN import checks, and re-verify the shipped onboarding/map behavior.
-2. **Sep 3 — P0 launch work**: parser compatibility hardening, five uncoached launch-gate sessions, only evidence-backed P0 fixes, then final flyer/QR output.
-3. **Sep 4–11 — Orientation launch**: prioritize observing and supporting real UTM students over speculative feature coding.
-4. **Sep 8–12 — tightly capped retention work**: Today hardening and, only if simple/justified, centralized `ZZ TBA` reserved-assessment handling.
-5. **Sep 15 — feature freeze**: after this date, only narrow security/privacy/data-loss/core-import/auth/routing correctness work interrupts academics.
-
-December is reserved for the first field-verified high-value routing dataset, then the transport-neutral domain/API/MCP foundation if capacity remains. Personal-schedule AI access, AI-specific OAuth, Web Push, native apps, broad social features, 3D production, multi-campus expansion, and architectural rewrites are not launch commitments.
+The immediate focus is **release validation, not feature expansion**: real-device student onboarding/usage, better field-verified routing coverage, and completion of the remaining external AI-client compatibility/revocation matrix.
 
 ---
 
 ## Repository map
 
 ```text
-src/                 app routes, features, components, privacy/security, UTM data
-api/                 same-origin Vercel server endpoints
-supabase/            migrations and authenticated server functions
-e2e/                 Playwright browser release/regression coverage
-tests/               unit/integration/regression coverage
-docs/                architecture, operations, deployment, campus-data docs
+src/                 app routes, features, domain logic, UTM data, privacy/security
+api/                 bounded public and authenticated Vercel server endpoints
+public/              static OpenAPI, SDK and versioned public data assets
+supabase/            migrations and authenticated database/server functions
+e2e/                 Playwright release and regression journeys
+tests/               unit/integration/security/contract regression coverage
+docs/                architecture, operations, platform and campus-data docs
 scripts/             deterministic generation/import/review tooling
 ```
 
 ---
+
+## Contributing
+
+Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request, and use [`SECURITY.md`](SECURITY.md) for vulnerability reporting rather than a public issue.
 
 ## Independent student project
 
