@@ -7,10 +7,7 @@ import {
   type AcademicState,
 } from "@/features/academic/state";
 import type { AcademicPlanningContext, PlannedWorkBlock } from "@/features/academic/types";
-import {
-  buildWorkWindows,
-  torontoLocalDateTimeInstant,
-} from "@/features/academic/windows";
+import { buildWorkWindows, torontoLocalDateTimeInstant } from "@/features/academic/windows";
 import { meeting } from "./fixtures";
 
 const coursework = () =>
@@ -73,12 +70,8 @@ function context(
 
 describe("Pro planning release regressions", () => {
   test("interprets datetime-local coursework deadlines in Toronto, not the device timezone", () => {
-    expect(torontoLocalDateTimeInstant("2026-09-11T23:59")).toBe(
-      "2026-09-12T03:59:00.000Z",
-    );
-    expect(torontoLocalDateTimeInstant("2026-01-12T09:00")).toBe(
-      "2026-01-12T14:00:00.000Z",
-    );
+    expect(torontoLocalDateTimeInstant("2026-09-11T23:59")).toBe("2026-09-12T03:59:00.000Z");
+    expect(torontoLocalDateTimeInstant("2026-01-12T09:00")).toBe("2026-01-12T14:00:00.000Z");
   });
 
   test("clips today's planning windows to notBefore", () => {
@@ -95,7 +88,11 @@ describe("Pro planning release regressions", () => {
       }),
       () => 0,
     );
-    expect(windows.every((window) => Date.parse(window.start) >= Date.parse("2026-09-07T16:00:00Z"))).toBeTrue();
+    expect(
+      windows.every(
+        (window) => Date.parse(window.start) >= Date.parse("2026-09-07T16:00:00Z"),
+      ),
+    ).toBeTrue();
   });
 
   test("an accepted one-off block occupies only its concrete Toronto date", () => {
@@ -123,9 +120,9 @@ describe("Pro planning release regressions", () => {
     const item = coursework();
     const block = acceptedBlock(item.id);
     const proposal = createStudyPlan(context(item, { existingBlocks: [block] }), () => 0);
-    expect(proposal.blocks.reduce((total, candidate) => total + candidate.allocatedMinutes, 0)).toBe(
-      120,
-    );
+    expect(
+      proposal.blocks.reduce((total, candidate) => total + candidate.allocatedMinutes, 0),
+    ).toBe(120);
     expect(proposal.unscheduledMinutes[item.id]).toBe(0);
   });
 
