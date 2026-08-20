@@ -121,7 +121,9 @@ describe("UTM ingress provenance v2", () => {
     expect(fieldSurveyEntrance.routingNodeId).toBe("survey-node-mn-field-survey-example");
 
     const graphNodeIds = new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id));
-    expect(() => assertCampusBuildingRoutingIntegrity(CAMPUS_BUILDINGS, graphNodeIds)).not.toThrow();
+    expect(() =>
+      assertCampusBuildingRoutingIntegrity(CAMPUS_BUILDINGS, graphNodeIds),
+    ).not.toThrow();
 
     for (const building of CAMPUS_BUILDINGS) {
       for (const entrance of building.entrances) {
