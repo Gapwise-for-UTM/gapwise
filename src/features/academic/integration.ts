@@ -17,11 +17,7 @@ function minute(date: Date) {
   return (Number(parts["hour"]) % 24) * 60 + Number(parts["minute"]);
 }
 
-export function plannedWorkMeetings(
-  state: AcademicState,
-  term: Term,
-  now = new Date(),
-): Meeting[] {
+export function plannedWorkMeetings(state: AcademicState, term: Term, now = new Date()): Meeting[] {
   const today = torontoDateForInstant(now);
   const endDate = addDate(today, 6);
   return state.blocks
