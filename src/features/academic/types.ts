@@ -4,9 +4,21 @@ export const CAMPUS_TIME_ZONE = "America/Toronto" as const;
 
 export type Confidence = "low" | "medium" | "high";
 export type CourseworkKind =
-  "assignment" | "quiz" | "exam" | "reading" | "lab" | "project" | "discussion" | "other";
+  | "assignment"
+  | "quiz"
+  | "exam"
+  | "reading"
+  | "lab"
+  | "project"
+  | "discussion"
+  | "other";
 export type SubmissionState =
-  "unknown" | "unsubmitted" | "submitted" | "graded" | "missing" | "late";
+  | "unknown"
+  | "unsubmitted"
+  | "submitted"
+  | "graded"
+  | "missing"
+  | "late";
 export type LocalProgress = "not_started" | "in_progress" | "completed_manually";
 export type EstimateProvenance =
   | "user_supplied"
@@ -99,6 +111,8 @@ export interface AcademicPlanningContext {
     dayStartMinute: number;
     dayEndMinute: number;
     timeZone: typeof CAMPUS_TIME_ZONE;
+    /** Earliest instant that may receive new work. Used to avoid proposing blocks in the past. */
+    notBefore?: string;
   };
   academicMeetings: readonly Meeting[];
   fixedPersonalCommitments: readonly Meeting[];
