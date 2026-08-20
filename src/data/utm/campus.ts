@@ -3,13 +3,15 @@ import { assertRoutingGraphIntegrity } from "@/features/routing/graph-integrity"
 import surveyRoutingData from "./generated/survey-routing.json";
 import outdoorEdgesData from "./outdoor-edges.json";
 import outdoorNodesRaw from "./outdoor-nodes.geojson?raw";
-
-export {
+import {
   CAMPUS_BUILDINGS,
   RESIDENCE_BUILDINGS,
+  assertCampusBuildingRoutingIntegrity,
   getCampusBuilding,
   getResidenceBuilding,
 } from "./routing-buildings";
+
+export { CAMPUS_BUILDINGS, RESIDENCE_BUILDINGS, getCampusBuilding, getResidenceBuilding };
 
 type OutdoorNodeFeature = {
   id: string;
@@ -36,3 +38,7 @@ export const UTM_ROUTING_GRAPH: RoutingGraph = {
 };
 
 assertRoutingGraphIntegrity(UTM_ROUTING_GRAPH);
+assertCampusBuildingRoutingIntegrity(
+  CAMPUS_BUILDINGS,
+  new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id)),
+);
