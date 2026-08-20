@@ -286,7 +286,9 @@ export function AcademicWorkDialog({
                         onClick={() =>
                           onChange({
                             ...state,
-                            coursework: state.coursework.filter((candidate) => candidate.id !== item.id),
+                            coursework: state.coursework.filter(
+                              (candidate) => candidate.id !== item.id,
+                            ),
                             blocks: state.blocks.filter((block) => block.courseworkId !== item.id),
                             proposalRevision: null,
                           })
