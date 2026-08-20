@@ -84,8 +84,7 @@ export function createStudyPlan(
   for (const item of items) {
     let remaining = Math.max(
       0,
-      item.workEstimate.remainingMinutes -
-        acceptedMinutesForCoursework(context, item.id, item.dueAt),
+      item.workEstimate.remainingMinutes - acceptedMinutesForCoursework(context, item.id, item.dueAt),
     );
     const preferLong = context.courseProfiles
       .find((profile) => profile.courseId === item.courseId)
