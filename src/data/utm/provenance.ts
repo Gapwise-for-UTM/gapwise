@@ -1,7 +1,5 @@
 export type CampusSourceId =
-  | "utm-facilities-buildings"
-  | "utm-facilities-snow-ice"
-  | "utoronto-interactive-map";
+  "utm-facilities-buildings" | "utm-facilities-snow-ice" | "utoronto-interactive-map";
 
 export type CampusSourceRecord = {
   id: CampusSourceId;
