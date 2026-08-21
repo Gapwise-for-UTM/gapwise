@@ -4,13 +4,15 @@ import surveyRoutingData from "./generated/survey-routing.json";
 import entranceDataRaw from "./entrances.geojson?raw";
 import outdoorEdgesData from "./outdoor-edges.json";
 import outdoorNodesRaw from "./outdoor-nodes.geojson?raw";
-
-export {
+import {
   CAMPUS_BUILDINGS,
   RESIDENCE_BUILDINGS,
+  assertCampusBuildingRoutingIntegrity,
   getCampusBuilding,
   getResidenceBuilding,
 } from "./routing-buildings";
+
+export { CAMPUS_BUILDINGS, RESIDENCE_BUILDINGS, getCampusBuilding, getResidenceBuilding };
 
 type OutdoorNodeFeature = {
   id: string;
@@ -20,17 +22,25 @@ type OutdoorNodeFeature = {
 
 type EntranceSemanticsFeature = {
   properties: {
-    osmNodeId: number;
+    osmNodeId?: number;
+    routingNodeId?: string;
     access?: NonNullable<RoutingNode["access"]>;
     direction?: NonNullable<RoutingNode["direction"]>;
   };
 };
 
 const entranceSemanticsByNodeId = new Map(
-  (JSON.parse(entranceDataRaw) as { features: EntranceSemanticsFeature[] }).features.map((feature) => [
-    `osm-node-${feature.properties.osmNodeId}`,
-    feature.properties,
-  ]),
+  (JSON.parse(entranceDataRaw) as { features: EntranceSemanticsFeature[] }).features.flatMap(
+    (feature) => {
+      const explicitId = feature.properties.routingNodeId?.trim();
+      const nodeId =
+        explicitId ||
+        (feature.properties.osmNodeId !== undefined
+          ? `osm-node-${feature.properties.osmNodeId}`
+          : null);
+      return nodeId ? ([[nodeId, feature.properties]] as const) : [];
+    },
+  ),
 );
 
 const outdoorNodeFeatures = (JSON.parse(outdoorNodesRaw) as { features: OutdoorNodeFeature[] })
@@ -62,3 +72,7 @@ export const UTM_ROUTING_GRAPH: RoutingGraph = {
 };
 
 assertRoutingGraphIntegrity(UTM_ROUTING_GRAPH);
+assertCampusBuildingRoutingIntegrity(
+  CAMPUS_BUILDINGS,
+  new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id)),
+);
