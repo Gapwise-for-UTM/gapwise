@@ -3,6 +3,7 @@ import {
   availableExportTerms,
   createTimetableExportPlan,
   generateTimetablePng,
+  renderTimetableExportSvg,
   timetableExportFilename,
 } from "@/lib/timetable-export";
 import { meeting } from "./fixtures";
@@ -25,6 +26,28 @@ describe("timetable image export", () => {
     expect(three.layout).toBe("grid");
     expect(three.pixelRatio).toBeGreaterThanOrEqual(1.5);
     expect(three.width * three.height * three.pixelRatio ** 2).toBeLessThanOrEqual(16_000_001);
+  });
+
+  test("centers an unpaired third term and reuses Gapwise activity styling", () => {
+    const plan = createTimetableExportPlan(schedules, "all", 3);
+    const svg = renderTimetableExportSvg(schedules, plan);
+    const centeredX = (plan.width - plan.termWidth) / 2;
+    expect(svg).toContain(`<g><rect x="${centeredX}"`);
+    expect(svg).toContain("oklch(0.5 0.15 252)");
+  });
+
+  test("renders planned study work with the live timetable accent and dashed treatment", () => {
+    const study = meeting({
+      id: "study",
+      sectionCode: "STUDY",
+      activityType: "OTHER",
+      notes: "Review proof techniques",
+    });
+    const plan = createTimetableExportPlan([study], "Fall");
+    const svg = renderTimetableExportSvg([study], plan);
+    expect(svg).toContain("oklch(0.55 0.17 252)");
+    expect(svg).toContain('stroke-dasharray="6 4"');
+    expect(svg).toContain("Review proof techniques");
   });
 
   test("stacks dense multi-term schedules rather than shrinking their cards", () => {
