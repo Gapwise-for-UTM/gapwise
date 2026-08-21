@@ -39,6 +39,16 @@ export function BillingPanel({
   }, [returnStatus]);
 
   useEffect(() => {
+    if (returnStatus !== "success" || entitlement.tier !== "free") return;
+    const timer = window.setTimeout(() => {
+      setMessage(
+        "Payment received. Gapwise Pro is still being confirmed. Reopen Plan & billing in a moment if access has not appeared yet.",
+      );
+    }, 9_000);
+    return () => window.clearTimeout(timer);
+  }, [entitlement.tier, returnStatus]);
+
+  useEffect(() => {
     if (returnStatus !== "success") return;
     if (entitlement.tier === "pro" || entitlement.tier === "founder") {
       setMessage("Payment confirmed. Gapwise Pro is active.");
@@ -70,12 +80,13 @@ export function BillingPanel({
   }
 
   if (entitlement.tier === "pro") {
+    const parsedExpiry = entitlement.expiresAt ? Date.parse(entitlement.expiresAt) : Number.NaN;
     return (
       <section className="rounded-xl border border-accent/25 bg-accent/5 p-4 sm:p-5">
         <p className="text-sm font-semibold">Gapwise Pro</p>
         <p className="mt-1 text-xs leading-5 text-muted-foreground">
-          {entitlement.expiresAt
-            ? `Access through ${expiryFormat.format(new Date(entitlement.expiresAt))}.`
+          {Number.isFinite(parsedExpiry)
+            ? `Access through ${expiryFormat.format(new Date(parsedExpiry))}.`
             : "Pro access is active on this account."}
         </p>
         {message ? <p className="mt-3 text-xs font-medium text-accent">{message}</p> : null}

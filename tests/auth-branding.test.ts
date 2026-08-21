@@ -71,9 +71,9 @@ describe("OAuth authentication", () => {
   });
 
   test("uses a Gapwise-owned OIDC redirect for iOS instead of the Supabase hostname", () => {
-    expect(googleRedirectRequiredForIos("Mozilla/5.0 (iPhone; CPU iPhone OS 18_6)", "iPhone", 5)).toBe(
-      true,
-    );
+    expect(
+      googleRedirectRequiredForIos("Mozilla/5.0 (iPhone; CPU iPhone OS 18_6)", "iPhone", 5),
+    ).toBe(true);
     expect(googleRedirectRequiredForIos("Mozilla/5.0 Safari", "MacIntel", 5)).toBe(true);
     expect(googleRedirectRequiredForIos("Mozilla/5.0 Chrome", "MacIntel", 0)).toBe(false);
 

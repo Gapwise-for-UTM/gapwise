@@ -19,13 +19,6 @@ create policy "users update own onboarding" on public.user_onboarding
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
--- Existing accounts predate account onboarding and must never be mistaken for
--- newly-created users on another device.
-insert into public.user_onboarding (user_id, completed_at)
-select id, now()
-from auth.users
-on conflict (user_id) do nothing;
-
 create or replace function public.initialize_gapwise_user_onboarding()
 returns trigger
 language plpgsql
@@ -46,6 +39,15 @@ drop trigger if exists initialize_gapwise_user_onboarding on auth.users;
 create trigger initialize_gapwise_user_onboarding
 after insert on auth.users
 for each row execute function public.initialize_gapwise_user_onboarding();
+
+-- Existing accounts predate account onboarding and must never be mistaken for
+-- newly-created users on another device. The trigger is installed first so a
+-- concurrent signup receives a pending row; ON CONFLICT preserves that pending
+-- state instead of backfilling the new account as complete.
+insert into public.user_onboarding (user_id, completed_at)
+select id, now()
+from auth.users
+on conflict (user_id) do nothing;
 
 create table public.stripe_checkout_sessions (
   session_id text primary key check (length(session_id) between 8 and 255),
@@ -73,7 +75,8 @@ create index stripe_checkout_sessions_payment_intent_idx
 
 alter table public.stripe_checkout_sessions enable row level security;
 alter table public.stripe_checkout_sessions force row level security;
-revoke all on public.stripe_checkout_sessions from anon, authenticated;
+revoke all on public.stripe_checkout_sessions from anon, authenticated, service_role;
+grant select, insert, update on public.stripe_checkout_sessions to service_role;
 
 create table public.stripe_webhook_events (
   event_id text primary key check (length(event_id) between 8 and 255),
@@ -88,7 +91,8 @@ create table public.stripe_webhook_events (
 
 alter table public.stripe_webhook_events enable row level security;
 alter table public.stripe_webhook_events force row level security;
-revoke all on public.stripe_webhook_events from anon, authenticated;
+revoke all on public.stripe_webhook_events from anon, authenticated, service_role;
+grant select, insert, update on public.stripe_webhook_events to service_role;
 
 comment on table public.user_onboarding is
   'Non-sensitive account-first-run state. Existing accounts are backfilled complete; new auth users begin pending.';

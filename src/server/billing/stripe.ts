@@ -7,17 +7,13 @@ export const PRO_TERM = "fall_2026";
 export const PRO_AMOUNT_CAD_CENTS = 999;
 export const PRO_ENTITLEMENT_EXPIRES_AT = "2027-01-01T04:59:59.000Z";
 const STRIPE_API = "https://api.stripe.com/v1";
+const STRIPE_TIMEOUT_MS = 10_000;
 const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
 let adminClient: SupabaseClient | null = null;
 
 type JsonRecord = Record<string, unknown>;
 type PurchaseStatus = "pending" | "paid" | "expired" | "failed" | "refunded" | "disputed";
-export type PurchaseTransition =
-  | "payment_succeeded"
-  | "full_refund"
-  | "dispute_opened"
-  | "dispute_won"
-  | "dispute_lost";
+export type PurchaseTransition = "payment_succeeded" | "full_refund" | "dispute_opened" | "dispute_won" | "dispute_lost";
 
 type CheckoutSession = {
   id: string;
@@ -28,6 +24,9 @@ type CheckoutSession = {
 type PaymentIntentBinding = {
   userId: string;
   term: string;
+  amount: number;
+  currency: string;
+  status: string;
 };
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -126,6 +125,7 @@ export function assertCheckoutEnabled(): void {
 async function stripeGet(path: string): Promise<JsonRecord> {
   const response = await fetch(`${STRIPE_API}${path}`, {
     headers: { Authorization: `Bearer ${stripeSecretKey()}` },
+    signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
   });
   if (!response.ok) throw new Error("stripe verification unavailable");
   const payload = await response.json();
@@ -136,19 +136,29 @@ async function stripeGet(path: string): Promise<JsonRecord> {
 
 async function paymentIntentBinding(paymentIntent: string): Promise<PaymentIntentBinding | null> {
   const payload = await stripeGet(`/payment_intents/${encodeURIComponent(paymentIntent)}`);
+  if (stringValue(payload["id"]) !== paymentIntent) {
+    throw new Error("payment intent verification response is invalid");
+  }
   const metadata = asRecord(payload["metadata"]);
   if (metadata?.["app"] !== "gapwise") return null;
   const userId = stringValue(metadata["gapwise_user_id"]);
   const term = stringValue(metadata["term"]);
-  if (!userId || !term) throw new Error("payment intent binding is invalid");
-  return { userId, term };
+  const currency = stringValue(payload["currency"]);
+  const status = stringValue(payload["status"]);
+  const amount = Number(payload["amount"]);
+  if (!userId || !term || !currency || !status || !Number.isSafeInteger(amount)) {
+    throw new Error("payment intent binding is invalid");
+  }
+  return { userId, term, amount, currency, status };
 }
 
 async function verifyCheckoutPrice(sessionId: string): Promise<void> {
   const expectedPriceId = configuredPriceId();
   const secret = stripeSecretKey();
   if (!expectedPriceId) {
-    if (!secret.startsWith("sk_test_")) throw new Error("production Stripe Price is not configured");
+    if (!secret.startsWith("sk_test_")) {
+      throw new Error("production Stripe Price is not configured");
+    }
     return;
   }
 
@@ -186,6 +196,34 @@ export async function findReusableCheckout(userId: string) {
   return typeof row?.checkout_url === "string" ? row.checkout_url : null;
 }
 
+async function checkoutIdempotencyKey(userId: string): Promise<string> {
+  const admin = billingAdminClient();
+  const cutoff = Date.now() + 60_000;
+  const { data, error } = await admin
+    .from("stripe_checkout_sessions")
+    .select("session_id,status,expires_at")
+    .eq("user_id", userId)
+    .eq("term", PRO_TERM)
+    .order("created_at", { ascending: false })
+    .limit(8);
+  if (error) throw new ApiError(503, "Checkout is temporarily unavailable.");
+
+  let previousAttempt = "initial";
+  for (const value of data ?? []) {
+    const row = value as { session_id?: unknown; status?: unknown; expires_at?: unknown };
+    const sessionId = stringValue(row.session_id);
+    if (!sessionId) continue;
+    const expiresAt = Date.parse(String(row.expires_at ?? ""));
+    const reusablePending =
+      row.status === "pending" && Number.isFinite(expiresAt) && expiresAt > cutoff;
+    if (reusablePending) continue;
+    previousAttempt = sessionId;
+    break;
+  }
+
+  return `gapwise:${PRO_TERM}:${userId}:${previousAttempt}`.slice(0, 255);
+}
+
 export async function createFall2026CheckoutSession(
   userId: string,
   origin: string,
@@ -193,6 +231,7 @@ export async function createFall2026CheckoutSession(
   assertCheckoutEnabled();
   const secret = stripeSecretKey();
   const priceId = configuredPriceId();
+  const idempotencyKey = await checkoutIdempotencyKey(userId);
   const params = new URLSearchParams();
   params.set("mode", "payment");
   params.set("success_url", `${origin}/?billing=success&session_id={CHECKOUT_SESSION_ID}`);
@@ -227,8 +266,10 @@ export async function createFall2026CheckoutSession(
     headers: {
       Authorization: `Bearer ${secret}`,
       "Content-Type": "application/x-www-form-urlencoded",
+      "Idempotency-Key": idempotencyKey,
     },
     body: params,
+    signal: AbortSignal.timeout(STRIPE_TIMEOUT_MS),
   });
   if (!response.ok) throw new ApiError(503, "Checkout is not available yet.");
   const payload = (await response.json()) as JsonRecord;
@@ -243,7 +284,7 @@ export async function createFall2026CheckoutSession(
 
 export async function recordCheckoutSession(userId: string, session: CheckoutSession) {
   const admin = billingAdminClient();
-  const { error } = await admin.from("stripe_checkout_sessions").insert({
+  const row = {
     session_id: session.id,
     user_id: userId,
     term: PRO_TERM,
@@ -253,8 +294,29 @@ export async function recordCheckoutSession(userId: string, session: CheckoutSes
     checkout_url: session.url,
     expires_at: session.expiresAt,
     entitlement_expires_at: PRO_ENTITLEMENT_EXPIRES_AT,
-  });
+  };
+  const { error } = await admin
+    .from("stripe_checkout_sessions")
+    .upsert(row, { onConflict: "session_id", ignoreDuplicates: true });
   if (error) throw new ApiError(503, "Checkout is temporarily unavailable.");
+
+  const { data: stored, error: readError } = await admin
+    .from("stripe_checkout_sessions")
+    .select("user_id,term,amount_total,currency,checkout_url,expires_at")
+    .eq("session_id", session.id)
+    .maybeSingle();
+  if (
+    readError ||
+    !stored ||
+    stored.user_id !== userId ||
+    stored.term !== PRO_TERM ||
+    Number(stored.amount_total) !== PRO_AMOUNT_CAD_CENTS ||
+    stored.currency !== "cad" ||
+    stored.checkout_url !== session.url ||
+    new Date(stored.expires_at).toISOString() !== session.expiresAt
+  ) {
+    throw new ApiError(503, "Checkout is temporarily unavailable.");
+  }
 }
 
 export function verifyStripeSignature(
@@ -284,36 +346,58 @@ export function verifyStripeSignature(
 }
 
 async function claimWebhookEvent(admin: SupabaseClient, eventId: string, eventType: string) {
+  const now = new Date().toISOString();
+  const { data: inserted, error: insertError } = await admin
+    .from("stripe_webhook_events")
+    .upsert(
+      {
+        event_id: eventId,
+        event_type: eventType,
+        status: "processing",
+        attempts: 1,
+        updated_at: now,
+      },
+      { onConflict: "event_id", ignoreDuplicates: true },
+    )
+    .select("event_id");
+  if (insertError) throw new Error("webhook ledger unavailable");
+  if (inserted && inserted.length > 0) return true;
+
   const { data: existing, error: readError } = await admin
     .from("stripe_webhook_events")
-    .select("status,attempts,updated_at")
+    .select("event_type,status,attempts,updated_at")
     .eq("event_id", eventId)
     .maybeSingle();
-  if (readError) throw new Error("webhook ledger unavailable");
-  if (existing?.status === "processed") return false;
-  if (existing?.status === "processing") {
-    const updated = Date.parse(String(existing.updated_at));
-    if (Number.isFinite(updated) && Date.now() - updated < 5 * 60_000) return false;
+  if (readError || !existing) throw new Error("webhook ledger unavailable");
+  if (existing.event_type !== eventType) throw new Error("webhook event identity mismatch");
+  if (existing.status === "processed") return false;
+
+  const updatedAt = Date.parse(String(existing.updated_at));
+  const staleProcessing =
+    existing.status === "processing" &&
+    Number.isFinite(updatedAt) &&
+    Date.now() - updatedAt >= 5 * 60_000;
+  if (existing.status !== "failed" && !staleProcessing) return false;
+
+  const attempts = Number(existing.attempts);
+  if (!Number.isSafeInteger(attempts) || attempts < 1) {
+    throw new Error("webhook ledger is malformed");
   }
-  if (existing) {
-    const { error } = await admin
-      .from("stripe_webhook_events")
-      .update({
-        status: "processing",
-        attempts: Number(existing.attempts ?? 0) + 1,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("event_id", eventId);
-    if (error) throw new Error("webhook ledger unavailable");
-  } else {
-    const { error } = await admin.from("stripe_webhook_events").insert({
-      event_id: eventId,
-      event_type: eventType,
+  const reclaimedAt = new Date().toISOString();
+  const { data: reclaimed, error: reclaimError } = await admin
+    .from("stripe_webhook_events")
+    .update({
       status: "processing",
-    });
-    if (error) throw new Error("webhook ledger unavailable");
-  }
-  return true;
+      attempts: attempts + 1,
+      updated_at: reclaimedAt,
+      processed_at: null,
+    })
+    .eq("event_id", eventId)
+    .eq("status", existing.status)
+    .eq("updated_at", existing.updated_at)
+    .select("event_id");
+  if (reclaimError) throw new Error("webhook ledger unavailable");
+  return Boolean(reclaimed?.length);
 }
 
 async function finishWebhookEvent(
@@ -322,10 +406,11 @@ async function finishWebhookEvent(
   status: "processed" | "failed",
 ) {
   const now = new Date().toISOString();
-  await admin
+  const { error } = await admin
     .from("stripe_webhook_events")
     .update({ status, updated_at: now, processed_at: status === "processed" ? now : null })
     .eq("event_id", eventId);
+  if (error) throw new Error("webhook ledger unavailable");
 }
 
 async function recomputeStripeEntitlement(admin: SupabaseClient, userId: string) {
@@ -384,8 +469,9 @@ async function handlePaidCheckout(admin: SupabaseClient, object: JsonRecord) {
   const sessionId = stringValue(object["id"]);
   const userId = stringValue(object["client_reference_id"]);
   const metadataUserId = stringValue(metadata["gapwise_user_id"]);
-  if (!sessionId || !userId || metadataUserId !== userId)
+  if (!sessionId || !userId || metadataUserId !== userId) {
     throw new Error("invalid checkout binding");
+  }
 
   const { data: ledger, error: ledgerError } = await admin
     .from("stripe_checkout_sessions")
@@ -409,7 +495,14 @@ async function handlePaidCheckout(admin: SupabaseClient, object: JsonRecord) {
   const paymentIntent = idValue(object["payment_intent"]);
   if (!paymentIntent) throw new Error("payment intent missing");
   const binding = await paymentIntentBinding(paymentIntent);
-  if (!binding || binding.userId !== userId || binding.term !== PRO_TERM) {
+  if (
+    !binding ||
+    binding.userId !== userId ||
+    binding.term !== PRO_TERM ||
+    binding.amount !== PRO_AMOUNT_CAD_CENTS ||
+    binding.currency !== "cad" ||
+    binding.status !== "succeeded"
+  ) {
     throw new Error("payment intent binding does not match checkout");
   }
   await verifyCheckoutPrice(sessionId);
@@ -439,7 +532,13 @@ async function markPaymentIntentTransition(
   if (!paymentIntent) throw new Error("payment intent missing");
   const binding = await paymentIntentBinding(paymentIntent);
   if (!binding) return;
-  if (binding.term !== PRO_TERM) throw new Error("unexpected gapwise term");
+  if (
+    binding.term !== PRO_TERM ||
+    binding.amount !== PRO_AMOUNT_CAD_CENTS ||
+    binding.currency !== "cad"
+  ) {
+    throw new Error("payment intent contract mismatch");
+  }
 
   const { data: ledger, error } = await admin
     .from("stripe_checkout_sessions")
@@ -485,19 +584,11 @@ async function handleStripeEvent(admin: SupabaseClient, eventType: string, objec
     }
     case "charge.refunded":
       if (object["refunded"] === true) {
-        await markPaymentIntentTransition(
-          admin,
-          idValue(object["payment_intent"]),
-          "full_refund",
-        );
+        await markPaymentIntentTransition(admin, idValue(object["payment_intent"]), "full_refund");
       }
       return;
     case "charge.dispute.created":
-      await markPaymentIntentTransition(
-        admin,
-        idValue(object["payment_intent"]),
-        "dispute_opened",
-      );
+      await markPaymentIntentTransition(admin, idValue(object["payment_intent"]), "dispute_opened");
       return;
     case "charge.dispute.closed":
       await markPaymentIntentTransition(

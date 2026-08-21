@@ -223,11 +223,7 @@ export async function signInWithGoogle(redirectTo?: string): Promise<void> {
   if (!navigator.onLine) throw new Error("You're offline. Reconnect and try Google sign-in.");
 
   if (
-    googleRedirectRequiredForIos(
-      navigator.userAgent,
-      navigator.platform,
-      navigator.maxTouchPoints,
-    )
+    googleRedirectRequiredForIos(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
   ) {
     await beginGoogleOidcRedirect(clientId);
     return;
