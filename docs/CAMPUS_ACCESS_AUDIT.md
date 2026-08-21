@@ -1,8 +1,8 @@
 # UTM campus access audit
 
-Generated deterministically by `bun run routing:audit`. “Verified” in the routing table establishes a published door coordinate and building association; it does **not** imply public or step-free access unless those fields are affirmative. Unknown remains unknown and step-free routing fails closed. Unresolved text in the first table refers strictly to coordinate-qualified routing records; official identity-only evidence is reconciled separately below.
+Generated deterministically by `bun run routing:audit`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Graph-connected” means only that the point is attached to the bundled pedestrian graph; it does not by itself establish endpoint eligibility. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.
 
-| Building | Routable verified doors | Routable inferred approaches | Graph-connected points | Verified step-free doors | Unresolved |
+| Building | Verified geocoded doors | Inferred geocoded approaches | Graph-connected access points | Explicitly accessible geocoded doors | Unresolved |
 | --- | ---: | ---: | ---: | ---: | --- |
 | MN | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | DH | 3 | 0 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
@@ -41,9 +41,9 @@ UTM Facilities separately publishes named **barrier-free building entrances** in
 
 The official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) was visually reviewed on 2026-08-21 as a corroborating QA reference. Its accessibility markers reinforce that several academic-core buildings have multiple exterior access points, including clusters around MN/DH/IB/HM/CCT/DV/KN/XR/EH/OPH. Gapwise does **not** scrape, copy, reverse-engineer, or transpose proprietary marker positions into routing coordinates.
 
-The “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the routable coordinates still need an explicit source match to the named official entrance.
+The “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the geocoded coordinates still need an explicit source match to the named official entrance.
 
-| Building | Official named identities | Physical instances | Routable verified doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |
+| Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | AX | 1 | 1 | 0 | 0 | 1 | Main |
 | WC | 1 | 1 | 0 | 0 | 1 | Rear |
