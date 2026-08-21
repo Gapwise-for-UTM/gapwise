@@ -205,6 +205,25 @@ function orientedEdgeCoordinates(
   return traversal.from === traversal.edge.from ? shape : [...shape].reverse();
 }
 
+function sameCoordinate(a: [number, number], b: [number, number]): boolean {
+  return a[0] === b[0] && a[1] === b[1];
+}
+
+function routeCoordinates(
+  traversals: Traversal[],
+  nodes: Map<string, RoutingNode>,
+): [number, number][] {
+  const coordinates: [number, number][] = [];
+  for (const traversal of traversals) {
+    const shape = orientedEdgeCoordinates(traversal, nodes);
+    if (shape.length === 0) continue;
+    const previous = coordinates.at(-1);
+    const first = shape[0]!;
+    coordinates.push(...shape.slice(previous && sameCoordinate(previous, first) ? 1 : 0));
+  }
+  return coordinates;
+}
+
 function buildResult(
   traversals: Traversal[],
   startNodeId: string,
@@ -214,9 +233,7 @@ function buildResult(
   const routeNodes = [nodes.get(startNodeId)!];
   for (const traversal of traversals) routeNodes.push(nodes.get(traversal.to)!);
   const routeEdges = traversals.map((item) => item.edge);
-  const coordinates = traversals.flatMap((traversal, index) =>
-    orientedEdgeCoordinates(traversal, nodes).slice(index === 0 ? 0 : 1),
-  );
+  const coordinates = routeCoordinates(traversals, nodes);
   const indoorDistanceMeters = routeEdges
     .filter((edge) => edge.environment !== "outdoor")
     .reduce((sum, edge) => sum + edge.distanceMeters, 0);
