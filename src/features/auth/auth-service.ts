@@ -219,12 +219,15 @@ if (typeof window !== "undefined") {
 export async function signInWithGoogle(redirectTo?: string): Promise<void> {
   const clientId = import.meta.env["VITE_GOOGLE_CLIENT_ID"] as string | undefined;
   const useHostedFallback = import.meta.env["VITE_GOOGLE_AUTH_MODE"] === "oauth";
+  const directRedirectEnabled =
+    import.meta.env["VITE_GOOGLE_DIRECT_REDIRECT_ENABLED"] === "true";
   if (!clientId || useHostedFallback) return signInWithGoogleOAuthFallback(redirectTo);
   if (!navigator.onLine) throw new Error("You're offline. Reconnect and try Google sign-in.");
 
   if (
     googleRedirectRequiredForIos(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
   ) {
+    if (!directRedirectEnabled) return signInWithGoogleOAuthFallback(redirectTo);
     await beginGoogleOidcRedirect(clientId);
     return;
   }
@@ -239,10 +242,13 @@ export async function signInWithGoogle(redirectTo?: string): Promise<void> {
       settled = true;
       action();
     };
-    const fallBackToGapwiseRedirect = () => {
+    const fallBackFromGooglePrompt = () => {
       if (settled) return;
       settled = true;
-      void beginGoogleOidcRedirect(clientId).then(resolve, reject);
+      const fallback = directRedirectEnabled
+        ? beginGoogleOidcRedirect(clientId)
+        : signInWithGoogleOAuthFallback(redirectTo);
+      void fallback.then(resolve, reject);
     };
     accounts.id.initialize({
       client_id: clientId,
@@ -273,7 +279,7 @@ export async function signInWithGoogle(redirectTo?: string): Promise<void> {
         return;
       }
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        fallBackToGapwiseRedirect();
+        fallBackFromGooglePrompt();
       }
     });
   });
