@@ -4,25 +4,43 @@ import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/privat
 const THEME_KEY = "gapwise:theme";
 
 export type Theme = "light" | "dark";
+export type ThemePreference = Theme | "system";
 
-function initialTheme(): Theme {
-  if (typeof window === "undefined") return "light";
+function initialThemePreference(): ThemePreference {
+  if (typeof window === "undefined") return "system";
   const stored = window.localStorage.getItem(THEME_KEY);
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
+  const [preference, setPreference] = useState<ThemePreference>(initialThemePreference);
+  const [systemTheme, setSystemTheme] = useState<Theme>(() =>
+    typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light",
+  );
+  const theme = preference === "system" ? systemTheme : preference;
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = () => setSystemTheme(media.matches ? "dark" : "light");
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   useLayoutEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
-    window.localStorage.setItem(THEME_KEY, theme);
-  }, [theme]);
+    document.documentElement.dataset["theme"] = theme;
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem(THEME_KEY, preference);
+  }, [preference, theme]);
 
   return {
     theme,
-    toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+    preference,
+    setTheme: setPreference,
+    toggleTheme: () => setPreference(theme === "dark" ? "light" : "dark"),
   };
 }
 

@@ -130,6 +130,23 @@ describe("OAuth authentication", () => {
   });
 });
 
+describe("public appearance bootstrap", () => {
+  test("applies persisted Light, Dark, or System appearance before the app mounts", async () => {
+    const [html, initializer, legalPage] = await Promise.all([
+      readFile("index.html", "utf8"),
+      readFile("public/theme-init.js", "utf8"),
+      readFile("src/components/LegalPage.tsx", "utf8"),
+    ]);
+    expect(html.indexOf("/theme-init.js")).toBeLessThan(html.indexOf("/src/main.tsx"));
+    expect(initializer).toContain('localStorage.getItem("gapwise:theme")');
+    expect(initializer).toContain('matchMedia("(prefers-color-scheme: dark)")');
+    expect(initializer).toContain('classList.toggle("dark", dark)');
+    expect(legalPage).toContain('value: "system"');
+    expect(legalPage).toContain('role="radiogroup"');
+    expect(legalPage).not.toContain("bg-white");
+  });
+});
+
 describe("branding metadata", () => {
   test("declares valid manifest and existing logo assets", async () => {
     const manifest = JSON.parse(await readFile("public/site.webmanifest", "utf8"));

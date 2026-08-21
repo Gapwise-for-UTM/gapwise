@@ -155,6 +155,59 @@ test("route-driven navigation preserves a loaded timetable through history", asy
   guard.assertClean();
 });
 
+test("timetable export offers available terms and downloads light and dark PNGs", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "PNG export coverage runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+  await page.getByRole("button", { name: "Try a demo" }).click();
+  await expect(page).toHaveURL(/\/timetable$/);
+
+  await page.getByRole("button", { name: "Export image" }).click();
+  await expect(page.getByRole("dialog", { name: "Export timetable image" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Fall" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Winter" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Summer" })).toHaveCount(0);
+  await expect(page.getByRole("radio", { name: "All available terms" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await page.getByRole("radio", { name: "Light", exact: true }).click();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Generate image" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("gapwise-fall-winter-timetable.png");
+
+  await page.getByRole("button", { name: "Export image" }).click();
+  await page.getByRole("radio", { name: "Dark", exact: true }).click();
+  const darkDownloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Generate image" }).click();
+  const darkDownload = await darkDownloadPromise;
+  expect(darkDownload.suggestedFilename()).toBe("gapwise-fall-winter-timetable.png");
+  guard.assertClean();
+});
+
+for (const appearance of ["dark", "light"] as const) {
+  test(`public legal pages resolve the stored ${appearance} appearance before rendering`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "chromium", "Appearance coverage runs once in Chromium");
+    await page.addInitScript((theme) => localStorage.setItem("gapwise:theme", theme), appearance);
+
+    for (const path of ["/privacy", "/terms"] as const) {
+      await page.goto(path);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", appearance);
+      if (appearance === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
+      else await expect(page.locator("html")).not.toHaveClass(/dark/);
+      await expect(
+        page.getByRole("radio", { name: `${appearance === "dark" ? "Dark" : "Light"} appearance` }),
+      ).toHaveAttribute("aria-checked", "true");
+    }
+  });
+}
+
 test("campus explorer supports public building deep links and local search", async ({
   page,
 }, testInfo) => {
