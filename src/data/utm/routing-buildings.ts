@@ -106,7 +106,8 @@ type EntranceFeature = {
 const entranceFeatures = (JSON.parse(entranceDataRaw) as { features: EntranceFeature[] }).features;
 
 function resolveRoutingNodeId(feature: EntranceFeature): string | null {
-  if (feature.properties.routingNodeId?.trim()) return feature.properties.routingNodeId.trim();
+  if (feature.properties.routingNodeId?.trim())
+    return feature.properties.routingNodeId.trim();
   if (feature.properties.osmNodeId !== undefined) {
     return `osm-node-${feature.properties.osmNodeId}`;
   }
@@ -114,7 +115,8 @@ function resolveRoutingNodeId(feature: EntranceFeature): string | null {
 }
 
 function resolveVerificationMethod(feature: EntranceFeature): string | null {
-  if (feature.properties.verificationMethod?.trim()) return feature.properties.verificationMethod.trim();
+  if (feature.properties.verificationMethod?.trim())
+    return feature.properties.verificationMethod.trim();
   return feature.properties.osmNodeId !== undefined ? "published OSM entrance node" : null;
 }
 
