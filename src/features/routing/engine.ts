@@ -70,18 +70,49 @@ function floorDelta(a: RoutingNode, b: RoutingNode): number {
   return from === null || to === null ? 0 : Math.abs(to - from);
 }
 
+function entranceTraversalAllowed(from: RoutingNode, to: RoutingNode): boolean {
+  const blockedAccess = (node: RoutingNode) =>
+    node.kind === "building-entrance" &&
+    (node.access === "restricted" || node.access === "emergency_only");
+  if (blockedAccess(from) || blockedAccess(to)) return false;
+
+  if (
+    from.kind === "building-entrance" &&
+    from.buildingCode !== to.buildingCode &&
+    from.direction === "entry"
+  ) {
+    return false;
+  }
+  if (
+    to.kind === "building-entrance" &&
+    to.buildingCode !== from.buildingCode &&
+    to.direction === "exit"
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function traversalCost(
   traversal: Traversal,
   nodes: Map<string, RoutingNode>,
   preferences: RoutePreferences,
 ): number {
   const { edge } = traversal;
-  if (preferences.mode === "step-free" && (edge.stairs || edge.accessibility !== "accessible")) {
+  const from = nodes.get(traversal.from)!;
+  const to = nodes.get(traversal.to)!;
+
+  if (!entranceTraversalAllowed(from, to)) return Number.POSITIVE_INFINITY;
+  if (
+    preferences.mode === "step-free" &&
+    (edge.stairs ||
+      edge.accessibility !== "accessible" ||
+      (from.kind === "building-entrance" && from.accessibility !== "accessible") ||
+      (to.kind === "building-entrance" && to.accessibility !== "accessible"))
+  ) {
     return Number.POSITIVE_INFINITY;
   }
 
-  const from = nodes.get(traversal.from)!;
-  const to = nodes.get(traversal.to)!;
   let seconds = edge.distanceMeters / preferences.walkingSpeedMps;
 
   if (edge.environment === "outdoor" && preferences.mode === "prefer-indoor") {
@@ -154,6 +185,85 @@ function straightLineMeters(a: RoutingNode, b: RoutingNode): number {
   return 2 * 6_371_000 * Math.asin(Math.sqrt(h));
 }
 
+function orientedEdgeCoordinates(
+  traversal: Traversal,
+  nodes: Map<string, RoutingNode>,
+): [number, number][] {
+  const from = nodes.get(traversal.from)!;
+  const to = nodes.get(traversal.to)!;
+  const fallback: [number, number][] =
+    from.longitude === undefined ||
+    from.latitude === undefined ||
+    to.longitude === undefined ||
+    to.latitude === undefined
+      ? []
+      : [
+          [from.longitude, from.latitude],
+          [to.longitude, to.latitude],
+        ];
+  const shape = traversal.edge.geometry ?? fallback;
+  return traversal.from === traversal.edge.from ? shape : [...shape].reverse();
+}
+
+function sameCoordinate(a: [number, number], b: [number, number]): boolean {
+  return a[0] === b[0] && a[1] === b[1];
+}
+
+function routeCoordinates(
+  traversals: Traversal[],
+  nodes: Map<string, RoutingNode>,
+): [number, number][] {
+  const coordinates: [number, number][] = [];
+  for (const traversal of traversals) {
+    const shape = orientedEdgeCoordinates(traversal, nodes);
+    if (shape.length === 0) continue;
+    const previous = coordinates.at(-1);
+    const first = shape[0]!;
+    coordinates.push(...shape.slice(previous && sameCoordinate(previous, first) ? 1 : 0));
+  }
+  return coordinates;
+}
+
+function buildResult(
+  traversals: Traversal[],
+  startNodeId: string,
+  nodes: Map<string, RoutingNode>,
+  estimatedSeconds: number,
+): RouteResult {
+  const routeNodes = [nodes.get(startNodeId)!];
+  for (const traversal of traversals) routeNodes.push(nodes.get(traversal.to)!);
+  const routeEdges = traversals.map((item) => item.edge);
+  const coordinates = routeCoordinates(traversals, nodes);
+  const indoorDistanceMeters = routeEdges
+    .filter((edge) => edge.environment !== "outdoor")
+    .reduce((sum, edge) => sum + edge.distanceMeters, 0);
+  const outdoorDistanceMeters = routeEdges
+    .filter((edge) => edge.environment === "outdoor")
+    .reduce((sum, edge) => sum + edge.distanceMeters, 0);
+  const warnings: string[] = [];
+  if (routeEdges.some((edge) => edge.stairs)) warnings.push("Route includes stairs.");
+  if (routeEdges.some((edge) => edge.accessibility !== "accessible"))
+    warnings.push("Accessibility has not been verified for every part of this route.");
+  if (
+    routeNodes.some((node) => node.metadata?.verificationStatus === "inferred") ||
+    routeEdges.some((edge) => edge.metadata?.verificationStatus === "inferred")
+  )
+    warnings.push("One or more short route connections still await field verification.");
+  return {
+    nodes: routeNodes,
+    edges: routeEdges,
+    coordinates,
+    totalDistanceMeters: routeEdges.reduce((sum, edge) => sum + edge.distanceMeters, 0),
+    indoorDistanceMeters,
+    outdoorDistanceMeters,
+    estimatedSeconds,
+    floorChanges: routeNodes
+      .slice(1)
+      .reduce((total, node, index) => total + floorDelta(routeNodes[index]!, node), 0),
+    warnings,
+  };
+}
+
 /** Deterministic A* routing. Edge IDs break equal-cost ties for stable tests and UI. */
 export function findRoute(
   graph: RoutingGraph,
@@ -161,13 +271,34 @@ export function findRoute(
   endNodeId: string,
   preferences: RoutePreferences,
 ): RouteResult | null {
-  const { nodes, adjacency } = compileGraph(graph);
-  if (!nodes.has(startNodeId) || !nodes.has(endNodeId)) return null;
+  return findBestRoute(graph, [startNodeId], [endNodeId], preferences);
+}
 
-  if (startNodeId === endNodeId) {
+/** One deterministic A* search over all eligible origins and destinations. */
+export function findBestRoute(
+  graph: RoutingGraph,
+  startNodeIds: readonly string[],
+  endNodeIds: readonly string[],
+  preferences: RoutePreferences,
+): RouteResult | null {
+  const { nodes, adjacency } = compileGraph(graph);
+  const starts = [...new Set(startNodeIds)].filter((id) => nodes.has(id)).sort();
+  const targets = [...new Set(endNodeIds)].filter((id) => nodes.has(id)).sort();
+  if (
+    starts.length === 0 ||
+    targets.length === 0 ||
+    !Number.isFinite(preferences.walkingSpeedMps) ||
+    preferences.walkingSpeedMps <= 0
+  )
+    return null;
+  const targetSet = new Set(targets);
+
+  const shared = starts.find((id) => targetSet.has(id));
+  if (shared) {
     return {
-      nodes: [nodes.get(startNodeId)!],
+      nodes: [nodes.get(shared)!],
       edges: [],
+      coordinates: [],
       totalDistanceMeters: 0,
       indoorDistanceMeters: 0,
       outdoorDistanceMeters: 0,
@@ -177,13 +308,39 @@ export function findRoute(
     };
   }
 
-  const distances = new Map<string, number>([[startNodeId, 0]]);
+  const distances = new Map<string, number>(starts.map((id) => [id, 0]));
   const previous = new Map<string, Traversal>();
   const frontier = new MinPriorityQueue();
-  const destination = nodes.get(endNodeId)!;
+  // The metric heuristic is used only when every edge has located endpoints and
+  // its routing distance dominates endpoint geodesic distance. Otherwise h=0
+  // gives Dijkstra and preserves optimality for mixed indoor/outdoor graphs.
+  const metricSafe = graph.edges.every((edge) => {
+    const a = nodes.get(edge.from);
+    const b = nodes.get(edge.to);
+    if (
+      !a ||
+      !b ||
+      a.longitude === undefined ||
+      a.latitude === undefined ||
+      b.longitude === undefined ||
+      b.latitude === undefined
+    ) {
+      return false;
+    }
+    return straightLineMeters(a, b) <= edge.distanceMeters + 1e-6;
+  });
   const heuristic = (nodeId: string) =>
-    straightLineMeters(nodes.get(nodeId)!, destination) / preferences.walkingSpeedMps;
-  frontier.push({ id: startNodeId, priority: heuristic(startNodeId) });
+    metricSafe
+      ? Math.min(
+          ...targets.map(
+            (target) =>
+              straightLineMeters(nodes.get(nodeId)!, nodes.get(target)!) /
+              preferences.walkingSpeedMps,
+          ),
+        )
+      : 0;
+  for (const start of starts) frontier.push({ id: start, priority: heuristic(start) });
+  let reached: string | null = null;
 
   while (frontier.size > 0) {
     const entry = frontier.pop();
@@ -191,7 +348,10 @@ export function findRoute(
     const current = entry.id;
     const expectedPriority = (distances.get(current) ?? Infinity) + heuristic(current);
     if (entry.priority > expectedPriority) continue;
-    if (current === endNodeId) break;
+    if (targetSet.has(current)) {
+      reached = current;
+      break;
+    }
 
     for (const traversal of adjacency.get(current) ?? []) {
       const cost = traversalCost(traversal, nodes, preferences);
@@ -207,48 +367,14 @@ export function findRoute(
     }
   }
 
-  if (!previous.has(endNodeId)) return null;
+  if (!reached) return null;
   const traversals: Traversal[] = [];
-  let cursor = endNodeId;
-  while (cursor !== startNodeId) {
+  let cursor = reached;
+  while (!starts.includes(cursor)) {
     const traversal = previous.get(cursor);
     if (!traversal) return null;
     traversals.unshift(traversal);
     cursor = traversal.from;
   }
-
-  const routeNodes = [nodes.get(startNodeId)!];
-  for (const traversal of traversals) routeNodes.push(nodes.get(traversal.to)!);
-  const routeEdges = traversals.map((item) => item.edge);
-  const indoorDistanceMeters = routeEdges
-    .filter((edge) => edge.environment === "indoor" || edge.environment === "covered")
-    .reduce((sum, edge) => sum + edge.distanceMeters, 0);
-  const outdoorDistanceMeters = routeEdges
-    .filter((edge) => edge.environment === "outdoor")
-    .reduce((sum, edge) => sum + edge.distanceMeters, 0);
-  const floorChanges = routeNodes
-    .slice(1)
-    .reduce((total, node, index) => total + floorDelta(routeNodes[index]!, node), 0);
-  const warnings: string[] = [];
-  if (routeEdges.some((edge) => edge.stairs)) warnings.push("Route includes stairs.");
-  if (routeEdges.some((edge) => edge.accessibility !== "accessible")) {
-    warnings.push("Accessibility has not been verified for every part of this route.");
-  }
-  if (
-    routeNodes.some((node) => node.metadata?.verificationStatus === "inferred") ||
-    routeEdges.some((edge) => edge.metadata?.verificationStatus === "inferred")
-  ) {
-    warnings.push("One or more short route connections still await field verification.");
-  }
-
-  return {
-    nodes: routeNodes,
-    edges: routeEdges,
-    totalDistanceMeters: routeEdges.reduce((sum, edge) => sum + edge.distanceMeters, 0),
-    indoorDistanceMeters,
-    outdoorDistanceMeters,
-    estimatedSeconds: distances.get(endNodeId) ?? 0,
-    floorChanges,
-    warnings,
-  };
+  return buildResult(traversals, cursor, nodes, distances.get(reached) ?? 0);
 }

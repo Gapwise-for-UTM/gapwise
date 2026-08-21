@@ -84,6 +84,9 @@ describe("bundled UTM routing data", () => {
         expect(entrance.metadata.source.length).toBeGreaterThan(0);
         expect(entrance.metadata.sourceUrl).toStartWith("https://");
         expect(entrance.metadata.lastVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(entrance.routingNodeId.length).toBeGreaterThan(0);
+        expect(entrance.verificationMethod.length).toBeGreaterThan(0);
+        expect(entrance.sourceIdentifier.length).toBeGreaterThan(0);
         if (entrance.kind === "approach") {
           expect(entrance.metadata.verificationStatus).toBe("inferred");
           expect(entrance.notes?.length).toBeGreaterThan(0);
@@ -99,7 +102,7 @@ describe("bundled UTM routing data", () => {
         findRoute(
           UTM_ROUTING_GRAPH,
           origin.entranceNodeId,
-          `osm-node-${entrance.osmNodeId}`,
+          entrance.routingNodeId,
           DEFAULT_ROUTE_PREFERENCES,
         ),
       );

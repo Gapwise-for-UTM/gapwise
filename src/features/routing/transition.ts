@@ -3,7 +3,7 @@ import { getCampusBuilding } from "@/data/utm/campus";
 import type { Meeting } from "@/lib/timetable-types";
 import { campusAccessPointForMeeting, isCampusAccessMeeting } from "./campus-day";
 import { resolveMeetingLocation } from "./location-resolver";
-import { findRoute } from "./engine";
+import { findBestRoute } from "./engine";
 import type { RoutePreferences, RoutingGraph, RoutingNode, TransitionRoute } from "./types";
 
 export type TransitionPlanner = (
@@ -11,6 +11,8 @@ export type TransitionPlanner = (
   to: Meeting,
   preferences: RoutePreferences,
 ) => TransitionRoute;
+
+type EntranceRole = "origin" | "destination";
 
 export function haversineMeters(a: [number, number], b: [number, number]): number {
   const radians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -35,9 +37,23 @@ function findRoomNode(graph: RoutingGraph, buildingCode: string, room: string | 
   );
 }
 
-function findEntranceNodes(graph: RoutingGraph, buildingCode: string): RoutingNode[] {
+function entranceEligibleForRole(node: RoutingNode, role: EntranceRole): boolean {
+  if (node.access === "restricted" || node.access === "emergency_only") return false;
+  if (role === "origin" && node.direction === "entry") return false;
+  if (role === "destination" && node.direction === "exit") return false;
+  return true;
+}
+
+function findEntranceNodes(
+  graph: RoutingGraph,
+  buildingCode: string,
+  role?: EntranceRole,
+): RoutingNode[] {
   return graph.nodes.filter(
-    (node) => node.kind === "building-entrance" && node.buildingCode === buildingCode,
+    (node) =>
+      node.kind === "building-entrance" &&
+      node.buildingCode === buildingCode &&
+      (!role || entranceEligibleForRole(node, role)),
   );
 }
 
@@ -122,6 +138,7 @@ export function planMeetingTransition(
         estimatedSeconds: 0,
         floorChanges: 0,
         warnings: [],
+        coordinates: [],
       },
       displayCoordinates: [],
       warnings: [],
@@ -136,10 +153,42 @@ export function planMeetingTransition(
   const destinationRoom = destination?.buildingCode
     ? findRoomNode(graph, destination.buildingCode, destination.room)
     : null;
-  const originEntrances = origin?.buildingCode ? findEntranceNodes(graph, origin.buildingCode) : [];
-  const destinationEntrances = destination?.buildingCode
+  const allOriginEntrances = origin?.buildingCode
+    ? findEntranceNodes(graph, origin.buildingCode)
+    : [];
+  const allDestinationEntrances = destination?.buildingCode
     ? findEntranceNodes(graph, destination.buildingCode)
     : [];
+  const originEntrances = origin?.buildingCode
+    ? findEntranceNodes(graph, origin.buildingCode, "origin")
+    : [];
+  const destinationEntrances = destination?.buildingCode
+    ? findEntranceNodes(graph, destination.buildingCode, "destination")
+    : [];
+
+  if (
+    origin?.buildingCode &&
+    !originRoom &&
+    allOriginEntrances.length > 0 &&
+    originEntrances.length === 0
+  ) {
+    return locationUnavailable(
+      `No eligible departure entrance is available for ${origin.buildingCode}.`,
+      ["Known restricted, emergency-only, or entry-only doors are never used as departure points."],
+    );
+  }
+  if (
+    destination?.buildingCode &&
+    !destinationRoom &&
+    allDestinationEntrances.length > 0 &&
+    destinationEntrances.length === 0
+  ) {
+    return locationUnavailable(
+      `No eligible arrival entrance is available for ${destination.buildingCode}.`,
+      ["Known restricted, emergency-only, or exit-only doors are never used as arrival points."],
+    );
+  }
+
   const starts = originAccessNode
     ? [originAccessNode]
     : originRoom
@@ -158,36 +207,14 @@ export function planMeetingTransition(
   }
 
   if (starts.length > 0 && ends.length > 0) {
-    const result = starts
-      .flatMap((start) =>
-        ends.map((end) => ({
-          start,
-          end,
-          result: findRoute(graph, start.id, end.id, preferences),
-        })),
-      )
-      .filter(
-        (
-          candidate,
-        ): candidate is {
-          start: RoutingNode;
-          end: RoutingNode;
-          result: NonNullable<ReturnType<typeof findRoute>>;
-        } => candidate.result !== null,
-      )
-      .sort(
-        (a, b) =>
-          a.result.estimatedSeconds - b.result.estimatedSeconds ||
-          a.start.id.localeCompare(b.start.id) ||
-          a.end.id.localeCompare(b.end.id),
-      )[0]?.result;
+    const result = findBestRoute(
+      graph,
+      starts.map(({ id }) => id),
+      ends.map(({ id }) => id),
+      preferences,
+    );
     if (result) {
-      const displayCoordinates = result.nodes
-        .filter(
-          (node): node is RoutingNode & { longitude: number; latitude: number } =>
-            typeof node.longitude === "number" && typeof node.latitude === "number",
-        )
-        .map((node) => [node.longitude, node.latitude] as [number, number]);
+      const displayCoordinates = result.coordinates;
       const indoorComplete = Boolean(originRoom && destinationRoom);
       const warnings = [...result.warnings];
       if (
