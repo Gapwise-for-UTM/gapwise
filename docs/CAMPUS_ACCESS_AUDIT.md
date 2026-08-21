@@ -1,6 +1,6 @@
 # UTM campus access audit
 
-Generated deterministically by `bun run routing:audit`. “Verified” in the routing table establishes a published door coordinate and building association; it does **not** imply public or step-free access unless those fields are affirmative. Unknown remains unknown and step-free routing fails closed.
+Generated deterministically by `bun run routing:audit`. “Verified” in the routing table establishes a published door coordinate and building association; it does **not** imply public or step-free access unless those fields are affirmative. Unknown remains unknown and step-free routing fails closed. Unresolved text in the first table refers strictly to coordinate-qualified routing records; official identity-only evidence is reconciled separately below.
 
 | Building | Routable verified doors | Routable inferred approaches | Graph-connected points | Verified step-free doors | Unresolved |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -11,20 +11,20 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the ro
 | CCT | 1 | 0 | 1 | 1 | Ordinary public access status is not affirmatively published. |
 | HM | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | KN | 3 | 0 | 3 | 3 | Ordinary public access status is not affirmatively published. |
-| IC | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
+| IC | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
 | RAWC | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | XR | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | HB | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | AX | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| WC | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
-| CUP | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
+| WC | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| CUP | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
 | DW | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| FCSH | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
-| GF | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
-| NSB | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
-| PL | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
-| BG | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
-| LH | 0 | 0 | 0 | 0 | No routable exterior access point with publishable geometry is recorded. |
+| FCSH | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| GF | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| NSB | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| PL | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| BG | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| LH | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
 | EH | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
 | LL | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
 | MV | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
