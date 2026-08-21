@@ -70,18 +70,49 @@ function floorDelta(a: RoutingNode, b: RoutingNode): number {
   return from === null || to === null ? 0 : Math.abs(to - from);
 }
 
+function entranceTraversalAllowed(from: RoutingNode, to: RoutingNode): boolean {
+  const blockedAccess = (node: RoutingNode) =>
+    node.kind === "building-entrance" &&
+    (node.access === "restricted" || node.access === "emergency_only");
+  if (blockedAccess(from) || blockedAccess(to)) return false;
+
+  if (
+    from.kind === "building-entrance" &&
+    from.buildingCode !== to.buildingCode &&
+    from.direction === "entry"
+  ) {
+    return false;
+  }
+  if (
+    to.kind === "building-entrance" &&
+    to.buildingCode !== from.buildingCode &&
+    to.direction === "exit"
+  ) {
+    return false;
+  }
+  return true;
+}
+
 function traversalCost(
   traversal: Traversal,
   nodes: Map<string, RoutingNode>,
   preferences: RoutePreferences,
 ): number {
   const { edge } = traversal;
-  if (preferences.mode === "step-free" && (edge.stairs || edge.accessibility !== "accessible")) {
+  const from = nodes.get(traversal.from)!;
+  const to = nodes.get(traversal.to)!;
+
+  if (!entranceTraversalAllowed(from, to)) return Number.POSITIVE_INFINITY;
+  if (
+    preferences.mode === "step-free" &&
+    (edge.stairs ||
+      edge.accessibility !== "accessible" ||
+      (from.kind === "building-entrance" && from.accessibility !== "accessible") ||
+      (to.kind === "building-entrance" && to.accessibility !== "accessible"))
+  ) {
     return Number.POSITIVE_INFINITY;
   }
 
-  const from = nodes.get(traversal.from)!;
-  const to = nodes.get(traversal.to)!;
   let seconds = edge.distanceMeters / preferences.walkingSpeedMps;
 
   if (edge.environment === "outdoor" && preferences.mode === "prefer-indoor") {

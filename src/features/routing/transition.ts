@@ -12,6 +12,8 @@ export type TransitionPlanner = (
   preferences: RoutePreferences,
 ) => TransitionRoute;
 
+type EntranceRole = "origin" | "destination";
+
 export function haversineMeters(a: [number, number], b: [number, number]): number {
   const radians = (degrees: number) => (degrees * Math.PI) / 180;
   const earthRadius = 6_371_000;
@@ -35,9 +37,23 @@ function findRoomNode(graph: RoutingGraph, buildingCode: string, room: string | 
   );
 }
 
-function findEntranceNodes(graph: RoutingGraph, buildingCode: string): RoutingNode[] {
+function entranceEligibleForRole(node: RoutingNode, role: EntranceRole): boolean {
+  if (node.access === "restricted" || node.access === "emergency_only") return false;
+  if (role === "origin" && node.direction === "entry") return false;
+  if (role === "destination" && node.direction === "exit") return false;
+  return true;
+}
+
+function findEntranceNodes(
+  graph: RoutingGraph,
+  buildingCode: string,
+  role?: EntranceRole,
+): RoutingNode[] {
   return graph.nodes.filter(
-    (node) => node.kind === "building-entrance" && node.buildingCode === buildingCode,
+    (node) =>
+      node.kind === "building-entrance" &&
+      node.buildingCode === buildingCode &&
+      (!role || entranceEligibleForRole(node, role)),
   );
 }
 
@@ -137,10 +153,41 @@ export function planMeetingTransition(
   const destinationRoom = destination?.buildingCode
     ? findRoomNode(graph, destination.buildingCode, destination.room)
     : null;
-  const originEntrances = origin?.buildingCode ? findEntranceNodes(graph, origin.buildingCode) : [];
-  const destinationEntrances = destination?.buildingCode
+  const allOriginEntrances = origin?.buildingCode
+    ? findEntranceNodes(graph, origin.buildingCode)
+    : [];
+  const allDestinationEntrances = destination?.buildingCode
     ? findEntranceNodes(graph, destination.buildingCode)
     : [];
+  const originEntrances = origin?.buildingCode
+    ? findEntranceNodes(graph, origin.buildingCode, "origin")
+    : [];
+  const destinationEntrances = destination?.buildingCode
+    ? findEntranceNodes(graph, destination.buildingCode, "destination")
+    : [];
+
+  if (
+    origin?.buildingCode &&
+    !originRoom &&
+    allOriginEntrances.length > 0 &&
+    originEntrances.length === 0
+  ) {
+    return locationUnavailable(`No eligible departure entrance is available for ${origin.buildingCode}.`, [
+      "Known restricted, emergency-only, or entry-only doors are never used as departure points.",
+    ]);
+  }
+  if (
+    destination?.buildingCode &&
+    !destinationRoom &&
+    allDestinationEntrances.length > 0 &&
+    destinationEntrances.length === 0
+  ) {
+    return locationUnavailable(
+      `No eligible arrival entrance is available for ${destination.buildingCode}.`,
+      ["Known restricted, emergency-only, or exit-only doors are never used as arrival points."],
+    );
+  }
+
   const starts = originAccessNode
     ? [originAccessNode]
     : originRoom
