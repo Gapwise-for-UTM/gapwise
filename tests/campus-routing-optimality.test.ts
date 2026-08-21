@@ -42,7 +42,8 @@ class OracleMinHeap {
       const right = left + 1;
       let next = index;
       if (left < this.items.length && this.items[left]!.cost < this.items[next]!.cost) next = left;
-      if (right < this.items.length && this.items[right]!.cost < this.items[next]!.cost) next = right;
+      if (right < this.items.length && this.items[right]!.cost < this.items[next]!.cost)
+        next = right;
       if (next === index) break;
       [this.items[index], this.items[next]] = [this.items[next]!, this.items[index]!];
       index = next;
@@ -161,14 +162,15 @@ function dijkstraDistances(
 const endpointNodes = UTM_ROUTING_GRAPH.nodes.filter(
   (node) => node.kind === "building-entrance" && Boolean(node.buildingCode),
 );
-const preferenceMatrix: RoutePreferences[] = (["fastest", "prefer-indoor", "step-free"] as const)
-  .flatMap((mode) =>
-    [0.8, DEFAULT_ROUTE_PREFERENCES.walkingSpeedMps, 2].map((walkingSpeedMps) => ({
-      ...DEFAULT_ROUTE_PREFERENCES,
-      mode,
-      walkingSpeedMps,
-    })),
-  );
+const preferenceMatrix: RoutePreferences[] = (
+  ["fastest", "prefer-indoor", "step-free"] as const
+).flatMap((mode) =>
+  [0.8, DEFAULT_ROUTE_PREFERENCES.walkingSpeedMps, 2].map((walkingSpeedMps) => ({
+    ...DEFAULT_ROUTE_PREFERENCES,
+    mode,
+    walkingSpeedMps,
+  })),
+);
 
 describe("campus routing optimality oracle", () => {
   test("matches an independent Dijkstra oracle for every exterior endpoint pair and routing mode", () => {
