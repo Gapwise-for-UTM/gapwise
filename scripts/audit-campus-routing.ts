@@ -1,9 +1,10 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { UTM_BUILDINGS } from "../src/data/utm/building-registry";
 import { officialEntranceCandidatesForBuilding } from "../src/data/utm/official-entrance-candidates";
 
-const root = resolve(import.meta.dir, "..");
+const root = fileURLToPath(new URL("../", import.meta.url));
 const entrances = JSON.parse(
   await readFile(resolve(root, "src/data/utm/entrances.geojson"), "utf8"),
 );
