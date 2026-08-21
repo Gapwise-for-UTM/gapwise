@@ -13,7 +13,8 @@ let adminClient: SupabaseClient | null = null;
 
 type JsonRecord = Record<string, unknown>;
 type PurchaseStatus = "pending" | "paid" | "expired" | "failed" | "refunded" | "disputed";
-export type PurchaseTransition = "payment_succeeded" | "full_refund" | "dispute_opened" | "dispute_won" | "dispute_lost";
+export type PurchaseTransition =
+  "payment_succeeded" | "full_refund" | "dispute_opened" | "dispute_won" | "dispute_lost";
 
 type CheckoutSession = {
   id: string;
