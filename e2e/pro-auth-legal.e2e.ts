@@ -39,7 +39,7 @@ test("visible Pro planning journey accepts work and exposes safe block actions",
   await academicWork.getByRole("button", { name: "Add coursework" }).click();
   await academicWork.getByRole("button", { name: /Build my plan/i }).click();
   await expect(academicWork.getByRole("heading", { name: "Proposed study plan" })).toBeVisible();
-  await expect(academicWork.getByText(/MAT157 · Problem Set 4/)).toBeVisible();
+  await expect(academicWork.getByText(/MAT157 · Problem Set 4/).first()).toBeVisible();
   await academicWork.getByRole("button", { name: "Add to timetable" }).click();
   const rescheduleButton = academicWork.getByRole("button", {
     name: /Reschedule MAT157 Problem Set 4/,
