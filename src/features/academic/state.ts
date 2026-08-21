@@ -118,6 +118,12 @@ export function completeBlock(state: AcademicState, blockId: string): AcademicSt
   };
 }
 
+function localNoonForCalendarDate(date: string): Date {
+  const [year, month, day] = date.split("-").map(Number);
+  if (!year || !month || !day) throw new Error("Study date is invalid.");
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
+}
+
 export function rescheduleAcceptedBlock(
   state: AcademicState,
   blockId: string,
@@ -140,6 +146,7 @@ export function rescheduleAcceptedBlock(
     throw new Error("Study work must finish before the coursework deadline.");
 
   const date = torontoDateForInstant(new Date(startMs));
+  const torontoCivilDate = localNoonForCalendarDate(date);
   const clock = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Toronto",
     hour: "2-digit",
@@ -160,7 +167,7 @@ export function rescheduleAcceptedBlock(
   if (
     fixedMeetings.some(
       (meeting) =>
-        meetingOccursOnDate(meeting, new Date(startMs)) &&
+        meetingOccursOnDate(meeting, torontoCivilDate) &&
         overlaps(meeting.startTime, meeting.endTime),
     )
   )

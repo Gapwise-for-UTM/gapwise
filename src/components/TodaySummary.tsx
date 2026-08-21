@@ -46,6 +46,9 @@ export const TodaySummary = memo(function TodaySummary({
     gapPreferences,
     planTransition,
   });
+  const importedMeetingCount = meetings.filter(
+    (meeting) => meeting.sectionCode !== "STUDY" && meeting.sectionCode !== "PERSONAL",
+  ).length;
 
   let title: string;
   let detail: string | null = null;
@@ -156,7 +159,8 @@ export const TodaySummary = memo(function TodaySummary({
           aria-live="polite"
           className="surface mb-3 mt-6 border-accent/25 bg-accent/6 px-4 py-3 text-sm font-medium"
         >
-          Schedule ready — {meetings.length} {meetings.length === 1 ? "class" : "classes"} imported.
+          Schedule ready — {importedMeetingCount} {importedMeetingCount === 1 ? "class" : "classes"}{" "}
+          imported.
         </p>
       ) : null}
       <section

@@ -44,6 +44,7 @@ type GoogleCredentialResponse = { credential?: string };
 type GooglePromptMoment = {
   isNotDisplayed(): boolean;
   isSkippedMoment(): boolean;
+  isDismissedMoment(): boolean;
 };
 type GoogleAccounts = {
   id: {
@@ -52,6 +53,8 @@ type GoogleAccounts = {
       nonce: string;
       callback(response: GoogleCredentialResponse): void;
       cancel_on_tap_outside: boolean;
+      use_fedcm_for_prompt: boolean;
+      itp_support: boolean;
     }): void;
     prompt(callback: (notification: GooglePromptMoment) => void): void;
     cancel(): void;
@@ -93,11 +96,15 @@ function base64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+function hexadecimal(bytes: Uint8Array): string {
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
 export async function createGoogleNonce(): Promise<{ raw: string; hashed: string }> {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const raw = base64Url(bytes);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  return { raw, hashed: base64Url(new Uint8Array(digest)) };
+  return { raw, hashed: hexadecimal(new Uint8Array(digest)) };
 }
 
 export async function signInWithGoogle(redirectTo?: string): Promise<void> {
@@ -110,35 +117,47 @@ export async function signInWithGoogle(redirectTo?: string): Promise<void> {
   const nonce = await createGoogleNonce();
   await new Promise<void>((resolve, reject) => {
     let settled = false;
-    const finish = (action: () => void) => {
+    const settle = (action: () => void) => {
       if (settled) return;
       settled = true;
       action();
+    };
+    const fallBackToHostedOAuth = () => {
+      if (settled) return;
+      settled = true;
+      void signInWithGoogleOAuthFallback(redirectTo).then(resolve, reject);
     };
     accounts.id.initialize({
       client_id: clientId,
       nonce: nonce.hashed,
       cancel_on_tap_outside: true,
+      use_fedcm_for_prompt: true,
+      itp_support: true,
       callback: (response) => {
         if (!response.credential) {
-          finish(() => reject(new Error("Google sign-in was cancelled.")));
+          settle(() => reject(new Error("Google sign-in was cancelled.")));
           return;
         }
         void supabase.auth
           .signInWithIdToken({ provider: "google", token: response.credential, nonce: nonce.raw })
           .then(({ error }) => {
             if (error)
-              finish(() => reject(new Error("We couldn't complete Google sign-in. Try again.")));
-            else finish(resolve);
+              settle(() => reject(new Error("We couldn't complete Google sign-in. Try again.")));
+            else settle(resolve);
           })
           .catch(() =>
-            finish(() => reject(new Error("We couldn't complete Google sign-in. Try again."))),
+            settle(() => reject(new Error("We couldn't complete Google sign-in. Try again."))),
           );
       },
     });
     accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment())
-        finish(() => reject(new Error("Google sign-in was cancelled or blocked.")));
+      if (notification.isDismissedMoment()) {
+        settle(() => reject(new Error("Google sign-in was cancelled.")));
+        return;
+      }
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        fallBackToHostedOAuth();
+      }
     });
   });
 }
@@ -199,7 +218,7 @@ export function consumeOAuthError(
   if (!error) return null;
   for (const key of ["error", "error_code", "error_description"]) url.searchParams.delete(key);
   history.replaceState(history.state, "", `${url.pathname}${url.search}${url.hash}`);
-  return `Sign-in failed: ${error.replace(/\+/g, " ")}`;
+  return "We couldn't complete sign-in. Try again.";
 }
 
 export async function completeLocalSignOut(

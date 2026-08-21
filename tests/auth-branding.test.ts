@@ -30,6 +30,8 @@ describe("OAuth authentication", () => {
     expect(serviceSource).toContain("target.origin !== window.location.origin");
     expect(serviceSource).toContain("redirectTo: authRedirectTarget(redirectTo)");
     expect(serviceSource).toContain("assertCanPersistAuthRedirect()");
+    expect(serviceSource).toContain("use_fedcm_for_prompt: true");
+    expect(serviceSource).toContain("isDismissedMoment()");
     expect(clientSource).toContain("detectSessionInUrl: true");
     expect(clientSource).toContain('flowType: "pkce"');
   });
@@ -54,15 +56,15 @@ describe("OAuth authentication", () => {
     expect(getAccountIdentity(user({ email: "student@example.com" }))).toBe("student@example.com");
     expect(getAccountIdentity(user({}))).toBe("Signed in");
   });
-  test("creates a strong hashed Google nonce for the GIS token exchange", async () => {
+  test("creates a strong SHA-256 hexadecimal Google nonce for the GIS token exchange", async () => {
     const first = await createGoogleNonce();
     const second = await createGoogleNonce();
     expect(first.raw).not.toBe(first.hashed);
     expect(first.raw.length).toBeGreaterThanOrEqual(43);
-    expect(first.hashed.length).toBe(43);
+    expect(first.hashed).toMatch(/^[0-9a-f]{64}$/);
     expect(second.raw).not.toBe(first.raw);
   });
-  test("parses OAuth errors and cleans the URL without navigation", () => {
+  test("cleans provider OAuth errors without exposing provider internals", () => {
     let replacement = "";
     const message = consumeOAuthError(
       { href: "https://gapwise.test/?error=access_denied&error_description=User+cancelled#top" },
@@ -73,7 +75,7 @@ describe("OAuth authentication", () => {
         },
       },
     );
-    expect(message).toBe("Sign-in failed: User cancelled");
+    expect(message).toBe("We couldn't complete sign-in. Try again.");
     expect(replacement).toBe("/#top");
   });
 });

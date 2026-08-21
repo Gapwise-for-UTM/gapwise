@@ -180,6 +180,7 @@ export function MobileToday({
   const firstValue = useFirstValueArrival(location.pathname.replace(/\/$/, "") === "/today");
   const { setRouteTargetId } = useMobileRouteTarget();
   const { eyebrow, title, detail, rows } = present(state, now, selectedTerm);
+  const plannedWork = state.plannedWork.current ?? state.plannedWork.next;
   const canOpenRoute =
     state.kind === "gap" || state.kind === "before-first" || state.kind === "in-class";
   const routeTargetId =
@@ -236,6 +237,20 @@ export function MobileToday({
               );
             })}
           </ul>
+        ) : null}
+
+        {plannedWork ? (
+          <div className="mt-4 border-t border-border pt-4 text-sm" aria-label="Planned study work">
+            <p className="font-mono text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              {state.plannedWork.current ? "Planned now" : "Planned next"}
+            </p>
+            <p className="mt-1 font-medium">
+              {plannedWork.courseCode} · {plannedWork.courseName}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {formatTime(plannedWork.startTime)}–{formatTime(plannedWork.endTime)}
+            </p>
+          </div>
         ) : null}
 
         {state.kind === "gap" ? (

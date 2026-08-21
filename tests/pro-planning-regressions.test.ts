@@ -174,6 +174,27 @@ describe("Pro planning release regressions", () => {
     expect(moved.proposalRevision).toBeNull();
   });
 
+  test("checks fixed collisions against the Toronto civil date when UTC is already tomorrow", () => {
+    const item = coursework();
+    const block = acceptedBlock(item.id);
+    const state = { coursework: [item], blocks: [block], proposalRevision: "r1" };
+    const lateTuesday = meeting({
+      weekday: "Tuesday",
+      startTime: 22 * 60 + 45,
+      endTime: 23 * 60 + 45,
+      dateRange: { startDate: "2026-09-08", endDate: "2026-09-08" },
+    });
+    expect(() =>
+      rescheduleAcceptedBlock(
+        state,
+        block.id,
+        "2026-09-09T02:30:00.000Z",
+        [lateTuesday],
+        new Date("2026-09-07T12:00:00.000Z"),
+      ),
+    ).toThrow("overlaps");
+  });
+
   test("rejects collisions, elapsed/deadline moves, study collisions, and immutable history", () => {
     const item = coursework();
     const block = acceptedBlock(item.id);
