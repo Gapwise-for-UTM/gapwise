@@ -155,6 +155,30 @@ test("route-driven navigation preserves a loaded timetable through history", asy
   guard.assertClean();
 });
 
+test("timetable export offers available terms and downloads a PNG", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "PNG export coverage runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+  await page.getByRole("button", { name: "Try a demo" }).click();
+  await expect(page).toHaveURL(/\/timetable$/);
+
+  await page.getByRole("button", { name: "Export image" }).click();
+  await expect(page.getByRole("dialog", { name: "Export timetable image" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Fall" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Winter" })).toBeVisible();
+  await expect(page.getByRole("radio", { name: "Summer" })).toHaveCount(0);
+  await expect(page.getByRole("radio", { name: "All available terms" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Generate image" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("gapwise-fall-winter-timetable.png");
+  guard.assertClean();
+});
+
 test("campus explorer supports public building deep links and local search", async ({
   page,
 }, testInfo) => {

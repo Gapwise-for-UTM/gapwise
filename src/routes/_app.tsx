@@ -22,6 +22,7 @@ import { useAppNavigation, type AppDestination } from "@/features/navigation/use
 import { useSelectedScheduleContext } from "@/features/schedule/use-selected-schedule-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
+import { TimetableExportDialog } from "@/components/TimetableExportDialog";
 import { TodaySummary } from "@/components/TodaySummary";
 import { UploadPanel } from "@/components/UploadPanel";
 import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
@@ -65,6 +66,7 @@ import {
   type AcademicState,
 } from "@/features/academic/state";
 import { plannedWorkMeetings } from "@/features/academic/integration";
+import { composeSchedule } from "@/lib/personal-scheduler";
 import { useEntitlement } from "@/features/entitlements/use-entitlement";
 
 const DayRoute = lazy(() =>
@@ -350,6 +352,13 @@ function AppLayout() {
     () => [...termMeetings, ...plannedWorkMeetings(academic, term)],
     [academic, term, termMeetings],
   );
+  const exportMeetings = useMemo(
+    () => [
+      ...composeSchedule(meetings ?? EMPTY_MEETINGS, personalItems),
+      ...terms.flatMap((availableTerm) => plannedWorkMeetings(academic, availableTerm)),
+    ],
+    [academic, meetings, personalItems, terms],
+  );
   const { now: todayNow, state: todayState } = useTodayState({
     meetings: timetableWithWork,
     selectedTerm: term,
@@ -434,6 +443,7 @@ function AppLayout() {
               }}
               onEditPersonal={personalCommands.openEdit}
               onDeletePersonal={personalCommands.remove}
+              exportAction={<TimetableExportDialog meetings={exportMeetings} />}
             />
           ) : null}
           {meetings && mobileTab === "gaps" ? (
@@ -931,6 +941,7 @@ function AppLayout() {
                       gaps={gaps}
                       headerAction={
                         <div className="flex gap-2">
+                          <TimetableExportDialog meetings={exportMeetings} />
                           <button
                             type="button"
                             onClick={() => setAcademicOpen(true)}
