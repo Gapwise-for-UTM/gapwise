@@ -46,6 +46,9 @@ export const TodaySummary = memo(function TodaySummary({
     gapPreferences,
     planTransition,
   });
+  const importedMeetingCount = meetings.filter(
+    (meeting) => meeting.sectionCode !== "STUDY" && meeting.sectionCode !== "PERSONAL",
+  ).length;
 
   let title: string;
   let detail: string | null = null;
@@ -156,7 +159,8 @@ export const TodaySummary = memo(function TodaySummary({
           aria-live="polite"
           className="surface mb-3 mt-6 border-accent/25 bg-accent/6 px-4 py-3 text-sm font-medium"
         >
-          Schedule ready — {meetings.length} {meetings.length === 1 ? "class" : "classes"} imported.
+          Schedule ready — {importedMeetingCount} {importedMeetingCount === 1 ? "class" : "classes"}{" "}
+          imported.
         </p>
       ) : null}
       <section
@@ -179,6 +183,24 @@ export const TodaySummary = memo(function TodaySummary({
             <SecondaryIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
             {secondary}
           </p>
+        ) : null}
+        {summary.plannedWork.current || summary.plannedWork.next ? (
+          <div className="mt-3 border-t border-border pt-3 text-sm" aria-label="Planned study work">
+            <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {summary.plannedWork.current ? "Planned now" : "Planned next"}
+            </p>
+            {(() => {
+              const work = summary.plannedWork.current ?? summary.plannedWork.next!;
+              return (
+                <p className="mt-1 font-medium">
+                  {work.courseCode} · {work.courseName}
+                  <span className="ml-2 font-normal text-muted-foreground">
+                    {formatTime(work.startTime)}–{formatTime(work.endTime)}
+                  </span>
+                </p>
+              );
+            })()}
+          </div>
         ) : null}
 
         {showPlanner ? (

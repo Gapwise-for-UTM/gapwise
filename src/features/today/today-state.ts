@@ -30,7 +30,12 @@ export type GapDestinationContext = {
   planTransition: TransitionPlanner;
 };
 
-export type TodayState =
+export type PlannedWorkContext = {
+  current: Meeting | null;
+  next: Meeting | null;
+};
+
+export type TodayState = (
   | { kind: "before"; first: TodayOccurrence }
   | { kind: "ended"; next: TodayOccurrence | null }
   | { kind: "dates-unavailable" }
@@ -51,7 +56,8 @@ export type TodayState =
       destinationContext: GapDestinationContext;
     }
   | { kind: "done"; next: TodayOccurrence | null }
-  | { kind: "no-classes"; next: TodayOccurrence | null };
+  | { kind: "no-classes"; next: TodayOccurrence | null }
+) & { plannedWork: PlannedWorkContext };
 
 export type TodayStateInput = {
   meetings: Meeting[];
@@ -109,15 +115,33 @@ export function buildTodayState({
   planTransition,
   now,
 }: TodayStateInput): TodayState {
-  const selectedMeetings = meetings.filter((meeting) => meeting.term === selectedTerm);
-  const status = termStatus(meetings, selectedTerm, now);
+  const selectedMeetings = meetings.filter(
+    (meeting) => meeting.term === selectedTerm && meeting.sectionCode !== "STUDY",
+  );
+  const status = termStatus(selectedMeetings, selectedTerm, now);
+  const minute = minutesNow(now);
+  const planned = meetings
+    .filter(
+      (meeting) =>
+        meeting.term === selectedTerm &&
+        meeting.sectionCode === "STUDY" &&
+        meeting.notes?.endsWith(" accepted") === true &&
+        meetingOccursOnDate(meeting, now) &&
+        meeting.endTime > minute,
+    )
+    .sort((a, b) => a.startTime - b.startTime);
+  const plannedWork: PlannedWorkContext = {
+    current: planned.find((meeting) => meeting.startTime <= minute) ?? null,
+    next: planned.find((meeting) => meeting.startTime > minute) ?? null,
+  };
+  const result = (value: object): TodayState => ({ ...value, plannedWork }) as TodayState;
   const first = firstOccurrence(selectedMeetings);
-  if (status === "before" && first) return { kind: "before", first };
+  if (status === "before" && first) return result({ kind: "before", first });
   if (status === "ended") {
-    return { kind: "ended", next: nextOccurrence(meetings, now) };
+    return result({ kind: "ended", next: nextOccurrence(selectedMeetings, now) });
   }
   if (status === "unknown" && termForMonth(now.getMonth() + 1) !== selectedTerm) {
-    return { kind: "dates-unavailable" };
+    return result({ kind: "dates-unavailable" });
   }
 
   const weekday = WEEKDAYS[now.getDay() - 1] ?? null;
@@ -126,7 +150,6 @@ export function buildTodayState({
         .filter((meeting) => meetingOccursOnDate(meeting, now))
         .sort((a, b) => a.startTime - b.startTime)
     : [];
-  const minute = minutesNow(now);
   const {
     currentCommitment: current,
     nextCommitment: next,
@@ -134,29 +157,29 @@ export function buildTodayState({
   } = querySchedulePosition(day, minute);
 
   if (current) {
-    if (!next) return { kind: "in-class", current, next: null };
+    if (!next) return result({ kind: "in-class", current, next: null });
     const route = planTransition(current, next, preferences);
     const travel = routeMinutes(route);
     const leaveBy =
       travel === null
         ? null
         : calculateLeaveBy(next.startTime, travel * 60, preferences.transitionBufferMinutes);
-    return { kind: "in-class", current, next, route, leaveBy };
+    return result({ kind: "in-class", current, next, route, leaveBy });
   }
 
   if (currentGap) {
     const plan = planGapAssessment(currentGap, preferences, gapPreferences, planTransition);
-    return {
+    return result({
       kind: "gap",
       gap: currentGap,
       ...plan,
       destinationContext: { preferences, gapPreferences, planTransition },
-    };
+    });
   }
 
-  if (next) return { kind: "before-first", next };
-  return {
+  if (next) return result({ kind: "before-first", next });
+  return result({
     kind: day.length > 0 ? "done" : "no-classes",
     next: nextOccurrence(selectedMeetings, now),
-  };
+  });
 }

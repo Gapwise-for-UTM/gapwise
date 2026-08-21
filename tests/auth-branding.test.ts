@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
-import { getAccountIdentity, consumeOAuthError } from "../src/features/auth/auth-service";
+import {
+  createGoogleNonce,
+  getAccountIdentity,
+  consumeOAuthError,
+} from "../src/features/auth/auth-service";
 import type { User } from "@supabase/supabase-js";
 
 const user = (values: Partial<User>): User => ({
@@ -26,6 +30,8 @@ describe("OAuth authentication", () => {
     expect(serviceSource).toContain("target.origin !== window.location.origin");
     expect(serviceSource).toContain("redirectTo: authRedirectTarget(redirectTo)");
     expect(serviceSource).toContain("assertCanPersistAuthRedirect()");
+    expect(serviceSource).toContain("use_fedcm_for_prompt: true");
+    expect(serviceSource).toContain("isDismissedMoment()");
     expect(clientSource).toContain("detectSessionInUrl: true");
     expect(clientSource).toContain('flowType: "pkce"');
   });
@@ -50,7 +56,15 @@ describe("OAuth authentication", () => {
     expect(getAccountIdentity(user({ email: "student@example.com" }))).toBe("student@example.com");
     expect(getAccountIdentity(user({}))).toBe("Signed in");
   });
-  test("parses OAuth errors and cleans the URL without navigation", () => {
+  test("creates a strong SHA-256 hexadecimal Google nonce for the GIS token exchange", async () => {
+    const first = await createGoogleNonce();
+    const second = await createGoogleNonce();
+    expect(first.raw).not.toBe(first.hashed);
+    expect(first.raw.length).toBeGreaterThanOrEqual(43);
+    expect(first.hashed).toMatch(/^[0-9a-f]{64}$/);
+    expect(second.raw).not.toBe(first.raw);
+  });
+  test("cleans provider OAuth errors without exposing provider internals", () => {
     let replacement = "";
     const message = consumeOAuthError(
       { href: "https://gapwise.test/?error=access_denied&error_description=User+cancelled#top" },
@@ -61,7 +75,7 @@ describe("OAuth authentication", () => {
         },
       },
     );
-    expect(message).toBe("Sign-in failed: User cancelled");
+    expect(message).toBe("We couldn't complete sign-in. Try again.");
     expect(replacement).toBe("/#top");
   });
 });
@@ -123,9 +137,25 @@ describe("production content security policy", () => {
 
     expect(csp).toContain("script-src 'self' 'wasm-unsafe-eval'");
     expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).toContain("https://accounts.google.com/gsi/client");
     expect(csp).toContain("connect-src 'self' blob:");
     expect(csp).not.toContain("connect-src *");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
+  });
+});
+
+describe("public legal surfaces", () => {
+  test("provide public, app-state-independent routes with titles", async () => {
+    for (const [path, title] of [
+      ["privacy", "Privacy — Gapwise for UTM"],
+      ["terms", "Terms — Gapwise for UTM"],
+    ]) {
+      const source = await readFile(`src/routes/${path}.tsx`, "utf8");
+      expect(source).toContain(`createFileRoute("/${path}")`);
+      expect(source).toContain(title);
+      expect(source).not.toContain("supabase");
+      expect(source).not.toContain("useAuth");
+    }
   });
 });

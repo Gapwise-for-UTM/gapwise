@@ -3,6 +3,7 @@ import { plannedWorkMeetings } from "@/features/academic/integration";
 import { createStudyPlan } from "@/features/academic/planner";
 import {
   createManualCoursework,
+  rescheduleAcceptedBlock,
   setManualCourseworkCompletion,
   type AcademicState,
 } from "@/features/academic/state";
@@ -154,5 +155,84 @@ describe("Pro planning release regressions", () => {
       new Date("2026-09-07T13:00:00Z"),
     );
     expect(meetings.map((entry) => entry.id)).toEqual([first.id]);
+  });
+
+  test("moves accepted work once while preserving duration and workload", () => {
+    const item = coursework();
+    const block = acceptedBlock(item.id);
+    const state = { coursework: [item], blocks: [block], proposalRevision: "r1" };
+    const moved = rescheduleAcceptedBlock(
+      state,
+      block.id,
+      "2026-09-08T15:30:00.000Z",
+      [],
+      new Date("2026-09-07T12:00:00.000Z"),
+    );
+    expect(Date.parse(moved.blocks[0]!.end) - Date.parse(moved.blocks[0]!.start)).toBe(60 * 60_000);
+    expect(moved.coursework[0]!.workEstimate.remainingMinutes).toBe(180);
+    expect(moved.blocks[0]!.start).toBe("2026-09-08T15:30:00.000Z");
+    expect(moved.proposalRevision).toBeNull();
+  });
+
+  test("checks fixed collisions against the Toronto civil date when UTC is already tomorrow", () => {
+    const item = coursework();
+    const block = acceptedBlock(item.id);
+    const state = { coursework: [item], blocks: [block], proposalRevision: "r1" };
+    const lateTuesday = meeting({
+      weekday: "Tuesday",
+      startTime: 22 * 60 + 45,
+      endTime: 23 * 60 + 45,
+      dateRange: { startDate: "2026-09-08", endDate: "2026-09-08" },
+    });
+    expect(() =>
+      rescheduleAcceptedBlock(
+        state,
+        block.id,
+        "2026-09-09T02:30:00.000Z",
+        [lateTuesday],
+        new Date("2026-09-07T12:00:00.000Z"),
+      ),
+    ).toThrow("overlaps");
+  });
+
+  test("rejects collisions, elapsed/deadline moves, study collisions, and immutable history", () => {
+    const item = coursework();
+    const block = acceptedBlock(item.id);
+    const state = { coursework: [item], blocks: [block], proposalRevision: "r1" };
+    const now = new Date("2026-09-07T12:00:00.000Z");
+    const fixed = meeting({ weekday: "Tuesday", startTime: 11 * 60, endTime: 12 * 60 });
+    expect(() =>
+      rescheduleAcceptedBlock(state, block.id, "2026-09-08T15:30:00Z", [fixed], now),
+    ).toThrow("overlaps");
+    expect(() => rescheduleAcceptedBlock(state, block.id, "2026-09-07T11:00:00Z", [], now)).toThrow(
+      "elapsed",
+    );
+    expect(() => rescheduleAcceptedBlock(state, block.id, "2026-09-12T03:30:00Z", [], now)).toThrow(
+      "deadline",
+    );
+    const other = {
+      ...block,
+      id: "other",
+      start: "2026-09-08T15:00:00Z",
+      end: "2026-09-08T16:00:00Z",
+    };
+    expect(() =>
+      rescheduleAcceptedBlock(
+        { ...state, blocks: [block, other] },
+        block.id,
+        "2026-09-08T15:30:00Z",
+        [],
+        now,
+      ),
+    ).toThrow("other accepted");
+    expect(() =>
+      rescheduleAcceptedBlock(
+        { ...state, blocks: [{ ...block, status: "completed" }] },
+        block.id,
+        "2026-09-08T15:30:00Z",
+        [],
+        now,
+      ),
+    ).toThrow("Only active");
   });
 });
