@@ -46,7 +46,9 @@ describe("OAuth authentication", () => {
     ]);
     expect(serviceSource).toContain('import.meta.env["VITE_GOOGLE_DIRECT_REDIRECT_ENABLED"]');
     expect(serviceSource).toContain('=== "true"');
-    expect(serviceSource).toContain("if (!directRedirectEnabled) return signInWithGoogleOAuthFallback");
+    expect(serviceSource).toContain(
+      "if (!directRedirectEnabled) return signInWithGoogleOAuthFallback",
+    );
     expect(serviceSource).toContain(": signInWithGoogleOAuthFallback(redirectTo)");
     expect(envExample).toContain("VITE_GOOGLE_DIRECT_REDIRECT_ENABLED=false");
     expect(envExample).toContain("verified on a real iPhone/iPad");
