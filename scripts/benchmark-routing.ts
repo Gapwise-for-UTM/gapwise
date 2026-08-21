@@ -12,12 +12,7 @@ for (let iteration = 0; iteration < 20; iteration += 1) {
   for (const start of ids) {
     const targets = targetsByStart.get(start) ?? [];
     attempts += 1;
-    const result = findBestRoute(
-      UTM_ROUTING_GRAPH,
-      [start],
-      targets,
-      DEFAULT_ROUTE_PREFERENCES,
-    );
+    const result = findBestRoute(UTM_ROUTING_GRAPH, [start], targets, DEFAULT_ROUTE_PREFERENCES);
     if (result) routes += 1;
   }
 }
