@@ -11,6 +11,7 @@ import { createStudyPlan, transitionBlock, type StudyPlanProposal } from "./plan
 import {
   completeBlock,
   createManualCoursework,
+  rescheduleAcceptedBlock,
   setManualCourseworkCompletion,
   type AcademicState,
 } from "./state";
@@ -56,6 +57,8 @@ export function AcademicWorkDialog({
   const [due, setDue] = useState("");
   const [hours, setHours] = useState("2");
   const [priority, setPriority] = useState<"normal" | "high">("normal");
+  const [rescheduling, setRescheduling] = useState<string | null>(null);
+  const [rescheduleStart, setRescheduleStart] = useState("");
   const allowed = canUseFeature(entitlement, "academic_planner");
   const fallbackRouteMinutes = useMemo(() => {
     const planner = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings);
@@ -164,6 +167,26 @@ export function AcademicWorkDialog({
       proposalRevision: proposal.revision,
     });
     setProposal(null);
+  }
+
+  function reschedule(event: React.FormEvent) {
+    event.preventDefault();
+    if (!rescheduling) return;
+    try {
+      onChange(
+        rescheduleAcceptedBlock(
+          state,
+          rescheduling,
+          torontoLocalDateTimeInstant(rescheduleStart),
+          context.academicMeetings.concat(context.fixedPersonalCommitments),
+        ),
+      );
+      setRescheduling(null);
+      setRescheduleStart("");
+      setMessage("Study block moved. Build an updated plan when you're ready.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "That study block could not be moved.");
+    }
   }
 
   return (
@@ -401,6 +424,18 @@ export function AcademicWorkDialog({
                       <span className="flex gap-1">
                         <button
                           type="button"
+                          aria-label={`Reschedule ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
+                          className="button-secondary px-3 py-2"
+                          onClick={() => {
+                            setRescheduling(block.id);
+                            setMessage(null);
+                          }}
+                        >
+                          Reschedule
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Complete ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
                           className="button-secondary px-3 py-2"
                           onClick={() => onChange(completeBlock(state, block.id))}
                         >
@@ -408,6 +443,7 @@ export function AcademicWorkDialog({
                         </button>
                         <button
                           type="button"
+                          aria-label={`Mark ${item?.courseCode ?? "study"} ${item?.title ?? "work"} missed`}
                           className="button-secondary px-3 py-2"
                           onClick={() =>
                             onChange({
@@ -425,6 +461,7 @@ export function AcademicWorkDialog({
                         </button>
                         <button
                           type="button"
+                          aria-label={`Cancel ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
                           className="button-secondary px-3 py-2"
                           onClick={() =>
                             onChange({
@@ -452,6 +489,36 @@ export function AcademicWorkDialog({
             {message}
           </p>
         ) : null}
+        <Dialog
+          open={rescheduling !== null}
+          onOpenChange={(open) => !open && setRescheduling(null)}
+        >
+          <DialogContent className="w-[calc(100%-2rem)] max-w-sm rounded-xl">
+            <DialogHeader>
+              <DialogTitle>Reschedule study work</DialogTitle>
+              <DialogDescription>
+                Choose a new start in Toronto time. The duration will not change.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={reschedule} className="space-y-4">
+              <label className="block text-sm font-medium">
+                New start (Toronto time)
+                <input
+                  autoFocus
+                  required
+                  aria-label="New study start"
+                  type="datetime-local"
+                  value={rescheduleStart}
+                  onChange={(event) => setRescheduleStart(event.target.value)}
+                  className="mt-1 h-11 w-full rounded-lg border bg-background px-3"
+                />
+              </label>
+              <button type="submit" className="button-primary h-11 w-full font-semibold">
+                Move study block
+              </button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );

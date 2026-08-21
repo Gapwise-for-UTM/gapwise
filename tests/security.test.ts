@@ -31,7 +31,9 @@ describe("supply-chain configuration", () => {
       readFile("public/_headers", "utf8"),
     ]);
     for (const source of [vercel, fallbackHeaders]) {
-      expect(source).toMatch(/script-src 'self'(?: 'wasm-unsafe-eval')?\s*;/u);
+      expect(source).toContain(
+        "script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client;",
+      );
       expect(source).not.toContain("'unsafe-eval'");
       expect(source).toContain("object-src 'none'");
       expect(source).toContain("frame-ancestors 'none'");

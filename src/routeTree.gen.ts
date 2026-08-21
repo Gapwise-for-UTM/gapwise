@@ -9,24 +9,30 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as DevelopersRouteImport } from './routes/developers'
-import { Route as OAuthConsentRouteImport } from './routes/oauth.consent'
-import { Route as ReplayRouteImport } from './routes/replay'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as DevelopersRouteImport } from './routes/developers'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ReplayRouteImport } from './routes/replay'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppGapsRouteImport } from './routes/_app.gaps'
 import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
 import { Route as AppTodayRouteImport } from './routes/_app.today'
+import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
 import { Route as AppRouteIndexRouteImport } from './routes/_app/route/index'
 
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevelopersRoute = DevelopersRouteImport.update({
   id: '/developers',
   path: '/developers',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OAuthConsentRoute = OAuthConsentRouteImport.update({
-  id: '/oauth/consent',
-  path: '/oauth/consent',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReplayRoute = ReplayRouteImport.update({
@@ -34,8 +40,9 @@ const ReplayRoute = ReplayRouteImport.update({
   path: '/replay',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AppRoute = AppRouteImport.update({
-  id: '/_app',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -58,6 +65,11 @@ const AppTodayRoute = AppTodayRouteImport.update({
   path: '/today',
   getParentRoute: () => AppRoute,
 } as any)
+const OauthConsentRoute = OauthConsentRouteImport.update({
+  id: '/oauth/consent',
+  path: '/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
   id: '/route/',
   path: '/route/',
@@ -67,32 +79,38 @@ const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/developers': typeof DevelopersRoute
-  '/gaps': typeof AppGapsRoute
-  '/oauth/consent': typeof OAuthConsentRoute
+  '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
+  '/terms': typeof TermsRoute
+  '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/route/': typeof AppRouteIndexRoute
 }
 export interface FileRoutesByTo {
   '/developers': typeof DevelopersRoute
-  '/gaps': typeof AppGapsRoute
-  '/oauth/consent': typeof OAuthConsentRoute
+  '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
+  '/terms': typeof TermsRoute
+  '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/': typeof AppIndexRoute
   '/route': typeof AppRouteIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/developers': typeof DevelopersRoute
-  '/oauth/consent': typeof OAuthConsentRoute
-  '/replay': typeof ReplayRoute
   '/_app': typeof AppRouteWithChildren
+  '/developers': typeof DevelopersRoute
+  '/privacy': typeof PrivacyRoute
+  '/replay': typeof ReplayRoute
+  '/terms': typeof TermsRoute
   '/_app/gaps': typeof AppGapsRoute
   '/_app/timetable': typeof AppTimetableRoute
   '/_app/today': typeof AppTodayRoute
+  '/oauth/consent': typeof OauthConsentRoute
   '/_app/': typeof AppIndexRoute
   '/_app/route/': typeof AppRouteIndexRoute
 }
@@ -101,44 +119,59 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/developers'
-    | '/gaps'
-    | '/oauth/consent'
+    | '/privacy'
     | '/replay'
+    | '/terms'
+    | '/gaps'
     | '/timetable'
     | '/today'
+    | '/oauth/consent'
     | '/route/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/developers'
-    | '/gaps'
-    | '/oauth/consent'
+    | '/privacy'
     | '/replay'
+    | '/terms'
+    | '/gaps'
     | '/timetable'
     | '/today'
+    | '/oauth/consent'
     | '/'
     | '/route'
   id:
     | '__root__'
-    | '/developers'
-    | '/oauth/consent'
-    | '/replay'
     | '/_app'
+    | '/developers'
+    | '/privacy'
+    | '/replay'
+    | '/terms'
     | '/_app/gaps'
     | '/_app/timetable'
     | '/_app/today'
+    | '/oauth/consent'
     | '/_app/'
     | '/_app/route/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  DevelopersRoute: typeof DevelopersRoute
-  OAuthConsentRoute: typeof OAuthConsentRoute
-  ReplayRoute: typeof ReplayRoute
   AppRoute: typeof AppRouteWithChildren
+  DevelopersRoute: typeof DevelopersRoute
+  PrivacyRoute: typeof PrivacyRoute
+  ReplayRoute: typeof ReplayRoute
+  TermsRoute: typeof TermsRoute
+  OauthConsentRoute: typeof OauthConsentRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/developers': {
       id: '/developers'
       path: '/developers'
@@ -146,11 +179,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevelopersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/oauth/consent': {
-      id: '/oauth/consent'
-      path: '/oauth/consent'
-      fullPath: '/oauth/consent'
-      preLoaderRoute: typeof OAuthConsentRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/replay': {
@@ -160,11 +193,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReplayRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_app': {
-      id: '/_app'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AppRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -195,6 +228,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTodayRouteImport
       parentRoute: typeof AppRoute
     }
+    '/oauth/consent': {
+      id: '/oauth/consent'
+      path: '/oauth/consent'
+      fullPath: '/oauth/consent'
+      preLoaderRoute: typeof OauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/route/': {
       id: '/_app/route/'
       path: '/route'
@@ -224,10 +264,12 @@ const AppRouteChildren: AppRouteChildren = {
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  DevelopersRoute: DevelopersRoute,
-  OAuthConsentRoute: OAuthConsentRoute,
-  ReplayRoute: ReplayRoute,
   AppRoute: AppRouteWithChildren,
+  DevelopersRoute: DevelopersRoute,
+  PrivacyRoute: PrivacyRoute,
+  ReplayRoute: ReplayRoute,
+  TermsRoute: TermsRoute,
+  OauthConsentRoute: OauthConsentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

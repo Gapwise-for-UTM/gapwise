@@ -180,6 +180,24 @@ export const TodaySummary = memo(function TodaySummary({
             {secondary}
           </p>
         ) : null}
+        {summary.plannedWork.current || summary.plannedWork.next ? (
+          <div className="mt-3 border-t border-border pt-3 text-sm" aria-label="Planned study work">
+            <p className="font-mono text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              {summary.plannedWork.current ? "Planned now" : "Planned next"}
+            </p>
+            {(() => {
+              const work = summary.plannedWork.current ?? summary.plannedWork.next!;
+              return (
+                <p className="mt-1 font-medium">
+                  {work.courseCode} · {work.courseName}
+                  <span className="ml-2 font-normal text-muted-foreground">
+                    {formatTime(work.startTime)}–{formatTime(work.endTime)}
+                  </span>
+                </p>
+              );
+            })()}
+          </div>
+        ) : null}
 
         {showPlanner ? (
           <div className="mt-4 space-y-3">

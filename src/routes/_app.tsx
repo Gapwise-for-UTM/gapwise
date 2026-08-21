@@ -346,17 +346,17 @@ function AppLayout() {
     ],
   );
 
+  const timetableWithWork = useMemo(
+    () => [...termMeetings, ...plannedWorkMeetings(academic, term)],
+    [academic, term, termMeetings],
+  );
   const { now: todayNow, state: todayState } = useTodayState({
-    meetings: termMeetings,
+    meetings: timetableWithWork,
     selectedTerm: term,
     preferences,
     gapPreferences,
     planTransition,
   });
-  const timetableWithWork = useMemo(
-    () => [...termMeetings, ...plannedWorkMeetings(academic, term)],
-    [academic, term, termMeetings],
-  );
   useEffect(() => {
     if (!isDemo || academic.coursework.length) return;
     const due = new Date();
@@ -534,7 +534,7 @@ function AppLayout() {
           onOpenChange={setAcademicOpen}
           state={academic}
           onChange={setAcademic}
-          meetings={termMeetings}
+          meetings={timetableWithWork}
           entitlement={entitlement}
         />
         <PersonalItemForm
@@ -853,7 +853,7 @@ function AppLayout() {
             ) : null}
 
             <TodaySummary
-              meetings={meetings}
+              meetings={timetableWithWork}
               selectedTerm={term}
               preferences={preferences}
               gapPreferences={gapPreferences}

@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
-import { getAccountIdentity, consumeOAuthError } from "../src/features/auth/auth-service";
+import {
+  createGoogleNonce,
+  getAccountIdentity,
+  consumeOAuthError,
+} from "../src/features/auth/auth-service";
 import type { User } from "@supabase/supabase-js";
 
 const user = (values: Partial<User>): User => ({
@@ -49,6 +53,14 @@ describe("OAuth authentication", () => {
     expect(getAccountIdentity(user({ user_metadata: { full_name: "Student" } }))).toBe("Student");
     expect(getAccountIdentity(user({ email: "student@example.com" }))).toBe("student@example.com");
     expect(getAccountIdentity(user({}))).toBe("Signed in");
+  });
+  test("creates a strong hashed Google nonce for the GIS token exchange", async () => {
+    const first = await createGoogleNonce();
+    const second = await createGoogleNonce();
+    expect(first.raw).not.toBe(first.hashed);
+    expect(first.raw.length).toBeGreaterThanOrEqual(43);
+    expect(first.hashed.length).toBe(43);
+    expect(second.raw).not.toBe(first.raw);
   });
   test("parses OAuth errors and cleans the URL without navigation", () => {
     let replacement = "";
@@ -123,9 +135,25 @@ describe("production content security policy", () => {
 
     expect(csp).toContain("script-src 'self' 'wasm-unsafe-eval'");
     expect(csp).not.toContain("'unsafe-eval'");
+    expect(csp).toContain("https://accounts.google.com/gsi/client");
     expect(csp).toContain("connect-src 'self' blob:");
     expect(csp).not.toContain("connect-src *");
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
+  });
+});
+
+describe("public legal surfaces", () => {
+  test("provide public, app-state-independent routes with titles", async () => {
+    for (const [path, title] of [
+      ["privacy", "Privacy — Gapwise for UTM"],
+      ["terms", "Terms — Gapwise for UTM"],
+    ]) {
+      const source = await readFile(`src/routes/${path}.tsx`, "utf8");
+      expect(source).toContain(`createFileRoute("/${path}")`);
+      expect(source).toContain(title);
+      expect(source).not.toContain("supabase");
+      expect(source).not.toContain("useAuth");
+    }
   });
 });
