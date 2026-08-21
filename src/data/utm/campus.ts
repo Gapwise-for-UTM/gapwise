@@ -29,19 +29,19 @@ type EntranceSemanticsFeature = {
   };
 };
 
-const entranceSemanticsByNodeId = new Map(
-  (JSON.parse(entranceDataRaw) as { features: EntranceSemanticsFeature[] }).features.flatMap(
-    (feature) => {
-      const explicitId = feature.properties.routingNodeId?.trim();
-      const nodeId =
-        explicitId ||
-        (feature.properties.osmNodeId !== undefined
-          ? `osm-node-${feature.properties.osmNodeId}`
-          : null);
-      return nodeId ? ([[nodeId, feature.properties]] as const) : [];
-    },
-  ),
-);
+const entranceSemanticsFeatures = (
+  JSON.parse(entranceDataRaw) as { features: EntranceSemanticsFeature[] }
+).features;
+const entranceSemanticsByNodeId = new Map<string, EntranceSemanticsFeature["properties"]>();
+for (const feature of entranceSemanticsFeatures) {
+  const explicitId = feature.properties.routingNodeId?.trim();
+  const nodeId =
+    explicitId ||
+    (feature.properties.osmNodeId !== undefined
+      ? `osm-node-${feature.properties.osmNodeId}`
+      : null);
+  if (nodeId) entranceSemanticsByNodeId.set(nodeId, feature.properties);
+}
 
 const outdoorNodeFeatures = (JSON.parse(outdoorNodesRaw) as { features: OutdoorNodeFeature[] })
   .features;
