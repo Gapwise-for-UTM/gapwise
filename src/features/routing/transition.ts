@@ -172,9 +172,10 @@ export function planMeetingTransition(
     allOriginEntrances.length > 0 &&
     originEntrances.length === 0
   ) {
-    return locationUnavailable(`No eligible departure entrance is available for ${origin.buildingCode}.`, [
-      "Known restricted, emergency-only, or entry-only doors are never used as departure points.",
-    ]);
+    return locationUnavailable(
+      `No eligible departure entrance is available for ${origin.buildingCode}.`,
+      ["Known restricted, emergency-only, or entry-only doors are never used as departure points."],
+    );
   }
   if (
     destination?.buildingCode &&
