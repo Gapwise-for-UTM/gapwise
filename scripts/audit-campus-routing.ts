@@ -70,22 +70,24 @@ function finiteNumber(value: unknown, context: string): number {
 
 function featureCollection(value: unknown, context: string): unknown[] {
   const collection = record(value, context);
-  if (collection.type !== "FeatureCollection" || !Array.isArray(collection.features)) {
+  const features = collection["features"];
+  if (collection["type"] !== "FeatureCollection" || !Array.isArray(features)) {
     throw new Error(`${context} must be a GeoJSON FeatureCollection.`);
   }
-  return collection.features;
+  return features;
 }
 
 function validatePointGeometry(value: unknown, context: string): void {
   const geometry = record(value, `${context}.geometry`);
-  if (geometry.type !== "Point" || !Array.isArray(geometry.coordinates)) {
+  const coordinates = geometry["coordinates"];
+  if (geometry["type"] !== "Point" || !Array.isArray(coordinates)) {
     throw new Error(`${context}.geometry must be a GeoJSON Point.`);
   }
-  if (geometry.coordinates.length !== 2) {
+  if (coordinates.length !== 2) {
     throw new Error(`${context}.geometry.coordinates must contain longitude and latitude.`);
   }
-  const longitude = finiteNumber(geometry.coordinates[0], `${context}.longitude`);
-  const latitude = finiteNumber(geometry.coordinates[1], `${context}.latitude`);
+  const longitude = finiteNumber(coordinates[0], `${context}.longitude`);
+  const latitude = finiteNumber(coordinates[1], `${context}.latitude`);
   if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
     throw new Error(`${context}.geometry contains an out-of-range WGS84 coordinate.`);
   }
@@ -95,45 +97,47 @@ function parseEntrances(value: unknown): AuditedEntrance[] {
   return featureCollection(value, "entrances.geojson").map((rawFeature, index) => {
     const context = `entrances.geojson feature ${index}`;
     const feature = record(rawFeature, context);
-    const id = stringValue(feature.id, `${context}.id`);
-    validatePointGeometry(feature.geometry, context);
-    const properties = record(feature.properties, `${context}.properties`);
-    const buildingCode = stringValue(properties.buildingCode, `${context}.buildingCode`);
-    stringValue(properties.label, `${context}.label`);
-    stringValue(properties.source, `${context}.source`);
-    const sourceUrl = stringValue(properties.sourceUrl, `${context}.sourceUrl`);
+    const id = stringValue(feature["id"], `${context}.id`);
+    validatePointGeometry(feature["geometry"], context);
+    const properties = record(feature["properties"], `${context}.properties`);
+    const buildingCode = stringValue(properties["buildingCode"], `${context}.buildingCode`);
+    stringValue(properties["label"], `${context}.label`);
+    stringValue(properties["source"], `${context}.source`);
+    const sourceUrl = stringValue(properties["sourceUrl"], `${context}.sourceUrl`);
     if (!sourceUrl.startsWith("https://")) throw new Error(`${context}.sourceUrl must use HTTPS.`);
-    const lastVerified = stringValue(properties.lastVerified, `${context}.lastVerified`);
+    const lastVerified = stringValue(properties["lastVerified"], `${context}.lastVerified`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(lastVerified)) {
       throw new Error(`${context}.lastVerified must use YYYY-MM-DD.`);
     }
 
-    const kind = properties.kind;
+    const kind = properties["kind"];
     if (!ENTRANCE_KINDS.has(kind as EntranceKind)) {
       throw new Error(`${context}.kind is invalid.`);
     }
-    const accessibility = properties.accessibility;
+    const accessibility = properties["accessibility"];
     if (!ACCESSIBILITY.has(accessibility as AccessibilityStatus)) {
       throw new Error(`${context}.accessibility is invalid.`);
     }
-    const verificationStatus = properties.verificationStatus;
+    const verificationStatus = properties["verificationStatus"];
     if (!VERIFICATION.has(verificationStatus as VerificationStatus)) {
       throw new Error(`${context}.verificationStatus is invalid.`);
     }
-    const access = properties.access ?? "unknown";
+    const access = properties["access"] ?? "unknown";
     if (!ACCESS.has(access as EntranceAccess)) throw new Error(`${context}.access is invalid.`);
-    const direction = properties.direction ?? "unknown";
+    const direction = properties["direction"] ?? "unknown";
     if (!DIRECTIONS.has(direction as EntranceDirection)) {
       throw new Error(`${context}.direction is invalid.`);
     }
 
+    const routingNodeIdValue = properties["routingNodeId"];
     const explicitRoutingNodeId =
-      properties.routingNodeId === undefined
+      routingNodeIdValue === undefined
         ? null
-        : stringValue(properties.routingNodeId, `${context}.routingNodeId`);
+        : stringValue(routingNodeIdValue, `${context}.routingNodeId`);
     let osmNodeId: number | null = null;
-    if (properties.osmNodeId !== undefined) {
-      const candidate = finiteNumber(properties.osmNodeId, `${context}.osmNodeId`);
+    const osmNodeIdValue = properties["osmNodeId"];
+    if (osmNodeIdValue !== undefined) {
+      const candidate = finiteNumber(osmNodeIdValue, `${context}.osmNodeId`);
       if (!Number.isSafeInteger(candidate) || candidate <= 0) {
         throw new Error(`${context}.osmNodeId must be a positive safe integer.`);
       }
@@ -163,10 +167,10 @@ function parseOutdoorNodeIds(value: unknown): Set<string> {
   for (const [index, rawFeature] of featureCollection(value, "outdoor-nodes.geojson").entries()) {
     const context = `outdoor-nodes.geojson feature ${index}`;
     const feature = record(rawFeature, context);
-    const id = stringValue(feature.id, `${context}.id`);
+    const id = stringValue(feature["id"], `${context}.id`);
     if (ids.has(id)) throw new Error(`Duplicate outdoor node id “${id}”.`);
-    validatePointGeometry(feature.geometry, context);
-    record(feature.properties, `${context}.properties`);
+    validatePointGeometry(feature["geometry"], context);
+    record(feature["properties"], `${context}.properties`);
     ids.add(id);
   }
   return ids;
@@ -174,30 +178,31 @@ function parseOutdoorNodeIds(value: unknown): Set<string> {
 
 function parseEdges(value: unknown, nodeIds: ReadonlySet<string>): AuditedEdge[] {
   const payload = record(value, "outdoor-edges.json");
-  if (!Array.isArray(payload.edges)) throw new Error("outdoor-edges.json.edges must be an array.");
+  const rawEdges = payload["edges"];
+  if (!Array.isArray(rawEdges)) throw new Error("outdoor-edges.json.edges must be an array.");
   const edgeIds = new Set<string>();
-  return payload.edges.map((rawEdge, index) => {
+  return rawEdges.map((rawEdge, index) => {
     const context = `outdoor-edges.json edge ${index}`;
     const edge = record(rawEdge, context);
-    const id = stringValue(edge.id, `${context}.id`);
+    const id = stringValue(edge["id"], `${context}.id`);
     if (edgeIds.has(id)) throw new Error(`Duplicate outdoor edge id “${id}”.`);
     edgeIds.add(id);
-    const from = stringValue(edge.from, `${context}.from`);
-    const to = stringValue(edge.to, `${context}.to`);
+    const from = stringValue(edge["from"], `${context}.from`);
+    const to = stringValue(edge["to"], `${context}.to`);
     if (!nodeIds.has(from) || !nodeIds.has(to)) {
       throw new Error(`${context} references a missing node.`);
     }
-    const distance = finiteNumber(edge.distanceMeters, `${context}.distanceMeters`);
+    const distance = finiteNumber(edge["distanceMeters"], `${context}.distanceMeters`);
     if (distance <= 0) throw new Error(`${context}.distanceMeters must be positive.`);
-    const environment = stringValue(edge.environment, `${context}.environment`);
+    const environment = stringValue(edge["environment"], `${context}.environment`);
     if (!EDGE_ENVIRONMENTS.has(environment)) throw new Error(`${context}.environment is invalid.`);
-    booleanValue(edge.stairs, `${context}.stairs`);
-    const bidirectional = booleanValue(edge.bidirectional, `${context}.bidirectional`);
-    const accessibility = edge.accessibility;
+    booleanValue(edge["stairs"], `${context}.stairs`);
+    const bidirectional = booleanValue(edge["bidirectional"], `${context}.bidirectional`);
+    const accessibility = edge["accessibility"];
     if (!ACCESSIBILITY.has(accessibility as AccessibilityStatus)) {
       throw new Error(`${context}.accessibility is invalid.`);
     }
-    record(edge.metadata, `${context}.metadata`);
+    record(edge["metadata"], `${context}.metadata`);
     return { id, from, to, bidirectional };
   });
 }
