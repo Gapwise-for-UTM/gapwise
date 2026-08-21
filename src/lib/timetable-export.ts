@@ -26,6 +26,17 @@ const CARD_GAP = 28;
 const PAGE_PADDING = 48;
 const HEADER_HEIGHT = 90;
 const FOOTER_HEIGHT = 42;
+const MAX_RASTER_PIXELS = 16_000_000;
+
+// Keep these aligned with the light-theme timetable tokens in src/styles.css.
+// The export is intentionally a stable light artifact regardless of the current app theme.
+const EXPORT_ACTIVITY_COLORS = {
+  LEC: "oklch(0.5 0.15 252)",
+  TUT: "oklch(0.54 0.14 225)",
+  PRA: "oklch(0.53 0.14 302)",
+  OTHER: "oklch(0.47 0.028 258)",
+} as const;
+const EXPORT_ACCENT = "oklch(0.55 0.17 252)";
 
 export function availableExportTerms(meetings: readonly Meeting[]): Term[] {
   return TERMS.filter((term) => meetings.some((meeting) => meeting.term === term));
@@ -82,8 +93,8 @@ export function createTimetableExportPlan(
   const height =
     PAGE_PADDING * 2 + HEADER_HEIGHT + rows * termHeight + (rows - 1) * CARD_GAP + FOOTER_HEIGHT;
   const requestedRatio = Math.min(3, Math.max(2, devicePixelRatio));
-  const maxRatio = Math.sqrt(16_000_000 / (width * height));
-  const pixelRatio = Math.max(1.5, Math.min(requestedRatio, maxRatio));
+  const maxRatio = Math.sqrt(MAX_RASTER_PIXELS / (width * height));
+  const pixelRatio = Math.min(requestedRatio, maxRatio);
   return { terms, layout, width, height, columns, termWidth, termHeight, pixelRatio };
 }
 
@@ -103,7 +114,8 @@ const escapeXml = (value: string) =>
 
 function activityColor(meeting: Meeting) {
   if (meeting.color && /^#[0-9a-f]{6}$/i.test(meeting.color)) return meeting.color;
-  return { LEC: "#2563eb", TUT: "#7c3aed", PRA: "#059669", OTHER: "#d97706" }[meeting.activityType];
+  if (meeting.sectionCode === "STUDY") return EXPORT_ACCENT;
+  return EXPORT_ACTIVITY_COLORS[meeting.activityType];
 }
 
 function renderTerm(
@@ -150,14 +162,15 @@ function renderTerm(
       const mw = laneWidth - 8;
       const color = activityColor(meeting);
       const compact = mh < 72 || laneCount > 1;
-      svg += `<g><rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="9" fill="${color}" fill-opacity="0.12" stroke="${color}" stroke-opacity="0.48"/>`;
+      const studyStroke = meeting.sectionCode === "STUDY" ? ' stroke-dasharray="6 4"' : "";
+      svg += `<g><rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="9" fill="${color}" fill-opacity="0.12" stroke="${color}" stroke-opacity="0.48"${studyStroke}/>`;
       svg += `<rect x="${mx}" y="${my}" width="4" height="${mh}" rx="2" fill="${color}"/>`;
       svg += `<text x="${mx + 11}" y="${my + 19}" font-size="${laneCount > 1 ? 11 : 13}" font-weight="800" fill="#172033">${escapeXml(meeting.courseCode.slice(0, laneCount > 1 ? 13 : 20))}</text>`;
-      svg += `<text x="${mx + mw - 9}" y="${my + 18}" text-anchor="end" font-size="9" font-weight="800" fill="${color}">${meeting.activityType}</text>`;
+      svg += `<text x="${mx + mw - 9}" y="${my + 18}" text-anchor="end" font-size="9" font-weight="800" fill="${color}">${meeting.sectionCode === "STUDY" ? "STUDY" : meeting.activityType}</text>`;
       if (mh >= 46)
         svg += `<text x="${mx + 11}" y="${my + 36}" font-size="10" font-weight="600" fill="#526079">${escapeXml(`${formatTime(meeting.startTime).replace(" ", "")}–${formatTime(meeting.endTime).replace(" ", "")}`)}</text>`;
       if (!compact && mh >= 66)
-        svg += `<text x="${mx + 11}" y="${my + 53}" font-size="11" font-weight="700" fill="#334155">${escapeXml(locationLabel(meeting).slice(0, 24))}</text>`;
+        svg += `<text x="${mx + 11}" y="${my + 53}" font-size="11" font-weight="700" fill="#334155">${escapeXml(meeting.sectionCode === "STUDY" ? meeting.notes || "Planned study" : locationLabel(meeting).slice(0, 24))}</text>`;
       if (!compact && mh >= 86)
         svg += `<text x="${mx + 11}" y="${my + 70}" font-size="10" fill="#64748b">${escapeXml(meeting.courseName.slice(0, 28))}</text>`;
       svg += `</g>`;
@@ -174,13 +187,19 @@ export function renderTimetableExportSvg(meetings: readonly Meeting[], plan: Tim
   plan.terms.forEach((term, index) => {
     const column = index % plan.columns;
     const row = Math.floor(index / plan.columns);
-    const x = PAGE_PADDING + column * (plan.termWidth + CARD_GAP);
+    const isLoneFinalCard =
+      plan.columns > 1 &&
+      plan.terms.length % plan.columns === 1 &&
+      index === plan.terms.length - 1;
+    const x = isLoneFinalCard
+      ? (plan.width - plan.termWidth) / 2
+      : PAGE_PADDING + column * (plan.termWidth + CARD_GAP);
     const y = PAGE_PADDING + HEADER_HEIGHT + row * (plan.termHeight + CARD_GAP);
     body += renderTerm(meetings, term, x, y, plan.termWidth, plan.termHeight);
   });
   body += `<text x="${PAGE_PADDING}" y="${plan.height - 24}" font-size="12" font-weight="650" fill="#64748b">Generated locally by Gapwise · ${escapeXml(generated)}</text>`;
   body += `<text x="${plan.width - PAGE_PADDING}" y="${plan.height - 24}" text-anchor="end" font-size="13" font-weight="800" fill="#2563eb">gapwise.ca</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${plan.width}" height="${plan.height}" viewBox="0 0 ${plan.width} ${plan.height}"><style>text{font-family:'Geist Variable','Geist',system-ui,sans-serif}</style>${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${plan.width}" height="${plan.height}" viewBox="0 0 ${plan.width} ${plan.height}"><style>text{font-family:'Geist Variable','Geist',ui-sans-serif,system-ui,sans-serif}</style>${body}</svg>`;
 }
 
 export async function generateTimetablePng(
@@ -196,6 +215,7 @@ export async function generateTimetablePng(
   const url = objectUrls.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
   try {
     const image = imageFactory();
+    image.decoding = "async";
     await new Promise<void>((resolve, reject) => {
       image.onload = () => resolve();
       image.onerror = () => reject(new Error("The timetable artwork could not be rendered."));
@@ -208,9 +228,14 @@ export async function generateTimetablePng(
     if (!context) throw new Error("Image export is not supported by this browser.");
     context.scale(plan.pixelRatio, plan.pixelRatio);
     context.drawImage(image, 0, 0, plan.width, plan.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-    if (!blob) throw new Error("The PNG could not be created.");
-    return { blob, filename: timetableExportFilename(selection, plan.terms), plan };
+    try {
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("The PNG could not be created.");
+      return { blob, filename: timetableExportFilename(selection, plan.terms), plan };
+    } finally {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
   } finally {
     objectUrls.revokeObjectURL(url);
   }
