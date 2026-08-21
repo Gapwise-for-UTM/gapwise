@@ -1,13 +1,16 @@
 (() => {
+  let preference = "system";
   try {
-    const preference = localStorage.getItem("gapwise:theme") || "system";
-    const dark =
-      preference === "dark" ||
-      (preference === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.classList.toggle("dark", dark);
-    document.documentElement.dataset.theme = dark ? "dark" : "light";
-    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+    const stored = localStorage.getItem("gapwise:theme");
+    if (stored === "light" || stored === "dark" || stored === "system") preference = stored;
   } catch {
-    // Storage may be unavailable in hardened browsing modes; CSS light defaults remain safe.
+    // Persistent storage may be unavailable; the system preference still applies.
   }
+
+  const dark =
+    preference === "dark" ||
+    (preference === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.classList.toggle("dark", dark);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  document.documentElement.style.colorScheme = dark ? "dark" : "light";
 })();
