@@ -171,26 +171,31 @@ const preferenceMatrix: RoutePreferences[] = (
     walkingSpeedMps,
   })),
 );
+const EXHAUSTIVE_ORACLE_TIMEOUT_MS = 15_000;
 
 describe("campus routing optimality oracle", () => {
-  test("matches an independent Dijkstra oracle for every exterior endpoint pair and routing mode", () => {
-    expect(endpointNodes.length).toBeGreaterThan(20);
-    for (const preferences of preferenceMatrix) {
-      for (const origin of endpointNodes) {
-        const oracle = dijkstraDistances(UTM_ROUTING_GRAPH, origin.id, preferences);
-        for (const destination of endpointNodes) {
-          const expected = oracle.get(destination.id) ?? Number.POSITIVE_INFINITY;
-          const actual = findRoute(UTM_ROUTING_GRAPH, origin.id, destination.id, preferences);
-          if (!Number.isFinite(expected)) {
-            expect(actual).toBeNull();
-          } else {
-            expect(actual).not.toBeNull();
-            expect(Math.abs(actual!.estimatedSeconds - expected)).toBeLessThan(1e-7);
+  test(
+    "matches an independent Dijkstra oracle for every exterior endpoint pair and routing mode",
+    () => {
+      expect(endpointNodes.length).toBeGreaterThan(20);
+      for (const preferences of preferenceMatrix) {
+        for (const origin of endpointNodes) {
+          const oracle = dijkstraDistances(UTM_ROUTING_GRAPH, origin.id, preferences);
+          for (const destination of endpointNodes) {
+            const expected = oracle.get(destination.id) ?? Number.POSITIVE_INFINITY;
+            const actual = findRoute(UTM_ROUTING_GRAPH, origin.id, destination.id, preferences);
+            if (!Number.isFinite(expected)) {
+              expect(actual).toBeNull();
+            } else {
+              expect(actual).not.toBeNull();
+              expect(Math.abs(actual!.estimatedSeconds - expected)).toBeLessThan(1e-7);
+            }
           }
         }
       }
-    }
-  });
+    },
+    EXHAUSTIVE_ORACLE_TIMEOUT_MS,
+  );
 
   test("chooses the globally optimal eligible entrance pair for every routable building pair", () => {
     const byBuilding = new Map<string, string[]>();
