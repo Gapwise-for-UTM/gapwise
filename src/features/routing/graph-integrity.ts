@@ -1,5 +1,15 @@
 import type { AccessibilityStatus, RoutingGraph } from "./types";
 
+function haversineMeters(a: [number, number], b: [number, number]): number {
+  const radians = (value: number) => (value * Math.PI) / 180;
+  const dLat = radians(b[1] - a[1]);
+  const dLon = radians(b[0] - a[0]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(radians(a[1])) * Math.cos(radians(b[1])) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6_371_000 * Math.asin(Math.sqrt(h));
+}
+
 const ACCESSIBILITY = new Set<AccessibilityStatus>(["accessible", "not_accessible", "unknown"]);
 const NODE_KINDS = new Set([
   "room",
@@ -91,6 +101,38 @@ export function routingGraphIssues(graph: RoutingGraph): string[] {
       (!Number.isFinite(edge.estimatedDelaySeconds) || edge.estimatedDelaySeconds < 0)
     ) {
       issues.push(`Edge “${edge.id}” estimated delay must be a non-negative finite number.`);
+    }
+    if (edge.geometry) {
+      if (
+        edge.geometry.length < 2 ||
+        edge.geometry.some(
+          ([longitude, latitude]) =>
+            !Number.isFinite(longitude) ||
+            !Number.isFinite(latitude) ||
+            longitude < -180 ||
+            longitude > 180 ||
+            latitude < -90 ||
+            latitude > 90,
+        )
+      ) {
+        issues.push(`Edge “${edge.id}” geometry must contain at least two valid WGS84 positions.`);
+      } else {
+        const length = edge.geometry
+          .slice(1)
+          .reduce(
+            (sum, point, pointIndex) => sum + haversineMeters(edge.geometry![pointIndex]!, point),
+            0,
+          );
+        const tolerance = Math.max(0.5, length * 0.02);
+        if (
+          Math.abs(length - edge.distanceMeters) > tolerance &&
+          !edge.notes?.includes("measured distance")
+        ) {
+          issues.push(
+            `Edge “${edge.id}” geometry length differs from distanceMeters by more than 2% or 0.5 m.`,
+          );
+        }
+      }
     }
   });
 

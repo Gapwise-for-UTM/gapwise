@@ -15,6 +15,10 @@ export type BuildingEntrance = {
   coordinates: [number, number];
   osmNodeId: number;
   accessibility: AccessibilityStatus;
+  access: "public" | "restricted" | "emergency_only" | "unknown";
+  direction: "entry" | "exit" | "both" | "unknown";
+  verificationMethod: string;
+  sourceIdentifier: string;
   notes?: string;
   metadata: SourceMetadata;
 };
@@ -38,6 +42,10 @@ type EntranceFeature = {
     kind: EntranceKind;
     osmNodeId: number;
     accessibility: AccessibilityStatus;
+    access?: BuildingEntrance["access"];
+    direction?: BuildingEntrance["direction"];
+    verificationMethod?: string;
+    sourceIdentifier?: string;
     notes?: string;
     source: string;
     sourceUrl: string;
@@ -56,6 +64,11 @@ function toEntrance(feature: EntranceFeature): BuildingEntrance {
     coordinates: feature.geometry.coordinates,
     osmNodeId: feature.properties.osmNodeId,
     accessibility: feature.properties.accessibility,
+    access: feature.properties.access ?? "unknown",
+    direction: feature.properties.direction ?? "unknown",
+    verificationMethod: feature.properties.verificationMethod ?? "published OSM entrance node",
+    sourceIdentifier:
+      feature.properties.sourceIdentifier ?? `osm:node/${feature.properties.osmNodeId}`,
     metadata: {
       source: feature.properties.source,
       sourceUrl: feature.properties.sourceUrl,

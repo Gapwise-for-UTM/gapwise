@@ -115,3 +115,28 @@ A geometry change is not complete until all of the following are true:
 - the Erindale/Davis/Studio Theatre/Kaneff regression cluster remains distinct;
 - search focus and map selection use the same geometry;
 - TypeScript, unit tests, lint, formatting, build and browser checks pass.
+
+## Routing truth and optimality
+
+Exterior points distinguish published entrances from inferred approaches. A verified record means
+that its cited source establishes the door at the named building; it does not silently establish
+public access, direction, or accessibility. Those independent fields remain `unknown` without
+affirmative evidence. Restricted and emergency-only points are not normal endpoints, and step-free
+routing accepts only edges explicitly marked `accessible`.
+
+The bundled graph is compiled and cached in memory. `findBestRoute` performs one deterministic
+multi-source/multi-target A* search, so the globally cheapest eligible departure and arrival doors
+emerge from graph cost rather than a nearest-door heuristic. The straight-line heuristic is enabled
+only if every edge distance dominates its endpoint geodesic distance; otherwise it becomes zero,
+which is Dijkstra and preserves optimality. All costs are non-negative, and stable IDs break ties.
+
+Route results retain an oriented coordinate sequence. An edge's complete `geometry`, when present,
+is reversed for backward traversal; edges without a shape use their endpoint coordinates. The map
+therefore renders the selected traversal rather than independently joining route nodes.
+
+`bun run routing:audit` regenerates both the machine-readable audit and
+`docs/CAMPUS_ACCESS_AUDIT.md`. `bun run routing:benchmark` measures compiled multi-target searches.
+Future access-point changes require a stable source identifier, URL, verification method and date;
+an inferred approach must never be promoted merely because it improves connectivity. Refresh OSM
+development data with `bun run routing:refresh`, review every generated diff, then run graph,
+entrance, route-matrix, type, format, build, and browser checks before acceptance.

@@ -24,6 +24,8 @@
     "survey:import": "bun scripts/import-campus-survey.ts",
     "survey:dry-run": "bun scripts/import-campus-survey.ts --dry-run",
     "routing:refresh": "bun scripts/generate-outdoor-routing.ts",
+    "routing:audit": "bun scripts/audit-campus-routing.ts",
+    "routing:benchmark": "bun scripts/benchmark-routing.ts",
     "generate:icons": "bun scripts/generate-icons.ts",
     "model:stone": "bash scripts/apply-realistic-stone.sh"
   },

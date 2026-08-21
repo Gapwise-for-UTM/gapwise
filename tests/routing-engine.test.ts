@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_ROUTE_PREFERENCES } from "@/config/routing";
-import { findRoute } from "@/features/routing/engine";
+import { findBestRoute, findRoute } from "@/features/routing/engine";
 import type { RoutingGraph } from "@/features/routing/types";
 import { edge, node } from "./fixtures";
 
@@ -107,5 +107,54 @@ describe("deterministic graph routing", () => {
     expect(result.indoorDistanceMeters).toBe(13.5);
     expect(result.floorChanges).toBe(1);
     expect(result.estimatedSeconds).toBe(35); // 10 seconds walking + 20 stairs + 5 explicit delay
+  });
+
+  test("chooses the globally optimal pair in one multi-source/multi-target search", () => {
+    const graph: RoutingGraph = {
+      nodes: [node("a1"), node("a2"), node("b1"), node("b2")],
+      edges: [edge("long", "a1", "b1", 100), edge("optimal", "a2", "b2", 12)],
+    };
+    const result = findBestRoute(graph, ["a1", "a2"], ["b1", "b2"], DEFAULT_ROUTE_PREFERENCES);
+    expect(result?.nodes.map(({ id }) => id)).toEqual(["a2", "b2"]);
+    expect(result?.edges.map(({ id }) => id)).toEqual(["optimal"]);
+  });
+
+  test("falls back to Dijkstra when geographic edge distances cannot support an admissible heuristic", () => {
+    const located = (id: string, longitude: number) => node(id, { longitude, latitude: 43.55 });
+    const graph: RoutingGraph = {
+      nodes: [located("a", -79.67), located("b", -79.66), located("c", -79.665)],
+      edges: [
+        edge("apparently-direct", "a", "b", 10),
+        edge("ac", "a", "c", 2),
+        edge("cb", "c", "b", 2),
+      ],
+    };
+    expect(
+      findRoute(graph, "a", "b", DEFAULT_ROUTE_PREFERENCES)?.edges.map(({ id }) => id),
+    ).toEqual(["ac", "cb"]);
+  });
+
+  test("assembles full edge geometry in traversal orientation", () => {
+    const graph: RoutingGraph = {
+      nodes: [
+        node("a", { longitude: -79.66, latitude: 43.55 }),
+        node("b", { longitude: -79.661, latitude: 43.551 }),
+      ],
+      edges: [
+        {
+          ...edge("shape", "a", "b", 100),
+          geometry: [
+            [-79.66, 43.55],
+            [-79.6605, 43.5507],
+            [-79.661, 43.551],
+          ],
+        },
+      ],
+    };
+    expect(findRoute(graph, "b", "a", DEFAULT_ROUTE_PREFERENCES)?.coordinates).toEqual([
+      [-79.661, 43.551],
+      [-79.6605, 43.5507],
+      [-79.66, 43.55],
+    ]);
   });
 });
