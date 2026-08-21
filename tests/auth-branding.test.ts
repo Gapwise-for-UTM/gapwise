@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
 import {
+  buildGoogleOidcAuthorizationUrl,
+  consumeOAuthError,
   createGoogleNonce,
   getAccountIdentity,
-  consumeOAuthError,
+  googleRedirectRequiredForIos,
 } from "../src/features/auth/auth-service";
 import type { User } from "@supabase/supabase-js";
 
@@ -32,9 +34,11 @@ describe("OAuth authentication", () => {
     expect(serviceSource).toContain("assertCanPersistAuthRedirect()");
     expect(serviceSource).toContain("use_fedcm_for_prompt: true");
     expect(serviceSource).toContain("isDismissedMoment()");
+    expect(serviceSource).toContain("fallBackToGapwiseRedirect");
     expect(clientSource).toContain("detectSessionInUrl: true");
     expect(clientSource).toContain('flowType: "pkce"');
   });
+
   test("uses the documented identity fallback order", () => {
     expect(
       getAccountIdentity(
@@ -56,6 +60,7 @@ describe("OAuth authentication", () => {
     expect(getAccountIdentity(user({ email: "student@example.com" }))).toBe("student@example.com");
     expect(getAccountIdentity(user({}))).toBe("Signed in");
   });
+
   test("creates a strong SHA-256 hexadecimal Google nonce for the GIS token exchange", async () => {
     const first = await createGoogleNonce();
     const second = await createGoogleNonce();
@@ -64,6 +69,36 @@ describe("OAuth authentication", () => {
     expect(first.hashed).toMatch(/^[0-9a-f]{64}$/);
     expect(second.raw).not.toBe(first.raw);
   });
+
+  test("uses a Gapwise-owned OIDC redirect for iOS instead of the Supabase hostname", () => {
+    expect(googleRedirectRequiredForIos("Mozilla/5.0 (iPhone; CPU iPhone OS 18_6)", "iPhone", 5)).toBe(
+      true,
+    );
+    expect(googleRedirectRequiredForIos("Mozilla/5.0 Safari", "MacIntel", 5)).toBe(true);
+    expect(googleRedirectRequiredForIos("Mozilla/5.0 Chrome", "MacIntel", 0)).toBe(false);
+
+    const authorizationUrl = new URL(
+      buildGoogleOidcAuthorizationUrl({
+        clientId: "client.apps.googleusercontent.com",
+        origin: "https://gapwise.ca",
+        state: "state-token",
+        hashedNonce: "a".repeat(64),
+      }),
+    );
+    expect(authorizationUrl.origin).toBe("https://accounts.google.com");
+    expect(authorizationUrl.pathname).toBe("/o/oauth2/v2/auth");
+    expect(authorizationUrl.searchParams.get("client_id")).toBe(
+      "client.apps.googleusercontent.com",
+    );
+    expect(authorizationUrl.searchParams.get("redirect_uri")).toBe("https://gapwise.ca/");
+    expect(authorizationUrl.searchParams.get("response_type")).toBe("id_token");
+    expect(authorizationUrl.searchParams.get("response_mode")).toBe("fragment");
+    expect(authorizationUrl.searchParams.get("scope")).toBe("openid email profile");
+    expect(authorizationUrl.searchParams.get("state")).toBe("state-token");
+    expect(authorizationUrl.searchParams.get("nonce")).toBe("a".repeat(64));
+    expect(authorizationUrl.href).not.toContain("supabase.co");
+  });
+
   test("cleans provider OAuth errors without exposing provider internals", () => {
     let replacement = "";
     const message = consumeOAuthError(
