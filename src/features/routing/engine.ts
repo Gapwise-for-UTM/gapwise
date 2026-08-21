@@ -311,12 +311,23 @@ export function findBestRoute(
   const distances = new Map<string, number>(starts.map((id) => [id, 0]));
   const previous = new Map<string, Traversal>();
   const frontier = new MinPriorityQueue();
-  // The metric heuristic is used only when every geographic edge affirms that its
-  // routing distance is at least endpoint geodesic distance. Otherwise h=0 gives Dijkstra.
+  // The metric heuristic is used only when every edge has located endpoints and
+  // its routing distance dominates endpoint geodesic distance. Otherwise h=0
+  // gives Dijkstra and preserves optimality for mixed indoor/outdoor graphs.
   const metricSafe = graph.edges.every((edge) => {
     const a = nodes.get(edge.from);
     const b = nodes.get(edge.to);
-    return !a || !b || straightLineMeters(a, b) <= edge.distanceMeters + 1e-6;
+    if (
+      !a ||
+      !b ||
+      a.longitude === undefined ||
+      a.latitude === undefined ||
+      b.longitude === undefined ||
+      b.latitude === undefined
+    ) {
+      return false;
+    }
+    return straightLineMeters(a, b) <= edge.distanceMeters + 1e-6;
   });
   const heuristic = (nodeId: string) =>
     metricSafe
