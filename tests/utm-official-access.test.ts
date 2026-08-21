@@ -22,6 +22,21 @@ describe("official UTM exterior-access evidence", () => {
     }
   });
 
+  test("records current official building codes without changing stable Gapwise identities", () => {
+    const building = (code: string) => UTM_BUILDINGS.find((item) => item.code === code)!;
+
+    expect(building("CCT").officialCodes?.values).toEqual(["CC"]);
+    expect(building("RAWC").officialCodes?.values).toEqual(["RA"]);
+    expect(building("LL").officialCodes?.values).toEqual(["R"]);
+    expect(building("KN").officialCodes?.values).toEqual(["KN"]);
+    expect(building("IC").officialCodes?.values).toEqual(["KN"]);
+    expect(building("KN").sharedComplex?.id).toBe("kaneff-innovation");
+    expect(building("IC").sharedComplex?.id).toBe("kaneff-innovation");
+
+    // Evidence metadata must not silently make KN a parser alias for Innovation Complex.
+    expect(building("IC").aliases).not.toContain("KN");
+  });
+
   test("records all named barrier-free identities in the current building registry without inventing geometry", () => {
     expect(OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES).toHaveLength(31);
     expect(
