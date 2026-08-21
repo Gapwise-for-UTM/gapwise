@@ -219,8 +219,7 @@ if (typeof window !== "undefined") {
 export async function signInWithGoogle(redirectTo?: string): Promise<void> {
   const clientId = import.meta.env["VITE_GOOGLE_CLIENT_ID"] as string | undefined;
   const useHostedFallback = import.meta.env["VITE_GOOGLE_AUTH_MODE"] === "oauth";
-  const directRedirectEnabled =
-    import.meta.env["VITE_GOOGLE_DIRECT_REDIRECT_ENABLED"] === "true";
+  const directRedirectEnabled = import.meta.env["VITE_GOOGLE_DIRECT_REDIRECT_ENABLED"] === "true";
   if (!clientId || useHostedFallback) return signInWithGoogleOAuthFallback(redirectTo);
   if (!navigator.onLine) throw new Error("You're offline. Reconnect and try Google sign-in.");
 
