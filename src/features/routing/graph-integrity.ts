@@ -172,7 +172,10 @@ export function routingGraphIssues(graph: RoutingGraph): string[] {
             fromNode.longitude,
             fromNode.latitude,
           ]);
-          const endGap = haversineMeters(edge.geometry.at(-1)!, [toNode.longitude, toNode.latitude]);
+          const endGap = haversineMeters(edge.geometry.at(-1)!, [
+            toNode.longitude,
+            toNode.latitude,
+          ]);
           if (startGap > 1) {
             issues.push(`Edge “${edge.id}” geometry starts more than 1 m from its from node.`);
           }
