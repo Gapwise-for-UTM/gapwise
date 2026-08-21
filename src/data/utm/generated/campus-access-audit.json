@@ -1,0 +1,477 @@
+{
+  "generatedAt": "2026-08-21",
+  "failClosed": true,
+  "buildings": [
+    {
+      "code": "MN",
+      "name": "Maanjiwe nendamowinan",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 1,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13738201127"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "DH",
+      "name": "Deerfield Hall",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 3,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 3,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13568164836",
+        "https://www.openstreetmap.org/node/13568164837",
+        "https://www.openstreetmap.org/node/13751172451"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "IB",
+      "name": "Instructional Centre",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 2,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 2,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/2383650599",
+        "https://www.openstreetmap.org/node/2383653565"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "DV",
+      "name": "William G. Davis Building",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 4,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 4,
+      "verifiedAccessibleEntrances": 2,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13568164844",
+        "https://www.openstreetmap.org/node/13736463909",
+        "https://www.openstreetmap.org/node/1728238982",
+        "https://www.openstreetmap.org/node/370306723"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "CCT",
+      "name": "Communication, Culture and Technology Building",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 1,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 1,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13568164845"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published."
+      ]
+    },
+    {
+      "code": "HM",
+      "name": "Hazel McCallion Academic Learning Centre",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 1,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13731205434"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "KN",
+      "name": "Kaneff Centre",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 3,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 3,
+      "verifiedAccessibleEntrances": 3,
+      "provenance": [
+        "https://www.openstreetmap.org/node/1312579120",
+        "https://www.openstreetmap.org/node/13568164841",
+        "https://www.openstreetmap.org/node/13568164842"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published."
+      ]
+    },
+    {
+      "code": "IC",
+      "name": "Innovation Complex",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "RAWC",
+      "name": "Recreation, Athletics and Wellness Centre",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 1,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13568164832"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "XR",
+      "name": "Student Centre",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 2,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 2,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13568164843",
+        "https://www.openstreetmap.org/node/2105676602"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "HB",
+      "name": "Terrence Donnelly Health Sciences Complex",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 2,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 2,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13568164846",
+        "https://www.openstreetmap.org/node/13738956113"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "AX",
+      "name": "Academic Annex",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/1728239148"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "WC",
+      "name": "Alumni House",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "CUP",
+      "name": "Central Utilities Plant",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "DW",
+      "name": "Erindale Studio Theatre",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 1,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13767739551"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "FCSH",
+      "name": "Forensic Crime Scene House",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "GF",
+      "name": "Grounds Building",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "NSB",
+      "name": "New Science Building",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "PL",
+      "name": "Paleomagnetism Lab",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "BG",
+      "name": "Research Greenhouse",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "LH",
+      "name": "The Principal's Residence: Lislehurst",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 0,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [],
+      "unresolved": [
+        "No publishable exterior access point is recorded."
+      ]
+    },
+    {
+      "code": "EH",
+      "name": "Erindale Hall",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/1312381405"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "LL",
+      "name": "Leacock Lane",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/10307744191"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "MV",
+      "name": "MaGrath Valley",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13783936312"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "MC",
+      "name": "McLuhan Court",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/1312572625"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "OPH",
+      "name": "Oscar Peterson Hall",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 2,
+      "inferredApproaches": 0,
+      "graphConnectedAccessPoints": 2,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13738728068",
+        "https://www.openstreetmap.org/node/1728224590"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
+      ]
+    },
+    {
+      "code": "PP",
+      "name": "Putnam Place",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/1312345673"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "RIH",
+      "name": "Roy Ivor Hall",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/1312390438"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "SW",
+      "name": "Schreiberwood",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.openstreetmap.org/node/4210336797"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    },
+    {
+      "code": "NRB",
+      "name": "New Residence Building",
+      "canonicalGeometry": "present",
+      "verifiedExteriorEntrances": 0,
+      "inferredApproaches": 1,
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 0,
+      "provenance": [
+        "https://www.utm.utoronto.ca/housing/new-residence-building"
+      ],
+      "unresolved": [
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more approach points are topology inferences, not verified doors."
+      ]
+    }
+  ]
+}

@@ -6,6 +6,7 @@ import { meeting } from "./fixtures";
 const route: RouteResult = {
   nodes: [],
   edges: [],
+  coordinates: [],
   totalDistanceMeters: 200,
   indoorDistanceMeters: 50,
   outdoorDistanceMeters: 150,

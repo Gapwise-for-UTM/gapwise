@@ -30,6 +30,9 @@ export type RoutingNode = {
   label?: string;
   photoReference?: string;
   notes?: string;
+  /** Exterior-door semantics. Missing values are treated conservatively by endpoint selection. */
+  access?: "public" | "restricted" | "emergency_only" | "unknown";
+  direction?: "entry" | "exit" | "both" | "unknown";
   metadata?: SourceMetadata;
 };
 
@@ -45,6 +48,8 @@ export type RoutingEdge = {
   estimatedDelaySeconds?: number;
   photoReference?: string;
   notes?: string;
+  /** Full WGS84 shape, ordered from `from` to `to`. */
+  geometry?: [number, number][];
   metadata?: SourceMetadata;
 };
 
@@ -63,6 +68,8 @@ export type RouteResult = {
   estimatedSeconds: number;
   floorChanges: number;
   warnings: string[];
+  /** Exact oriented polyline assembled from the selected graph traversals. */
+  coordinates: [number, number][];
 };
 
 export type RoutingGraph = {

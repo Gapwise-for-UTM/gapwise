@@ -181,4 +181,92 @@ describe("meeting transition routing", () => {
     expect(result.approximateSeconds).toBeNull();
     expect(result.result).toBeNull();
   });
+
+  test("excludes restricted and directionally invalid doors from entrance optimization", () => {
+    const graph: RoutingGraph = {
+      nodes: [
+        node("mn-restricted", {
+          kind: "building-entrance",
+          buildingCode: "MN",
+          access: "restricted",
+          direction: "both",
+        }),
+        node("mn-entry-only", {
+          kind: "building-entrance",
+          buildingCode: "MN",
+          access: "public",
+          direction: "entry",
+        }),
+        node("mn-public", {
+          kind: "building-entrance",
+          buildingCode: "MN",
+          access: "public",
+          direction: "both",
+        }),
+        node("path"),
+        node("ib-exit-only", {
+          kind: "building-entrance",
+          buildingCode: "IB",
+          access: "public",
+          direction: "exit",
+        }),
+        node("ib-public", {
+          kind: "building-entrance",
+          buildingCode: "IB",
+          access: "public",
+          direction: "both",
+        }),
+      ],
+      edges: [
+        edge("restricted-shortcut", "mn-restricted", "path", 1),
+        edge("entry-only-shortcut", "mn-entry-only", "path", 2),
+        edge("allowed-origin", "mn-public", "path", 50),
+        edge("exit-only-shortcut", "path", "ib-exit-only", 1),
+        edge("allowed-destination", "path", "ib-public", 50),
+      ],
+    };
+
+    const result = planMeetingTransition(
+      meeting(),
+      meeting({ id: "next", buildingCode: "IB", room: "340" }),
+      graph,
+      DEFAULT_ROUTE_PREFERENCES,
+    );
+    expect(result.status).toBe("routed");
+    expect(result.result?.nodes[0]?.id).toBe("mn-public");
+    expect(result.result?.nodes.at(-1)?.id).toBe("ib-public");
+    expect(result.result?.edges.map(({ id }) => id)).toEqual([
+      "allowed-origin",
+      "allowed-destination",
+    ]);
+  });
+
+  test("fails closed when every known departure door is ineligible", () => {
+    const graph: RoutingGraph = {
+      nodes: [
+        node("mn-restricted", {
+          kind: "building-entrance",
+          buildingCode: "MN",
+          access: "restricted",
+          direction: "both",
+        }),
+        node("ib-public", {
+          kind: "building-entrance",
+          buildingCode: "IB",
+          access: "public",
+          direction: "both",
+        }),
+      ],
+      edges: [edge("shortcut", "mn-restricted", "ib-public", 1)],
+    };
+
+    const result = planMeetingTransition(
+      meeting(),
+      meeting({ id: "next", buildingCode: "IB", room: "340" }),
+      graph,
+      DEFAULT_ROUTE_PREFERENCES,
+    );
+    expect(result.status).toBe("unavailable");
+    expect(result.message).toContain("No eligible departure entrance");
+  });
 });

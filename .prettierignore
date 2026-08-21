@@ -8,10 +8,12 @@ bun.lock
 routeTree.gen.ts
 src/data/utm/outdoor-edges.json
 src/data/utm/outdoor-nodes.geojson
+src/data/utm/generated/campus-access-audit.json
 public/openapi.json
 public/data/utm-campus-v1.json
 
 AGENTS.md
 README.md
 docs/GAPWISE_PLATFORM.md
+docs/CAMPUS_ACCESS_AUDIT.md
 src/components/mobile/mobile-integrated.css

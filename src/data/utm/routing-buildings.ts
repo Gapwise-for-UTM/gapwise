@@ -13,8 +13,18 @@ export type BuildingEntrance = {
   label: string;
   kind: EntranceKind;
   coordinates: [number, number];
-  osmNodeId: number;
+  /** Internal graph identity; verified doors do not have to originate in OpenStreetMap. */
+  routingNodeId: string;
+  /** Optional external OSM linkage retained for current data and interoperability. */
+  osmNodeId?: number;
+  externalIds?: {
+    osmNodeId?: number;
+  };
   accessibility: AccessibilityStatus;
+  access: "public" | "restricted" | "emergency_only" | "unknown";
+  direction: "entry" | "exit" | "both" | "unknown";
+  verificationMethod: string;
+  sourceIdentifier: string;
   notes?: string;
   metadata: SourceMetadata;
 };
@@ -29,6 +39,46 @@ export type CampusBuilding = {
   indoorMapped: boolean;
 };
 
+/**
+ * Keep the building registry and assembled graph synchronized. This prevents a
+ * future official/field-survey entrance from becoming a dangling route anchor.
+ */
+export function campusBuildingRoutingIssues(
+  buildings: readonly CampusBuilding[],
+  graphNodeIds: ReadonlySet<string>,
+): string[] {
+  const issues: string[] = [];
+
+  for (const building of buildings) {
+    const entranceNodeIds = new Set(building.entrances.map((entrance) => entrance.routingNodeId));
+    if (!entranceNodeIds.has(building.entranceNodeId)) {
+      issues.push(
+        `Building “${building.code}” primary entrance node “${building.entranceNodeId}” is not one of its entrance routing nodes.`,
+      );
+    }
+
+    for (const entrance of building.entrances) {
+      if (!graphNodeIds.has(entrance.routingNodeId)) {
+        issues.push(
+          `Building “${building.code}” entrance “${entrance.id}” references missing routing node “${entrance.routingNodeId}”.`,
+        );
+      }
+    }
+  }
+
+  return issues;
+}
+
+export function assertCampusBuildingRoutingIntegrity(
+  buildings: readonly CampusBuilding[],
+  graphNodeIds: ReadonlySet<string>,
+): void {
+  const issues = campusBuildingRoutingIssues(buildings, graphNodeIds);
+  if (issues.length > 0) {
+    throw new Error(`Campus building routing validation failed:\n- ${issues.join("\n- ")}`);
+  }
+}
+
 type EntranceFeature = {
   id: string;
   geometry: { type: "Point"; coordinates: [number, number] };
@@ -36,8 +86,15 @@ type EntranceFeature = {
     buildingCode: string;
     label: string;
     kind: EntranceKind;
-    osmNodeId: number;
+    /** Existing OSM-backed records may omit routingNodeId and derive it from this ID. */
+    osmNodeId?: number;
+    /** Future official/field-survey doors may supply a non-OSM graph node directly. */
+    routingNodeId?: string;
     accessibility: AccessibilityStatus;
+    access?: BuildingEntrance["access"];
+    direction?: BuildingEntrance["direction"];
+    verificationMethod?: string;
+    sourceIdentifier?: string;
     notes?: string;
     source: string;
     sourceUrl: string;
@@ -48,14 +105,47 @@ type EntranceFeature = {
 
 const entranceFeatures = (JSON.parse(entranceDataRaw) as { features: EntranceFeature[] }).features;
 
-function toEntrance(feature: EntranceFeature): BuildingEntrance {
+function resolveRoutingNodeId(feature: EntranceFeature): string | null {
+  if (feature.properties.routingNodeId?.trim()) return feature.properties.routingNodeId.trim();
+  if (feature.properties.osmNodeId !== undefined) {
+    return `osm-node-${feature.properties.osmNodeId}`;
+  }
+  return null;
+}
+
+function resolveVerificationMethod(feature: EntranceFeature): string | null {
+  if (feature.properties.verificationMethod?.trim())
+    return feature.properties.verificationMethod.trim();
+  return feature.properties.osmNodeId !== undefined ? "published OSM entrance node" : null;
+}
+
+function resolveSourceIdentifier(feature: EntranceFeature): string | null {
+  if (feature.properties.sourceIdentifier?.trim())
+    return feature.properties.sourceIdentifier.trim();
+  return feature.properties.osmNodeId !== undefined
+    ? `osm:node/${feature.properties.osmNodeId}`
+    : null;
+}
+
+function toEntrance(feature: EntranceFeature): BuildingEntrance | null {
+  const routingNodeId = resolveRoutingNodeId(feature);
+  const verificationMethod = resolveVerificationMethod(feature);
+  const sourceIdentifier = resolveSourceIdentifier(feature);
+  // Non-OSM entrances fail closed unless they provide explicit routing identity
+  // and provenance semantics instead of inheriting an invented fallback.
+  if (!routingNodeId || !verificationMethod || !sourceIdentifier) return null;
+
   const entrance: BuildingEntrance = {
     id: feature.id,
     label: feature.properties.label,
     kind: feature.properties.kind,
     coordinates: feature.geometry.coordinates,
-    osmNodeId: feature.properties.osmNodeId,
+    routingNodeId,
     accessibility: feature.properties.accessibility,
+    access: feature.properties.access ?? "unknown",
+    direction: feature.properties.direction ?? "unknown",
+    verificationMethod,
+    sourceIdentifier,
     metadata: {
       source: feature.properties.source,
       sourceUrl: feature.properties.sourceUrl,
@@ -63,6 +153,10 @@ function toEntrance(feature: EntranceFeature): BuildingEntrance {
       verificationStatus: feature.properties.verificationStatus,
     },
   };
+  if (feature.properties.osmNodeId !== undefined) {
+    entrance.osmNodeId = feature.properties.osmNodeId;
+    entrance.externalIds = { osmNodeId: feature.properties.osmNodeId };
+  }
   if (feature.properties.notes) entrance.notes = feature.properties.notes;
   return entrance;
 }
@@ -72,7 +166,8 @@ export const CAMPUS_BUILDINGS: CampusBuilding[] = UTM_BUILDINGS.flatMap(
   (building): CampusBuilding[] => {
     const entrances = entranceFeatures
       .filter((feature) => feature.properties.buildingCode === building.code)
-      .map(toEntrance);
+      .map(toEntrance)
+      .filter((entrance): entrance is BuildingEntrance => entrance !== null);
     if (entrances.length === 0) return [];
     const primary = entrances[0]!;
     return [
@@ -82,7 +177,7 @@ export const CAMPUS_BUILDINGS: CampusBuilding[] = UTM_BUILDINGS.flatMap(
         category: building.category,
         entrances,
         navigationPoint: primary.coordinates,
-        entranceNodeId: `osm-node-${primary.osmNodeId}`,
+        entranceNodeId: primary.routingNodeId,
         indoorMapped: false,
       } satisfies CampusBuilding,
     ];
