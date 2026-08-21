@@ -7,7 +7,7 @@ export const Route = createFileRoute("/privacy")({
       { title: "Privacy — Gapwise for UTM" },
       {
         name: "description",
-        content: "How Gapwise handles timetable, account, planning, and location data.",
+        content: "How Gapwise handles timetable, account, planning, payment, and location data.",
       },
     ],
   }),
@@ -33,6 +33,16 @@ function PrivacyPage() {
           normalized timetable, preferences, personal items, coursework, and academic plans are
           encrypted in the browser before cloud storage. Gapwise does not describe this design as
           end-to-end encryption or zero knowledge.
+        </p>
+      </section>
+      <section>
+        <h2>Payments</h2>
+        <p>
+          If you purchase Gapwise Pro, Stripe processes checkout and payment details. Gapwise does
+          not receive or store your full card number. Gapwise may store Stripe transaction or
+          customer identifiers, payment status, amount and currency, and the resulting Pro access
+          period so it can confirm access and handle billing support, refunds, reversals, or
+          disputes.
         </p>
       </section>
       <section>

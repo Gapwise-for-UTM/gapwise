@@ -1,5 +1,13 @@
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, GitBranch, LogOut, Settings2, Trash2, UserRound } from "lucide-react";
+import {
+  ChevronDown,
+  CreditCard,
+  GitBranch,
+  LogOut,
+  Settings2,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
@@ -27,12 +35,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useBridgedAiDelegationController } from "@/features/ai/controller-bridge";
+import { AccountOnboarding } from "@/features/onboarding/AccountOnboarding";
 import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
-import { AccountSettingsDialog } from "./AccountSettingsDialog";
+import { AccountSettingsDialog, type AccountSettingsTab } from "./AccountSettingsDialog";
 import {
   consumeOAuthError,
   deleteAccount,
@@ -74,6 +83,10 @@ export function AccountStatus({
   const [busy, setBusy] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<AccountSettingsTab>("account");
+  const [billingReturnStatus, setBillingReturnStatus] = useState<"success" | "cancelled" | null>(
+    null,
+  );
   const [clearLocal, setClearLocal] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [cleanupUserId, setCleanupUserId] = useState<string | null>(null);
@@ -98,8 +111,26 @@ export function AccountStatus({
   }, [user]);
 
   useEffect(() => {
-    if (user) setSignInOpen(false);
-    else setSettingsOpen(false);
+    if (user) {
+      setSignInOpen(false);
+      const url = new URL(window.location.href);
+      const billing = url.searchParams.get("billing");
+      if (billing === "success" || billing === "cancelled") {
+        setBillingReturnStatus(billing);
+        setSettingsTab("billing");
+        setSettingsOpen(true);
+        url.searchParams.delete("billing");
+        url.searchParams.delete("session_id");
+        window.history.replaceState(
+          window.history.state,
+          "",
+          `${url.pathname}${url.search}${url.hash}`,
+        );
+      }
+    } else {
+      setSettingsOpen(false);
+      setBillingReturnStatus(null);
+    }
   }, [user]);
 
   async function removeAccount() {
@@ -208,8 +239,22 @@ export function AccountStatus({
                   You’ll stay signed in on this device until you sign out.
                 </span>
               </DropdownMenuLabel>
-              <DropdownMenuItem onSelect={() => setSettingsOpen(true)}>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setSettingsTab("account");
+                  setSettingsOpen(true);
+                }}
+              >
                 <Settings2 aria-hidden="true" /> Account settings
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setBillingReturnStatus(null);
+                  setSettingsTab("billing");
+                  setSettingsOpen(true);
+                }}
+              >
+                <CreditCard aria-hidden="true" /> Plan & billing
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled={busy} onSelect={() => void leaveAccount()}>
@@ -229,6 +274,13 @@ export function AccountStatus({
             open={settingsOpen}
             onOpenChange={(open) => !busy && setSettingsOpen(open)}
             identity={getAccountIdentity(user)}
+            userId={user.id}
+            tab={settingsTab}
+            onTabChange={(tab) => {
+              setSettingsTab(tab);
+              if (tab !== "billing") setBillingReturnStatus(null);
+            }}
+            billingReturnStatus={billingReturnStatus}
             aiController={aiController}
           />
 
@@ -337,6 +389,8 @@ export function AccountStatus({
           </p>
         </DialogContent>
       </Dialog>
+
+      <AccountOnboarding userId={user?.id ?? null} />
 
       {message ? (
         <div

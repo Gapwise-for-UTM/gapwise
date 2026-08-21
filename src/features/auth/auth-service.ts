@@ -7,6 +7,11 @@ import {
 import { authStore } from "./auth-store";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 
+const GOOGLE_SCRIPT_ID = "gapwise-google-identity";
+const GOOGLE_OIDC_STATE_KEY = "gapwise.google.oidc.state";
+const GOOGLE_OIDC_NONCE_KEY = "gapwise.google.oidc.nonce";
+const GOOGLE_OIDC_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+
 function authRedirectTarget(redirectTo?: string): string {
   if (!redirectTo) return window.location.origin;
   const target = new URL(redirectTo, window.location.origin);
@@ -67,8 +72,6 @@ declare global {
   }
 }
 
-const GOOGLE_SCRIPT_ID = "gapwise-google-identity";
-
 async function googleAccounts(): Promise<GoogleAccounts> {
   if (window.google?.accounts) return window.google.accounts;
   await new Promise<void>((resolve, reject) => {
@@ -100,6 +103,10 @@ function hexadecimal(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function randomGoogleState(): string {
+  return base64Url(crypto.getRandomValues(new Uint8Array(32)));
+}
+
 export async function createGoogleNonce(): Promise<{ raw: string; hashed: string }> {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const raw = base64Url(bytes);
@@ -107,11 +114,123 @@ export async function createGoogleNonce(): Promise<{ raw: string; hashed: string
   return { raw, hashed: hexadecimal(new Uint8Array(digest)) };
 }
 
+export function googleRedirectRequiredForIos(
+  userAgent: string,
+  platform: string,
+  maxTouchPoints: number,
+): boolean {
+  return /iPad|iPhone|iPod/i.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
+}
+
+export function buildGoogleOidcAuthorizationUrl({
+  clientId,
+  origin,
+  state,
+  hashedNonce,
+}: {
+  clientId: string;
+  origin: string;
+  state: string;
+  hashedNonce: string;
+}): string {
+  const redirectUri = new URL("/", origin).href;
+  const url = new URL(GOOGLE_OIDC_ENDPOINT);
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("response_type", "id_token");
+  url.searchParams.set("response_mode", "fragment");
+  url.searchParams.set("scope", "openid email profile");
+  url.searchParams.set("state", state);
+  url.searchParams.set("nonce", hashedNonce);
+  url.searchParams.set("prompt", "select_account");
+  return url.href;
+}
+
+async function beginGoogleOidcRedirect(clientId: string): Promise<void> {
+  const state = randomGoogleState();
+  const nonce = await createGoogleNonce();
+  sessionStorage.setItem(GOOGLE_OIDC_STATE_KEY, state);
+  sessionStorage.setItem(GOOGLE_OIDC_NONCE_KEY, nonce.raw);
+  window.location.assign(
+    buildGoogleOidcAuthorizationUrl({
+      clientId,
+      origin: window.location.origin,
+      state,
+      hashedNonce: nonce.hashed,
+    }),
+  );
+}
+
+function clearGoogleOidcAttempt(): void {
+  sessionStorage.removeItem(GOOGLE_OIDC_STATE_KEY);
+  sessionStorage.removeItem(GOOGLE_OIDC_NONCE_KEY);
+}
+
+function clearGoogleOidcFragment(): void {
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${window.location.pathname}${window.location.search}`,
+  );
+}
+
+function restartWithGenericAuthError(): void {
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.searchParams.set("error", "google_sign_in_failed");
+  window.location.replace(`${url.pathname}${url.search}`);
+}
+
+async function completeGoogleOidcRedirectOnLoad(): Promise<void> {
+  if (!window.location.hash) return;
+  const response = new URLSearchParams(window.location.hash.slice(1));
+  const idToken = response.get("id_token");
+  const providerError = response.get("error");
+  if (!idToken && !providerError) return;
+
+  const returnedState = response.get("state");
+  const expectedState = sessionStorage.getItem(GOOGLE_OIDC_STATE_KEY);
+  const rawNonce = sessionStorage.getItem(GOOGLE_OIDC_NONCE_KEY);
+  clearGoogleOidcAttempt();
+  clearGoogleOidcFragment();
+
+  if (providerError || !idToken || !expectedState || returnedState !== expectedState || !rawNonce) {
+    restartWithGenericAuthError();
+    return;
+  }
+
+  try {
+    const supabase = requireSupabaseClient();
+    const { error } = await supabase.auth.signInWithIdToken({
+      provider: "google",
+      token: idToken,
+      nonce: rawNonce,
+    });
+    if (error) throw error;
+  } catch {
+    restartWithGenericAuthError();
+  }
+}
+
+if (typeof window !== "undefined") {
+  void completeGoogleOidcRedirectOnLoad();
+}
+
 export async function signInWithGoogle(redirectTo?: string): Promise<void> {
   const clientId = import.meta.env["VITE_GOOGLE_CLIENT_ID"] as string | undefined;
-  const useFallback = import.meta.env["VITE_GOOGLE_AUTH_MODE"] === "oauth";
-  if (!clientId || useFallback) return signInWithGoogleOAuthFallback(redirectTo);
+  const useHostedFallback = import.meta.env["VITE_GOOGLE_AUTH_MODE"] === "oauth";
+  const directRedirectEnabled = import.meta.env["VITE_GOOGLE_DIRECT_REDIRECT_ENABLED"] === "true";
+  if (!clientId || useHostedFallback) return signInWithGoogleOAuthFallback(redirectTo);
   if (!navigator.onLine) throw new Error("You're offline. Reconnect and try Google sign-in.");
+
+  if (
+    googleRedirectRequiredForIos(navigator.userAgent, navigator.platform, navigator.maxTouchPoints)
+  ) {
+    if (!directRedirectEnabled) return signInWithGoogleOAuthFallback(redirectTo);
+    await beginGoogleOidcRedirect(clientId);
+    return;
+  }
+
   const supabase = requireSupabaseClient();
   const accounts = await googleAccounts();
   const nonce = await createGoogleNonce();
@@ -122,10 +241,13 @@ export async function signInWithGoogle(redirectTo?: string): Promise<void> {
       settled = true;
       action();
     };
-    const fallBackToHostedOAuth = () => {
+    const fallBackFromGooglePrompt = () => {
       if (settled) return;
       settled = true;
-      void signInWithGoogleOAuthFallback(redirectTo).then(resolve, reject);
+      const fallback = directRedirectEnabled
+        ? beginGoogleOidcRedirect(clientId)
+        : signInWithGoogleOAuthFallback(redirectTo);
+      void fallback.then(resolve, reject);
     };
     accounts.id.initialize({
       client_id: clientId,
@@ -156,7 +278,7 @@ export async function signInWithGoogle(redirectTo?: string): Promise<void> {
         return;
       }
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        fallBackToHostedOAuth();
+        fallBackFromGooglePrompt();
       }
     });
   });
