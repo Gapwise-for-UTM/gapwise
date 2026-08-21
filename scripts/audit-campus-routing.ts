@@ -31,11 +31,7 @@ type AuditedEdge = {
   bidirectional: boolean;
 };
 
-const ACCESSIBILITY = new Set<AccessibilityStatus>([
-  "accessible",
-  "not_accessible",
-  "unknown",
-]);
+const ACCESSIBILITY = new Set<AccessibilityStatus>(["accessible", "not_accessible", "unknown"]);
 const ACCESS = new Set<EntranceAccess>(["public", "restricted", "emergency_only", "unknown"]);
 const DIRECTIONS = new Set<EntranceDirection>(["entry", "exit", "both", "unknown"]);
 const VERIFICATION = new Set<VerificationStatus>(["verified", "inferred"]);
@@ -211,7 +207,9 @@ const entrances = parseEntrances(
   JSON.parse(await readFile(resolve(root, "src/data/utm/entrances.geojson"), "utf8")) as unknown,
 );
 const nodeIds = parseOutdoorNodeIds(
-  JSON.parse(await readFile(resolve(root, "src/data/utm/outdoor-nodes.geojson"), "utf8")) as unknown,
+  JSON.parse(
+    await readFile(resolve(root, "src/data/utm/outdoor-nodes.geojson"), "utf8"),
+  ) as unknown,
 );
 const edges = parseEdges(
   JSON.parse(await readFile(resolve(root, "src/data/utm/outdoor-edges.json"), "utf8")) as unknown,
@@ -293,6 +291,4 @@ await writeFile(
   resolve(root, "docs/CAMPUS_ACCESS_AUDIT.md"),
   `# UTM campus access audit\n\nGenerated deterministically by \`bun run routing:audit\`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Graph-connected” means only that the point is attached to the bundled pedestrian graph; it does not by itself establish endpoint eligibility. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.\n\n| Building | Verified geocoded doors | Inferred geocoded approaches | Graph-connected access points | Explicitly accessible geocoded doors | Unresolved |\n| --- | ---: | ---: | ---: | ---: | --- |\n${rows.join("\n")}\n\n## Official UTM barrier-free entrance reconciliation\n\nUTM Facilities separately publishes named **barrier-free building entrances** in its snow and ice removal strategy: https://www.utm.utoronto.ca/facilities/utm-strategy-snow-and-ice-removal. These records establish the entrance identity and barrier-free designation, but the page does not publish exact door coordinates. Gapwise therefore keeps them as non-routable evidence candidates until a candidate can be matched to publishable geometry or a field survey.\n\nThe official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) was visually reviewed on 2026-08-21 as a corroborating QA reference. Its accessibility markers reinforce that several academic-core buildings have multiple exterior access points, including clusters around MN/DH/IB/HM/CCT/DV/KN/XR/EH/OPH. Gapwise does **not** scrape, copy, reverse-engineer, or transpose proprietary marker positions into routing coordinates.\n\nThe “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the geocoded coordinates still need an explicit source match to the named official entrance.\n\n| Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n${officialRows.join("\n")}\n\nThe same official Facilities source also names **Early Learning Centre: Main**. Early Learning Centre is not currently in the Gapwise UTM building registry, so it is recorded here as an upstream coverage gap rather than silently assigned to another building. Absence from the barrier-free list does not prove that a building is inaccessible.\n`,
 );
-console.log(
-  `Audited ${records.length} buildings and ${entrances.length} geocoded access points.`,
-);
+console.log(`Audited ${records.length} buildings and ${entrances.length} geocoded access points.`);
