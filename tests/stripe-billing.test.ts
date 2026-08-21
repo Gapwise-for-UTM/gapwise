@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 import { describe, expect, test } from "bun:test";
-import { verifyStripeSignature } from "./stripe";
+import { verifyStripeSignature } from "../src/server/billing/stripe";
 
 describe("Stripe webhook signatures", () => {
   test("accepts a current matching v1 signature", () => {
@@ -23,7 +23,12 @@ describe("Stripe webhook signatures", () => {
       .update(`${timestamp}.${body}`)
       .digest("hex");
     expect(
-      verifyStripeSignature("{\"changed\":true}", `t=${timestamp},v1=${signature}`, secret, timestamp * 1000),
+      verifyStripeSignature(
+        '{"changed":true}',
+        `t=${timestamp},v1=${signature}`,
+        secret,
+        timestamp * 1000,
+      ),
     ).toBe(false);
     expect(
       verifyStripeSignature(
