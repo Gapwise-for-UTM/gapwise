@@ -50,7 +50,9 @@ test("visible Pro planning journey accepts work and exposes safe block actions",
   await expect(rescheduleDialog).toBeVisible();
   await expect(rescheduleDialog.getByLabel("New study start")).toBeVisible();
   if (mobile) {
-    await expect(rescheduleDialog.getByRole("button", { name: "Move study block" })).toBeInViewport();
+    await expect(
+      rescheduleDialog.getByRole("button", { name: "Move study block" }),
+    ).toBeInViewport();
   }
   guard.assertClean();
 });
