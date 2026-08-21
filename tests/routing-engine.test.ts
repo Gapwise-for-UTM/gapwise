@@ -157,4 +157,28 @@ describe("deterministic graph routing", () => {
       [-79.66, 43.55],
     ]);
   });
+
+  test("keeps the first geographic coordinate after an earlier non-geographic traversal", () => {
+    const graph: RoutingGraph = {
+      nodes: [
+        node("room", { kind: "room", buildingCode: "MN", floor: "1" }),
+        node("door", {
+          kind: "building-entrance",
+          buildingCode: "MN",
+          longitude: -79.6654,
+          latitude: 43.5513,
+        }),
+        node("path", { longitude: -79.665, latitude: 43.551 }),
+      ],
+      edges: [
+        edge("indoor-without-wgs84", "room", "door", 10, { environment: "indoor" }),
+        edge("outdoor", "door", "path", 40),
+      ],
+    };
+
+    expect(findRoute(graph, "room", "path", DEFAULT_ROUTE_PREFERENCES)?.coordinates).toEqual([
+      [-79.6654, 43.5513],
+      [-79.665, 43.551],
+    ]);
+  });
 });
