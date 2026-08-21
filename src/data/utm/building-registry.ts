@@ -1,10 +1,25 @@
 import type { SourceMetadata } from "@/features/routing/types";
+import { factEvidence, type FactEvidence } from "./provenance";
+
+export type EvidenceBackedStringList = {
+  values: readonly string[];
+  evidence: FactEvidence;
+};
+
+export type SharedComplexMetadata = {
+  id: string;
+  evidence: FactEvidence;
+};
 
 export type BuildingConfiguration = {
   code: string;
   name: string;
   category: "academic" | "residence" | "facility";
   aliases?: string[];
+  /** Official UTM alpha codes are evidence metadata and do not silently change parser behavior. */
+  officialCodes?: EvidenceBackedStringList;
+  /** Multiple Gapwise identities may legitimately share one official building code/complex. */
+  sharedComplex?: SharedComplexMetadata;
   metadata?: SourceMetadata;
   verifiedRoomFloors?: Record<
     string,
@@ -31,14 +46,35 @@ const OFFICIAL_ROOM_EXAMPLE_SOURCE = {
 const OFFICIAL_FACILITIES_SOURCE = {
   source: "University of Toronto Mississauga Facilities Management & Planning building list",
   sourceUrl: "https://www.utm.utoronto.ca/facilities/buildings",
-  lastVerified: "2026-08-14",
+  lastVerified: "2026-08-21",
   verificationStatus: "verified",
 } as const satisfies SourceMetadata;
+
+const OFFICIAL_CODE_EVIDENCE = factEvidence(
+  ["utm-facilities-buildings"],
+  "verified",
+  "UTM Facilities publishes this alpha building code.",
+);
+
+const SHARED_KANEFF_INNOVATION_EVIDENCE = factEvidence(
+  ["utm-facilities-buildings"],
+  "verified",
+  "UTM Facilities assigns both Kaneff Centre and Innovation Complex the KN code and 1833 Inner Circle.",
+);
+
+function officialCodes(...values: string[]): EvidenceBackedStringList {
+  return { values, evidence: OFFICIAL_CODE_EVIDENCE };
+}
+
+function sharedComplex(id: string): SharedComplexMetadata {
+  return { id, evidence: SHARED_KANEFF_INNOVATION_EVIDENCE };
+}
 
 /**
  * Canonical recognition data for UTM buildings. Presence here establishes
  * identity/search coverage, not surveyed routing, entrance, floor, or
- * accessibility coverage.
+ * accessibility coverage. Official codes are evidence metadata; Gapwise keeps
+ * stable internal codes where historical parser/API compatibility requires it.
  */
 export const UTM_BUILDINGS: BuildingConfiguration[] = [
   {
@@ -46,6 +82,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Maanjiwe nendamowinan",
     category: "academic",
     aliases: ["MAANJIWE NENDAMOWINAN", "MAANJIWE NENDAMOWINAN BUILDING"],
+    officialCodes: officialCodes("MN"),
     roomFloorRule: {
       kind: "first-digit",
       minimumLength: 4,
@@ -57,6 +94,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Deerfield Hall",
     category: "academic",
     aliases: ["DEERFIELD HALL"],
+    officialCodes: officialCodes("DH"),
     roomFloorRule: {
       kind: "first-digit",
       minimumLength: 4,
@@ -71,6 +109,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Instructional Centre",
     category: "academic",
     aliases: ["INSTRUCTIONAL CENTRE", "INSTRUCTIONAL CENTER", "INSTRUCTIONAL BUILDING"],
+    officialCodes: officialCodes("IB"),
     roomFloorRule: {
       kind: "first-digit",
       minimumLength: 3,
@@ -85,30 +124,37 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "William G. Davis Building",
     category: "academic",
     aliases: ["DAVIS", "DAVIS BUILDING"],
+    officialCodes: officialCodes("DV"),
   },
   {
     code: "CCT",
     name: "Communication, Culture and Technology Building",
     category: "academic",
     aliases: ["CC", "CC/CCT", "COMMUNICATION CULTURE AND TECHNOLOGY", "CCT BUILDING"],
+    officialCodes: officialCodes("CC"),
   },
   {
     code: "HM",
     name: "Hazel McCallion Academic Learning Centre",
     category: "academic",
     aliases: ["HAZEL MCCALLION", "HAZEL MCCALLION ACADEMIC LEARNING CENTRE"],
+    officialCodes: officialCodes("HM"),
   },
   {
     code: "KN",
     name: "Kaneff Centre",
     category: "academic",
     aliases: ["KANEFF", "KANEFF CENTRE"],
+    officialCodes: officialCodes("KN"),
+    sharedComplex: sharedComplex("kaneff-innovation"),
   },
   {
     code: "IC",
     name: "Innovation Complex",
     category: "academic",
     aliases: ["INNOVATION COMPLEX"],
+    officialCodes: officialCodes("KN"),
+    sharedComplex: sharedComplex("kaneff-innovation"),
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
@@ -116,30 +162,35 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Recreation, Athletics and Wellness Centre",
     category: "academic",
     aliases: ["RA", "RA/RAWC", "RECREATION ATHLETICS AND WELLNESS CENTRE"],
+    officialCodes: officialCodes("RA"),
   },
   {
     code: "XR",
     name: "Student Centre",
     category: "academic",
     aliases: ["STUDENT CENTRE", "STUDENT CENTER"],
+    officialCodes: officialCodes("XR"),
   },
   {
     code: "HB",
     name: "Terrence Donnelly Health Sciences Complex",
     category: "academic",
     aliases: ["HEALTH SCIENCES COMPLEX", "TERRENCE DONNELLY HEALTH SCIENCES COMPLEX"],
+    officialCodes: officialCodes("HB"),
   },
   {
     code: "AX",
     name: "Academic Annex",
     category: "academic",
     aliases: ["ACADEMIC ANNEX"],
+    officialCodes: officialCodes("AX"),
   },
   {
     code: "WC",
     name: "Alumni House",
     category: "facility",
     aliases: ["ALUMNI HOUSE"],
+    officialCodes: officialCodes("WC"),
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
@@ -154,6 +205,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Erindale Studio Theatre",
     category: "academic",
     aliases: ["ERINDALE STUDIO THEATRE"],
+    officialCodes: officialCodes("DW"),
   },
   {
     code: "FCSH",
@@ -167,6 +219,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Grounds Building",
     category: "facility",
     aliases: ["GROUNDS BUILDING"],
+    officialCodes: officialCodes("GF"),
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
@@ -188,6 +241,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Research Greenhouse",
     category: "academic",
     aliases: ["RESEARCH GREENHOUSE"],
+    officialCodes: officialCodes("BG"),
     metadata: OFFICIAL_FACILITIES_SOURCE,
   },
   {
@@ -208,6 +262,7 @@ export const UTM_BUILDINGS: BuildingConfiguration[] = [
     name: "Leacock Lane",
     category: "residence",
     aliases: ["R", "LEACOCK LANE", "LEACOCK LANE RESIDENCE"],
+    officialCodes: officialCodes("R"),
   },
   {
     code: "MV",
