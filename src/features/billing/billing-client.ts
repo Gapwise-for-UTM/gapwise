@@ -15,9 +15,10 @@ export async function startProCheckout(): Promise<string> {
     },
     body: "{}",
   });
-  const payload = (await response.json().catch(() => null)) as
-    | { url?: string; error?: string }
-    | null;
+  const payload = (await response.json().catch(() => null)) as {
+    url?: string;
+    error?: string;
+  } | null;
   if (!response.ok) throw new Error(payload?.error ?? "Checkout is unavailable right now.");
   if (!payload?.url || !payload.url.startsWith("https://")) {
     throw new Error("Checkout is unavailable right now.");

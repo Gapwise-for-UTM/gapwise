@@ -8,6 +8,7 @@ import {
   requirePostFromSameOrigin,
 } from "../src/server/private-cloud/http.js";
 import {
+  assertCheckoutEnabled,
   createFall2026CheckoutSession,
   findReusableCheckout,
   recordCheckoutSession,
@@ -19,6 +20,7 @@ export default {
       requirePostFromSameOrigin(request);
       requireExactObject(await readLimitedJson(request), []);
       const authenticated = await authenticateSupabaseRequest(request);
+      assertCheckoutEnabled();
       const { data: entitlement, error } = await authenticated.client
         .from("user_entitlements")
         .select("tier,expires_at")

@@ -41,10 +41,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
-import {
-  AccountSettingsDialog,
-  type AccountSettingsTab,
-} from "./AccountSettingsDialog";
+import { AccountSettingsDialog, type AccountSettingsTab } from "./AccountSettingsDialog";
 import {
   consumeOAuthError,
   deleteAccount,

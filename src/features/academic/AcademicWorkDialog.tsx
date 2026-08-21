@@ -207,7 +207,10 @@ export function AcademicWorkDialog({
             <p className="mt-1 text-sm text-muted-foreground">
               Automatically fit coursework into your real week.
             </p>
-            <p className="mt-3 text-xs text-muted-foreground">Billing is not available yet.</p>
+            <p className="mt-3 text-xs leading-5 text-muted-foreground">
+              Fall 2026 Pro is CA$9.99 one-time with no automatic renewal. Upgrade from Account →
+              Plan & billing.
+            </p>
           </div>
         ) : (
           <>

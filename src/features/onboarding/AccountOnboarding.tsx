@@ -16,9 +16,11 @@ async function requestOnboarding(action: "read" | "complete") {
     },
     body: JSON.stringify({ action }),
   });
-  const payload = (await response.json().catch(() => null)) as
-    | { pending?: boolean; completed?: boolean; error?: string }
-    | null;
+  const payload = (await response.json().catch(() => null)) as {
+    pending?: boolean;
+    completed?: boolean;
+    error?: string;
+  } | null;
   if (!response.ok) throw new Error(payload?.error ?? "Account setup is unavailable.");
   return payload;
 }

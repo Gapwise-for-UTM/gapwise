@@ -1,11 +1,7 @@
 import process from "node:process";
 import { createClient } from "@supabase/supabase-js";
 import { authenticateSupabaseRequest } from "../src/server/private-cloud/auth.js";
-import {
-  ApiError,
-  handleJsonPost,
-  requireExactObject,
-} from "../src/server/private-cloud/http.js";
+import { ApiError, handleJsonPost, requireExactObject } from "../src/server/private-cloud/http.js";
 
 function createUserClient(accessToken: string) {
   const url = (process.env["SUPABASE_URL"] ?? process.env["VITE_SUPABASE_URL"] ?? "").trim();

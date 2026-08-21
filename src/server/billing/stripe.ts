@@ -11,11 +11,23 @@ const WEBHOOK_TOLERANCE_SECONDS = 5 * 60;
 let adminClient: SupabaseClient | null = null;
 
 type JsonRecord = Record<string, unknown>;
+type PurchaseStatus = "pending" | "paid" | "expired" | "failed" | "refunded" | "disputed";
+export type PurchaseTransition =
+  | "payment_succeeded"
+  | "full_refund"
+  | "dispute_opened"
+  | "dispute_won"
+  | "dispute_lost";
 
 type CheckoutSession = {
   id: string;
   url: string;
   expiresAt: string;
+};
+
+type PaymentIntentBinding = {
+  userId: string;
+  term: string;
 };
 
 function asRecord(value: unknown): JsonRecord | null {
@@ -31,6 +43,38 @@ function stringValue(value: unknown): string | null {
 function idValue(value: unknown): string | null {
   if (typeof value === "string") return value;
   return stringValue(asRecord(value)?.["id"]);
+}
+
+function purchaseStatus(value: unknown): PurchaseStatus {
+  switch (value) {
+    case "pending":
+    case "paid":
+    case "expired":
+    case "failed":
+    case "refunded":
+    case "disputed":
+      return value;
+    default:
+      throw new Error("billing ledger status is invalid");
+  }
+}
+
+export function reconcilePurchaseStatus(
+  current: PurchaseStatus,
+  transition: PurchaseTransition,
+): PurchaseStatus {
+  switch (transition) {
+    case "full_refund":
+      return "refunded";
+    case "payment_succeeded":
+      if (current === "refunded" || current === "disputed") return current;
+      return "paid";
+    case "dispute_opened":
+    case "dispute_lost":
+      return current === "refunded" ? "refunded" : "disputed";
+    case "dispute_won":
+      return current === "refunded" ? "refunded" : "paid";
+  }
 }
 
 function readServiceRoleKey(): string {
@@ -73,6 +117,58 @@ function configuredPriceId(): string {
   return (process.env["STRIPE_PRO_FALL_2026_PRICE_ID"] ?? "").trim();
 }
 
+export function assertCheckoutEnabled(): void {
+  if ((process.env["STRIPE_CHECKOUT_ENABLED"] ?? "").trim().toLowerCase() !== "true") {
+    throw new ApiError(503, "Checkout is temporarily unavailable.");
+  }
+}
+
+async function stripeGet(path: string): Promise<JsonRecord> {
+  const response = await fetch(`${STRIPE_API}${path}`, {
+    headers: { Authorization: `Bearer ${stripeSecretKey()}` },
+  });
+  if (!response.ok) throw new Error("stripe verification unavailable");
+  const payload = await response.json();
+  const record = asRecord(payload);
+  if (!record) throw new Error("stripe verification response is malformed");
+  return record;
+}
+
+async function paymentIntentBinding(paymentIntent: string): Promise<PaymentIntentBinding | null> {
+  const payload = await stripeGet(`/payment_intents/${encodeURIComponent(paymentIntent)}`);
+  const metadata = asRecord(payload["metadata"]);
+  if (metadata?.["app"] !== "gapwise") return null;
+  const userId = stringValue(metadata["gapwise_user_id"]);
+  const term = stringValue(metadata["term"]);
+  if (!userId || !term) throw new Error("payment intent binding is invalid");
+  return { userId, term };
+}
+
+async function verifyCheckoutPrice(sessionId: string): Promise<void> {
+  const expectedPriceId = configuredPriceId();
+  const secret = stripeSecretKey();
+  if (!expectedPriceId) {
+    if (!secret.startsWith("sk_test_")) throw new Error("production Stripe Price is not configured");
+    return;
+  }
+
+  const payload = await stripeGet(
+    `/checkout/sessions/${encodeURIComponent(sessionId)}/line_items?limit=2`,
+  );
+  const data = payload["data"];
+  if (!Array.isArray(data) || data.length !== 1) throw new Error("checkout line items are invalid");
+  const line = asRecord(data[0]);
+  const price = asRecord(line?.["price"]);
+  if (
+    Number(line?.["quantity"]) !== 1 ||
+    stringValue(price?.["id"]) !== expectedPriceId ||
+    Number(price?.["unit_amount"]) !== PRO_AMOUNT_CAD_CENTS ||
+    price?.["currency"] !== "cad"
+  ) {
+    throw new Error("checkout Price does not match the Gapwise Pro contract");
+  }
+}
+
 export async function findReusableCheckout(userId: string) {
   const admin = billingAdminClient();
   const cutoff = new Date(Date.now() + 60_000).toISOString();
@@ -94,6 +190,7 @@ export async function createFall2026CheckoutSession(
   userId: string,
   origin: string,
 ): Promise<CheckoutSession> {
+  assertCheckoutEnabled();
   const secret = stripeSecretKey();
   const priceId = configuredPriceId();
   const params = new URLSearchParams();
@@ -219,7 +316,11 @@ async function claimWebhookEvent(admin: SupabaseClient, eventId: string, eventTy
   return true;
 }
 
-async function finishWebhookEvent(admin: SupabaseClient, eventId: string, status: "processed" | "failed") {
+async function finishWebhookEvent(
+  admin: SupabaseClient,
+  eventId: string,
+  status: "processed" | "failed",
+) {
   const now = new Date().toISOString();
   await admin
     .from("stripe_webhook_events")
@@ -235,9 +336,15 @@ async function recomputeStripeEntitlement(admin: SupabaseClient, userId: string)
     .maybeSingle();
   if (entitlementError) throw new Error("entitlement unavailable");
   if (current?.tier === "founder") return;
-  const currentExpiry = current?.expires_at ? Date.parse(String(current.expires_at)) : Number.POSITIVE_INFINITY;
+  const currentExpiry = current?.expires_at
+    ? Date.parse(String(current.expires_at))
+    : Number.POSITIVE_INFINITY;
   const currentIsActive = current?.tier === "pro" && currentExpiry > Date.now();
-  if (currentIsActive && typeof current?.source === "string" && !current.source.startsWith("stripe:")) {
+  if (
+    currentIsActive &&
+    typeof current?.source === "string" &&
+    !current.source.startsWith("stripe:")
+  ) {
     return;
   }
 
@@ -277,11 +384,12 @@ async function handlePaidCheckout(admin: SupabaseClient, object: JsonRecord) {
   const sessionId = stringValue(object["id"]);
   const userId = stringValue(object["client_reference_id"]);
   const metadataUserId = stringValue(metadata["gapwise_user_id"]);
-  if (!sessionId || !userId || metadataUserId !== userId) throw new Error("invalid checkout binding");
+  if (!sessionId || !userId || metadataUserId !== userId)
+    throw new Error("invalid checkout binding");
 
   const { data: ledger, error: ledgerError } = await admin
     .from("stripe_checkout_sessions")
-    .select("user_id,term,amount_total,currency")
+    .select("user_id,term,amount_total,currency,status")
     .eq("session_id", sessionId)
     .maybeSingle();
   if (ledgerError || !ledger) throw new Error("checkout ledger missing");
@@ -290,6 +398,7 @@ async function handlePaidCheckout(admin: SupabaseClient, object: JsonRecord) {
     ledger.term !== PRO_TERM ||
     Number(ledger.amount_total) !== PRO_AMOUNT_CAD_CENTS ||
     ledger.currency !== "cad" ||
+    object["mode"] !== "payment" ||
     Number(object["amount_total"]) !== PRO_AMOUNT_CAD_CENTS ||
     object["currency"] !== "cad"
   ) {
@@ -299,12 +408,19 @@ async function handlePaidCheckout(admin: SupabaseClient, object: JsonRecord) {
 
   const paymentIntent = idValue(object["payment_intent"]);
   if (!paymentIntent) throw new Error("payment intent missing");
+  const binding = await paymentIntentBinding(paymentIntent);
+  if (!binding || binding.userId !== userId || binding.term !== PRO_TERM) {
+    throw new Error("payment intent binding does not match checkout");
+  }
+  await verifyCheckoutPrice(sessionId);
+
   const customer = idValue(object["customer"]);
   const now = new Date().toISOString();
+  const nextStatus = reconcilePurchaseStatus(purchaseStatus(ledger.status), "payment_succeeded");
   const { error } = await admin
     .from("stripe_checkout_sessions")
     .update({
-      status: "paid",
+      status: nextStatus,
       payment_intent_id: paymentIntent,
       customer_id: customer,
       paid_at: now,
@@ -315,22 +431,34 @@ async function handlePaidCheckout(admin: SupabaseClient, object: JsonRecord) {
   await recomputeStripeEntitlement(admin, userId);
 }
 
-async function markPaymentIntentStatus(
+async function markPaymentIntentTransition(
   admin: SupabaseClient,
   paymentIntent: string | null,
-  status: "paid" | "refunded" | "disputed",
+  transition: PurchaseTransition,
 ) {
-  if (!paymentIntent) return;
+  if (!paymentIntent) throw new Error("payment intent missing");
+  const binding = await paymentIntentBinding(paymentIntent);
+  if (!binding) return;
+  if (binding.term !== PRO_TERM) throw new Error("unexpected gapwise term");
+
   const { data: ledger, error } = await admin
     .from("stripe_checkout_sessions")
-    .select("session_id,user_id")
+    .select("session_id,user_id,status")
     .eq("payment_intent_id", paymentIntent)
     .maybeSingle();
   if (error) throw new Error("checkout ledger unavailable");
-  if (!ledger) return;
+  if (!ledger) {
+    // Stripe does not guarantee webhook ordering. A refund or dispute can arrive
+    // before Checkout completion has linked the PaymentIntent to our ledger.
+    // Failing makes Stripe retry rather than incorrectly treating the event as handled.
+    throw new Error("checkout ledger not linked yet");
+  }
+  if (String(ledger.user_id) !== binding.userId) throw new Error("payment intent user mismatch");
+
+  const nextStatus = reconcilePurchaseStatus(purchaseStatus(ledger.status), transition);
   const { error: updateError } = await admin
     .from("stripe_checkout_sessions")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ status: nextStatus, updated_at: new Date().toISOString() })
     .eq("session_id", ledger.session_id);
   if (updateError) throw new Error("checkout ledger unavailable");
   await recomputeStripeEntitlement(admin, String(ledger.user_id));
@@ -357,17 +485,25 @@ async function handleStripeEvent(admin: SupabaseClient, eventType: string, objec
     }
     case "charge.refunded":
       if (object["refunded"] === true) {
-        await markPaymentIntentStatus(admin, idValue(object["payment_intent"]), "refunded");
+        await markPaymentIntentTransition(
+          admin,
+          idValue(object["payment_intent"]),
+          "full_refund",
+        );
       }
       return;
     case "charge.dispute.created":
-      await markPaymentIntentStatus(admin, idValue(object["payment_intent"]), "disputed");
-      return;
-    case "charge.dispute.closed":
-      await markPaymentIntentStatus(
+      await markPaymentIntentTransition(
         admin,
         idValue(object["payment_intent"]),
-        object["status"] === "won" ? "paid" : "disputed",
+        "dispute_opened",
+      );
+      return;
+    case "charge.dispute.closed":
+      await markPaymentIntentTransition(
+        admin,
+        idValue(object["payment_intent"]),
+        object["status"] === "won" ? "dispute_won" : "dispute_lost",
       );
       return;
     default:
