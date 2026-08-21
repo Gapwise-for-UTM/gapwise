@@ -8,8 +8,12 @@ export type ThemePreference = Theme | "system";
 
 function initialThemePreference(): ThemePreference {
   if (typeof window === "undefined") return "system";
-  const stored = window.localStorage.getItem(THEME_KEY);
-  return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+  try {
+    const stored = window.localStorage.getItem(THEME_KEY);
+    return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
+  } catch {
+    return "system";
+  }
 }
 
 export function useTheme() {
@@ -33,7 +37,11 @@ export function useTheme() {
     document.documentElement.classList.toggle("dark", theme === "dark");
     document.documentElement.dataset["theme"] = theme;
     document.documentElement.style.colorScheme = theme;
-    window.localStorage.setItem(THEME_KEY, preference);
+    try {
+      window.localStorage.setItem(THEME_KEY, preference);
+    } catch {
+      // Appearance still works for the current page when persistent storage is unavailable.
+    }
   }, [preference, theme]);
 
   return {
