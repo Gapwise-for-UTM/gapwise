@@ -134,6 +134,27 @@ describe("deterministic graph routing", () => {
     ).toEqual(["ac", "cb"]);
   });
 
+  test("falls back to Dijkstra when any graph edge touches an unlocated node", () => {
+    const graph: RoutingGraph = {
+      nodes: [
+        node("s", { longitude: 0, latitude: 0 }),
+        node("n", { longitude: 0.000001, latitude: 0 }),
+        node("m"),
+        node("t", { longitude: 1, latitude: 0 }),
+      ],
+      edges: [
+        edge("direct", "s", "t", 111_200),
+        edge("sn", "s", "n", 1),
+        edge("nm", "n", "m", 1),
+        edge("mt", "m", "t", 1),
+      ],
+    };
+
+    expect(
+      findRoute(graph, "s", "t", DEFAULT_ROUTE_PREFERENCES)?.edges.map(({ id }) => id),
+    ).toEqual(["sn", "nm", "mt"]);
+  });
+
   test("assembles full edge geometry in traversal orientation", () => {
     const graph: RoutingGraph = {
       nodes: [
