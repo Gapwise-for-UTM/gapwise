@@ -34,9 +34,22 @@ describe("OAuth authentication", () => {
     expect(serviceSource).toContain("assertCanPersistAuthRedirect()");
     expect(serviceSource).toContain("use_fedcm_for_prompt: true");
     expect(serviceSource).toContain("isDismissedMoment()");
-    expect(serviceSource).toContain("fallBackToGapwiseRedirect");
+    expect(serviceSource).toContain("fallBackFromGooglePrompt");
     expect(clientSource).toContain("detectSessionInUrl: true");
     expect(clientSource).toContain('flowType: "pkce"');
+  });
+
+  test("keeps the unverified direct Google redirect fail-closed behind a rollout flag", async () => {
+    const [serviceSource, envExample] = await Promise.all([
+      readFile("src/features/auth/auth-service.ts", "utf8"),
+      readFile(".env.example", "utf8"),
+    ]);
+    expect(serviceSource).toContain('import.meta.env["VITE_GOOGLE_DIRECT_REDIRECT_ENABLED"]');
+    expect(serviceSource).toContain('=== "true"');
+    expect(serviceSource).toContain("if (!directRedirectEnabled) return signInWithGoogleOAuthFallback");
+    expect(serviceSource).toContain(": signInWithGoogleOAuthFallback(redirectTo)");
+    expect(envExample).toContain("VITE_GOOGLE_DIRECT_REDIRECT_ENABLED=false");
+    expect(envExample).toContain("verified on a real iPhone/iPad");
   });
 
   test("uses the documented identity fallback order", () => {
