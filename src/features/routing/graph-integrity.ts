@@ -1,4 +1,4 @@
-import type { AccessibilityStatus, RoutingGraph } from "./types";
+import type { AccessibilityStatus, RoutingGraph, RoutingNode } from "./types";
 
 function haversineMeters(a: [number, number], b: [number, number]): number {
   const radians = (value: number) => (value * Math.PI) / 180;
@@ -11,8 +11,18 @@ function haversineMeters(a: [number, number], b: [number, number]): number {
 }
 
 const ACCESSIBILITY = new Set<AccessibilityStatus>(["accessible", "not_accessible", "unknown"]);
-const ENTRANCE_ACCESS = new Set(["public", "restricted", "emergency_only", "unknown"]);
-const ENTRANCE_DIRECTIONS = new Set(["entry", "exit", "both", "unknown"]);
+const ENTRANCE_ACCESS = new Set<NonNullable<RoutingNode["access"]>>([
+  "public",
+  "restricted",
+  "emergency_only",
+  "unknown",
+]);
+const ENTRANCE_DIRECTIONS = new Set<NonNullable<RoutingNode["direction"]>>([
+  "entry",
+  "exit",
+  "both",
+  "unknown",
+]);
 const NODE_KINDS = new Set([
   "room",
   "hallway",
@@ -46,8 +56,13 @@ export function routingGraphIssues(graph: RoutingGraph): string[] {
     if (node.direction !== undefined && !ENTRANCE_DIRECTIONS.has(node.direction)) {
       issues.push(`Node “${node.id}” has invalid entrance direction “${node.direction}”.`);
     }
-    if ((node.access !== undefined || node.direction !== undefined) && node.kind !== "building-entrance") {
-      issues.push(`Node “${node.id}” may only define access/direction when it is a building entrance.`);
+    if (
+      (node.access !== undefined || node.direction !== undefined) &&
+      node.kind !== "building-entrance"
+    ) {
+      issues.push(
+        `Node “${node.id}” may only define access/direction when it is a building entrance.`,
+      );
     }
     if (node.floor !== null && node.buildingCode === null) {
       issues.push(`Node “${node.id}” cannot reference a floor without a building.`);
