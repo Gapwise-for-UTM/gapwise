@@ -3,11 +3,13 @@ import {
   availableExportTerms,
   createTimetableExportPlan,
   escapeExportText,
+  exportMinutePosition,
   EXPORT_PALETTES,
   generateTimetablePng,
   meetingExportStyle,
   renderTimetableExportSvg,
   resolveExportTheme,
+  timetableExportTitle,
   timetableExportFilename,
 } from "@/lib/timetable-export";
 import { meeting } from "./fixtures";
@@ -32,6 +34,31 @@ describe("timetable image export", () => {
       expect(plan.pixelRatio).toBeGreaterThanOrEqual(1.5);
       expect(plan.width * plan.height * plan.pixelRatio ** 2).toBeLessThanOrEqual(16_000_001);
     }
+  });
+
+  test("keeps every panel inside deterministic content bounds regardless of device density", () => {
+    const lowDensity = createTimetableExportPlan(schedules.slice(0, 2), "all", 1);
+    const highDensity = createTimetableExportPlan(schedules.slice(0, 2), "all", 3);
+    expect([lowDensity.width, lowDensity.height, lowDensity.startHour, lowDensity.endHour]).toEqual(
+      [highDensity.width, highDensity.height, highDensity.startHour, highDensity.endHour],
+    );
+    for (const panel of highDensity.panels) {
+      expect(panel.x).toBeGreaterThanOrEqual(0);
+      expect(panel.y).toBeGreaterThanOrEqual(0);
+      expect(panel.x + panel.width).toBeLessThanOrEqual(highDensity.width);
+      expect(panel.y + panel.height).toBeLessThanOrEqual(highDensity.height);
+    }
+  });
+
+  test("uses one shared comparison range for Fall and Winter without cropping events", () => {
+    const meetings = [
+      meeting({ startTime: 420, endTime: 480 }),
+      meeting({ id: "late", term: "Winter", startTime: 1140, endTime: 1260 }),
+    ];
+    const plan = createTimetableExportPlan(meetings, "all");
+    expect(plan.startHour * 60).toBeLessThanOrEqual(420);
+    expect(plan.endHour * 60).toBeGreaterThanOrEqual(1260);
+    expect(plan.panels[0]!.height).toBe(plan.panels[1]!.height);
   });
 
   test("centers the third sparse term in a balanced composition", () => {
@@ -108,7 +135,7 @@ describe("timetable image export", () => {
       "dark",
       "data:font/woff2;base64,AA==",
     );
-    expect(svg).toContain("font-family:GapwiseGeist");
+    expect(svg).toContain("font-family:ExportGeist");
     expect(svg).toContain("data:font/woff2;base64,AA==");
     expect(svg).toContain(`fill="${meetingExportStyle(schedules[0]!, "dark").base}"`);
     expect(svg).not.toMatch(/fill-opacity=.*event/);
@@ -124,11 +151,40 @@ describe("timetable image export", () => {
     expect(svg).not.toContain("<bad>");
   });
 
-  test("builds stable, shareable PNG filenames", () => {
-    expect(timetableExportFilename("Fall", ["Fall"])).toBe("gapwise-fall-timetable.png");
+  test("builds exact neutral titles and unbranded filenames", () => {
+    expect(timetableExportTitle(["Fall"])).toBe("Fall timetable");
+    expect(timetableExportTitle(["Winter"])).toBe("Winter timetable");
+    expect(timetableExportTitle(["Summer"])).toBe("Summer timetable");
+    expect(timetableExportTitle(["Fall", "Winter"])).toBe("Fall/Winter timetable");
+    expect(timetableExportFilename("Fall", ["Fall"])).toBe("fall-timetable.png");
     expect(timetableExportFilename("all", ["Fall", "Winter", "Summer"])).toBe(
-      "gapwise-fall-winter-summer-timetable.png",
+      "fall-winter-summer-timetable.png",
     );
+  });
+
+  test("keeps minute geometry proportional without duration distortion", () => {
+    const hourHeight = 54;
+    expect(
+      exportMinutePosition(660, 8, hourHeight) - exportMinutePosition(540, 8, hourHeight),
+    ).toBe(hourHeight * 2);
+    expect(
+      exportMinutePosition(570, 8, hourHeight) - exportMinutePosition(540, 8, hourHeight),
+    ).toBe(hourHeight / 2);
+  });
+
+  test("emits only the period heading and no product branding", () => {
+    const meetings = schedules.slice(0, 2);
+    const svg = renderTimetableExportSvg(meetings, createTimetableExportPlan(meetings, "all"));
+    expect(svg).toContain(">Fall/Winter timetable</text>");
+    for (const forbidden of [
+      "GAPWISE",
+      "Gapwise",
+      "gapwise.ca",
+      "Generated with",
+      "Academic schedule",
+    ]) {
+      expect(svg).not.toContain(forbidden);
+    }
   });
 
   test("surfaces rasterization failures without hiding the cause", async () => {
