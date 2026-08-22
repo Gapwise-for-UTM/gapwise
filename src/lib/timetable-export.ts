@@ -96,19 +96,20 @@ export interface TimetableExportPlan {
   termHeight: number;
   pixelRatio: number;
   panels: ExportPanelPlacement[];
+  startHour: number;
+  endHour: number;
 }
 
 const GAP = 28;
-const PAGE_PADDING = 48;
-const HEADER_HEIGHT = 104;
-const FOOTER_HEIGHT = 44;
+const PAGE_PADDING = 36;
+const HEADER_HEIGHT = 64;
 const MAX_PIXELS = 16_000_000;
 
 export function resolveExportTheme(
   appearance: ExportAppearance,
-  resolvedGapwiseTheme: ExportTheme,
+  resolvedTheme: ExportTheme,
 ): ExportTheme {
-  return appearance === "match" ? resolvedGapwiseTheme : appearance;
+  return appearance === "match" ? resolvedTheme : appearance;
 }
 
 export function availableExportTerms(meetings: readonly Meeting[]): Term[] {
@@ -134,6 +135,11 @@ export function createTimetableExportPlan(
   if (terms.length === 0) throw new Error("The selected term has no scheduled meetings.");
 
   const metrics = terms.map((term) => termMetrics(meetings, term));
+  const selectedMeetings = meetings.filter((meeting) => terms.includes(meeting.term));
+  const earliestMinute = Math.min(...selectedMeetings.map((meeting) => meeting.startTime));
+  const latestMinute = Math.max(...selectedMeetings.map((meeting) => meeting.endTime));
+  const startHour = Math.max(0, Math.floor(earliestMinute / 60) - 1);
+  const endHour = Math.min(24, Math.ceil(latestMinute / 60) + 1);
   const dense = metrics.some(
     ({ blocks, busiestDay, maxLanes, hours }) =>
       blocks >= 18 || busiestDay >= 6 || maxLanes >= 3 || hours >= 14,
@@ -149,12 +155,12 @@ export function createTimetableExportPlan(
           : "balanced-grid";
   const columns = layout === "side-by-side" || layout === "balanced-grid" ? 2 : 1;
   const termWidth = columns === 1 ? 1180 : 1010;
-  const maxHours = Math.max(...metrics.map(({ hours }) => hours));
-  const termHeight = Math.max(560, 118 + maxHours * (dense ? 58 : 54));
+  const commonHours = endHour - startHour;
+  const termHeaderHeight = terms.length > 1 ? 58 : 0;
+  const termHeight = Math.max(500, termHeaderHeight + 64 + commonHours * (dense ? 58 : 54));
   const rows = layout === "balanced-grid" ? 2 : Math.ceil(terms.length / columns);
   const width = PAGE_PADDING * 2 + columns * termWidth + (columns - 1) * GAP;
-  const height =
-    PAGE_PADDING * 2 + HEADER_HEIGHT + rows * termHeight + (rows - 1) * GAP + FOOTER_HEIGHT;
+  const height = PAGE_PADDING * 2 + HEADER_HEIGHT + rows * termHeight + (rows - 1) * GAP;
   const panels = terms.map((term, index) => {
     const row = Math.floor(index / columns);
     const lastCentered = layout === "balanced-grid" && terms.length === 3 && index === 2;
@@ -172,7 +178,24 @@ export function createTimetableExportPlan(
   const requestedRatio = Math.min(3, Math.max(2, devicePixelRatio));
   const maxRatio = Math.sqrt(MAX_PIXELS / (width * height));
   const pixelRatio = Math.max(1.5, Math.min(requestedRatio, maxRatio));
-  return { terms, layout, width, height, termWidth, termHeight, pixelRatio, panels };
+  return {
+    terms,
+    layout,
+    width,
+    height,
+    termWidth,
+    termHeight,
+    pixelRatio,
+    panels,
+    startHour,
+    endHour,
+  };
+}
+
+export function timetableExportTitle(terms: readonly Term[]): string {
+  if (terms.length === 1) return `${terms[0]} timetable`;
+  if (terms.includes("Fall") && terms.includes("Winter")) return "Fall/Winter timetable";
+  return `${terms[0]} timetable`;
 }
 
 export function timetableExportFilename(
@@ -180,7 +203,7 @@ export function timetableExportFilename(
   terms: readonly Term[],
 ): string {
   const label = selection === "all" ? terms.join("-") : selection;
-  return `gapwise-${label.toLowerCase()}-timetable.png`;
+  return `${label.toLowerCase()}-timetable.png`;
 }
 
 export const escapeExportText = (value: string) =>
@@ -188,6 +211,10 @@ export const escapeExportText = (value: string) =>
     /[&<>"']/g,
     (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[char]!,
   );
+
+export function exportMinutePosition(minute: number, startHour: number, hourHeight: number) {
+  return ((minute - startHour * 60) / 60) * hourHeight;
+}
 
 function hexToRgb(hex: string) {
   const value = hex.slice(1);
@@ -256,11 +283,14 @@ function renderTerm(
   panel: ExportPanelPlacement,
   theme: ExportTheme,
   palette: TimetableExportPalette,
+  plan: TimetableExportPlan,
 ) {
   const { term, x, y, width, height } = panel;
   const selected = meetings.filter((meeting) => meeting.term === term);
-  const { startHour, hours, days } = buildTimetableModel(selected);
-  const titleHeight = 64;
+  const { days } = buildTimetableModel(selected);
+  const { startHour, endHour } = plan;
+  const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
+  const titleHeight = plan.terms.length > 1 ? 58 : 0;
   const dayHeight = 46;
   const bottomPadding = 18;
   const axisWidth = 72;
@@ -268,12 +298,14 @@ function renderTerm(
   const gridHeight = height - titleHeight - dayHeight - bottomPadding;
   const hourHeight = gridHeight / Math.max(1, hours.length);
   const dayWidth = (width - axisWidth) / 5;
-  const minuteY = (minute: number) => gridY + ((minute - startHour * 60) / 60) * hourHeight;
+  const minuteY = (minute: number) => gridY + exportMinutePosition(minute, startHour, hourHeight);
   let svg = `<g filter="url(#panel-shadow)"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24" fill="${palette.timetableBackground}" stroke="${palette.border}"/></g>`;
-  svg += `<path d="M${x + 24} ${y + titleHeight}H${x + width - 24}" stroke="${palette.border}"/>`;
-  svg += `<text x="${x + 26}" y="${y + 37}" font-size="23" font-weight="760" letter-spacing="-.5" fill="${palette.foreground}">${term}</text>`;
-  svg += `<text x="${x + width - 26}" y="${y + 36}" text-anchor="end" font-size="11" font-weight="650" letter-spacing="1.2" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
-  svg += `<rect x="${x + 1}" y="${y + titleHeight + 1}" width="${width - 2}" height="${dayHeight}" fill="${palette.headerSurface}"/>`;
+  if (titleHeight > 0) {
+    svg += `<path d="M${x + 24} ${y + titleHeight}H${x + width - 24}" stroke="${palette.border}"/>`;
+    svg += `<text x="${x + 26}" y="${y + 36}" font-size="21" font-weight="760" letter-spacing="-.45" fill="${palette.foreground}">${term}</text>`;
+    svg += `<text x="${x + width - 26}" y="${y + 35}" text-anchor="end" font-size="10" font-weight="650" letter-spacing="1.1" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
+  }
+  svg += `<rect x="${x + 1}" y="${y + titleHeight + 1}" width="${width - 2}" height="${dayHeight}" rx="${titleHeight === 0 ? 22 : 0}" fill="${palette.headerSurface}"/>`;
   svg += `<text x="${x + 20}" y="${y + titleHeight + 29}" font-size="10" font-weight="680" letter-spacing="1" fill="${palette.mutedForeground}">TIME</text>`;
   WEEKDAYS.forEach((day, index) => {
     const dx = Math.round(x + axisWidth + index * dayWidth);
@@ -291,22 +323,25 @@ function renderTerm(
       const lane = placement.get(meeting.id) ?? 0;
       const laneWidth = dayWidth / laneCount;
       const mx = Math.round(x + axisWidth + dayIndex * dayWidth + lane * laneWidth + 5);
-      const my = Math.round(minuteY(meeting.startTime) + 4);
-      const mh = Math.max(
-        27,
-        Math.round(minuteY(meeting.endTime) - minuteY(meeting.startTime) - 8),
-      );
+      const my = Math.round(minuteY(meeting.startTime));
+      const mh = Math.max(1, Math.round(minuteY(meeting.endTime) - minuteY(meeting.startTime)));
       const mw = Math.max(34, Math.round(laneWidth - 10));
       const style = meetingExportStyle(meeting, theme, palette);
       const narrow = mw < 115;
       const clipId = `event-${term}-${dayIndex}-${meetingIndex}`;
       const textX = mx + (narrow ? 9 : 12);
       const badgeWidth = Math.max(34, style.label.length * 6 + 12);
+      const showBadge = !narrow && mw > 145;
+      const courseWidth = showBadge ? mw - badgeWidth - 34 : mw - 18;
+      const courseFontSize = Math.max(
+        8,
+        Math.min(narrow ? 10.5 : 12.5, courseWidth / Math.max(1, meeting.courseCode.length * 0.6)),
+      );
       svg += `<clipPath id="${clipId}"><rect x="${mx + 6}" y="${my + 3}" width="${mw - 12}" height="${mh - 6}" rx="7"/></clipPath>`;
       svg += `<g filter="url(#event-shadow)"><rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="10" fill="${style.base}" stroke="${style.border}" ${style.dashed ? 'stroke-dasharray="5 4"' : ""}/><path d="M${mx + 4} ${my + 9}V${my + mh - 9}" stroke="${style.accent}" stroke-width="4" stroke-linecap="round"/><path d="M${mx + 10} ${my + 1}H${mx + mw - 10}" stroke="${palette.highlight}" stroke-linecap="round"/></g>`;
       svg += `<g clip-path="url(#${clipId})">`;
-      svg += `<text x="${textX}" y="${my + 20}" font-size="${narrow ? 10.5 : 12.5}" font-weight="790" letter-spacing="-.15" fill="${palette.foreground}">${escapeExportText(meeting.courseCode)}</text>`;
-      if (!narrow && mw > 145) {
+      svg += `<text x="${textX}" y="${my + 20}" font-size="${courseFontSize}" font-weight="790" letter-spacing="-.15" fill="${palette.foreground}">${escapeExportText(meeting.courseCode)}</text>`;
+      if (showBadge) {
         svg += `<rect x="${mx + mw - badgeWidth - 9}" y="${my + 8}" width="${badgeWidth}" height="18" rx="6" fill="${style.badge}" stroke="${style.border}"/>`;
         svg += `<text x="${mx + mw - badgeWidth / 2 - 9}" y="${my + 21}" text-anchor="middle" font-size="8" font-weight="800" letter-spacing=".5" fill="${style.accent}">${style.label}</text>`;
       }
@@ -329,25 +364,24 @@ export function renderTimetableExportSvg(
   fontDataUrl?: string,
 ) {
   const palette = EXPORT_PALETTES[theme];
-  const title = plan.terms.length === 1 ? `${plan.terms[0]} schedule` : "Academic schedule";
+  const title = timetableExportTitle(plan.terms);
   const fontFace = fontDataUrl
-    ? `@font-face{font-family:GapwiseGeist;src:url('${fontDataUrl}') format('woff2');font-weight:100 900}`
+    ? `@font-face{font-family:ExportGeist;src:url('${fontDataUrl}') format('woff2');font-weight:100 900}`
     : "";
   let body = `<defs><radialGradient id="page-glow" cx="82%" cy="0%" r="68%"><stop offset="0" stop-color="${palette.pageGlow}"/><stop offset="1" stop-color="${palette.pageBackground}"/></radialGradient><filter id="panel-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="${palette.shadow}"/></filter><filter id="event-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="${palette.shadow}"/></filter></defs>`;
   body += `<rect width="100%" height="100%" fill="url(#page-glow)"/>`;
-  body += `<g><rect x="${PAGE_PADDING}" y="${PAGE_PADDING + 2}" width="38" height="38" rx="12" fill="${palette.accent}"/><path d="M${PAGE_PADDING + 10} ${PAGE_PADDING + 22}h7l4-9 5 17 4-8h6" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><text x="${PAGE_PADDING + 52}" y="${PAGE_PADDING + 18}" font-size="12" font-weight="760" letter-spacing="1.6" fill="${palette.accent}">GAPWISE</text><text x="${PAGE_PADDING + 52}" y="${PAGE_PADDING + 43}" font-size="28" font-weight="780" letter-spacing="-.8" fill="${palette.foreground}">${escapeExportText(title)}</text></g>`;
+  body += `<text x="${PAGE_PADDING}" y="${PAGE_PADDING + 34}" font-size="30" font-weight="780" letter-spacing="-.8" fill="${palette.foreground}">${escapeExportText(title)}</text>`;
   plan.panels.forEach((panel) => {
-    body += renderTerm(meetings, panel, theme, palette);
+    body += renderTerm(meetings, panel, theme, palette, plan);
   });
-  body += `<text x="${PAGE_PADDING}" y="${plan.height - 24}" font-size="11" font-weight="590" fill="${palette.mutedForeground}">Generated with Gapwise</text><text x="${plan.width - PAGE_PADDING}" y="${plan.height - 24}" text-anchor="end" font-size="11" font-weight="700" fill="${palette.accent}">gapwise.ca</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${plan.width}" height="${plan.height}" viewBox="0 0 ${plan.width} ${plan.height}"><style>${fontFace}text{font-family:GapwiseGeist,'Geist Variable',system-ui,sans-serif;font-variant-numeric:tabular-nums}</style>${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${plan.width}" height="${plan.height}" viewBox="0 0 ${plan.width} ${plan.height}"><style>${fontFace}text{font-family:ExportGeist,'Geist Variable',system-ui,sans-serif;font-variant-numeric:tabular-nums}</style>${body}</svg>`;
 }
 
 let geistDataPromise: Promise<string> | null = null;
 async function embeddedGeistDataUrl() {
   geistDataPromise ??= fetch(geistFontUrl)
     .then((response) => {
-      if (!response.ok) throw new Error("Gapwise typography could not be prepared.");
+      if (!response.ok) throw new Error("Export typography could not be prepared.");
       return response.arrayBuffer();
     })
     .then((buffer) => {
