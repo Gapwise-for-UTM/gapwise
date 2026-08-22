@@ -4,51 +4,25 @@ import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/privat
 const THEME_KEY = "gapwise:theme";
 
 export type Theme = "light" | "dark";
-export type ThemePreference = Theme | "system";
 
-function initialThemePreference(): ThemePreference {
-  if (typeof window === "undefined") return "system";
-  try {
-    const stored = window.localStorage.getItem(THEME_KEY);
-    return stored === "light" || stored === "dark" || stored === "system" ? stored : "system";
-  } catch {
-    return "system";
-  }
+function initialTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  const stored = window.localStorage.getItem(THEME_KEY);
+  if (stored === "light" || stored === "dark") return stored;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
 export function useTheme() {
-  const [preference, setPreference] = useState<ThemePreference>(initialThemePreference);
-  const [systemTheme, setSystemTheme] = useState<Theme>(() =>
-    typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light",
-  );
-  const theme = preference === "system" ? systemTheme : preference;
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const update = () => setSystemTheme(media.matches ? "dark" : "light");
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   useLayoutEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
-    document.documentElement.dataset["theme"] = theme;
-    document.documentElement.style.colorScheme = theme;
-    try {
-      window.localStorage.setItem(THEME_KEY, preference);
-    } catch {
-      // Appearance still works for the current page when persistent storage is unavailable.
-    }
-  }, [preference, theme]);
+    window.localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
 
   return {
     theme,
-    preference,
-    setTheme: setPreference,
-    toggleTheme: () => setPreference(theme === "dark" ? "light" : "dark"),
+    toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
   };
 }
 
