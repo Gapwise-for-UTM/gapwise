@@ -8,7 +8,7 @@ import {
   Plus,
   Sparkles,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { ActivityBadge } from "@/components/TimetableGrid";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
@@ -211,6 +211,7 @@ export function MobileTimetable({
   onAddPersonal,
   onEditPersonal,
   onDeletePersonal,
+  exportAction,
 }: {
   meetings: Meeting[];
   term: Term;
@@ -222,6 +223,7 @@ export function MobileTimetable({
   onAddPersonal: () => void;
   onEditPersonal: (meetingId: string) => void;
   onDeletePersonal: (meetingId: string) => void;
+  exportAction: ReactNode;
 }) {
   const [selectedDay, setSelectedDay] = useState<Weekday>(() => initialDay(meetings));
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
@@ -270,14 +272,17 @@ export function MobileTimetable({
                   )} – ${formatTime(lastTime!)}`}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onAddPersonal}
-            className="button-primary inline-flex min-h-11 shrink-0 items-center gap-1.5 px-3 text-xs font-semibold"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Add
-          </button>
+          <div className="flex shrink-0 flex-col gap-2">
+            {exportAction}
+            <button
+              type="button"
+              onClick={onAddPersonal}
+              className="button-primary inline-flex min-h-10 items-center justify-center gap-1.5 px-3 text-xs font-semibold"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add
+            </button>
+          </div>
         </div>
 
         {terms.length > 1 ? (
