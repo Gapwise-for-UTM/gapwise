@@ -226,6 +226,7 @@ test("campus explorer supports public building deep links and local search", asy
   await expect(page.getByText("MN 3120 · Floor 3")).toBeVisible();
   await expect(page.getByText(/Exact indoor room routing is not mapped/)).toBeVisible();
   expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
+
   await page.goto("/route?building=NOT_A_BUILDING");
   await expect(page.getByRole("heading", { name: "Find your way around campus" })).toBeVisible();
   await expect(page.locator(".campus-building-card")).toHaveCount(0);
