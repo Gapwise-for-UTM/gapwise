@@ -39,7 +39,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
       );
       const file = new File([blob], filename, { type: "image/png" });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: "My Gapwise timetable" });
+        await navigator.share({ files: [file], title: "My timetable" });
       } else {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");
