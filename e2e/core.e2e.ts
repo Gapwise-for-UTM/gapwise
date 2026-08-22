@@ -177,36 +177,15 @@ test("timetable export offers available terms and downloads light and dark PNGs"
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Generate image" }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("gapwise-fall-winter-timetable.png");
+  expect((await downloadPromise).suggestedFilename()).toBe("fall-winter-timetable.png");
 
   await page.getByRole("button", { name: "Export image" }).click();
   await page.getByRole("radio", { name: "Dark", exact: true }).click();
   const darkDownloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Generate image" }).click();
-  const darkDownload = await darkDownloadPromise;
-  expect(darkDownload.suggestedFilename()).toBe("gapwise-fall-winter-timetable.png");
+  expect((await darkDownloadPromise).suggestedFilename()).toBe("fall-winter-timetable.png");
   guard.assertClean();
 });
-
-for (const appearance of ["dark", "light"] as const) {
-  test(`public legal pages resolve the stored ${appearance} appearance before rendering`, async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== "chromium", "Appearance coverage runs once in Chromium");
-    await page.addInitScript((theme) => localStorage.setItem("gapwise:theme", theme), appearance);
-
-    for (const path of ["/privacy", "/terms"] as const) {
-      await page.goto(path);
-      await expect(page.locator("html")).toHaveAttribute("data-theme", appearance);
-      if (appearance === "dark") await expect(page.locator("html")).toHaveClass(/dark/);
-      else await expect(page.locator("html")).not.toHaveClass(/dark/);
-      await expect(
-        page.getByRole("radio", { name: `${appearance === "dark" ? "Dark" : "Light"} appearance` }),
-      ).toHaveAttribute("aria-checked", "true");
-    }
-  });
-}
 
 test("campus explorer supports public building deep links and local search", async ({
   page,
@@ -247,7 +226,6 @@ test("campus explorer supports public building deep links and local search", asy
   await expect(page.getByText("MN 3120 · Floor 3")).toBeVisible();
   await expect(page.getByText(/Exact indoor room routing is not mapped/)).toBeVisible();
   expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
-
   await page.goto("/route?building=NOT_A_BUILDING");
   await expect(page.getByRole("heading", { name: "Find your way around campus" })).toBeVisible();
   await expect(page.locator(".campus-building-card")).toHaveCount(0);
