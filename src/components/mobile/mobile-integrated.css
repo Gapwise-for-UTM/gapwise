@@ -250,7 +250,7 @@
 .mobile-integrated-app .mobile-gap-card,
 .mobile-integrated-app .gap-card {
   border: 0 !important;
-  border-bottom: 1px dashed var(--color-gap) !important;
+  border-bottom: 1px solid var(--mobile-divider) !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
