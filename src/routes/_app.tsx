@@ -30,6 +30,7 @@ import { MobileMoreSheet } from "@/components/mobile/MobileMoreSheet";
 import { MobileShell } from "@/components/mobile/MobileShell";
 import { MobileTimetable } from "@/components/mobile/MobileTimetable";
 import { MobileToday } from "@/components/mobile/MobileToday";
+import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { useTodayState } from "@/features/today/use-today-state";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -559,10 +560,13 @@ function AppLayout() {
   }
 
   return (
-    <div className="app-shell min-h-screen bg-background text-foreground">
+    <div
+      className={`app-shell min-h-screen bg-background text-foreground ${destination !== "home" ? "desktop-product-shell" : ""}`}
+    >
       <Outlet />
+      {destination !== "home" ? <DesktopSidebar destination={destination} /> : null}
       <header
-        className="app-nav sticky top-0 z-30 border-b"
+        className="app-nav desktop-app-header sticky top-0 z-30 border-b"
         data-scrolled={isScrolled ? "true" : "false"}
       >
         <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
@@ -598,7 +602,7 @@ function AppLayout() {
       </header>
 
       <main
-        className={`mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 ${destination === "home" ? "landing-stage" : ""}`}
+        className={`desktop-main mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 ${destination === "home" ? "landing-stage" : ""}`}
       >
         {destination === "home" ? <div className="topography-field" aria-hidden="true" /> : null}
         {(authLoading || guestRestoration === null || restoration === "checking-cloud") &&
@@ -802,10 +806,18 @@ function AppLayout() {
               </div>
             ) : null}
 
-            <div className="rise-in flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6">
+            <div className="desktop-page-heading rise-in flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6">
               <div className="min-w-0">
-                <p className="eyebrow text-muted-foreground">
-                  {isDemo ? "Sample data" : "Campus day plan"}
+                <p className="eyebrow text-accent">
+                  {isDemo
+                    ? "Sample data"
+                    : destination === "timetable"
+                      ? "Day timetable"
+                      : destination === "gaps"
+                        ? "Gap plan"
+                        : destination === "route"
+                          ? "Campus map"
+                          : "Today overview"}
                 </p>
                 <h1 className="mt-1.5 font-display text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
                   {destination === "today"
@@ -872,7 +884,7 @@ function AppLayout() {
               onOpenDayRoute={openDayRoute}
             />
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className="desktop-view-controls mt-6 flex flex-wrap items-center gap-3">
               {terms.length > 1 ? (
                 <BubbleTabs
                   label="Term"
