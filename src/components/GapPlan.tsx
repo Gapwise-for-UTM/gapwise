@@ -108,6 +108,93 @@ function transitionMinutes(route: TransitionRoute) {
   return seconds === null ? null : Math.ceil(seconds / 60);
 }
 
+function DayStrip({
+  gaps,
+  selectedId,
+  activeId,
+  onSelect,
+  onActive,
+}: {
+  gaps: Gap[];
+  selectedId: string | null;
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onActive: (id: string | null) => void;
+}) {
+  const meetings = useMemo(() => {
+    const unique = new Map<string, Gap["previous"]>();
+    gaps.forEach((gap) => {
+      unique.set(gap.previous.id, gap.previous);
+      unique.set(gap.next.id, gap.next);
+    });
+    return [...unique.values()].sort((a, b) => a.startTime - b.startTime);
+  }, [gaps]);
+  if (meetings.length === 0)
+    return (
+      <div className="gap-day-strip surface">
+        <p>No scheduled gap intervals</p>
+      </div>
+    );
+  const first = Math.floor(Math.min(...meetings.map((item) => item.startTime), 480) / 60) * 60;
+  const last = Math.ceil(Math.max(...meetings.map((item) => item.endTime), 1080) / 60) * 60;
+  const span = Math.max(60, last - first);
+  const position = (minute: number) => `${((minute - first) / span) * 100}%`;
+  const width = (start: number, end: number) => `${((end - start) / span) * 100}%`;
+  const hours = Array.from({ length: Math.floor(span / 60) + 1 }, (_, index) => first + index * 60);
+  return (
+    <div className="gap-day-strip surface" aria-label="Chronological day overview">
+      <div className="gap-day-hours" aria-hidden="true">
+        {hours.map((hour, index) => (
+          <span key={hour} style={{ left: position(hour) }}>
+            {index === 0 || index === hours.length - 1 || index % 2 === 0
+              ? formatTime(hour).replace(":00", "")
+              : ""}
+          </span>
+        ))}
+      </div>
+      <div className="gap-day-track">
+        {hours.map((hour) => (
+          <i key={hour} style={{ left: position(hour) }} aria-hidden="true" />
+        ))}
+        {meetings.map((meeting) => (
+          <span
+            key={meeting.id}
+            className="gap-day-class"
+            style={{
+              left: position(meeting.startTime),
+              width: width(meeting.startTime, meeting.endTime),
+            }}
+            title={`${meeting.courseCode}, ${formatTime(meeting.startTime)}–${formatTime(meeting.endTime)}`}
+          >
+            {meeting.courseCode}
+          </span>
+        ))}
+        {gaps.map((gap) => (
+          <button
+            key={gap.id}
+            type="button"
+            className="gap-day-interval"
+            data-active={gap.id === (activeId ?? selectedId) ? "true" : undefined}
+            style={{ left: position(gap.startTime), width: width(gap.startTime, gap.endTime) }}
+            onMouseEnter={() => onActive(gap.id)}
+            onMouseLeave={() => onActive(null)}
+            onFocus={() => onActive(gap.id)}
+            onBlur={() => onActive(null)}
+            onClick={() => onSelect(gap.id)}
+            aria-label={`${formatCompactDuration(gap.durationMinutes)} gap, ${formatTime(gap.startTime)} to ${formatTime(gap.endTime)}`}
+          >
+            <span>{formatCompactDuration(gap.durationMinutes)}</span>
+          </button>
+        ))}
+      </div>
+      <div className="gap-day-legend">
+        <span>Class</span>
+        <span>Gap</span>
+      </div>
+    </div>
+  );
+}
+
 const GapSettings = memo(function GapSettings({
   value,
   onChange,
@@ -447,12 +534,18 @@ const GapCard = memo(function GapCard({
   gapPreferences,
   planTransition,
   friendOverlaps,
+  isSelected,
+  onSelect,
+  onActive,
 }: {
   gap: Gap;
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   planTransition: TransitionPlanner;
   friendOverlaps: FriendGapOverlap[];
+  isSelected: boolean;
+  onSelect: () => void;
+  onActive: (active: boolean) => void;
 }) {
   const { route, assessment, residenceTrip } = useMemo(
     () => planGapAssessment(gap, preferences, gapPreferences, planTransition),
@@ -508,7 +601,24 @@ const GapCard = memo(function GapCard({
   const freeMinutes = Math.max(0, selected.activityMinutes - protectedEatingMinutes);
 
   return (
-    <article className="gap-card group surface surface-interactive p-5 sm:p-6">
+    <article
+      className="gap-card group surface surface-interactive p-4"
+      data-selected={isSelected ? "true" : undefined}
+      onMouseEnter={() => onActive(true)}
+      onMouseLeave={() => onActive(false)}
+    >
+      <button
+        type="button"
+        className="gap-card-select"
+        onClick={onSelect}
+        aria-pressed={isSelected}
+      >
+        <strong>{formatCompactDuration(gap.durationMinutes)}</strong>
+        <span>
+          {formatTime(gap.startTime)} – {formatTime(gap.endTime)}
+        </span>
+        <span>{formatCompactDuration(selected.activityMinutes)} usable</span>
+      </button>
       <div className="flex items-center justify-between gap-3">
         <p className="flex items-center gap-2 font-mono text-xs font-medium tabular-nums text-muted-foreground">
           <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -519,7 +629,7 @@ const GapCard = memo(function GapCard({
         </span>
       </div>
 
-      <div className="mt-3 flex items-start gap-2.5">
+      <div className="gap-card-recommendation flex items-start gap-2.5">
         <span
           className={`gap-card-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.style}`}
         >
@@ -532,13 +642,24 @@ const GapCard = memo(function GapCard({
           <p className="mt-0.5 text-sm font-medium text-foreground">
             {formatCompactDuration(selected.activityMinutes)} usable
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selected.summary}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{selected.summary}</p>
         </div>
       </div>
 
       {selected.action === "meal-window" ? (
         <GapFillBar protectedMinutes={protectedEatingMinutes} freeMinutes={freeMinutes} />
-      ) : null}
+      ) : (
+        <div
+          className="gap-usable-meter"
+          aria-label={`${formatCompactDuration(selected.activityMinutes)} usable`}
+        >
+          <span
+            style={{
+              width: `${Math.min(100, (selected.activityMinutes / Math.max(1, gap.durationMinutes)) * 100)}%`,
+            }}
+          />
+        </div>
+      )}
 
       {friendOverlaps.length > 0 ? (
         <div className="mt-4 rounded-lg border border-accent/25 bg-accent/8 px-3 py-3">
@@ -693,6 +814,8 @@ export const GapPlan = memo(function GapPlan({
     overlaps: FriendGapOverlap[];
   }>({ userId: null, overlaps: [] });
   const userId = user?.id ?? null;
+  const [selectedGapId, setSelectedGapId] = useState<string | null>(gaps[0]?.id ?? null);
+  const [activeGapId, setActiveGapId] = useState<string | null>(null);
   const handleFriendOverlapsChange = useCallback(
     (overlaps: FriendGapOverlap[]) => setFriendOverlapState({ userId, overlaps }),
     [userId],
@@ -715,7 +838,7 @@ export const GapPlan = memo(function GapPlan({
   }, [friendOverlapState, gaps, userId]);
 
   return (
-    <div className="space-y-6">
+    <div className="gap-plan-layout space-y-5">
       <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow text-accent">Between classes</p>
@@ -723,22 +846,34 @@ export const GapPlan = memo(function GapPlan({
             Plan around your day
           </h2>
         </div>
-        <p className="max-w-md text-sm leading-6 text-muted-foreground">
-          Suggestions account for walking time, setup, pack-up, and your next class.
-        </p>
+        <div className="gap-plan-tools">
+          <details>
+            <summary>
+              <SlidersHorizontal aria-hidden="true" /> Tune
+            </summary>
+            <div className="gap-tool-panel">
+              <GapSettings
+                value={gapPreferences}
+                onChange={onGapPreferencesChange}
+                residenceName={residence?.name ?? null}
+              />
+            </div>
+          </details>
+          <details>
+            <summary>
+              <Users aria-hidden="true" /> Friend gaps
+            </summary>
+            <div className="gap-tool-panel gap-friends-panel">
+              <FriendOverlapPanel
+                key={userId ?? "guest"}
+                user={user}
+                term={term}
+                onOverlapsChange={handleFriendOverlapsChange}
+              />
+            </div>
+          </details>
+        </div>
       </div>
-      <GapSettings
-        value={gapPreferences}
-        onChange={onGapPreferencesChange}
-        residenceName={residence?.name ?? null}
-      />
-
-      <FriendOverlapPanel
-        key={userId ?? "guest"}
-        user={user}
-        term={term}
-        onOverlapsChange={handleFriendOverlapsChange}
-      />
 
       {groups.length === 0 ? (
         <div className="empty-state surface flex flex-col items-center p-8 text-center">
@@ -763,6 +898,13 @@ export const GapPlan = memo(function GapPlan({
               {group.gaps.length} gap{group.gaps.length === 1 ? "" : "s"}
             </span>
           </h3>
+          <DayStrip
+            gaps={group.gaps}
+            selectedId={selectedGapId}
+            activeId={activeGapId}
+            onSelect={setSelectedGapId}
+            onActive={setActiveGapId}
+          />
           <div className="mt-3 grid gap-4 xl:grid-cols-2">
             {group.gaps.map((gap) => (
               <GapCard
@@ -772,6 +914,9 @@ export const GapPlan = memo(function GapPlan({
                 gapPreferences={gapPreferences}
                 planTransition={planTransition}
                 friendOverlaps={friendOverlapsByGapId.get(gap.id) ?? EMPTY_FRIEND_OVERLAPS}
+                isSelected={selectedGapId === gap.id}
+                onSelect={() => setSelectedGapId(gap.id)}
+                onActive={(active) => setActiveGapId(active ? gap.id : null)}
               />
             ))}
           </div>

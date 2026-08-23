@@ -104,6 +104,9 @@ const GAP = 28;
 const PAGE_PADDING = 36;
 const HEADER_HEIGHT = 64;
 const MAX_PIXELS = 16_000_000;
+const EXPORT_TIME_GUTTER = 84;
+const EXPORT_TIME_LABEL_INSET = 14;
+const EXPORT_DAY_HEADER_HEIGHT = 46;
 
 export function resolveExportTheme(
   appearance: ExportAppearance,
@@ -291,13 +294,15 @@ function renderTerm(
   const { startHour, endHour } = plan;
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
   const titleHeight = plan.terms.length > 1 ? 58 : 0;
-  const dayHeight = 46;
+  const dayHeight = EXPORT_DAY_HEADER_HEIGHT;
   const bottomPadding = 18;
-  const axisWidth = 72;
+  const axisWidth = EXPORT_TIME_GUTTER;
+  const scheduleStartX = x + axisWidth;
+  const scheduleEndX = x + width;
   const gridY = y + titleHeight + dayHeight;
   const gridHeight = height - titleHeight - dayHeight - bottomPadding;
   const hourHeight = gridHeight / Math.max(1, hours.length);
-  const dayWidth = (width - axisWidth) / 5;
+  const dayWidth = (scheduleEndX - scheduleStartX) / WEEKDAYS.length;
   const minuteY = (minute: number) => gridY + exportMinutePosition(minute, startHour, hourHeight);
   let svg = `<g filter="url(#panel-shadow)"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24" fill="${palette.timetableBackground}" stroke="${palette.border}"/></g>`;
   if (titleHeight > 0) {
@@ -306,23 +311,23 @@ function renderTerm(
     svg += `<text x="${x + width - 26}" y="${y + 35}" text-anchor="end" font-size="10" font-weight="650" letter-spacing="1.1" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
   }
   svg += `<rect x="${x + 1}" y="${y + titleHeight + 1}" width="${width - 2}" height="${dayHeight}" rx="${titleHeight === 0 ? 22 : 0}" fill="${palette.headerSurface}"/>`;
-  svg += `<text x="${x + 20}" y="${y + titleHeight + 29}" font-size="10" font-weight="680" letter-spacing="1" fill="${palette.mutedForeground}">TIME</text>`;
+  svg += `<text x="${scheduleStartX - EXPORT_TIME_LABEL_INSET}" y="${y + titleHeight + 29}" text-anchor="end" font-size="10" font-weight="680" letter-spacing="1" fill="${palette.mutedForeground}">TIME</text>`;
   WEEKDAYS.forEach((day, index) => {
-    const dx = Math.round(x + axisWidth + index * dayWidth);
+    const dx = scheduleStartX + index * dayWidth;
     svg += `<line x1="${dx}" y1="${y + titleHeight}" x2="${dx}" y2="${y + height - bottomPadding}" stroke="${palette.grid}"/>`;
-    svg += `<text x="${Math.round(dx + dayWidth / 2)}" y="${y + titleHeight + 29}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
+    svg += `<text x="${dx + dayWidth / 2}" y="${y + titleHeight + 29}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
   });
   hours.forEach((hour) => {
     const hy = Math.round(minuteY(hour * 60)) + 0.5;
-    svg += `<line x1="${x + axisWidth}" y1="${hy}" x2="${x + width}" y2="${hy}" stroke="${palette.grid}"/>`;
-    svg += `<text x="${x + axisWidth - 12}" y="${hy + 4}" text-anchor="end" font-size="10" font-weight="560" fill="${palette.mutedForeground}">${timeShort(hour * 60)}</text>`;
+    svg += `<line x1="${scheduleStartX}" y1="${hy}" x2="${scheduleEndX}" y2="${hy}" stroke="${palette.grid}"/>`;
+    svg += `<text x="${scheduleStartX - EXPORT_TIME_LABEL_INSET}" y="${hy}" dy="0.35em" text-anchor="end" font-size="10" font-weight="560" fill="${palette.mutedForeground}">${timeShort(hour * 60)}</text>`;
   });
   WEEKDAYS.forEach((day, dayIndex) => {
     const { laneCount, placement, sorted } = days.get(day)!;
     sorted.forEach((meeting, meetingIndex) => {
       const lane = placement.get(meeting.id) ?? 0;
       const laneWidth = dayWidth / laneCount;
-      const mx = Math.round(x + axisWidth + dayIndex * dayWidth + lane * laneWidth + 5);
+      const mx = Math.round(scheduleStartX + dayIndex * dayWidth + lane * laneWidth + 5);
       const my = Math.round(minuteY(meeting.startTime));
       const mh = Math.max(1, Math.round(minuteY(meeting.endTime) - minuteY(meeting.startTime)));
       const mw = Math.max(34, Math.round(laneWidth - 10));

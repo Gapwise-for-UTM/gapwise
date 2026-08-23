@@ -2103,11 +2103,6 @@
       var(--color-card) 65%
     );
   }
-  .desktop-product-shell .dot-field > .space-y-6 > div:last-child {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-  }
   .desktop-product-shell .campus-explorer {
     min-height: 38rem;
     height: calc(100dvh - 19rem) !important;
@@ -2115,6 +2110,256 @@
     border: 1px solid var(--color-border);
     border-radius: 0.7rem;
     overflow: hidden;
+  }
+}
+
+.gap-plan-tools {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.gap-plan-tools > details {
+  position: relative;
+}
+.gap-plan-tools > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.35rem;
+  cursor: pointer;
+  list-style: none;
+  border: 1px solid var(--color-border);
+  border-radius: 0.55rem;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--color-muted-foreground);
+}
+.gap-plan-tools > details > summary::-webkit-details-marker {
+  display: none;
+}
+.gap-plan-tools > details > summary:hover,
+.gap-plan-tools > details[open] > summary {
+  border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-border));
+  color: var(--color-accent);
+}
+.gap-plan-tools summary svg {
+  width: 0.9rem;
+}
+.gap-tool-panel {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: min(42rem, calc(100vw - 3rem));
+  max-height: min(70vh, 42rem);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  padding: 0.6rem;
+  background: var(--color-popover);
+  box-shadow: var(--shadow-panel);
+}
+.gap-tool-panel > details {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.gap-friends-panel {
+  width: min(48rem, calc(100vw - 3rem));
+}
+
+.gap-day-strip {
+  margin-top: 0.75rem;
+  padding: 0.9rem 1rem 0.7rem;
+  overflow: hidden;
+}
+.gap-day-hours {
+  position: relative;
+  height: 1.25rem;
+  margin-inline: 0.25rem;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-code);
+  font-size: 0.58rem;
+}
+.gap-day-hours span {
+  position: absolute;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.gap-day-track {
+  position: relative;
+  height: 3.35rem;
+  margin-inline: 0.25rem;
+  border-radius: 0.4rem;
+  background: color-mix(in oklab, var(--color-muted) 55%, transparent);
+  overflow: hidden;
+}
+.gap-day-track i {
+  position: absolute;
+  inset-block: 0;
+  width: 1px;
+  background: var(--color-border);
+}
+.gap-day-class,
+.gap-day-interval {
+  position: absolute;
+  top: 0.45rem;
+  height: 2.45rem;
+  min-width: 3px;
+  overflow: hidden;
+  border-radius: 0.28rem;
+  white-space: nowrap;
+}
+.gap-day-class {
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  padding-inline: 0.45rem;
+  border: 1px solid color-mix(in oklab, var(--color-foreground) 12%, var(--color-border));
+  background: color-mix(in oklab, var(--color-card) 88%, var(--color-foreground));
+  color: var(--color-secondary-foreground);
+  font-size: 0.61rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+}
+.gap-day-interval {
+  z-index: 3;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 46%, transparent);
+  background: color-mix(in oklab, var(--color-accent) 22%, transparent);
+  color: var(--color-accent);
+  transition:
+    background 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+.gap-day-interval span {
+  font-size: 0.63rem;
+  font-weight: 750;
+}
+.gap-day-interval:hover,
+.gap-day-interval[data-active="true"] {
+  border-color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 38%, transparent);
+  box-shadow:
+    inset 0 0 18px color-mix(in oklab, var(--color-accent) 20%, transparent),
+    var(--accent-glow);
+}
+.gap-day-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding-top: 0.45rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.6rem;
+}
+.gap-day-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.3rem;
+  border-radius: 2px;
+  background: var(--color-secondary);
+}
+.gap-day-legend span:last-child::before {
+  background: var(--color-accent);
+}
+
+.gap-card {
+  min-height: 0;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+.gap-card[data-selected="true"] {
+  border-color: color-mix(in oklab, var(--color-accent) 62%, var(--color-border));
+  box-shadow: var(--accent-glow);
+}
+.gap-card-select {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  width: 100%;
+  gap: 0.8rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 0 0.65rem;
+  text-align: left;
+  color: var(--color-muted-foreground);
+  font-family: var(--font-code);
+  font-size: 0.68rem;
+}
+.gap-card-select strong {
+  color: var(--color-foreground);
+  font-family: var(--font-heading);
+  font-size: 1.45rem;
+  letter-spacing: -0.04em;
+}
+.gap-card-select span:last-child {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.gap-card > .flex.items-center.justify-between {
+  display: none;
+}
+.gap-card-recommendation {
+  margin-top: 0.7rem;
+}
+.gap-card .gap-card-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.gap-card .gap-card-recommendation h4 {
+  font-size: 0.95rem;
+}
+.gap-usable-meter {
+  height: 3px;
+  margin-top: 0.65rem;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--color-muted);
+}
+.gap-usable-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width 180ms var(--ease-out);
+}
+.gap-card > .rounded-lg.border.border-border {
+  margin-top: 0.65rem;
+  padding-block: 0.55rem;
+}
+.gap-card > .mt-3.flex {
+  margin-top: 0.55rem;
+}
+.gap-card > details {
+  margin-top: 0.45rem;
+}
+
+@media (max-width: 47.999rem) {
+  .gap-plan-tools {
+    align-self: stretch;
+  }
+  .gap-tool-panel {
+    position: fixed;
+    inset: auto 0.75rem 5rem;
+    width: auto;
+    max-height: 70vh;
+  }
+  .gap-day-strip {
+    padding-inline: 0.65rem;
+  }
+  .gap-day-class {
+    font-size: 0;
+    padding: 0;
+  }
+  .gap-card-select {
+    grid-template-columns: auto 1fr;
+  }
+  .gap-card-select span:last-child {
+    grid-column: 2;
   }
 }
 
