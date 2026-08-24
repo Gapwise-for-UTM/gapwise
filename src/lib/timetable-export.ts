@@ -175,9 +175,7 @@ export function createTimetableExportPlan(
   const termHeight = Math.max(...panelHeights);
   const rows = Math.ceil(terms.length / columns);
   const rowHeights = Array.from({ length: rows }, (_, row) =>
-    Math.max(
-      ...panelHeights.filter((_, index) => Math.floor(index / columns) === row),
-    ),
+    Math.max(...panelHeights.filter((_, index) => Math.floor(index / columns) === row)),
   );
   const rowY = (row: number) =>
     PAGE_PADDING +
