@@ -38,8 +38,16 @@
     padding: clamp(1.05rem, 4.5vw, 1.4rem);
     border-radius: 1.7rem;
     background:
-      radial-gradient(circle at 88% 4%, color-mix(in srgb, var(--color-accent) 11%, transparent), transparent 38%),
-      linear-gradient(180deg, color-mix(in srgb, var(--color-card) 96%, var(--color-accent) 4%), var(--color-card));
+      radial-gradient(
+        circle at 88% 4%,
+        color-mix(in srgb, var(--color-accent) 11%, transparent),
+        transparent 38%
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-card) 96%, var(--color-accent) 4%),
+        var(--color-card)
+      );
   }
 
   main.landing-stage .landing-bento > .upload-card > div {
