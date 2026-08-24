@@ -1,5 +1,5 @@
 import type { SourceMetadata } from "@/features/routing/types";
-import { factEvidence, type FactEvidence } from "./provenance";
+import { factEvidence, type FactEvidence } from "./provenance.js";
 
 export type EvidenceBackedStringList = {
   values: readonly string[];
