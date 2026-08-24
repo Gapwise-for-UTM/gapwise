@@ -56,8 +56,11 @@ export function watchForAppFailures(page: Page, baseURL: string) {
 
 export async function expectLanding(page: Page) {
   await page.goto("/");
+  const mobile = (page.viewportSize()?.width ?? 1280) < 768;
   await expect(
-    page.getByRole("heading", { name: "Make every gap on campus count." }),
+    page.getByRole("heading", {
+      name: mobile ? "See gaps. Navigate UTM. Privately." : "Make every gap on campus count.",
+    }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Try a demo" })).toBeVisible();
   await expect(page.locator("#ics-file")).toHaveCount(1);
