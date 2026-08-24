@@ -5,7 +5,7 @@
   "buildCommand": "bun run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/*.ts": {
+    "api/**/*.ts": {
       "maxDuration": 10,
       "includeFiles": "src/data/utm/**"
     }
@@ -45,5 +45,20 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }]
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/v1", "destination": "/api/v1?resource=root" },
+    { "source": "/v1/buildings", "destination": "/api/v1?resource=buildings" },
+    {
+      "source": "/v1/buildings/:building",
+      "destination": "/api/v1?resource=building&building=:building"
+    },
+    { "source": "/v1/places", "destination": "/api/v1?resource=places" },
+    {
+      "source": "/v1/places/:placeId",
+      "destination": "/api/v1?resource=place&placeId=:placeId"
+    },
+    { "source": "/v1/routes", "destination": "/api/v1?resource=routes" },
+    { "source": "/v1/gaps/plan", "destination": "/api/v1?resource=gap-plan" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

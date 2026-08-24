@@ -36,16 +36,17 @@ export const Route = createFileRoute("/developers")({
   component: DevelopersPage,
 });
 
-const SDK_EXAMPLE = `import { gapwise } from "https://gapwise.ca/sdk/gapwise-utm.js";
+const SDK_EXAMPLE = `import { Gapwise } from "@gapwise/sdk";
 
-const route = await gapwise.route({
+const gapwise = new Gapwise();
+const route = await gapwise.routes.calculate({
   from: "MN",
   to: "IB",
 });
 
-console.log(route.route.estimatedSeconds);`;
+console.log(route.status, route.estimatedSeconds);`;
 
-const GAP_EXAMPLE = `const plan = await gapwise.planGap({
+const GAP_EXAMPLE = `const plan = await gapwise.gaps.plan({
   from: "MN",
   to: "IB",
   term: "Fall",
@@ -54,17 +55,18 @@ const GAP_EXAMPLE = `const plan = await gapwise.planGap({
   endTime: 780,
 });
 
-console.log(plan.gapPlan.assessment.primary);`;
+console.log(plan.assessment.primary);`;
 
 type PlaygroundMode = "route" | "gap" | "buildings";
 
 const LIVE_REQUEST_TIMEOUT_MS = 5_000;
 
 const ENDPOINTS = [
-  ["GET", "/api/utm-buildings", "Canonical building inventory and provenance"],
-  ["GET", "/api/utm-building?q=MN", "Resolve one canonical UTM building"],
-  ["POST", "/api/utm-route", "Deterministic building-to-building route"],
-  ["POST", "/api/utm-gap-plan", "Route-aware deterministic gap assessment"],
+  ["GET", "/v1/buildings", "Canonical building inventory and provenance"],
+  ["GET", "/v1/buildings/MN", "Resolve one canonical UTM building"],
+  ["GET", "/v1/places", "Search places, amenities, and known availability"],
+  ["POST", "/v1/routes", "Deterministic building-to-building route"],
+  ["POST", "/v1/gaps/plan", "Route-aware deterministic gap assessment"],
 ] as const;
 
 function DevelopersPage() {
@@ -81,9 +83,9 @@ function DevelopersPage() {
     try {
       let response: Response;
       if (mode === "buildings") {
-        response = await fetch("/api/utm-buildings", { signal: controller.signal });
+        response = await fetch("/v1/buildings", { signal: controller.signal });
       } else if (mode === "gap") {
-        response = await fetch("/api/utm-gap-plan", {
+        response = await fetch("/v1/gaps/plan", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -97,7 +99,7 @@ function DevelopersPage() {
           signal: controller.signal,
         });
       } else {
-        response = await fetch("/api/utm-route", {
+        response = await fetch("/v1/routes", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ from: "MN", to: "IB" }),
@@ -129,7 +131,7 @@ function DevelopersPage() {
     (mode === "gap"
       ? GAP_EXAMPLE
       : mode === "buildings"
-        ? "GET https://gapwise.ca/api/utm-buildings"
+        ? "GET https://api.gapwise.ca/v1/buildings"
         : SDK_EXAMPLE);
 
   return (
@@ -172,7 +174,7 @@ function DevelopersPage() {
               </p>
               <div className="mt-7 flex flex-wrap gap-2">
                 <a
-                  href="/openapi.json"
+                  href="https://api.gapwise.ca/openapi.json"
                   className="button-primary inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold"
                 >
                   <Braces className="h-4 w-4" aria-hidden="true" />
@@ -199,14 +201,14 @@ function DevelopersPage() {
 
             <div className="surface overflow-hidden p-1">
               <div className="border-b border-border px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.11em] text-muted-foreground">
-                Zero-dependency client
+                Official TypeScript client
               </div>
               <pre className="overflow-x-auto p-5 text-[0.75rem] leading-6 text-foreground">
                 <code>{SDK_EXAMPLE}</code>
               </pre>
               <p className="flex items-center gap-2 border-t border-border px-4 py-3 text-xs text-muted-foreground">
                 <CheckCircle2 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                Browser ESM · standard fetch · no API key for public campus data
+                Browser and Node · standard fetch · no API key for public campus data
               </p>
             </div>
           </div>
@@ -216,7 +218,7 @@ function DevelopersPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
               { icon: Database, value: "30", label: "canonical UTM buildings" },
-              { icon: RouteIcon, value: "4", label: "bounded public endpoints" },
+              { icon: RouteIcon, value: "7", label: "bounded public endpoints" },
               { icon: ShieldCheck, value: "0", label: "student records required" },
               { icon: FileJson2, value: "1", label: "versioned open snapshot" },
             ].map((item) => {
@@ -366,7 +368,7 @@ function DevelopersPage() {
                 icon: Braces,
                 title: "Generate your own client",
                 body: "Use the OpenAPI 3.1 contract with your preferred tooling.",
-                href: "/openapi.json",
+                href: "https://api.gapwise.ca/openapi.json",
                 link: "OpenAPI JSON",
               },
               {
