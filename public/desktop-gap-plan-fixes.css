@@ -4,21 +4,24 @@
  */
 
 @media (max-width: 47.999rem) {
-  /* Radix DialogContent is centered with top/left transforms by default. The
-     old mobile override removed that transform and pinned both horizontal
-     edges, which shifted the sheet off-screen in Mobile Safari. Keep a real
-     centered bottom sheet with equal safe breathing room on both sides. */
+  /* Tailwind v4 expresses translate-x/translate-y through the standalone
+     `translate` property. Overriding only `transform` left the default -50%
+     translate active as well, effectively moving the sheet twice and clipping
+     half of it off the left side on Mobile Safari. Reset that native translate
+     explicitly and keep a true centered bottom sheet with equal safe margins. */
   .gap-auxiliary-sheet {
     top: auto !important;
     right: auto !important;
     bottom: calc(4.25rem + env(safe-area-inset-bottom)) !important;
     left: 50% !important;
-    width: min(32rem, calc(100vw - 1rem)) !important;
-    max-width: calc(100vw - 1rem) !important;
+    width: min(32rem, calc(100dvw - 1rem)) !important;
+    max-width: calc(100dvw - 1rem) !important;
     max-height: min(68dvh, 38rem);
     margin: 0 !important;
-    transform: translateX(-50%) !important;
+    translate: -50% 0 !important;
+    transform: none !important;
     box-sizing: border-box;
+    overflow-x: hidden;
   }
 }
 
