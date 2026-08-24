@@ -24,7 +24,7 @@ export const Route = createFileRoute("/developers")({
       { property: "og:title", content: "Gapwise Developers" },
       {
         property: "og:description",
-        content: "A small public API for deterministic UTM campus intelligence.",
+        content: "The production developer surface for deterministic UTM campus intelligence.",
       },
     ],
   }),
@@ -40,35 +40,42 @@ const API_EXAMPLE = `const response = await fetch("https://api.gapwise.ca/v1/rou
 const { data, meta } = await response.json();`;
 
 const ENDPOINTS = [
-  ["GET", "/v1", "API discovery"],
-  ["GET", "/v1/buildings", "Buildings and provenance"],
+  ["GET", "/v1", "Discovery and version metadata"],
+  ["GET", "/v1/buildings", "Buildings, coverage, and provenance"],
   ["GET", "/v1/places", "Campus places and availability"],
-  ["POST", "/v1/routes", "Deterministic routing"],
-  ["POST", "/v1/gaps/plan", "Route-aware gap planning"],
+  ["POST", "/v1/routes", "Deterministic campus routing"],
+  ["POST", "/v1/gaps/plan", "Route-aware gap assessment"],
 ] as const;
 
 const ENTRY_POINTS = [
   {
     icon: BookOpen,
     title: "Read the docs",
-    body: "Start with the contract, examples, uncertainty model, and platform guarantees.",
+    body: "Start with quickstarts, endpoint reference, SDK guides, provenance, uncertainty, privacy, and versioning.",
     href: "https://docs.gapwise.ca",
     label: "docs.gapwise.ca",
   },
   {
     icon: Package,
-    title: "Use an official SDK",
-    body: "Typed JavaScript and Python clients live with the API implementation and share its release checks.",
-    href: "https://github.com/andrewmuratov/gapwise/tree/main/sdk",
-    label: "SDK source",
+    title: "Official SDKs",
+    body: "Typed JavaScript/TypeScript and Python clients share the same v1 contract and release validation as the API.",
+    href: "https://docs.gapwise.ca/sdk/javascript/",
+    label: "SDK guides",
   },
   {
     icon: Braces,
-    title: "Generate a client",
-    body: "The OpenAPI 3.1 document is the authoritative machine-readable contract for v1.",
+    title: "OpenAPI 3.1",
+    body: "Generate a client or inspect the authoritative machine-readable contract for every public v1 operation.",
     href: "https://api.gapwise.ca/openapi.json",
-    label: "OpenAPI 3.1",
+    label: "openapi.json",
   },
+] as const;
+
+const PLATFORM_FACTS = [
+  "Production v1",
+  "No API key",
+  "OpenAPI 3.1",
+  "Deterministic results",
 ] as const;
 
 function DevelopersPage() {
@@ -93,17 +100,29 @@ function DevelopersPage() {
       <main>
         <section className="relative overflow-hidden border-b border-border">
           <div className="topography-field" aria-hidden="true" />
-          <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+          <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
             <div>
-              <p className="eyebrow text-accent">Gapwise Developers</p>
+              <p className="eyebrow text-accent">Gapwise Developers · Production v1</p>
               <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold tracking-[-0.055em] sm:text-6xl">
                 Build with the campus layer behind Gapwise.
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground">
                 Public UTM buildings, places, deterministic routing, and gap planning through one
-                versioned contract. No student timetable, account, or private location data is
-                required.
+                stable versioned contract. No student timetable, account, or private location data
+                is required.
               </p>
+
+              <div className="mt-6 flex flex-wrap gap-2" aria-label="Platform properties">
+                {PLATFORM_FACTS.map((fact) => (
+                  <span
+                    key={fact}
+                    className="rounded-full border border-border bg-background/80 px-3 py-1.5 font-mono text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground"
+                  >
+                    {fact}
+                  </span>
+                ))}
+              </div>
+
               <div className="mt-7 flex flex-wrap gap-2">
                 <a
                   href="https://docs.gapwise.ca"
@@ -132,8 +151,13 @@ function DevelopersPage() {
             </div>
 
             <div className="surface overflow-hidden">
-              <div className="border-b border-border px-4 py-3 font-mono text-[0.65rem] uppercase tracking-[0.11em] text-muted-foreground">
-                Plain HTTP works everywhere
+              <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <span className="font-mono text-[0.65rem] uppercase tracking-[0.11em] text-muted-foreground">
+                  Plain HTTP · zero setup
+                </span>
+                <span className="rounded-full border border-border px-2 py-1 font-mono text-[0.6rem] font-semibold text-accent">
+                  v1
+                </span>
               </div>
               <pre className="overflow-x-auto p-5 text-[0.75rem] leading-6 text-foreground">
                 <code>{API_EXAMPLE}</code>
@@ -181,11 +205,22 @@ function DevelopersPage() {
                 </p>
                 <p className="flex items-start gap-2">
                   <Database className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                  Building and place data carries provenance and coverage information.
+                  Building and place data carries provenance, freshness, and coverage information.
                 </p>
                 <p className="flex items-start gap-2">
                   <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                  Routing and gap planning reuse deterministic Gapwise engines.
+                  Routing and gap planning reuse the deterministic engines behind Gapwise.
+                </p>
+              </div>
+
+              <div className="mt-7 rounded-xl border border-border bg-muted/30 p-4">
+                <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  SDK release status
+                </p>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  The official TypeScript and Python clients are source-available and validated by
+                  the release gate. Check the documentation for current npm and PyPI availability
+                  before installing from a registry.
                 </p>
               </div>
             </section>
@@ -211,25 +246,57 @@ function DevelopersPage() {
                   </div>
                 ))}
               </div>
+              <div className="border-t border-border p-5">
+                <a
+                  href="https://docs.gapwise.ca/api/"
+                  className="font-mono text-xs font-semibold text-accent"
+                >
+                  Read the complete API reference →
+                </a>
+              </div>
             </section>
           </div>
 
-          <section className="mt-12 surface flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="flex items-center gap-2 font-semibold">
-                <FileJson2 className="h-4 w-4 text-accent" aria-hidden="true" />
-                Versioned public campus snapshot
+          <section className="mt-12 grid gap-4 md:grid-cols-2">
+            <div className="surface p-5">
+              <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Public data
               </p>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Need data without an API call? Download the public UTM snapshot directly.
-              </p>
+              <div className="mt-3 flex items-start gap-3">
+                <FileJson2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
+                <div>
+                  <h2 className="font-display text-lg font-semibold">Versioned campus snapshot</h2>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                    Need the canonical building snapshot without an API call? Download the public
+                    JSON artifact directly.
+                  </p>
+                  <a
+                    href="/data/utm-campus-v1.json"
+                    className="button-secondary mt-4 inline-flex min-h-10 items-center justify-center px-4 text-xs font-semibold"
+                  >
+                    Download JSON
+                  </a>
+                </div>
+              </div>
             </div>
-            <a
-              href="/data/utm-campus-v1.json"
-              className="button-secondary inline-flex min-h-10 shrink-0 items-center justify-center px-4 text-xs font-semibold"
-            >
-              Download JSON
-            </a>
+
+            <div className="surface p-5">
+              <p className="font-mono text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Operational contract
+              </p>
+              <h2 className="mt-3 font-display text-lg font-semibold">Build defensively.</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Treat unknown availability as unknown, preserve request IDs in error reports, and
+                handle <code>429</code> responses without assuming a fixed global quota. Versioning
+                and compatibility guarantees are documented explicitly.
+              </p>
+              <a
+                href="https://docs.gapwise.ca/platform/versioning/"
+                className="mt-4 inline-block font-mono text-xs font-semibold text-accent"
+              >
+                Versioning policy →
+              </a>
+            </div>
           </section>
         </section>
       </main>
