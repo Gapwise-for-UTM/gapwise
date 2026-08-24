@@ -25,6 +25,41 @@ export interface Building {
   provenance: Provenance[];
 }
 
+export type CampusFactStatus =
+  "verified" | "stale" | "inferred" | "user-reported" | "unavailable" | "unknown";
+export interface CampusPlace {
+  id: string;
+  name: string;
+  kind: "dining" | "study" | "library" | "service" | "recreation" | "amenity" | "facility";
+  buildingCode: string;
+  floorOrRoom?: string;
+  summary: string;
+  amenities: readonly string[];
+  hoursProvenance: {
+    sourceId: string;
+    status: CampusFactStatus;
+    observedAt: string;
+    note?: string;
+  };
+  metadataProvenance: {
+    sourceId: string;
+    status: CampusFactStatus;
+    observedAt: string;
+    note?: string;
+  };
+}
+export interface PlacesResponse {
+  service: "gapwise-public-campus";
+  dataVersion: string;
+  generatedAt: string;
+  places: CampusPlace[];
+}
+export interface PlaceResponse {
+  service: "gapwise-public-campus";
+  dataVersion: string;
+  place: CampusPlace;
+}
+
 export interface RoutePreferences {
   mode?: RouteMode;
   walkingSpeedMps?: number;
@@ -149,6 +184,8 @@ export declare class GapwiseClient {
   constructor(options?: GapwiseClientOptions);
   buildings(): Promise<BuildingListResponse>;
   building(query: string): Promise<BuildingResponse>;
+  places(): Promise<PlacesResponse>;
+  place(id: string): Promise<PlaceResponse>;
   route(input: RouteRequest): Promise<RouteResponse>;
   planGap(input: GapPlanRequest): Promise<GapPlanResponse>;
 }

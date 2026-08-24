@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as DevelopersRouteImport } from './routes/developers'
+import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReplayRouteImport } from './routes/replay'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -19,6 +20,7 @@ import { Route as AppGapsRouteImport } from './routes/_app.gaps'
 import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
 import { Route as AppTodayRouteImport } from './routes/_app.today'
 import { Route as OauthConsentRouteImport } from './routes/oauth.consent'
+import { Route as PlacesPlaceIdRouteImport } from './routes/places.$placeId'
 import { Route as AppRouteIndexRouteImport } from './routes/_app/route/index'
 
 const AppRoute = AppRouteImport.update({
@@ -28,6 +30,11 @@ const AppRoute = AppRouteImport.update({
 const DevelopersRoute = DevelopersRouteImport.update({
   id: '/developers',
   path: '/developers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlacesRoute = PlacesRouteImport.update({
+  id: '/places',
+  path: '/places',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -70,6 +77,11 @@ const OauthConsentRoute = OauthConsentRouteImport.update({
   path: '/oauth/consent',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlacesPlaceIdRoute = PlacesPlaceIdRouteImport.update({
+  id: '/$placeId',
+  path: '/$placeId',
+  getParentRoute: () => PlacesRoute,
+} as any)
 const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
   id: '/route/',
   path: '/route/',
@@ -79,6 +91,7 @@ const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/developers': typeof DevelopersRoute
+  '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/terms': typeof TermsRoute
@@ -86,10 +99,12 @@ export interface FileRoutesByFullPath {
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
   '/oauth/consent': typeof OauthConsentRoute
+  '/places/$placeId': typeof PlacesPlaceIdRoute
   '/route/': typeof AppRouteIndexRoute
 }
 export interface FileRoutesByTo {
   '/developers': typeof DevelopersRoute
+  '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/terms': typeof TermsRoute
@@ -97,6 +112,7 @@ export interface FileRoutesByTo {
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
   '/oauth/consent': typeof OauthConsentRoute
+  '/places/$placeId': typeof PlacesPlaceIdRoute
   '/': typeof AppIndexRoute
   '/route': typeof AppRouteIndexRoute
 }
@@ -104,6 +120,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/developers': typeof DevelopersRoute
+  '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/terms': typeof TermsRoute
@@ -111,6 +128,7 @@ export interface FileRoutesById {
   '/_app/timetable': typeof AppTimetableRoute
   '/_app/today': typeof AppTodayRoute
   '/oauth/consent': typeof OauthConsentRoute
+  '/places/$placeId': typeof PlacesPlaceIdRoute
   '/_app/': typeof AppIndexRoute
   '/_app/route/': typeof AppRouteIndexRoute
 }
@@ -119,6 +137,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/developers'
+    | '/places'
     | '/privacy'
     | '/replay'
     | '/terms'
@@ -126,10 +145,12 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/today'
     | '/oauth/consent'
+    | '/places/$placeId'
     | '/route/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/developers'
+    | '/places'
     | '/privacy'
     | '/replay'
     | '/terms'
@@ -137,12 +158,14 @@ export interface FileRouteTypes {
     | '/timetable'
     | '/today'
     | '/oauth/consent'
+    | '/places/$placeId'
     | '/'
     | '/route'
   id:
     | '__root__'
     | '/_app'
     | '/developers'
+    | '/places'
     | '/privacy'
     | '/replay'
     | '/terms'
@@ -150,6 +173,7 @@ export interface FileRouteTypes {
     | '/_app/timetable'
     | '/_app/today'
     | '/oauth/consent'
+    | '/places/$placeId'
     | '/_app/'
     | '/_app/route/'
   fileRoutesById: FileRoutesById
@@ -157,6 +181,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   DevelopersRoute: typeof DevelopersRoute
+  PlacesRoute: typeof PlacesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ReplayRoute: typeof ReplayRoute
   TermsRoute: typeof TermsRoute
@@ -177,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/developers'
       fullPath: '/developers'
       preLoaderRoute: typeof DevelopersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/places': {
+      id: '/places'
+      path: '/places'
+      fullPath: '/places'
+      preLoaderRoute: typeof PlacesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -235,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OauthConsentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/places/$placeId': {
+      id: '/places/$placeId'
+      path: '/$placeId'
+      fullPath: '/places/$placeId'
+      preLoaderRoute: typeof PlacesPlaceIdRouteImport
+      parentRoute: typeof PlacesRoute
+    }
     '/_app/route/': {
       id: '/_app/route/'
       path: '/route'
@@ -263,9 +302,21 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
+interface PlacesRouteChildren {
+  PlacesPlaceIdRoute: typeof PlacesPlaceIdRoute
+}
+
+const PlacesRouteChildren: PlacesRouteChildren = {
+  PlacesPlaceIdRoute: PlacesPlaceIdRoute,
+}
+
+const PlacesRouteWithChildren =
+  PlacesRoute._addFileChildren(PlacesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   DevelopersRoute: DevelopersRoute,
+  PlacesRoute: PlacesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ReplayRoute: ReplayRoute,
   TermsRoute: TermsRoute,

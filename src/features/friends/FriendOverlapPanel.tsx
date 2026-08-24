@@ -214,12 +214,12 @@ export function FriendOverlapPanel({
         </button>
       </div>
 
-      <div className="mt-4 grid gap-4 border-t border-border pt-4 lg:grid-cols-2">
+      <div className="friend-connection-grid mt-4 grid gap-4 border-t border-border pt-4 md:grid-cols-2">
         <div className="rounded-xl border border-border bg-secondary/25 p-4">
           <label className="block text-xs font-semibold" htmlFor="friend-display-name">
             Name shown only to connections
           </label>
-          <div className="mt-2 flex gap-2">
+          <div className="friend-field-row mt-2 flex gap-2">
             <input
               id="friend-display-name"
               value={displayName}
@@ -319,7 +319,7 @@ export function FriendOverlapPanel({
             There is no user or email search. Valid, expired, used, and unknown codes all receive
             the same response, and no authentication email is sent.
           </p>
-          <div className="mt-3 flex gap-2">
+          <div className="friend-field-row mt-3 flex gap-2">
             <input
               id="friend-private-code"
               value={submittedCode}

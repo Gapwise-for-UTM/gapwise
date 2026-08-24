@@ -50,6 +50,22 @@ export class GapwiseClient {
     return readJson(response);
   }
 
+  async places() {
+    const response = await this.fetch(`${this.baseUrl}/api/utm-places`, {
+      headers: { accept: "application/json" },
+    });
+    return readJson(response);
+  }
+
+  async place(id) {
+    if (!id || !String(id).trim()) throw new TypeError("place(id) requires a canonical id.");
+    const response = await this.fetch(
+      `${this.baseUrl}/api/utm-place?id=${encodeURIComponent(String(id).trim())}`,
+      { headers: { accept: "application/json" } },
+    );
+    return readJson(response);
+  }
+
   async route(input) {
     if (!input || !input.from || !input.to) {
       throw new TypeError("route(input) requires from and to building values.");

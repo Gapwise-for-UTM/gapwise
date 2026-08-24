@@ -10,6 +10,39 @@ export type Database = {
   };
   public: {
     Tables: {
+      campus_publisher_state: {
+        Row: {
+          entity_id: string;
+          entity_kind: string;
+          id: string;
+          published_at: string;
+          publisher_id: string;
+          state: Json;
+          superseded_at: string | null;
+          valid_until: string;
+        };
+        Insert: {
+          entity_id: string;
+          entity_kind: string;
+          id?: string;
+          published_at?: string;
+          publisher_id: string;
+          state: Json;
+          superseded_at?: string | null;
+          valid_until: string;
+        };
+        Update: {
+          entity_id?: string;
+          entity_kind?: string;
+          id?: string;
+          published_at?: string;
+          publisher_id?: string;
+          state?: Json;
+          superseded_at?: string | null;
+          valid_until?: string;
+        };
+        Relationships: [];
+      };
       user_entitlements: {
         Row: {
           user_id: string;
@@ -369,6 +402,42 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      get_campus_crowd_state: {
+        Args: { p_place_id: string };
+        Returns: {
+          confidence: string;
+          freshest_bucket: string | null;
+          level: Database["public"]["Enums"]["campus_crowd_level"] | null;
+          place_id: string;
+          sample_size: number;
+        }[];
+      };
+      get_published_campus_state: {
+        Args: { p_entity_id: string; p_entity_kind: string };
+        Returns: {
+          gapwise_verified_publisher: boolean;
+          published_at: string;
+          publisher_name: string;
+          state: Json;
+          valid_until: string;
+        }[];
+      };
+      publish_campus_state: {
+        Args: {
+          p_entity_id: string;
+          p_entity_kind: string;
+          p_state: Json;
+          p_valid_until: string;
+        };
+        Returns: string;
+      };
+      submit_campus_crowd_report: {
+        Args: {
+          p_level: Database["public"]["Enums"]["campus_crowd_level"];
+          p_place_id: string;
+        };
+        Returns: undefined;
+      };
       claim_friend_invite: { Args: { p_invite_code: string }; Returns: boolean };
       create_friend_invite: {
         Args: never;
@@ -424,7 +493,7 @@ export type Database = {
       };
     };
     Enums: {
-      [_ in never]: never;
+      campus_crowd_level: "quiet" | "seats_available" | "busy" | "full";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -545,6 +614,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      campus_crowd_level: ["quiet", "seats_available", "busy", "full"],
+    },
   },
 } as const;

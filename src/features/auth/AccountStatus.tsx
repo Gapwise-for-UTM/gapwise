@@ -73,10 +73,13 @@ export function AccountStatus({
   user,
   loading,
   onAccountDeleted,
+  settingsRequest = 0,
 }: {
   user: User | null;
   loading: boolean;
   onAccountDeleted: (clearLocal: boolean) => void;
+  /** Monotonic app-shell action token used to open the single settings dialog directly. */
+  settingsRequest?: number;
 }) {
   const aiController = useBridgedAiDelegationController();
   const [message, setMessage] = useState<string | null>(null);
@@ -109,6 +112,13 @@ export function AccountStatus({
     }
     return () => window.removeEventListener(OPEN_SIGN_IN_EVENT, openSignIn);
   }, [user]);
+
+  useEffect(() => {
+    if (settingsRequest > 0 && user) {
+      setSettingsTab("account");
+      setSettingsOpen(true);
+    }
+  }, [settingsRequest, user]);
 
   useEffect(() => {
     if (user) {
