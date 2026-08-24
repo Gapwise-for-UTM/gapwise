@@ -8,7 +8,7 @@ test("developer playground handles modes, API errors, and timeout recovery", asy
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   let behavior: "success" | "api-error" | "timeout" = "success";
 
-  await page.route("**/api/utm-*", async (route) => {
+  await page.route("**/v1/**", async (route) => {
     if (behavior === "timeout") {
       await new Promise((resolve) => setTimeout(resolve, 5_500));
       await route.abort().catch(() => undefined);
@@ -19,22 +19,28 @@ test("developer playground handles modes, API errors, and timeout recovery", asy
       await route.fulfill({
         status: 503,
         contentType: "application/json",
-        body: JSON.stringify({ error: "demo_failure", message: "Try again" }),
+        body: JSON.stringify({
+          error: { code: "demo_failure", message: "Try again" },
+          meta: { apiVersion: "v1", requestId: "e2e-request" },
+        }),
       });
       return;
     }
 
     const pathname = new URL(route.request().url()).pathname;
-    const payload = pathname.endsWith("/api/utm-buildings")
-      ? { service: "gapwise-public-campus", buildings: [{ code: "MN" }] }
-      : pathname.endsWith("/api/utm-gap-plan")
-        ? { service: "gapwise-public-campus", gapPlan: { dataVersion: "test" } }
-        : { service: "gapwise-public-campus", route: { status: "routed" } };
+    const data = pathname.endsWith("/v1/buildings")
+      ? [{ code: "MN" }]
+      : pathname.endsWith("/v1/gaps/plan")
+        ? { dataVersion: "test", assessment: { primary: { title: "Study" } } }
+        : { status: "routed" };
 
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        data,
+        meta: { apiVersion: "v1", dataVersion: "test", requestId: "e2e-request" },
+      }),
     });
   });
 
@@ -50,16 +56,17 @@ test("developer playground handles modes, API errors, and timeout recovery", asy
 
   await page.getByRole("button", { name: "11–1 gap plan" }).click();
   await run.click();
-  await expect(output).toContainText('"gapPlan"');
+  await expect(output).toContainText('"assessment"');
 
   await page.getByRole("button", { name: "Building inventory" }).click();
   await run.click();
-  await expect(output).toContainText('"buildings"');
+  await expect(output).toContainText('"code": "MN"');
   guard.assertClean();
 
   behavior = "api-error";
   await run.click();
-  await expect(output).toContainText('"demo_failure"');
+  await expect(output).toContainText('"code": "demo_failure"');
+  await expect(output).toContainText('"requestId": "e2e-request"');
 
   behavior = "timeout";
   await run.click();
@@ -70,6 +77,6 @@ test("developer playground handles modes, API errors, and timeout recovery", asy
   behavior = "success";
   const recoveryGuard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await run.click();
-  await expect(output).toContainText('"buildings"');
+  await expect(output).toContainText('"code": "MN"');
   recoveryGuard.assertClean();
 });
