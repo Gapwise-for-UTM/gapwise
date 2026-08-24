@@ -71,20 +71,25 @@ class RoutePreferences(TypedDict):
     transitionBufferMinutes: float
 
 
-class RouteResult(TypedDict, total=False):
-    dataVersion: str
-    from_: Building
-    to: Building
-    preferences: RoutePreferences
-    status: Literal["same-building", "routed", "approximate", "unavailable"]
-    accuracy: str
-    totalDistanceMeters: float | None
-    indoorDistanceMeters: float | None
-    outdoorDistanceMeters: float | None
-    estimatedSeconds: float | None
-    floorChanges: int | None
-    warnings: list[str]
-    routeVerification: Literal["verified", "mixed", "inferred", "unavailable"]
+RouteResult = TypedDict(
+    "RouteResult",
+    {
+        "dataVersion": str,
+        "from": Building,
+        "to": Building,
+        "preferences": RoutePreferences,
+        "status": Literal["same-building", "routed", "approximate", "unavailable"],
+        "accuracy": str,
+        "totalDistanceMeters": float | None,
+        "indoorDistanceMeters": float | None,
+        "outdoorDistanceMeters": float | None,
+        "estimatedSeconds": float | None,
+        "floorChanges": int | None,
+        "warnings": list[str],
+        "routeVerification": Literal["verified", "mixed", "inferred", "unavailable"],
+    },
+    total=False,
+)
 
 
 class GapRecommendationTimelineItem(TypedDict):
@@ -120,14 +125,18 @@ class GapAssessment(TypedDict):
     warnings: list[str]
 
 
-class GapInterval(TypedDict):
-    term: Term
-    weekday: Weekday
-    startTime: int
-    endTime: int
-    durationMinutes: int
-    from_: Building
-    to: Building
+GapInterval = TypedDict(
+    "GapInterval",
+    {
+        "term": Term,
+        "weekday": Weekday,
+        "startTime": int,
+        "endTime": int,
+        "durationMinutes": int,
+        "from": Building,
+        "to": Building,
+    },
+)
 
 
 class GapPreferencesResult(TypedDict):
