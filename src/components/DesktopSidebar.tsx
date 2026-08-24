@@ -70,7 +70,12 @@ export function DesktopSidebar({ destination }: { destination: AppDestination })
               }
             >
               <Icon aria-hidden="true" />
-              <span>{item.label}</span>
+              <span className="desktop-nav-copy">
+                <span>{item.label}</span>
+                {active && item.destination === "gaps" ? (
+                  <small>Tune gap recommendations</small>
+                ) : null}
+              </span>
             </Link>
           );
         })}
