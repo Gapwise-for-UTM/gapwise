@@ -98,7 +98,7 @@ export class Gapwise {
   private readonly timeoutMs: number;
   private readonly headers: HeadersInit;
   constructor(options: GapwiseOptions = {}) {
-    this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+    this.baseUrl = trimTrailingSlashes(options.baseUrl ?? DEFAULT_BASE_URL);
     this.fetcher = options.fetch ?? globalThis.fetch;
     if (typeof this.fetcher !== "function")
       throw new TypeError("Gapwise requires a Fetch API implementation.");
@@ -177,6 +177,11 @@ export class Gapwise {
       throw new GapwiseResponseError();
     return body as Envelope<T>;
   }
+}
+function trimTrailingSlashes(value: string) {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
 }
 function required(value: string, name: string) {
   if (!value?.trim()) throw new TypeError(`${name} must be a non-empty string.`);
