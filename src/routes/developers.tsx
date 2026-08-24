@@ -50,7 +50,7 @@ const ENDPOINTS = [
 const ENTRY_POINTS = [
   {
     icon: BookOpen,
-    title: "Documentation",
+    title: "Read the docs",
     body: "Start with quickstarts, endpoint reference, SDK guides, provenance, uncertainty, privacy, and versioning.",
     href: "https://docs.gapwise.ca",
     label: "docs.gapwise.ca",
