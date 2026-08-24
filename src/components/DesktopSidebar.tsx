@@ -1,6 +1,10 @@
 import { CalendarClock, CalendarRange, Home, LayoutGrid, MapPinned, Settings } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import type { AppDestination } from "@/features/navigation/use-app-navigation";
+
+const CAMPUS_ARRIVAL_TRIGGER =
+  '.desktop-app-header button[aria-label="Campus arrival settings"]';
 
 const destinations = [
   {
@@ -33,16 +37,33 @@ const destinations = [
   },
 ] as const;
 
+function campusArrivalTrigger() {
+  return document.querySelector<HTMLButtonElement>(CAMPUS_ARRIVAL_TRIGGER);
+}
+
 function openCampusArrivalSettings() {
-  document
-    .querySelector<HTMLButtonElement>(
-      '.desktop-app-header button[aria-label="Campus arrival settings"]',
-    )
-    ?.click();
+  campusArrivalTrigger()?.click();
 }
 
 /** Desktop-only primary navigation. Mobile retains the integrated bottom navigation. */
 export function DesktopSidebar({ destination }: { destination: AppDestination }) {
+  const [arrivalLabel, setArrivalLabel] = useState("Campus arrival");
+
+  useEffect(() => {
+    const trigger = campusArrivalTrigger();
+    if (!trigger) return;
+
+    const syncLabel = () => {
+      const label = trigger.textContent?.trim();
+      setArrivalLabel(label || "Campus arrival");
+    };
+    syncLabel();
+
+    const observer = new MutationObserver(syncLabel);
+    observer.observe(trigger, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <aside className="desktop-sidebar" aria-label="Desktop navigation">
       <Link to="/" className="desktop-brand" aria-label="Gapwise for UTM home">
@@ -97,7 +118,7 @@ export function DesktopSidebar({ destination }: { destination: AppDestination })
           onClick={openCampusArrivalSettings}
         >
           <Home aria-hidden="true" />
-          <span>Campus arrival</span>
+          <span>{arrivalLabel}</span>
         </button>
         <div className="desktop-identity">
           <span className="desktop-avatar">G</span>
