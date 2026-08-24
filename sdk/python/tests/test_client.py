@@ -1,5 +1,6 @@
 import httpx
 import pytest
+
 from gapwise import (
     AsyncGapwise,
     Gapwise,
@@ -46,7 +47,7 @@ def test_sync_every_resource_and_serialization():
         assert client.buildings.get("MN")["code"] == "MN"
         assert client.places.get("utm-library")["id"] == "utm-library"
         assert client.routes.calculate(from_building="MN", to_building="IB")["status"] == "routed"
-        client.gaps.plan(
+        plan = client.gaps.plan(
             from_building="MN",
             to_building="IB",
             term="Fall",
@@ -54,6 +55,7 @@ def test_sync_every_resource_and_serialization():
             start_time=600,
             end_time=720,
         )
+        assert "assessment" in plan
     assert [request.url.path for request in seen] == [
         "/v1",
         "/v1/buildings/MN",
@@ -90,36 +92,42 @@ def test_sync_discovery_custom_base_headers_and_page():
 
 
 def test_sync_api_response_and_transport_errors():
-    with httpx.Client(
-        transport=httpx.MockTransport(
-            lambda _: httpx.Response(
-                404,
-                json={
-                    "error": {"code": "place_not_found", "message": "Missing"},
-                    "meta": {"apiVersion": "v1", "requestId": "req-x"},
-                },
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    404,
+                    json={
+                        "error": {"code": "place_not_found", "message": "Missing"},
+                        "meta": {"apiVersion": "v1", "requestId": "req-x"},
+                    },
+                )
             )
-        )
-    ) as http:
-        with pytest.raises(GapwiseAPIError) as exc:
-            Gapwise(client=http).places.get("missing")
+        ) as http,
+        pytest.raises(GapwiseAPIError) as exc,
+    ):
+        Gapwise(client=http).places.get("missing")
     assert (
         exc.value.code == "place_not_found"
         and exc.value.status_code == 404
         and exc.value.request_id == "req-x"
     )
-    with httpx.Client(
-        transport=httpx.MockTransport(lambda _: httpx.Response(200, text="broken"))
-    ) as http:
-        with pytest.raises(GapwiseResponseError):
-            Gapwise(client=http).info()
+    with (
+        httpx.Client(
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, text="broken"))
+        ) as http,
+        pytest.raises(GapwiseResponseError),
+    ):
+        Gapwise(client=http).info()
 
     def timeout(_):
         raise httpx.ReadTimeout("slow")
 
-    with httpx.Client(transport=httpx.MockTransport(timeout)) as http:
-        with pytest.raises(GapwiseTransportError):
-            Gapwise(client=http).info()
+    with (
+        httpx.Client(transport=httpx.MockTransport(timeout)) as http,
+        pytest.raises(GapwiseTransportError),
+    ):
+        Gapwise(client=http).info()
 
 
 def test_context_manager_closes_owned_client_only():
