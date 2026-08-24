@@ -1,0 +1,30 @@
+.meeting-card {
+  border-left-width: 1px !important;
+  border-left-color: color-mix(
+    in oklab,
+    var(--meeting-accent) var(--meeting-card-border-strength),
+    var(--color-border)
+  ) !important;
+}
+
+.meeting-card:hover {
+  border-left-color: color-mix(
+    in oklab,
+    var(--meeting-accent) var(--meeting-card-hover-border-strength),
+    var(--color-border)
+  ) !important;
+}
+
+.meeting-card:focus-visible {
+  border-left-color: color-mix(
+    in oklab,
+    var(--meeting-accent) var(--meeting-card-border-strength),
+    var(--color-border)
+  ) !important;
+}
+
+@media (max-width: 47.999rem) {
+  .mobile-integrated-app .meeting-card {
+    border-left-width: 0 !important;
+  }
+}

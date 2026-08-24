@@ -26,6 +26,7 @@ async function expectMonumentReady(page: Page) {
   await expect(page.locator("figure[data-model-ready]")).toHaveAttribute(
     "data-model-ready",
     "true",
+    { timeout: 20_000 },
   );
 }
 

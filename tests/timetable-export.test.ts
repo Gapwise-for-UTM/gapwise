@@ -42,6 +42,9 @@ describe("timetable image export", () => {
     expect([lowDensity.width, lowDensity.height, lowDensity.startHour, lowDensity.endHour]).toEqual(
       [highDensity.width, highDensity.height, highDensity.startHour, highDensity.endHour],
     );
+    expect(lowDensity.panels.map(({ startHour, endHour }) => [startHour, endHour])).toEqual(
+      highDensity.panels.map(({ startHour, endHour }) => [startHour, endHour]),
+    );
     for (const panel of highDensity.panels) {
       expect(panel.x).toBeGreaterThanOrEqual(0);
       expect(panel.y).toBeGreaterThanOrEqual(0);
@@ -50,15 +53,23 @@ describe("timetable image export", () => {
     }
   });
 
-  test("uses one shared comparison range for Fall and Winter without cropping events", () => {
+  test("sizes combined-term panels from each term's own time range", () => {
     const meetings = [
       meeting({ startTime: 420, endTime: 480 }),
-      meeting({ id: "late", term: "Winter", startTime: 1140, endTime: 1260 }),
+      meeting({ id: "winter-early", term: "Winter", startTime: 660, endTime: 720 }),
+      meeting({ id: "winter-late", term: "Winter", startTime: 1140, endTime: 1260 }),
     ];
     const plan = createTimetableExportPlan(meetings, "all");
-    expect(plan.startHour * 60).toBeLessThanOrEqual(420);
-    expect(plan.endHour * 60).toBeGreaterThanOrEqual(1260);
-    expect(plan.panels[0]!.height).toBe(plan.panels[1]!.height);
+    const fall = plan.panels.find((panel) => panel.term === "Fall")!;
+    const winter = plan.panels.find((panel) => panel.term === "Winter")!;
+
+    expect(fall.startHour * 60).toBeLessThanOrEqual(420);
+    expect(fall.endHour * 60).toBeGreaterThanOrEqual(480);
+    expect(winter.startHour * 60).toBeLessThanOrEqual(660);
+    expect(winter.endHour * 60).toBeGreaterThanOrEqual(1260);
+    expect(winter.height).toBeGreaterThan(fall.height);
+    expect(plan.startHour).toBe(Math.min(fall.startHour, winter.startHour));
+    expect(plan.endHour).toBe(Math.max(fall.endHour, winter.endHour));
   });
 
   test("centers the third sparse term in a balanced composition", () => {
@@ -127,7 +138,7 @@ describe("timetable image export", () => {
     expect(personal).toMatchObject({ dashed: false, label: "PERSONAL", accent: "#22c55e" });
   });
 
-  test("renders opaque cards above the grid and embeds supplied Geist typography", () => {
+  test("renders opaque cards without a vertical accent rail and embeds Geist typography", () => {
     const plan = createTimetableExportPlan([schedules[0]!], "Fall");
     const svg = renderTimetableExportSvg(
       [schedules[0]!],
@@ -139,6 +150,7 @@ describe("timetable image export", () => {
     expect(svg).toContain("data:font/woff2;base64,AA==");
     expect(svg).toContain(`fill="${meetingExportStyle(schedules[0]!, "dark").base}"`);
     expect(svg).not.toMatch(/fill-opacity=.*event/);
+    expect(svg).not.toContain('stroke-width="4" stroke-linecap="round"');
   });
 
   test("escapes untrusted timetable text before SVG rendering", () => {

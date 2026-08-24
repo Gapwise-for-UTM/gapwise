@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   ArrowRight,
   Brain,
-  Clock,
   Coffee,
   Home,
   MapPin,
@@ -13,7 +12,8 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { FriendOverlapPanel } from "@/features/friends/FriendOverlapPanel";
 import type { FriendGapOverlap } from "@/features/friends/types";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
@@ -29,6 +29,7 @@ import type { Gap, Term } from "@/lib/timetable-types";
 import { formatCompactDuration, formatDuration, formatTime } from "@/lib/timetable-types";
 
 const EMPTY_FRIEND_OVERLAPS: FriendGapOverlap[] = [];
+type GapPlanOverlay = "tune" | "friends" | null;
 
 const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: string }> = {
   "tight-transition": {
@@ -106,6 +107,175 @@ function numericInput(value: string, fallback: number, minimum: number, maximum:
 function transitionMinutes(route: TransitionRoute) {
   const seconds = route.result?.estimatedSeconds ?? route.approximateSeconds;
   return seconds === null ? null : Math.ceil(seconds / 60);
+}
+
+function DayStrip({
+  gaps,
+  range,
+  selectedId,
+  activeId,
+  onSelect,
+  onActive,
+  showLegend,
+}: {
+  gaps: Gap[];
+  range: { first: number; last: number };
+  selectedId: string | null;
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  onActive: (id: string | null) => void;
+  showLegend: boolean;
+}) {
+  const meetings = useMemo(() => {
+    const unique = new Map<string, Gap["previous"]>();
+    gaps.forEach((gap) => {
+      unique.set(gap.previous.id, gap.previous);
+      unique.set(gap.next.id, gap.next);
+    });
+    return [...unique.values()].sort((a, b) => a.startTime - b.startTime);
+  }, [gaps]);
+  if (meetings.length === 0)
+    return (
+      <div className="gap-day-strip surface">
+        <p>No scheduled gap intervals</p>
+      </div>
+    );
+  const { first, last } = range;
+  const span = Math.max(60, last - first);
+  const position = (minute: number) => `${((minute - first) / span) * 100}%`;
+  const width = (start: number, end: number) => `${((end - start) / span) * 100}%`;
+  const hours = Array.from({ length: Math.floor(span / 60) + 1 }, (_, index) => first + index * 60);
+  return (
+    <div className="gap-day-strip surface" aria-label="Chronological day overview">
+      <div className="gap-day-hours" aria-hidden="true">
+        {hours.map((hour, index) => (
+          <span key={hour} style={{ left: position(hour) }}>
+            {index === 0 || index === hours.length - 1 || index % 2 === 0
+              ? formatTime(hour).replace(":00", "")
+              : ""}
+          </span>
+        ))}
+      </div>
+      <div className="gap-day-track">
+        {hours.map((hour) => (
+          <i key={hour} style={{ left: position(hour) }} aria-hidden="true" />
+        ))}
+        {meetings.map((meeting) => (
+          <span
+            key={meeting.id}
+            className="gap-day-class"
+            style={{
+              left: position(meeting.startTime),
+              width: width(meeting.startTime, meeting.endTime),
+            }}
+            title={`${meeting.courseCode}, ${formatTime(meeting.startTime)}–${formatTime(meeting.endTime)}`}
+          >
+            {meeting.courseCode}
+          </span>
+        ))}
+        {gaps.map((gap) => (
+          <button
+            key={gap.id}
+            type="button"
+            className="gap-day-interval"
+            data-active={gap.id === (activeId ?? selectedId) ? "true" : undefined}
+            style={{ left: position(gap.startTime), width: width(gap.startTime, gap.endTime) }}
+            onMouseEnter={() => onActive(gap.id)}
+            onMouseLeave={() => onActive(null)}
+            onFocus={() => onActive(gap.id)}
+            onBlur={() => onActive(null)}
+            onClick={() => onSelect(gap.id)}
+            aria-label={`${formatCompactDuration(gap.durationMinutes)} gap, ${formatTime(gap.startTime)} to ${formatTime(gap.endTime)}`}
+          >
+            <span>{formatCompactDuration(gap.durationMinutes)}</span>
+          </button>
+        ))}
+      </div>
+      {showLegend ? (
+        <div className="gap-day-legend">
+          <span>Class</span>
+          <span>Gap</span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function GapPlanAuxiliarySurface({
+  active,
+  onChange,
+  gapPreferences,
+  onGapPreferencesChange,
+  residenceName,
+  user,
+  term,
+  onOverlapsChange,
+  restoreFocusRef,
+}: {
+  active: GapPlanOverlay;
+  onChange: (next: GapPlanOverlay) => void;
+  gapPreferences: GapPreferences;
+  onGapPreferencesChange: (next: GapPreferences) => void;
+  residenceName: string | null;
+  user: User | null;
+  term: Term;
+  onOverlapsChange: (overlaps: FriendGapOverlap[]) => void;
+  restoreFocusRef: RefObject<HTMLButtonElement | null>;
+}) {
+  return (
+    <Dialog open={active !== null} onOpenChange={(open) => !open && onChange(null)}>
+      <DialogContent
+        id="gap-plan-auxiliary"
+        className="gap-auxiliary-sheet"
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          restoreFocusRef.current?.focus();
+        }}
+      >
+        <span className="gap-sheet-handle" aria-hidden="true" />
+        <div className="gap-sheet-tabs" aria-label="Gap Plan tools">
+          <button type="button" aria-pressed={active === "tune"} onClick={() => onChange("tune")}>
+            <SlidersHorizontal aria-hidden="true" /> Tune
+          </button>
+          <button
+            type="button"
+            aria-pressed={active === "friends"}
+            onClick={() => onChange("friends")}
+          >
+            <Users aria-hidden="true" /> Friend gaps
+          </button>
+        </div>
+        <div key={active} className="gap-sheet-content">
+          {active === "tune" ? (
+            <>
+              <DialogTitle>Tune your gaps</DialogTitle>
+              <DialogDescription>
+                Changes apply to usable time and suggestions immediately.
+              </DialogDescription>
+              <GapSettings
+                value={gapPreferences}
+                onChange={onGapPreferencesChange}
+                residenceName={residenceName}
+              />
+            </>
+          ) : active === "friends" ? (
+            <>
+              <DialogTitle>Friend gaps</DialogTitle>
+              <DialogDescription>
+                Compare private free-time windows without sharing your timetable.
+              </DialogDescription>
+              <FriendOverlapPanel
+                key={user?.id ?? "guest"}
+                user={user}
+                term={term}
+                onOverlapsChange={onOverlapsChange}
+              />
+            </>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 const GapSettings = memo(function GapSettings({
@@ -447,12 +617,20 @@ const GapCard = memo(function GapCard({
   gapPreferences,
   planTransition,
   friendOverlaps,
+  isSelected,
+  onSelect,
+  onActive,
+  onOpenFriends,
 }: {
   gap: Gap;
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   planTransition: TransitionPlanner;
   friendOverlaps: FriendGapOverlap[];
+  isSelected: boolean;
+  onSelect: () => void;
+  onActive: (active: boolean) => void;
+  onOpenFriends: () => void;
 }) {
   const { route, assessment, residenceTrip } = useMemo(
     () => planGapAssessment(gap, preferences, gapPreferences, planTransition),
@@ -508,18 +686,25 @@ const GapCard = memo(function GapCard({
   const freeMinutes = Math.max(0, selected.activityMinutes - protectedEatingMinutes);
 
   return (
-    <article className="gap-card group surface surface-interactive p-5 sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <p className="flex items-center gap-2 font-mono text-xs font-medium tabular-nums text-muted-foreground">
-          <Clock className="h-4 w-4 text-accent" aria-hidden="true" />
+    <article
+      className="gap-card group surface surface-interactive p-4"
+      data-selected={isSelected ? "true" : undefined}
+      onMouseEnter={() => onActive(true)}
+      onMouseLeave={() => onActive(false)}
+    >
+      <button
+        type="button"
+        className="gap-card-select"
+        onClick={onSelect}
+        aria-pressed={isSelected}
+      >
+        <strong>{formatCompactDuration(gap.durationMinutes)}</strong>
+        <span>
           {formatTime(gap.startTime)} – {formatTime(gap.endTime)}
-        </p>
-        <span className="font-mono text-xs font-medium text-muted-foreground">
-          {formatCompactDuration(gap.durationMinutes)}
         </span>
-      </div>
-
-      <div className="mt-3 flex items-start gap-2.5">
+        <span>{formatCompactDuration(selected.activityMinutes)} usable</span>
+      </button>
+      <div className="gap-card-recommendation flex items-start gap-2.5">
         <span
           className={`gap-card-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${meta.style}`}
         >
@@ -529,35 +714,30 @@ const GapCard = memo(function GapCard({
           <h4 className="font-display text-lg font-medium leading-tight tracking-tight">
             {selected.title}
           </h4>
-          <p className="mt-0.5 text-sm font-medium text-foreground">
-            {formatCompactDuration(selected.activityMinutes)} usable
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{selected.summary}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{selected.summary}</p>
         </div>
       </div>
 
       {selected.action === "meal-window" ? (
         <GapFillBar protectedMinutes={protectedEatingMinutes} freeMinutes={freeMinutes} />
-      ) : null}
-
-      {friendOverlaps.length > 0 ? (
-        <div className="mt-4 rounded-lg border border-accent/25 bg-accent/8 px-3 py-3">
-          <p className="flex items-center gap-2 text-xs font-semibold text-accent">
-            <Users className="h-3.5 w-3.5" aria-hidden="true" />
-            Mutual friend availability
-          </p>
-          <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {friendOverlaps.map((overlap) => (
-              <li key={`${overlap.friendshipId}-${overlap.startMinute}-${overlap.endMinute}`}>
-                {overlap.friendDisplayName} · {formatTime(overlap.startMinute)}–
-                {formatTime(overlap.endMinute)}
-              </li>
-            ))}
-          </ul>
+      ) : (
+        <div
+          className="gap-usable-meter"
+          role="progressbar"
+          aria-label={`${formatCompactDuration(selected.activityMinutes)} usable`}
+          aria-valuemin={0}
+          aria-valuemax={gap.durationMinutes}
+          aria-valuenow={selected.activityMinutes}
+        >
+          <span
+            style={{
+              width: `${Math.min(100, (selected.activityMinutes / Math.max(1, gap.durationMinutes)) * 100)}%`,
+            }}
+          />
         </div>
-      ) : null}
+      )}
 
-      <div className="mt-4 rounded-lg border border-border bg-secondary/25 px-3 py-3 text-sm">
+      <div className="gap-route-context text-sm">
         {showingHomeRoute ? (
           <>
             <p className="flex min-w-0 items-center gap-2">
@@ -603,7 +783,16 @@ const GapCard = memo(function GapCard({
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
+      {friendOverlaps.length > 0 ? (
+        <button type="button" className="gap-friend-context" onClick={onOpenFriends}>
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {friendOverlaps.length} friend {friendOverlaps.length === 1 ? "window" : "windows"}{" "}
+          overlaps
+          <span>View ›</span>
+        </button>
+      ) : null}
+
+      <div className="gap-card-actions flex flex-wrap items-center gap-2">
         {recommendations.map((recommendation) => {
           const selectedOption = selected.id === recommendation.id;
           return (
@@ -612,9 +801,9 @@ const GapCard = memo(function GapCard({
               type="button"
               aria-pressed={selectedOption}
               onClick={() => setSelectedRecommendationId(recommendation.id)}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all active:scale-[0.98] ${
+              className={`rounded-md border px-2.5 py-1 text-[0.68rem] font-semibold transition-colors ${
                 selectedOption
-                  ? "border-primary bg-primary text-primary-foreground shadow-[var(--accent-glow)]"
+                  ? "border-primary bg-primary text-primary-foreground"
                   : "border-input bg-card text-muted-foreground hover:border-accent/50 hover:bg-secondary hover:text-foreground"
               }`}
             >
@@ -625,8 +814,8 @@ const GapCard = memo(function GapCard({
       </div>
 
       <details className="group mt-3 text-xs">
-        <summary className="ml-auto w-fit cursor-pointer rounded-lg border border-input px-3 py-1 font-semibold text-muted-foreground hover:border-accent/60 hover:text-foreground">
-          Details
+        <summary className="gap-details-link ml-auto w-fit cursor-pointer list-none font-semibold text-muted-foreground hover:text-accent">
+          Details ›
         </summary>
         <div className="mt-3 rounded-lg border border-border bg-background/45 p-3 text-muted-foreground">
           <dl className="grid grid-cols-2 gap-x-5 gap-y-2">
@@ -663,6 +852,13 @@ const GapCard = memo(function GapCard({
               <li key={message}>{message}</li>
             ))}
           </ul>
+          {friendOverlaps.length > 0 ? (
+            <p className="mt-3 flex items-center gap-2 border-t border-border pt-3 text-accent">
+              <Users className="h-3.5 w-3.5" aria-hidden="true" />
+              {friendOverlaps.length} mutual friend{" "}
+              {friendOverlaps.length === 1 ? "window" : "windows"}
+            </p>
+          ) : null}
         </div>
       </details>
     </article>
@@ -687,12 +883,27 @@ export const GapPlan = memo(function GapPlan({
   term: Term;
 }) {
   const groups = useMemo(() => groupGapsByDay(gaps), [gaps]);
+  const stripRange = useMemo(() => {
+    const meetings = gaps.flatMap((gap) => [gap.previous, gap.next]);
+    return {
+      first: Math.floor(Math.min(...meetings.map((item) => item.startTime), 480) / 60) * 60,
+      last: Math.ceil(Math.max(...meetings.map((item) => item.endTime), 1080) / 60) * 60,
+    };
+  }, [gaps]);
   const residence = selectedResidence(preferences);
   const [friendOverlapState, setFriendOverlapState] = useState<{
     userId: string | null;
     overlaps: FriendGapOverlap[];
   }>({ userId: null, overlaps: [] });
   const userId = user?.id ?? null;
+  const [selectedGapId, setSelectedGapId] = useState<string | null>(gaps[0]?.id ?? null);
+  const [selectedByDay, setSelectedByDay] = useState<Record<string, string>>({});
+  const [activeGapId, setActiveGapId] = useState<string | null>(null);
+  const [activeOverlay, setActiveOverlay] = useState<GapPlanOverlay>(null);
+  const overlayTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    if (!gaps.some((gap) => gap.id === selectedGapId)) setSelectedGapId(gaps[0]?.id ?? null);
+  }, [gaps, selectedGapId]);
   const handleFriendOverlapsChange = useCallback(
     (overlaps: FriendGapOverlap[]) => setFriendOverlapState({ userId, overlaps }),
     [userId],
@@ -713,9 +924,20 @@ export const GapPlan = memo(function GapPlan({
     }
     return overlapsByGap;
   }, [friendOverlapState, gaps, userId]);
+  const selectGap = useCallback((gap: Gap) => {
+    setSelectedGapId(gap.id);
+    setSelectedByDay((current) => ({ ...current, [gap.weekday]: gap.id }));
+  }, []);
+  const toggleOverlay = useCallback(
+    (next: Exclude<GapPlanOverlay, null>, trigger: HTMLButtonElement) => {
+      overlayTriggerRef.current = trigger;
+      setActiveOverlay((current) => (current === next ? null : next));
+    },
+    [],
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="gap-plan-layout space-y-5">
       <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="eyebrow text-accent">Between classes</p>
@@ -723,21 +945,38 @@ export const GapPlan = memo(function GapPlan({
             Plan around your day
           </h2>
         </div>
-        <p className="max-w-md text-sm leading-6 text-muted-foreground">
-          Suggestions account for walking time, setup, pack-up, and your next class.
-        </p>
+        <div className="gap-plan-tools">
+          <button
+            type="button"
+            aria-expanded={activeOverlay === "tune"}
+            aria-controls="gap-plan-auxiliary"
+            data-active={activeOverlay === "tune" ? "true" : undefined}
+            onClick={(event) => toggleOverlay("tune", event.currentTarget)}
+          >
+            <SlidersHorizontal aria-hidden="true" /> Tune
+          </button>
+          <button
+            type="button"
+            aria-expanded={activeOverlay === "friends"}
+            aria-controls="gap-plan-auxiliary"
+            data-active={activeOverlay === "friends" ? "true" : undefined}
+            onClick={(event) => toggleOverlay("friends", event.currentTarget)}
+          >
+            <Users aria-hidden="true" /> Friend gaps
+          </button>
+        </div>
       </div>
-      <GapSettings
-        value={gapPreferences}
-        onChange={onGapPreferencesChange}
-        residenceName={residence?.name ?? null}
-      />
 
-      <FriendOverlapPanel
-        key={userId ?? "guest"}
+      <GapPlanAuxiliarySurface
+        active={activeOverlay}
+        onChange={setActiveOverlay}
+        gapPreferences={gapPreferences}
+        onGapPreferencesChange={onGapPreferencesChange}
+        residenceName={residence?.name ?? null}
         user={user}
         term={term}
         onOverlapsChange={handleFriendOverlapsChange}
+        restoreFocusRef={overlayTriggerRef}
       />
 
       {groups.length === 0 ? (
@@ -752,7 +991,7 @@ export const GapPlan = memo(function GapPlan({
         </div>
       ) : null}
 
-      {groups.map((group) => (
+      {groups.map((group, groupIndex) => (
         <section key={group.weekday} aria-labelledby={`gaps-${group.weekday}`}>
           <h3
             id={`gaps-${group.weekday}`}
@@ -763,17 +1002,38 @@ export const GapPlan = memo(function GapPlan({
               {group.gaps.length} gap{group.gaps.length === 1 ? "" : "s"}
             </span>
           </h3>
-          <div className="mt-3 grid gap-4 xl:grid-cols-2">
-            {group.gaps.map((gap) => (
-              <GapCard
-                key={gap.id}
-                gap={gap}
-                preferences={preferences}
-                gapPreferences={gapPreferences}
-                planTransition={planTransition}
-                friendOverlaps={friendOverlapsByGapId.get(gap.id) ?? EMPTY_FRIEND_OVERLAPS}
-              />
-            ))}
+          <DayStrip
+            gaps={group.gaps}
+            range={stripRange}
+            selectedId={
+              selectedByDay[group.weekday] ??
+              (group.gaps.some((gap) => gap.id === selectedGapId) ? selectedGapId : null)
+            }
+            activeId={activeGapId}
+            onSelect={(id) => {
+              const gap = group.gaps.find((item) => item.id === id);
+              if (gap) selectGap(gap);
+            }}
+            onActive={setActiveGapId}
+            showLegend={groupIndex === 0}
+          />
+          <div className="gap-selected-surface">
+            {group.gaps
+              .filter((gap) => selectedGapId === gap.id)
+              .map((gap) => (
+                <GapCard
+                  key={gap.id}
+                  gap={gap}
+                  preferences={preferences}
+                  gapPreferences={gapPreferences}
+                  planTransition={planTransition}
+                  friendOverlaps={friendOverlapsByGapId.get(gap.id) ?? EMPTY_FRIEND_OVERLAPS}
+                  isSelected
+                  onSelect={() => selectGap(gap)}
+                  onActive={(active) => setActiveGapId(active ? gap.id : null)}
+                  onOpenFriends={() => setActiveOverlay("friends")}
+                />
+              ))}
           </div>
         </section>
       ))}

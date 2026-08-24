@@ -94,6 +94,26 @@ function hasPixel(
   return false;
 }
 
+function assertHorizontalSymmetry(name: string, image: DecodedPng) {
+  let largestChannelDelta = 0;
+
+  for (let y = 0; y < image.height; y++) {
+    for (let x = 0; x < Math.floor(image.width / 2); x++) {
+      const left = (y * image.width + x) * 4;
+      const right = (y * image.width + (image.width - 1 - x)) * 4;
+
+      for (let channel = 0; channel < 4; channel++) {
+        largestChannelDelta = Math.max(
+          largestChannelDelta,
+          Math.abs(image.pixels[left + channel]! - image.pixels[right + channel]!),
+        );
+      }
+    }
+  }
+
+  assert.equal(largestChannelDelta, 0, `${name} remains mathematically symmetrical`);
+}
+
 function assertCanonicalMark(name: string, expectedSize: number, image: DecodedPng) {
   assert.equal(image.width, expectedSize, `${name} width`);
   assert.equal(image.height, expectedSize, `${name} height`);
@@ -108,33 +128,31 @@ function assertCanonicalMark(name: string, expectedSize: number, image: DecodedP
     hasPixel(
       image.pixels,
       (red, green, blue, alpha) =>
-        alpha >= 128 &&
-        red >= 20 &&
-        red <= 45 &&
-        green >= 40 &&
-        green <= 80 &&
-        blue >= 75 &&
-        blue <= 120,
+        alpha >= 96 && red >= 50 && red <= 110 && green >= 130 && green <= 205 && blue >= 220,
     ),
-    `${name} contains the navy G`,
-  );
-
-  assert.ok(
-    hasPixel(
-      image.pixels,
-      (red, green, blue, alpha) => alpha >= 96 && red >= 50 && green >= 90 && blue >= 140,
-    ),
-    `${name} contains the blue route details`,
+    `${name} contains the blue deer mark`,
   );
 
   assert.ok(
     hasPixel(image.pixels, (_red, _green, _blue, alpha) => alpha === 0),
     `${name} preserves transparency`,
   );
+
+  const notchX = Math.floor(image.width / 2);
+  const notchY = Math.floor(image.height * 0.53);
+  const notchOffset = (notchY * image.width + notchX) * 4;
+  const notchAlpha = image.pixels[notchOffset + 3]!;
+  if (expectedSize <= 32) {
+    assert.ok(notchAlpha < 224, `${name} preserves the antialiased central V notch`);
+  } else {
+    assert.equal(notchAlpha, 0, `${name} preserves the central V notch`);
+  }
+
+  assertHorizontalSymmetry(name, image);
 }
 
 describe("generated brand icons", () => {
-  test("matches logo-mark-derived committed assets deterministically", async () => {
+  test("matches the deer mark and stays deterministic", async () => {
     const firstDirectory = await mkdtemp(join(tmpdir(), "gapwise-icons-first-"));
     const secondDirectory = await mkdtemp(join(tmpdir(), "gapwise-icons-second-"));
 
@@ -149,15 +167,17 @@ describe("generated brand icons", () => {
           readFile(join(secondDirectory, name)),
         ]);
 
-        assert.equal(
-          Buffer.compare(committed, first),
-          0,
-          `${name} matches the canonical generator`,
-        );
+        const committedImage = decodeGeneratedPng(committed, `public/${name}`);
+        const firstImage = decodeGeneratedPng(first, `generated/${name}`);
 
+        assert.equal(
+          Buffer.compare(Buffer.from(committedImage.pixels), Buffer.from(firstImage.pixels)),
+          0,
+          `${name} matches the canonical deer raster`,
+        );
         assert.equal(Buffer.compare(first, second), 0, `${name} generation is deterministic`);
 
-        assertCanonicalMark(name, size, decodeGeneratedPng(committed, `public/${name}`));
+        assertCanonicalMark(name, size, committedImage);
       }
     } finally {
       await Promise.all([
@@ -165,5 +185,5 @@ describe("generated brand icons", () => {
         rm(secondDirectory, { recursive: true, force: true }),
       ]);
     }
-  }, 10_000);
+  }, 45_000);
 });

@@ -161,7 +161,7 @@ describe("friend overlap privacy contract", () => {
   test("scopes cached overlap UI state to the current authenticated account", async () => {
     const gapPlan = await readFile("src/components/GapPlan.tsx", "utf8");
     expect(gapPlan).toContain("friendOverlapState.userId === userId");
-    expect(gapPlan).toContain('key={userId ?? "guest"}');
+    expect(gapPlan).toMatch(/key=\{(?:userId|user\?\.id) \?\? "guest"\}/);
   });
 
   test("friend lookup uses unguessable codes without an account or email directory", async () => {

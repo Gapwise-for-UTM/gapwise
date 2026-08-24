@@ -85,6 +85,8 @@ export interface ExportPanelPlacement {
   y: number;
   width: number;
   height: number;
+  startHour: number;
+  endHour: number;
 }
 
 export interface TimetableExportPlan {
@@ -104,6 +106,9 @@ const GAP = 28;
 const PAGE_PADDING = 36;
 const HEADER_HEIGHT = 64;
 const MAX_PIXELS = 16_000_000;
+const EXPORT_TIME_GUTTER = 84;
+const EXPORT_TIME_LABEL_INSET = 14;
+const EXPORT_DAY_HEADER_HEIGHT = 46;
 
 export function resolveExportTheme(
   appearance: ExportAppearance,
@@ -121,10 +126,21 @@ function termMetrics(meetings: readonly Meeting[], term: Term) {
   const model = buildTimetableModel(selected);
   const busiestDay = Math.max(0, ...WEEKDAYS.map((day) => model.days.get(day)?.sorted.length ?? 0));
   const maxLanes = Math.max(1, ...WEEKDAYS.map((day) => model.days.get(day)?.laneCount ?? 1));
-  return { blocks: selected.length, busiestDay, maxLanes, hours: model.hours.length };
+  const earliestMinute = Math.min(...selected.map((meeting) => meeting.startTime));
+  const latestMinute = Math.max(...selected.map((meeting) => meeting.endTime));
+  const startHour = Math.max(0, Math.floor(earliestMinute / 60) - 1);
+  const endHour = Math.min(24, Math.ceil(latestMinute / 60) + 1);
+  return {
+    blocks: selected.length,
+    busiestDay,
+    maxLanes,
+    hours: endHour - startHour,
+    startHour,
+    endHour,
+  };
 }
 
-/** Plans a balanced composition from real schedule span, overlap, and density. */
+/** Plans a balanced composition from each term's real schedule span, overlap, and density. */
 export function createTimetableExportPlan(
   meetings: readonly Meeting[],
   selection: ExportSelection,
@@ -135,11 +151,8 @@ export function createTimetableExportPlan(
   if (terms.length === 0) throw new Error("The selected term has no scheduled meetings.");
 
   const metrics = terms.map((term) => termMetrics(meetings, term));
-  const selectedMeetings = meetings.filter((meeting) => terms.includes(meeting.term));
-  const earliestMinute = Math.min(...selectedMeetings.map((meeting) => meeting.startTime));
-  const latestMinute = Math.max(...selectedMeetings.map((meeting) => meeting.endTime));
-  const startHour = Math.max(0, Math.floor(earliestMinute / 60) - 1);
-  const endHour = Math.min(24, Math.ceil(latestMinute / 60) + 1);
+  const startHour = Math.min(...metrics.map((metric) => metric.startHour));
+  const endHour = Math.max(...metrics.map((metric) => metric.endHour));
   const dense = metrics.some(
     ({ blocks, busiestDay, maxLanes, hours }) =>
       blocks >= 18 || busiestDay >= 6 || maxLanes >= 3 || hours >= 14,
@@ -155,24 +168,40 @@ export function createTimetableExportPlan(
           : "balanced-grid";
   const columns = layout === "side-by-side" || layout === "balanced-grid" ? 2 : 1;
   const termWidth = columns === 1 ? 1180 : 1010;
-  const commonHours = endHour - startHour;
   const termHeaderHeight = terms.length > 1 ? 58 : 0;
-  const termHeight = Math.max(500, termHeaderHeight + 64 + commonHours * (dense ? 58 : 54));
-  const rows = layout === "balanced-grid" ? 2 : Math.ceil(terms.length / columns);
+  const panelHeights = metrics.map((metric) =>
+    Math.max(500, termHeaderHeight + 64 + metric.hours * (dense ? 58 : 54)),
+  );
+  const termHeight = Math.max(...panelHeights);
+  const rows = Math.ceil(terms.length / columns);
+  const rowHeights = Array.from({ length: rows }, (_, row) =>
+    Math.max(...panelHeights.filter((_, index) => Math.floor(index / columns) === row)),
+  );
+  const rowY = (row: number) =>
+    PAGE_PADDING +
+    HEADER_HEIGHT +
+    rowHeights.slice(0, row).reduce((total, rowHeight) => total + rowHeight + GAP, 0);
   const width = PAGE_PADDING * 2 + columns * termWidth + (columns - 1) * GAP;
-  const height = PAGE_PADDING * 2 + HEADER_HEIGHT + rows * termHeight + (rows - 1) * GAP;
+  const height =
+    PAGE_PADDING * 2 +
+    HEADER_HEIGHT +
+    rowHeights.reduce((total, rowHeight) => total + rowHeight, 0) +
+    Math.max(0, rows - 1) * GAP;
   const panels = terms.map((term, index) => {
     const row = Math.floor(index / columns);
     const lastCentered = layout === "balanced-grid" && terms.length === 3 && index === 2;
     const column = index % columns;
+    const metric = metrics[index]!;
     return {
       term,
       x: lastCentered
         ? Math.round((width - termWidth) / 2)
         : PAGE_PADDING + column * (termWidth + GAP),
-      y: PAGE_PADDING + HEADER_HEIGHT + row * (termHeight + GAP),
+      y: rowY(row),
       width: termWidth,
-      height: termHeight,
+      height: panelHeights[index]!,
+      startHour: metric.startHour,
+      endHour: metric.endHour,
     };
   });
   const requestedRatio = Math.min(3, Math.max(2, devicePixelRatio));
@@ -285,44 +314,49 @@ function renderTerm(
   palette: TimetableExportPalette,
   plan: TimetableExportPlan,
 ) {
-  const { term, x, y, width, height } = panel;
+  const { term, x, y, width, height, startHour, endHour } = panel;
   const selected = meetings.filter((meeting) => meeting.term === term);
   const { days } = buildTimetableModel(selected);
-  const { startHour, endHour } = plan;
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
   const titleHeight = plan.terms.length > 1 ? 58 : 0;
-  const dayHeight = 46;
+  const dayHeight = EXPORT_DAY_HEADER_HEIGHT;
   const bottomPadding = 18;
-  const axisWidth = 72;
-  const gridY = y + titleHeight + dayHeight;
+  const axisWidth = EXPORT_TIME_GUTTER;
+  const scheduleStartX = x + axisWidth;
+  const scheduleEndX = x + width;
+  const headerY = y + titleHeight;
+  const gridY = headerY + dayHeight;
   const gridHeight = height - titleHeight - dayHeight - bottomPadding;
   const hourHeight = gridHeight / Math.max(1, hours.length);
-  const dayWidth = (width - axisWidth) / 5;
+  const dayWidth = (scheduleEndX - scheduleStartX) / WEEKDAYS.length;
   const minuteY = (minute: number) => gridY + exportMinutePosition(minute, startHour, hourHeight);
-  let svg = `<g filter="url(#panel-shadow)"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24" fill="${palette.timetableBackground}" stroke="${palette.border}"/></g>`;
+  const panelClipId = `panel-${term.toLowerCase()}-${x}-${y}`;
+  let svg = `<clipPath id="${panelClipId}"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24"/></clipPath>`;
+  svg += `<g filter="url(#panel-shadow)"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24" fill="${palette.timetableBackground}" stroke="${palette.border}"/></g>`;
+  svg += `<g clip-path="url(#${panelClipId})">`;
   if (titleHeight > 0) {
-    svg += `<path d="M${x + 24} ${y + titleHeight}H${x + width - 24}" stroke="${palette.border}"/>`;
+    svg += `<line x1="${scheduleStartX}" y1="${headerY}" x2="${scheduleEndX}" y2="${headerY}" stroke="${palette.border}"/>`;
     svg += `<text x="${x + 26}" y="${y + 36}" font-size="21" font-weight="760" letter-spacing="-.45" fill="${palette.foreground}">${term}</text>`;
     svg += `<text x="${x + width - 26}" y="${y + 35}" text-anchor="end" font-size="10" font-weight="650" letter-spacing="1.1" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
   }
-  svg += `<rect x="${x + 1}" y="${y + titleHeight + 1}" width="${width - 2}" height="${dayHeight}" rx="${titleHeight === 0 ? 22 : 0}" fill="${palette.headerSurface}"/>`;
-  svg += `<text x="${x + 20}" y="${y + titleHeight + 29}" font-size="10" font-weight="680" letter-spacing="1" fill="${palette.mutedForeground}">TIME</text>`;
+  svg += `<rect x="${scheduleStartX}" y="${headerY}" width="${scheduleEndX - scheduleStartX}" height="${dayHeight}" fill="${palette.headerSurface}"/>`;
   WEEKDAYS.forEach((day, index) => {
-    const dx = Math.round(x + axisWidth + index * dayWidth);
-    svg += `<line x1="${dx}" y1="${y + titleHeight}" x2="${dx}" y2="${y + height - bottomPadding}" stroke="${palette.grid}"/>`;
-    svg += `<text x="${Math.round(dx + dayWidth / 2)}" y="${y + titleHeight + 29}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
+    const dx = scheduleStartX + index * dayWidth;
+    svg += `<line x1="${dx}" y1="${headerY}" x2="${dx}" y2="${y + height - bottomPadding}" stroke="${palette.grid}"/>`;
+    svg += `<text x="${dx + dayWidth / 2}" y="${headerY + 29}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
   });
   hours.forEach((hour) => {
     const hy = Math.round(minuteY(hour * 60)) + 0.5;
-    svg += `<line x1="${x + axisWidth}" y1="${hy}" x2="${x + width}" y2="${hy}" stroke="${palette.grid}"/>`;
-    svg += `<text x="${x + axisWidth - 12}" y="${hy + 4}" text-anchor="end" font-size="10" font-weight="560" fill="${palette.mutedForeground}">${timeShort(hour * 60)}</text>`;
+    svg += `<line x1="${scheduleStartX}" y1="${hy}" x2="${scheduleEndX}" y2="${hy}" stroke="${palette.grid}"/>`;
+    svg += `<text x="${scheduleStartX - EXPORT_TIME_LABEL_INSET}" y="${hy}" dy="0.35em" text-anchor="end" font-size="10" font-weight="560" fill="${palette.mutedForeground}">${timeShort(hour * 60)}</text>`;
   });
+  svg += `</g>`;
   WEEKDAYS.forEach((day, dayIndex) => {
     const { laneCount, placement, sorted } = days.get(day)!;
     sorted.forEach((meeting, meetingIndex) => {
       const lane = placement.get(meeting.id) ?? 0;
       const laneWidth = dayWidth / laneCount;
-      const mx = Math.round(x + axisWidth + dayIndex * dayWidth + lane * laneWidth + 5);
+      const mx = Math.round(scheduleStartX + dayIndex * dayWidth + lane * laneWidth + 5);
       const my = Math.round(minuteY(meeting.startTime));
       const mh = Math.max(1, Math.round(minuteY(meeting.endTime) - minuteY(meeting.startTime)));
       const mw = Math.max(34, Math.round(laneWidth - 10));
@@ -338,7 +372,7 @@ function renderTerm(
         Math.min(narrow ? 10.5 : 12.5, courseWidth / Math.max(1, meeting.courseCode.length * 0.6)),
       );
       svg += `<clipPath id="${clipId}"><rect x="${mx + 6}" y="${my + 3}" width="${mw - 12}" height="${mh - 6}" rx="7"/></clipPath>`;
-      svg += `<g filter="url(#event-shadow)"><rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="10" fill="${style.base}" stroke="${style.border}" ${style.dashed ? 'stroke-dasharray="5 4"' : ""}/><path d="M${mx + 4} ${my + 9}V${my + mh - 9}" stroke="${style.accent}" stroke-width="4" stroke-linecap="round"/><path d="M${mx + 10} ${my + 1}H${mx + mw - 10}" stroke="${palette.highlight}" stroke-linecap="round"/></g>`;
+      svg += `<g filter="url(#event-shadow)"><rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="10" fill="${style.base}" stroke="${style.border}" ${style.dashed ? 'stroke-dasharray="5 4"' : ""}/><path d="M${mx + 10} ${my + 1}H${mx + mw - 10}" stroke="${palette.highlight}" stroke-linecap="round"/></g>`;
       svg += `<g clip-path="url(#${clipId})">`;
       svg += `<text x="${textX}" y="${my + 20}" font-size="${courseFontSize}" font-weight="790" letter-spacing="-.15" fill="${palette.foreground}">${escapeExportText(meeting.courseCode)}</text>`;
       if (showBadge) {

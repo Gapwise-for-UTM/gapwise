@@ -47,6 +47,9 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
   await expect(signInToSync).toBeVisible();
   await expect(page.getByRole("button", { name: "Campus arrival settings" })).toHaveCount(0);
   await expect(page.locator('section[aria-labelledby="cloud-sync-title"]')).not.toBeVisible();
+  await expect(page.locator(".bento-hero")).not.toBeVisible();
+  await expect(page.locator(".landmark-card")).not.toBeVisible();
+  await expect(page.locator(".bento-step").first()).not.toBeVisible();
 
   const importAction = page.getByRole("button", { name: "Import ACORN" });
   const [ctaBox, signInBox, panelBox] = await Promise.all([
@@ -65,6 +68,9 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  expect(
+    await page.evaluate(() => document.documentElement.scrollHeight / window.innerHeight),
+  ).toBeLessThanOrEqual(1.45);
 
   await expectSignInDialogWhenAvailable(page);
   guard.assertClean();
