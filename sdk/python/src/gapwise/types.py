@@ -1,13 +1,17 @@
 """Public type definitions for the Gapwise API v1 contract."""
 
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Generic, Literal, NotRequired, TypeVar, TypedDict
+from typing import Generic, Literal, NotRequired, TypedDict, TypeVar
 
 ApiVersion = Literal["v1"]
 VerificationStatus = Literal["verified", "inferred", "unknown"]
 FactStatus = Literal["verified", "stale", "inferred", "user-reported", "unavailable", "unknown"]
 RouteMode = Literal["fastest", "prefer-indoor", "step-free"]
+Term = Literal["Fall", "Winter", "Summer"]
+Weekday = Literal["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+RiskTolerance = Literal["low", "medium", "high"]
 BuildingCategory = Literal["academic", "residence", "facility"]
 PlaceKind = Literal["dining", "study", "library", "service", "recreation", "amenity", "facility"]
 AvailabilityState = Literal["open", "closed", "unknown"]
@@ -61,24 +65,90 @@ class CampusPlace(TypedDict):
     availability: PlaceAvailability
 
 
-RouteResult = TypedDict(
-    "RouteResult",
-    {
-        "dataVersion": str,
-        "from": Building,
-        "to": Building,
-        "status": Literal["same-building", "routed", "approximate", "unavailable"],
-        "accuracy": str,
-        "totalDistanceMeters": float | None,
-        "indoorDistanceMeters": float | None,
-        "outdoorDistanceMeters": float | None,
-        "estimatedSeconds": float | None,
-        "floorChanges": int | None,
-        "warnings": list[str],
-        "routeVerification": Literal["verified", "mixed", "inferred", "unavailable"],
-    },
-    total=False,
-)
+class RoutePreferences(TypedDict):
+    mode: RouteMode
+    walkingSpeedMps: float
+    transitionBufferMinutes: float
+
+
+class RouteResult(TypedDict, total=False):
+    dataVersion: str
+    from_: Building
+    to: Building
+    preferences: RoutePreferences
+    status: Literal["same-building", "routed", "approximate", "unavailable"]
+    accuracy: str
+    totalDistanceMeters: float | None
+    indoorDistanceMeters: float | None
+    outdoorDistanceMeters: float | None
+    estimatedSeconds: float | None
+    floorChanges: int | None
+    warnings: list[str]
+    routeVerification: Literal["verified", "mixed", "inferred", "unavailable"]
+
+
+class GapRecommendationTimelineItem(TypedDict):
+    kind: str
+    label: str
+    minutes: int
+
+
+class GapRecommendation(TypedDict):
+    id: str
+    action: str
+    title: str
+    summary: str
+    score: float
+    activityMinutes: int
+    reasons: list[str]
+    tags: list[str]
+    timeline: list[GapRecommendationTimelineItem]
+
+
+class GapAssessment(TypedDict):
+    primary: GapRecommendation
+    alternatives: list[GapRecommendation]
+    confidence: float
+    confidenceLabel: Literal["high", "medium", "low"]
+    travelMinutes: float | None
+    bufferMinutes: float
+    leaveByMinutes: float
+    arrivalMinutes: float | None
+    fallback: bool
+    routeStatus: str
+    routeAccuracy: str
+    warnings: list[str]
+
+
+class GapInterval(TypedDict):
+    term: Term
+    weekday: Weekday
+    startTime: int
+    endTime: int
+    durationMinutes: int
+    from_: Building
+    to: Building
+
+
+class GapPreferencesResult(TypedDict):
+    setupMinutes: int
+    packUpMinutes: int
+    lunchWindowStart: int
+    lunchWindowEnd: int
+    mealDurationMinutes: int
+    willingToLeaveCampus: bool
+    oneWayHomeCommuteMinutes: int | None
+    minimumHomeStayMinutes: int
+    homeTurnaroundMinutes: int
+    riskTolerance: RiskTolerance
+
+
+class GapPlanResult(TypedDict):
+    dataVersion: str
+    gap: GapInterval
+    route: RouteResult
+    gapPreferences: GapPreferencesResult
+    assessment: GapAssessment
 
 
 class ApiInfo(TypedDict):
