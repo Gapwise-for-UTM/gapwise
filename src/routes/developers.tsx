@@ -203,7 +203,9 @@ function DevelopersPage() {
                     key={path}
                     className="grid gap-1 px-5 py-4 sm:grid-cols-[3rem_minmax(0,1fr)_auto] sm:items-center sm:gap-4"
                   >
-                    <span className="font-mono text-[0.65rem] font-semibold text-accent">{method}</span>
+                    <span className="font-mono text-[0.65rem] font-semibold text-accent">
+                      {method}
+                    </span>
                     <code className="break-all text-xs font-semibold">{path}</code>
                     <span className="text-xs text-muted-foreground sm:text-right">{detail}</span>
                   </div>
