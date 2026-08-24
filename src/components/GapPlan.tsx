@@ -723,7 +723,11 @@ const GapCard = memo(function GapCard({
       ) : (
         <div
           className="gap-usable-meter"
+          role="progressbar"
           aria-label={`${formatCompactDuration(selected.activityMinutes)} usable`}
+          aria-valuemin={0}
+          aria-valuemax={gap.durationMinutes}
+          aria-valuenow={selected.activityMinutes}
         >
           <span
             style={{
