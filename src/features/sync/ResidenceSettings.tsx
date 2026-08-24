@@ -116,7 +116,7 @@ export function ResidenceSettings({
           <span className="hidden max-w-28 truncate sm:inline">{triggerLabel}</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="glass-panel mx-4 w-[calc(100%-2rem)] max-w-xl rounded-xl border-border/80 shadow-none">
+      <DialogContent className="residence-settings-dialog glass-panel mx-4 w-[calc(100%-2rem)] max-w-xl rounded-xl border-border/80 shadow-none">
         <DialogHeader className="pr-8">
           <DialogTitle>Where does your campus day start?</DialogTitle>
           <DialogDescription>
