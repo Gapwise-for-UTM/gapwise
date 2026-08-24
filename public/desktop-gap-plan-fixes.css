@@ -1,0 +1,90 @@
+/* Desktop Gap Plan stabilization
+ * Loaded after the app stylesheet so these rules can safely correct the PR's
+ * desktop-only layout without changing mobile behavior.
+ */
+
+@media (min-width: 68.75rem) {
+  /* The term switcher should remain part of the document flow on Gap Plan.
+     A sticky full-width paint layer caused the dark band/jump visible while scrolling. */
+  .desktop-product-shell:has(.gap-plan-layout) .desktop-view-controls {
+    position: static;
+    z-index: auto;
+    padding-block: 0.9rem 0.35rem;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  /* Give the day strips the width of the workspace. The previous 22rem reserve
+     was permanently squeezing the timeline even when the detail card was not
+     visually beside it. */
+  .desktop-product-shell:has(.gap-plan-layout) .gap-plan-layout {
+    padding-right: 0;
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-plan-layout > section {
+    padding-bottom: 1.25rem;
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-day-strip {
+    width: 100%;
+    min-width: 0;
+    padding: 0.75rem 1rem 0.65rem;
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-day-hours span:first-child {
+    transform: translateX(0);
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-day-hours span:last-child {
+    transform: translateX(-100%);
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-day-track {
+    min-width: 0;
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-day-class,
+  .desktop-product-shell:has(.gap-plan-layout) .gap-day-interval {
+    min-width: 0;
+  }
+
+  /* Keep the selected recommendation attached to the day the user selected.
+     Fixed positioning made it float over unrelated content and behave strangely
+     as the page scrolled. */
+  .desktop-product-shell:has(.gap-plan-layout) .gap-selected-surface {
+    position: static;
+    inset: auto;
+    z-index: auto;
+    width: min(100%, 48rem);
+    max-width: 48rem;
+    max-height: none;
+    margin: 0.75rem 0 0.15rem;
+    overflow: visible;
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-selected-surface:empty {
+    display: none;
+  }
+
+  .desktop-product-shell:has(.gap-plan-layout) .gap-selected-surface .gap-card {
+    width: 100%;
+  }
+
+  /* The sidebar already consumes substantial width around tablet/compact-desktop
+     breakpoints. Use a little less canvas padding there instead of compressing
+     the actual timetable content. */
+  @media (max-width: 81.249rem) {
+    .desktop-product-shell:has(.gap-plan-layout) .desktop-main {
+      padding-inline: 1.5rem;
+    }
+  }
+}
+
+@media (min-width: 90rem) {
+  /* On genuinely wide displays the selected card can be a touch wider while the
+     timelines still retain ample breathing room. */
+  .desktop-product-shell:has(.gap-plan-layout) .gap-selected-surface {
+    width: min(100%, 52rem);
+    max-width: 52rem;
+  }
+}
