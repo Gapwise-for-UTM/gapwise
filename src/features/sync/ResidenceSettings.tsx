@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { Building2, BusFront, CarFront, Home, MapPin } from "lucide-react";
-import { useState, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import {
   campusAccessPointsFor,
   getCampusAccessPoint,
@@ -60,11 +60,15 @@ export function ResidenceSettings({
   user,
   preferences,
   onPreferencesChange,
+  openRequest = 0,
 }: {
   user: User | null;
   preferences: UserPreferences;
   onPreferencesChange: (preferences: UserPreferences) => void;
+  /** Monotonic app-shell action token used by surfaces outside this trigger. */
+  openRequest?: number;
 }) {
+  const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const selectedResidence = UTM_RESIDENCES.find(
     (building) => building.code === preferences.residenceBuildingCode,
@@ -104,8 +108,12 @@ export function ResidenceSettings({
   const points = preferences.commuteMode ? campusAccessPointsFor(preferences.commuteMode) : [];
   const triggerLabel = selectedResidence?.code ?? selectedAccessPoint?.label ?? "Arrival";
 
+  useEffect(() => {
+    if (openRequest > 0) setOpen(true);
+  }, [openRequest]);
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <button
           type="button"

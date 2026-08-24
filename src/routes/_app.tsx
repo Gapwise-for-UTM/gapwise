@@ -35,6 +35,7 @@ import { useTodayState } from "@/features/today/use-today-state";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 import { AccountStatus } from "@/features/auth/AccountStatus";
+import { requestGapwiseSignIn } from "@/features/auth/sign-in-trigger";
 import { useAuth } from "@/features/auth/use-auth";
 import { CloudSyncControls } from "@/features/sync/CloudSyncControls";
 import { ResidenceSettings } from "@/features/sync/ResidenceSettings";
@@ -69,6 +70,8 @@ import {
 import { plannedWorkMeetings } from "@/features/academic/integration";
 import { composeSchedule } from "@/lib/personal-scheduler";
 import { useEntitlement } from "@/features/entitlements/use-entitlement";
+import { getCampusAccessPoint } from "@/data/utm/campus-access-points";
+import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -187,9 +190,15 @@ function AppLayout() {
   const [isScrolled, setIsScrolled] = useState(false);
   const isMobile = useIsMobile();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [accountSettingsRequest, setAccountSettingsRequest] = useState(0);
+  const [arrivalSettingsRequest, setArrivalSettingsRequest] = useState(0);
   const replacementInputRef = useRef<HTMLInputElement>(null);
   const authenticatedUserId = user?.id ?? null;
   const entitlement = useEntitlement(authenticatedUserId, isDemo);
+  const arrivalLabel =
+    UTM_RESIDENCES.find((building) => building.code === preferences.residenceBuildingCode)?.code ??
+    getCampusAccessPoint(preferences.campusAccessPointId)?.label ??
+    "Campus arrival";
   const {
     destination,
     selectedBuildingCode,
@@ -564,7 +573,19 @@ function AppLayout() {
       className={`app-shell min-h-screen bg-background text-foreground ${destination !== "home" ? "desktop-product-shell" : ""}`}
     >
       <Outlet />
-      {destination !== "home" ? <DesktopSidebar destination={destination} /> : null}
+      {destination !== "home" ? (
+        <DesktopSidebar
+          destination={destination}
+          arrivalLabel={arrivalLabel}
+          theme={theme}
+          onOpenArrival={() => setArrivalSettingsRequest((request) => request + 1)}
+          onOpenAccount={() => {
+            if (user) setAccountSettingsRequest((request) => request + 1);
+            else requestGapwiseSignIn();
+          }}
+          onToggleTheme={toggleTheme}
+        />
+      ) : null}
       <header
         className="app-nav desktop-app-header sticky top-0 z-30 border-b"
         data-scrolled={isScrolled ? "true" : "false"}
@@ -591,11 +612,13 @@ function AppLayout() {
               user={user}
               preferences={preferences}
               onPreferencesChange={updateUserPreferences}
+              openRequest={arrivalSettingsRequest}
             />
             <AccountStatus
               user={user}
               loading={authLoading}
               onAccountDeleted={handleAccountDeleted}
+              settingsRequest={accountSettingsRequest}
             />
           </div>
         </div>

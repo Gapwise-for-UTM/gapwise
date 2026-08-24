@@ -245,7 +245,7 @@ function GapPlanAuxiliarySurface({
             <Users aria-hidden="true" /> Friend gaps
           </button>
         </div>
-        <div key={active} className="gap-sheet-content">
+        <div key={active} className="gap-sheet-content" data-surface={active ?? undefined}>
           {active === "tune" ? (
             <>
               <DialogTitle>Tune your gaps</DialogTitle>
@@ -292,7 +292,7 @@ const GapSettings = memo(function GapSettings({
   }
 
   return (
-    <details className="surface group p-4 sm:p-5">
+    <details open className="gap-settings surface group p-4 sm:p-5">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-sm font-semibold">
           <SlidersHorizontal className="h-4 w-4 text-accent" aria-hidden="true" />
@@ -303,7 +303,7 @@ const GapSettings = memo(function GapSettings({
         </span>
       </summary>
 
-      <div className="mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="gap-settings-grid mt-4 grid gap-4 border-t border-border pt-4 sm:grid-cols-2 xl:grid-cols-3">
         <label className="space-y-1.5 text-sm">
           <span className="font-medium">Lunch window starts</span>
           <input
@@ -334,7 +334,7 @@ const GapSettings = memo(function GapSettings({
 
         <label className="space-y-1.5 text-sm">
           <span className="font-medium">Meal target</span>
-          <span className="flex items-center gap-2">
+          <span className="gap-setting-with-unit">
             <input
               type="number"
               min={15}
@@ -353,13 +353,13 @@ const GapSettings = memo(function GapSettings({
               }
               className="w-full rounded-xl border border-input bg-background px-3 py-2"
             />
-            <span className="text-xs text-muted-foreground">min</span>
+            <span className="gap-setting-unit">minutes</span>
           </span>
         </label>
 
         <label className="space-y-1.5 text-sm">
           <span className="font-medium">Settle-in time</span>
-          <span className="flex items-center gap-2">
+          <span className="gap-setting-with-unit">
             <input
               type="number"
               min={0}
@@ -372,13 +372,13 @@ const GapSettings = memo(function GapSettings({
               }
               className="w-full rounded-xl border border-input bg-background px-3 py-2"
             />
-            <span className="text-xs text-muted-foreground">min</span>
+            <span className="gap-setting-unit">minutes</span>
           </span>
         </label>
 
         <label className="space-y-1.5 text-sm">
           <span className="font-medium">Pack-up time</span>
-          <span className="flex items-center gap-2">
+          <span className="gap-setting-with-unit">
             <input
               type="number"
               min={0}
@@ -391,7 +391,7 @@ const GapSettings = memo(function GapSettings({
               }
               className="w-full rounded-xl border border-input bg-background px-3 py-2"
             />
-            <span className="text-xs text-muted-foreground">min</span>
+            <span className="gap-setting-unit">minutes</span>
           </span>
         </label>
 

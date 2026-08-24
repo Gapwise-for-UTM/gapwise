@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Gapwise Public Campus API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Bounded, read-only public UTM campus intelligence used by Gapwise. This API does not expose private student timetables, friend data, credentials, or live location. Returned routing and accessibility coverage must be interpreted together with status, accuracy, warnings, and provenance fields.",
     "contact": {
       "name": "Gapwise",
@@ -16,14 +16,25 @@
     }
   ],
   "tags": [
-    { "name": "Buildings" },
-    { "name": "Routing" },
-    { "name": "Gap planning" }
+    {
+      "name": "Buildings"
+    },
+    {
+      "name": "Routing"
+    },
+    {
+      "name": "Gap planning"
+    },
+    {
+      "name": "Places"
+    }
   ],
   "paths": {
     "/api/utm-buildings": {
       "get": {
-        "tags": ["Buildings"],
+        "tags": [
+          "Buildings"
+        ],
         "operationId": "listUtmBuildings",
         "summary": "List canonical UTM buildings",
         "responses": {
@@ -33,12 +44,19 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["service", "buildings"],
+                  "required": [
+                    "service",
+                    "buildings"
+                  ],
                   "properties": {
-                    "service": { "const": "gapwise-public-campus" },
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
                     "buildings": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/Building" }
+                      "items": {
+                        "$ref": "#/components/schemas/Building"
+                      }
                     }
                   }
                 }
@@ -50,7 +68,9 @@
     },
     "/api/utm-building": {
       "get": {
-        "tags": ["Buildings"],
+        "tags": [
+          "Buildings"
+        ],
         "operationId": "getUtmBuilding",
         "summary": "Resolve one canonical UTM building",
         "parameters": [
@@ -58,7 +78,10 @@
             "name": "q",
             "in": "query",
             "required": true,
-            "schema": { "type": "string", "minLength": 1 },
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
             "description": "Canonical building code, name, or recognized alias."
           }
         ],
@@ -69,33 +92,51 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["service", "building"],
+                  "required": [
+                    "service",
+                    "building"
+                  ],
                   "properties": {
-                    "service": { "const": "gapwise-public-campus" },
-                    "building": { "$ref": "#/components/schemas/Building" }
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "building": {
+                      "$ref": "#/components/schemas/Building"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "$ref": "#/components/responses/ApiError" },
-          "409": { "$ref": "#/components/responses/ApiError" }
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          }
         }
       }
     },
     "/api/utm-route": {
       "post": {
-        "tags": ["Routing"],
+        "tags": [
+          "Routing"
+        ],
         "operationId": "routeBetweenUtmBuildings",
         "summary": "Plan a deterministic building-to-building campus route",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RouteRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              },
               "examples": {
                 "mnToIb": {
-                  "value": { "from": "MN", "to": "IB" }
+                  "value": {
+                    "from": "MN",
+                    "to": "IB"
+                  }
                 }
               }
             }
@@ -108,31 +149,48 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["service", "route"],
+                  "required": [
+                    "service",
+                    "route"
+                  ],
                   "properties": {
-                    "service": { "const": "gapwise-public-campus" },
-                    "route": { "$ref": "#/components/schemas/Route" }
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "route": {
+                      "$ref": "#/components/schemas/Route"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ApiError" },
-          "404": { "$ref": "#/components/responses/ApiError" },
-          "409": { "$ref": "#/components/responses/ApiError" }
+          "400": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          }
         }
       }
     },
     "/api/utm-gap-plan": {
       "post": {
-        "tags": ["Gap planning"],
+        "tags": [
+          "Gap planning"
+        ],
         "operationId": "planUtmGap",
         "summary": "Assess a bounded campus gap with deterministic route and timing logic",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/GapPlanRequest" },
+              "schema": {
+                "$ref": "#/components/schemas/GapPlanRequest"
+              },
               "examples": {
                 "wednesdayTwoHourGap": {
                   "value": {
@@ -155,18 +213,126 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["service", "gapPlan"],
+                  "required": [
+                    "service",
+                    "gapPlan"
+                  ],
                   "properties": {
-                    "service": { "const": "gapwise-public-campus" },
-                    "gapPlan": { "$ref": "#/components/schemas/GapPlan" }
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "gapPlan": {
+                      "$ref": "#/components/schemas/GapPlan"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/ApiError" },
-          "404": { "$ref": "#/components/responses/ApiError" },
-          "409": { "$ref": "#/components/responses/ApiError" }
+          "400": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/api/utm-places": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "operationId": "listUtmPlaces",
+        "summary": "List source-backed UTM campus places",
+        "responses": {
+          "200": {
+            "description": "Versioned place snapshot with explicit provenance and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "dataVersion",
+                    "generatedAt",
+                    "places"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "dataVersion": {
+                      "type": "string"
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "places": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CampusPlace"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/utm-place": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "operationId": "getUtmPlace",
+        "summary": "Look up one canonical campus place",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical place and its source.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "dataVersion",
+                    "place"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "dataVersion": {
+                      "type": "string"
+                    },
+                    "place": {
+                      "$ref": "#/components/schemas/CampusPlace"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          }
         }
       }
     }
@@ -175,22 +341,48 @@
     "schemas": {
       "Term": {
         "type": "string",
-        "enum": ["Fall", "Winter", "Summer"]
+        "enum": [
+          "Fall",
+          "Winter",
+          "Summer"
+        ]
       },
       "Weekday": {
         "type": "string",
-        "enum": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        "enum": [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday"
+        ]
       },
       "Provenance": {
         "type": "object",
-        "required": ["source", "sourceUrl", "lastVerified", "verificationStatus"],
+        "required": [
+          "source",
+          "sourceUrl",
+          "lastVerified",
+          "verificationStatus"
+        ],
         "properties": {
-          "source": { "type": "string" },
-          "sourceUrl": { "type": "string", "format": "uri" },
-          "lastVerified": { "type": "string" },
+          "source": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "lastVerified": {
+            "type": "string"
+          },
           "verificationStatus": {
             "type": "string",
-            "enum": ["verified", "inferred", "unknown"]
+            "enum": [
+              "verified",
+              "inferred",
+              "unknown"
+            ]
           }
         }
       },
@@ -209,21 +401,58 @@
           "provenance"
         ],
         "properties": {
-          "code": { "type": "string" },
-          "name": { "type": "string" },
-          "category": { "type": "string", "enum": ["academic", "residence", "facility"] },
-          "aliases": { "type": "array", "items": { "type": "string" } },
-          "routingCoverage": { "type": "string", "enum": ["mapped", "identity-only"] },
-          "entranceCount": { "type": "integer", "minimum": 0 },
-          "verifiedEntranceCount": { "type": "integer", "minimum": 0 },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "academic",
+              "residence",
+              "facility"
+            ]
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "routingCoverage": {
+            "type": "string",
+            "enum": [
+              "mapped",
+              "identity-only"
+            ]
+          },
+          "entranceCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "verifiedEntranceCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "accessibility": {
             "type": "string",
-            "enum": ["accessible", "not_accessible", "unknown"]
+            "enum": [
+              "accessible",
+              "not_accessible",
+              "unknown"
+            ]
           },
-          "indoorRoomNodeCount": { "type": "integer", "minimum": 0 },
+          "indoorRoomNodeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
           "provenance": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/Provenance" }
+            "items": {
+              "$ref": "#/components/schemas/Provenance"
+            }
           }
         }
       },
@@ -231,29 +460,64 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "mode": { "type": "string", "enum": ["fastest", "prefer-indoor", "step-free"] },
-          "walkingSpeedMps": { "type": "number" },
-          "transitionBufferMinutes": { "type": "number" }
+          "mode": {
+            "type": "string",
+            "enum": [
+              "fastest",
+              "prefer-indoor",
+              "step-free"
+            ]
+          },
+          "walkingSpeedMps": {
+            "type": "number"
+          },
+          "transitionBufferMinutes": {
+            "type": "number"
+          }
         }
       },
       "RoutePreferences": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["mode", "walkingSpeedMps", "transitionBufferMinutes"],
+        "required": [
+          "mode",
+          "walkingSpeedMps",
+          "transitionBufferMinutes"
+        ],
         "properties": {
-          "mode": { "type": "string", "enum": ["fastest", "prefer-indoor", "step-free"] },
-          "walkingSpeedMps": { "type": "number" },
-          "transitionBufferMinutes": { "type": "number" }
+          "mode": {
+            "type": "string",
+            "enum": [
+              "fastest",
+              "prefer-indoor",
+              "step-free"
+            ]
+          },
+          "walkingSpeedMps": {
+            "type": "number"
+          },
+          "transitionBufferMinutes": {
+            "type": "number"
+          }
         }
       },
       "RouteRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["from", "to"],
+        "required": [
+          "from",
+          "to"
+        ],
         "properties": {
-          "from": { "type": "string" },
-          "to": { "type": "string" },
-          "preferences": { "$ref": "#/components/schemas/RoutePreferencesInput" }
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/RoutePreferencesInput"
+          }
         }
       },
       "Route": {
@@ -274,13 +538,26 @@
           "routeVerification"
         ],
         "properties": {
-          "dataVersion": { "type": "string" },
-          "from": { "$ref": "#/components/schemas/Building" },
-          "to": { "$ref": "#/components/schemas/Building" },
-          "preferences": { "$ref": "#/components/schemas/RoutePreferences" },
+          "dataVersion": {
+            "type": "string"
+          },
+          "from": {
+            "$ref": "#/components/schemas/Building"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Building"
+          },
+          "preferences": {
+            "$ref": "#/components/schemas/RoutePreferences"
+          },
           "status": {
             "type": "string",
-            "enum": ["same-building", "routed", "approximate", "unavailable"]
+            "enum": [
+              "same-building",
+              "routed",
+              "approximate",
+              "unavailable"
+            ]
           },
           "accuracy": {
             "type": "string",
@@ -292,15 +569,50 @@
               "Location unavailable"
             ]
           },
-          "totalDistanceMeters": { "type": ["number", "null"] },
-          "indoorDistanceMeters": { "type": ["number", "null"] },
-          "outdoorDistanceMeters": { "type": ["number", "null"] },
-          "estimatedSeconds": { "type": ["number", "null"] },
-          "floorChanges": { "type": ["integer", "null"] },
-          "warnings": { "type": "array", "items": { "type": "string" } },
+          "totalDistanceMeters": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "indoorDistanceMeters": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "outdoorDistanceMeters": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "estimatedSeconds": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "floorChanges": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "routeVerification": {
             "type": "string",
-            "enum": ["verified", "mixed", "inferred", "unavailable"]
+            "enum": [
+              "verified",
+              "mixed",
+              "inferred",
+              "unavailable"
+            ]
           }
         }
       },
@@ -308,16 +620,44 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "setupMinutes": { "type": "number" },
-          "packUpMinutes": { "type": "number" },
-          "lunchWindowStart": { "type": "number" },
-          "lunchWindowEnd": { "type": "number" },
-          "mealDurationMinutes": { "type": "number" },
-          "willingToLeaveCampus": { "type": "boolean" },
-          "oneWayHomeCommuteMinutes": { "type": ["number", "null"] },
-          "minimumHomeStayMinutes": { "type": "number" },
-          "homeTurnaroundMinutes": { "type": "number" },
-          "riskTolerance": { "type": "string", "enum": ["low", "medium", "high"] }
+          "setupMinutes": {
+            "type": "number"
+          },
+          "packUpMinutes": {
+            "type": "number"
+          },
+          "lunchWindowStart": {
+            "type": "number"
+          },
+          "lunchWindowEnd": {
+            "type": "number"
+          },
+          "mealDurationMinutes": {
+            "type": "number"
+          },
+          "willingToLeaveCampus": {
+            "type": "boolean"
+          },
+          "oneWayHomeCommuteMinutes": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "minimumHomeStayMinutes": {
+            "type": "number"
+          },
+          "homeTurnaroundMinutes": {
+            "type": "number"
+          },
+          "riskTolerance": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
         }
       },
       "GapPreferences": {
@@ -336,56 +676,149 @@
           "riskTolerance"
         ],
         "properties": {
-          "setupMinutes": { "type": "number" },
-          "packUpMinutes": { "type": "number" },
-          "lunchWindowStart": { "type": "number" },
-          "lunchWindowEnd": { "type": "number" },
-          "mealDurationMinutes": { "type": "number" },
-          "willingToLeaveCampus": { "type": "boolean" },
-          "oneWayHomeCommuteMinutes": { "type": ["number", "null"] },
-          "minimumHomeStayMinutes": { "type": "number" },
-          "homeTurnaroundMinutes": { "type": "number" },
-          "riskTolerance": { "type": "string", "enum": ["low", "medium", "high"] }
+          "setupMinutes": {
+            "type": "number"
+          },
+          "packUpMinutes": {
+            "type": "number"
+          },
+          "lunchWindowStart": {
+            "type": "number"
+          },
+          "lunchWindowEnd": {
+            "type": "number"
+          },
+          "mealDurationMinutes": {
+            "type": "number"
+          },
+          "willingToLeaveCampus": {
+            "type": "boolean"
+          },
+          "oneWayHomeCommuteMinutes": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "minimumHomeStayMinutes": {
+            "type": "number"
+          },
+          "homeTurnaroundMinutes": {
+            "type": "number"
+          },
+          "riskTolerance": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          }
         }
       },
       "GapPlanRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["from", "to", "term", "weekday", "startTime", "endTime"],
+        "required": [
+          "from",
+          "to",
+          "term",
+          "weekday",
+          "startTime",
+          "endTime"
+        ],
         "properties": {
-          "from": { "type": "string" },
-          "to": { "type": "string" },
-          "term": { "$ref": "#/components/schemas/Term" },
-          "weekday": { "$ref": "#/components/schemas/Weekday" },
-          "startTime": { "type": "integer", "minimum": 0, "maximum": 1440 },
-          "endTime": { "type": "integer", "minimum": 0, "maximum": 1440 },
-          "routePreferences": { "$ref": "#/components/schemas/RoutePreferencesInput" },
-          "gapPreferences": { "$ref": "#/components/schemas/GapPreferencesInput" }
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "term": {
+            "$ref": "#/components/schemas/Term"
+          },
+          "weekday": {
+            "$ref": "#/components/schemas/Weekday"
+          },
+          "startTime": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "endTime": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1440
+          },
+          "routePreferences": {
+            "$ref": "#/components/schemas/RoutePreferencesInput"
+          },
+          "gapPreferences": {
+            "$ref": "#/components/schemas/GapPreferencesInput"
+          }
         }
       },
       "Gap": {
         "type": "object",
-        "required": ["term", "weekday", "startTime", "endTime", "durationMinutes", "from", "to"],
+        "required": [
+          "term",
+          "weekday",
+          "startTime",
+          "endTime",
+          "durationMinutes",
+          "from",
+          "to"
+        ],
         "properties": {
-          "term": { "$ref": "#/components/schemas/Term" },
-          "weekday": { "$ref": "#/components/schemas/Weekday" },
-          "startTime": { "type": "integer" },
-          "endTime": { "type": "integer" },
-          "durationMinutes": { "type": "integer", "minimum": 0 },
-          "from": { "$ref": "#/components/schemas/Building" },
-          "to": { "$ref": "#/components/schemas/Building" }
+          "term": {
+            "$ref": "#/components/schemas/Term"
+          },
+          "weekday": {
+            "$ref": "#/components/schemas/Weekday"
+          },
+          "startTime": {
+            "type": "integer"
+          },
+          "endTime": {
+            "type": "integer"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "from": {
+            "$ref": "#/components/schemas/Building"
+          },
+          "to": {
+            "$ref": "#/components/schemas/Building"
+          }
         }
       },
       "GapTimelineSegment": {
         "type": "object",
-        "required": ["kind", "label", "minutes"],
+        "required": [
+          "kind",
+          "label",
+          "minutes"
+        ],
         "properties": {
           "kind": {
             "type": "string",
-            "enum": ["setup", "activity", "travel", "buffer", "flex"]
+            "enum": [
+              "setup",
+              "activity",
+              "travel",
+              "buffer",
+              "flex"
+            ]
           },
-          "label": { "type": "string" },
-          "minutes": { "type": "number", "minimum": 0 }
+          "label": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "number",
+            "minimum": 0
+          }
         }
       },
       "GapRecommendation": {
@@ -402,7 +835,9 @@
           "timeline"
         ],
         "properties": {
-          "id": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
           "action": {
             "type": "string",
             "enum": [
@@ -418,11 +853,25 @@
               "location-dependent"
             ]
           },
-          "title": { "type": "string" },
-          "summary": { "type": "string" },
-          "score": { "type": "number" },
-          "activityMinutes": { "type": "number", "minimum": 0 },
-          "reasons": { "type": "array", "items": { "type": "string" } },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "activityMinutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "tags": {
             "type": "array",
             "items": {
@@ -445,7 +894,9 @@
           },
           "timeline": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/GapTimelineSegment" }
+            "items": {
+              "$ref": "#/components/schemas/GapTimelineSegment"
+            }
           }
         }
       },
@@ -466,21 +917,58 @@
           "warnings"
         ],
         "properties": {
-          "primary": { "$ref": "#/components/schemas/GapRecommendation" },
+          "primary": {
+            "$ref": "#/components/schemas/GapRecommendation"
+          },
           "alternatives": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/GapRecommendation" }
+            "items": {
+              "$ref": "#/components/schemas/GapRecommendation"
+            }
           },
-          "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
-          "confidenceLabel": { "type": "string", "enum": ["high", "medium", "low"] },
-          "travelMinutes": { "type": ["number", "null"] },
-          "bufferMinutes": { "type": "number", "minimum": 0 },
-          "leaveByMinutes": { "type": "number" },
-          "arrivalMinutes": { "type": ["number", "null"] },
-          "fallback": { "type": "boolean" },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "confidenceLabel": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "travelMinutes": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "bufferMinutes": {
+            "type": "number",
+            "minimum": 0
+          },
+          "leaveByMinutes": {
+            "type": "number"
+          },
+          "arrivalMinutes": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fallback": {
+            "type": "boolean"
+          },
           "routeStatus": {
             "type": "string",
-            "enum": ["routed", "approximate", "same-room", "unavailable"]
+            "enum": [
+              "routed",
+              "approximate",
+              "same-room",
+              "unavailable"
+            ]
           },
           "routeAccuracy": {
             "type": "string",
@@ -492,26 +980,144 @@
               "Location unavailable"
             ]
           },
-          "warnings": { "type": "array", "items": { "type": "string" } }
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
       "GapPlan": {
         "type": "object",
-        "required": ["dataVersion", "gap", "route", "gapPreferences", "assessment"],
+        "required": [
+          "dataVersion",
+          "gap",
+          "route",
+          "gapPreferences",
+          "assessment"
+        ],
         "properties": {
-          "dataVersion": { "type": "string" },
-          "gap": { "$ref": "#/components/schemas/Gap" },
-          "route": { "$ref": "#/components/schemas/Route" },
-          "gapPreferences": { "$ref": "#/components/schemas/GapPreferences" },
-          "assessment": { "$ref": "#/components/schemas/GapAssessment" }
+          "dataVersion": {
+            "type": "string"
+          },
+          "gap": {
+            "$ref": "#/components/schemas/Gap"
+          },
+          "route": {
+            "$ref": "#/components/schemas/Route"
+          },
+          "gapPreferences": {
+            "$ref": "#/components/schemas/GapPreferences"
+          },
+          "assessment": {
+            "$ref": "#/components/schemas/GapAssessment"
+          }
         }
       },
       "Error": {
         "type": "object",
-        "required": ["error", "message"],
+        "required": [
+          "error",
+          "message"
+        ],
         "properties": {
-          "error": { "type": "string" },
-          "message": { "type": "string" }
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "CampusFactProvenance": {
+        "type": "object",
+        "required": [
+          "sourceId",
+          "status",
+          "observedAt"
+        ],
+        "properties": {
+          "sourceId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "stale",
+              "inferred",
+              "user-reported",
+              "unavailable",
+              "unknown"
+            ]
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "CampusPlace": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "buildingCode",
+          "summary",
+          "amenities",
+          "hoursProvenance",
+          "metadataProvenance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "dining",
+              "study",
+              "library",
+              "service",
+              "recreation",
+              "amenity",
+              "facility"
+            ]
+          },
+          "buildingCode": {
+            "type": "string"
+          },
+          "floorOrRoom": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hoursProvenance": {
+            "$ref": "#/components/schemas/CampusFactProvenance"
+          },
+          "metadataProvenance": {
+            "$ref": "#/components/schemas/CampusFactProvenance"
+          }
         }
       }
     },
@@ -520,7 +1126,9 @@
         "description": "Bounded API error.",
         "content": {
           "application/json": {
-            "schema": { "$ref": "#/components/schemas/Error" }
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
           }
         }
       }

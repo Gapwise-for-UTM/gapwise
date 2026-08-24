@@ -16,7 +16,14 @@ describe("Gapwise Platform static assets", () => {
 
     expect(spec.openapi).toBe("3.1.0");
     expect(Object.keys(spec.paths).sort()).toEqual(
-      ["/api/utm-building", "/api/utm-buildings", "/api/utm-gap-plan", "/api/utm-route"].sort(),
+      [
+        "/api/utm-building",
+        "/api/utm-buildings",
+        "/api/utm-gap-plan",
+        "/api/utm-place",
+        "/api/utm-places",
+        "/api/utm-route",
+      ].sort(),
     );
   });
 
@@ -44,7 +51,7 @@ describe("Gapwise Platform static assets", () => {
     }
   });
 
-  test("keeps the public browser client dependency-free and bounded to the four endpoints", async () => {
+  test("keeps the public browser client dependency-free and bounded to public campus endpoints", async () => {
     const sdk = await Bun.file("public/sdk/gapwise-utm.js").text();
 
     expect(sdk).not.toMatch(/^\s*import\s/m);
@@ -52,6 +59,8 @@ describe("Gapwise Platform static assets", () => {
     expect(sdk).toContain("/api/utm-building?q=");
     expect(sdk).toContain("/api/utm-route");
     expect(sdk).toContain("/api/utm-gap-plan");
+    expect(sdk).toContain("/api/utm-places");
+    expect(sdk).toContain("/api/utm-place?id=");
     expect(sdk).toContain("export const gapwise");
   });
 
