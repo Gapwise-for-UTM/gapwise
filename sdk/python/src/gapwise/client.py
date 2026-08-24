@@ -1,19 +1,26 @@
 """Synchronous and asynchronous clients for the Gapwise Public Campus API."""
 
 from __future__ import annotations
-from typing import Any, Mapping, TypeVar, cast
+
+from collections.abc import Mapping
+from typing import Any, Self, TypeVar, cast
 from urllib.parse import quote
+
 import httpx
+
 from .types import (
     ApiInfo,
     AvailabilityState,
     Building,
     BuildingCategory,
     CampusPlace,
+    GapPlanResult,
     Page,
     PlaceKind,
     RouteMode,
     RouteResult,
+    Term,
+    Weekday,
 )
 
 DEFAULT_BASE_URL = "https://api.gapwise.ca/v1"
@@ -67,10 +74,7 @@ def _decode(response: httpx.Response) -> tuple[Any, dict[str, Any]]:
         error = payload.get("error", {}) if isinstance(payload, dict) else {}
         meta = payload.get("meta", {}) if isinstance(payload, dict) else {}
         raise GapwiseAPIError(
-            error.get(
-                "message",
-                f"Gapwise API request failed with HTTP {response.status_code}.",
-            ),
+            error.get("message", f"Gapwise API request failed with HTTP {response.status_code}."),
             status_code=response.status_code,
             code=error.get("code", "http_error"),
             details=error.get("details"),
@@ -210,10 +214,7 @@ class _SyncRoutes:
             walking_speed_mps=walking_speed_mps,
             transition_buffer_minutes=transition_buffer_minutes,
         )
-        return cast(
-            RouteResult,
-            _decode(self._owner._request("POST", "/routes", json=payload))[0],
-        )
+        return cast(RouteResult, _decode(self._owner._request("POST", "/routes", json=payload))[0])
 
 
 class _SyncGaps:
@@ -225,13 +226,13 @@ class _SyncGaps:
         *,
         from_building: str,
         to_building: str,
-        term: str,
-        weekday: str,
+        term: Term,
+        weekday: Weekday,
         start_time: int,
         end_time: int,
-        route_preferences: Mapping[str, Any] | None = None,
-        gap_preferences: Mapping[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        route_preferences: Mapping[str, object] | None = None,
+        gap_preferences: Mapping[str, object] | None = None,
+    ) -> GapPlanResult:
         payload = {
             "from": from_building,
             "to": to_building,
@@ -243,7 +244,7 @@ class _SyncGaps:
             **({"gapPreferences": dict(gap_preferences)} if gap_preferences else {}),
         }
         return cast(
-            dict[str, Any],
+            GapPlanResult,
             _decode(self._owner._request("POST", "/gaps/plan", json=payload))[0],
         )
 
@@ -285,7 +286,7 @@ class Gapwise:
         if self._owns_client:
             self._client.close()
 
-    def __enter__(self) -> Gapwise:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *_: object) -> None:
@@ -396,13 +397,13 @@ class _AsyncGaps:
         *,
         from_building: str,
         to_building: str,
-        term: str,
-        weekday: str,
+        term: Term,
+        weekday: Weekday,
         start_time: int,
         end_time: int,
-        route_preferences: Mapping[str, Any] | None = None,
-        gap_preferences: Mapping[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        route_preferences: Mapping[str, object] | None = None,
+        gap_preferences: Mapping[str, object] | None = None,
+    ) -> GapPlanResult:
         payload = {
             "from": from_building,
             "to": to_building,
@@ -414,7 +415,7 @@ class _AsyncGaps:
             **({"gapPreferences": dict(gap_preferences)} if gap_preferences else {}),
         }
         return cast(
-            dict[str, Any],
+            GapPlanResult,
             _decode(await self._owner._request("POST", "/gaps/plan", json=payload))[0],
         )
 
@@ -456,7 +457,7 @@ class AsyncGapwise:
         if self._owns_client:
             await self._client.aclose()
 
-    async def __aenter__(self) -> AsyncGapwise:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(self, *_: object) -> None:
