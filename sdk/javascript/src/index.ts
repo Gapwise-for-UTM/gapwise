@@ -96,7 +96,7 @@ export class Gapwise {
   private readonly baseUrl: string;
   private readonly fetcher: typeof globalThis.fetch;
   private readonly timeoutMs: number;
-  private readonly headers: HeadersInit;
+  private readonly headers: Headers;
   constructor(options: GapwiseOptions = {}) {
     this.baseUrl = trimTrailingSlashes(options.baseUrl ?? DEFAULT_BASE_URL);
     this.fetcher = options.fetch ?? globalThis.fetch;
@@ -105,7 +105,8 @@ export class Gapwise {
     this.timeoutMs = options.timeoutMs ?? 10_000;
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0)
       throw new TypeError("timeoutMs must be a positive finite number.");
-    this.headers = options.headers ?? {};
+    this.headers = new Headers({ accept: "application/json" });
+    applyHeaders(this.headers, options.headers);
   }
   /** Return API, data-version, capability, and privacy metadata. */
   info(options?: RequestOptions) {
@@ -129,12 +130,14 @@ export class Gapwise {
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     const abort = () => controller.abort(options.signal?.reason);
     options.signal?.addEventListener("abort", abort, { once: true });
+    const headers = new Headers(this.headers);
+    applyHeaders(headers, init.headers);
     let response: Response;
     try {
       response = await this.fetcher(`${this.baseUrl}${path}`, {
         ...init,
         signal: controller.signal,
-        headers: { accept: "application/json", ...this.headers, ...init.headers },
+        headers,
       });
     } catch (cause) {
       if (controller.signal.aborted && !options.signal?.aborted) throw new GapwiseTimeoutError();
@@ -177,6 +180,10 @@ export class Gapwise {
       throw new GapwiseResponseError();
     return body as Envelope<T>;
   }
+}
+function applyHeaders(target: Headers, source?: HeadersInit) {
+  if (!source) return;
+  new Headers(source).forEach((value, name) => target.set(name, value));
 }
 function trimTrailingSlashes(value: string) {
   let end = value.length;
