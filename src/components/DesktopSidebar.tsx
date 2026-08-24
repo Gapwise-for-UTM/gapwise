@@ -1,4 +1,4 @@
-import { CalendarClock, CalendarRange, LayoutGrid, MapPinned, Settings } from "lucide-react";
+import { CalendarClock, CalendarRange, Home, LayoutGrid, MapPinned, Settings } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import type { AppDestination } from "@/features/navigation/use-app-navigation";
 
@@ -32,6 +32,14 @@ const destinations = [
     icon: MapPinned,
   },
 ] as const;
+
+function openCampusArrivalSettings() {
+  document
+    .querySelector<HTMLButtonElement>(
+      '.desktop-app-header button[aria-label="Campus arrival settings"]',
+    )
+    ?.click();
+}
 
 /** Desktop-only primary navigation. Mobile retains the integrated bottom navigation. */
 export function DesktopSidebar({ destination }: { destination: AppDestination }) {
@@ -82,6 +90,15 @@ export function DesktopSidebar({ destination }: { destination: AppDestination })
       </nav>
 
       <div className="desktop-sidebar-foot">
+        <button
+          type="button"
+          className="desktop-sidebar-utility"
+          aria-label="Campus arrival settings"
+          onClick={openCampusArrivalSettings}
+        >
+          <Home aria-hidden="true" />
+          <span>Campus arrival</span>
+        </button>
         <div className="desktop-identity">
           <span className="desktop-avatar">G</span>
           <span>
