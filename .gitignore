@@ -39,3 +39,13 @@ blob-report/
 *.sln
 *.sw?
 .vercel
+
+# SDK build artifacts
+sdk/javascript/dist/
+sdk/python/dist/
+sdk/python/.pytest_cache/
+sdk/python/src/*.egg-info/
+sdk/python/src/*.dist-info/
+
+**/__pycache__/
+*.py[cod]

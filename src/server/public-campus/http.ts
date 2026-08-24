@@ -3,6 +3,8 @@ const JSON_HEADERS = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET, POST, OPTIONS",
   "access-control-allow-headers": "content-type",
+  "access-control-max-age": "86400",
+  vary: "origin",
   "x-content-type-options": "nosniff",
 } as const;
 

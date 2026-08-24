@@ -61,10 +61,10 @@ type PlaygroundMode = "route" | "gap" | "buildings";
 const LIVE_REQUEST_TIMEOUT_MS = 5_000;
 
 const ENDPOINTS = [
-  ["GET", "/api/utm-buildings", "Canonical building inventory and provenance"],
-  ["GET", "/api/utm-building?q=MN", "Resolve one canonical UTM building"],
-  ["POST", "/api/utm-route", "Deterministic building-to-building route"],
-  ["POST", "/api/utm-gap-plan", "Route-aware deterministic gap assessment"],
+  ["GET", "/v1/buildings", "Canonical building inventory and provenance"],
+  ["GET", "/v1/buildings/MN", "Resolve one canonical UTM building"],
+  ["POST", "/v1/routes", "Deterministic building-to-building route"],
+  ["POST", "/v1/gaps/plan", "Route-aware deterministic gap assessment"],
 ] as const;
 
 function DevelopersPage() {
@@ -81,9 +81,9 @@ function DevelopersPage() {
     try {
       let response: Response;
       if (mode === "buildings") {
-        response = await fetch("/api/utm-buildings", { signal: controller.signal });
+        response = await fetch("/v1/buildings", { signal: controller.signal });
       } else if (mode === "gap") {
-        response = await fetch("/api/utm-gap-plan", {
+        response = await fetch("/v1/gaps/plan", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -97,7 +97,7 @@ function DevelopersPage() {
           signal: controller.signal,
         });
       } else {
-        response = await fetch("/api/utm-route", {
+        response = await fetch("/v1/routes", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ from: "MN", to: "IB" }),
@@ -129,7 +129,7 @@ function DevelopersPage() {
     (mode === "gap"
       ? GAP_EXAMPLE
       : mode === "buildings"
-        ? "GET https://gapwise.ca/api/utm-buildings"
+        ? "GET https://api.gapwise.ca/v1/buildings"
         : SDK_EXAMPLE);
 
   return (
@@ -172,7 +172,7 @@ function DevelopersPage() {
               </p>
               <div className="mt-7 flex flex-wrap gap-2">
                 <a
-                  href="/openapi.json"
+                  href="https://api.gapwise.ca/openapi.json"
                   className="button-primary inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold"
                 >
                   <Braces className="h-4 w-4" aria-hidden="true" />
@@ -366,7 +366,7 @@ function DevelopersPage() {
                 icon: Braces,
                 title: "Generate your own client",
                 body: "Use the OpenAPI 3.1 contract with your preferred tooling.",
-                href: "/openapi.json",
+                href: "https://api.gapwise.ca/openapi.json",
                 link: "OpenAPI JSON",
               },
               {

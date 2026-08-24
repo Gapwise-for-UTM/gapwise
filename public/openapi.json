@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Gapwise Public Campus API",
-    "version": "1.1.0",
-    "description": "Bounded, read-only public UTM campus intelligence used by Gapwise. This API does not expose private student timetables, friend data, credentials, or live location. Returned routing and accessibility coverage must be interpreted together with status, accuracy, warnings, and provenance fields.",
+    "version": "1.2.0",
+    "description": "The authoritative contract for Gapwise public UTM campus intelligence. The API contains no private timetable, friend, account, authentication, or precise live-location data. Consumers must preserve provenance and uncertainty semantics.",
     "contact": {
       "name": "Gapwise",
       "url": "https://gapwise.ca/developers"
@@ -11,8 +11,8 @@
   },
   "servers": [
     {
-      "url": "https://gapwise.ca",
-      "description": "Production"
+      "url": "https://api.gapwise.ca/v1",
+      "description": "Canonical production API"
     }
   ],
   "tags": [
@@ -30,6 +30,436 @@
     }
   ],
   "paths": {
+    "/": {
+      "get": {
+        "operationId": "getApiInfo",
+        "summary": "Get API and campus-data version information",
+        "tags": [
+          "Metadata"
+        ],
+        "responses": {
+          "200": {
+            "description": "API metadata and privacy boundary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiInfo"
+                },
+                "example": {
+                  "service": "gapwise-public-campus",
+                  "version": "v1",
+                  "dataVersion": "2026-08-10",
+                  "documentation": "https://docs.gapwise.ca",
+                  "openapi": "https://api.gapwise.ca/openapi.json",
+                  "privacy": "Public campus intelligence only; no student or account data is exposed."
+                }
+              }
+            },
+            "headers": {
+              "RateLimit-Policy": {
+                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "\"public\";q=120;w=60"
+              }
+            }
+          },
+          "405": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/buildings": {
+      "get": {
+        "tags": [
+          "Buildings"
+        ],
+        "operationId": "listBuildings",
+        "summary": "List canonical UTM buildings",
+        "responses": {
+          "200": {
+            "description": "Canonical building inventory with routing coverage and provenance.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "buildings"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "buildings": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Building"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "RateLimit-Policy": {
+                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "\"public\";q=120;w=60"
+              }
+            }
+          },
+          "405": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/routes": {
+      "post": {
+        "tags": [
+          "Routing"
+        ],
+        "operationId": "calculateRoute",
+        "summary": "Plan a deterministic building-to-building campus route",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              },
+              "examples": {
+                "mnToIb": {
+                  "value": {
+                    "from": "MN",
+                    "to": "IB"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Route result. Always inspect status, accuracy, routeVerification, and warnings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "route"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "route": {
+                      "$ref": "#/components/schemas/Route"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "RateLimit-Policy": {
+                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "\"public\";q=120;w=60"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "413": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/gaps/plan": {
+      "post": {
+        "tags": [
+          "Gap planning"
+        ],
+        "operationId": "planGap",
+        "summary": "Assess a bounded campus gap with deterministic route and timing logic",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GapPlanRequest"
+              },
+              "examples": {
+                "wednesdayTwoHourGap": {
+                  "value": {
+                    "from": "MN",
+                    "to": "IB",
+                    "term": "Fall",
+                    "weekday": "Wednesday",
+                    "startTime": 660,
+                    "endTime": 780
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deterministic gap assessment and underlying route.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "gapPlan"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "gapPlan": {
+                      "$ref": "#/components/schemas/GapPlan"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "RateLimit-Policy": {
+                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "\"public\";q=120;w=60"
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "413": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/places": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "operationId": "listPlaces",
+        "summary": "List source-backed UTM campus places",
+        "responses": {
+          "200": {
+            "description": "Versioned place snapshot with explicit provenance and freshness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "dataVersion",
+                    "generatedAt",
+                    "places"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "dataVersion": {
+                      "type": "string"
+                    },
+                    "generatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "places": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CampusPlace"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "RateLimit-Policy": {
+                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "\"public\";q=120;w=60"
+              }
+            }
+          },
+          "405": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/buildings/{building}": {
+      "get": {
+        "tags": [
+          "Buildings"
+        ],
+        "operationId": "getBuilding",
+        "summary": "Resolve one canonical UTM building",
+        "parameters": [
+          {
+            "name": "building",
+            "in": "path",
+            "required": true,
+            "description": "Canonical building code, exact name, or recognized alias.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            },
+            "example": "MN"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved building.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "building"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "building": {
+                      "$ref": "#/components/schemas/Building"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "RateLimit-Policy": {
+                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "\"public\";q=120;w=60"
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/places/{placeId}": {
+      "get": {
+        "tags": [
+          "Places"
+        ],
+        "operationId": "getPlace",
+        "summary": "Look up one canonical campus place",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "path",
+            "required": true,
+            "description": "Canonical campus place identifier.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "example": "library"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Canonical place and its source.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "service",
+                    "dataVersion",
+                    "place"
+                  ],
+                  "properties": {
+                    "service": {
+                      "const": "gapwise-public-campus"
+                    },
+                    "dataVersion": {
+                      "type": "string"
+                    },
+                    "place": {
+                      "$ref": "#/components/schemas/CampusPlace"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "RateLimit-Policy": {
+                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "\"public\";q=120;w=60"
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "405": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
     "/api/utm-buildings": {
       "get": {
         "tags": [
@@ -63,7 +493,15 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://gapwise.ca",
+            "description": "Legacy compatibility origin"
+          }
+        ],
+        "description": "Backwards-compatible alias; new integrations should use api.gapwise.ca/v1."
       }
     },
     "/api/utm-building": {
@@ -109,12 +547,20 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           },
           "409": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           }
-        }
+        },
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://gapwise.ca",
+            "description": "Legacy compatibility origin"
+          }
+        ],
+        "description": "Backwards-compatible alias; new integrations should use api.gapwise.ca/v1."
       }
     },
     "/api/utm-route": {
@@ -166,15 +612,23 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           },
           "404": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           },
           "409": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           }
-        }
+        },
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://gapwise.ca",
+            "description": "Legacy compatibility origin"
+          }
+        ],
+        "description": "Backwards-compatible alias; new integrations should use api.gapwise.ca/v1."
       }
     },
     "/api/utm-gap-plan": {
@@ -230,15 +684,23 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           },
           "404": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           },
           "409": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           }
-        }
+        },
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://gapwise.ca",
+            "description": "Legacy compatibility origin"
+          }
+        ],
+        "description": "Backwards-compatible alias; new integrations should use api.gapwise.ca/v1."
       }
     },
     "/api/utm-places": {
@@ -283,7 +745,15 @@
               }
             }
           }
-        }
+        },
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://gapwise.ca",
+            "description": "Legacy compatibility origin"
+          }
+        ],
+        "description": "Backwards-compatible alias; new integrations should use api.gapwise.ca/v1."
       }
     },
     "/api/utm-place": {
@@ -331,9 +801,17 @@
             }
           },
           "404": {
-            "$ref": "#/components/responses/ApiError"
+            "$ref": "#/components/responses/LegacyApiError"
           }
-        }
+        },
+        "deprecated": true,
+        "servers": [
+          {
+            "url": "https://gapwise.ca",
+            "description": "Legacy compatibility origin"
+          }
+        ],
+        "description": "Backwards-compatible alias; new integrations should use api.gapwise.ca/v1."
       }
     }
   },
@@ -1119,15 +1597,133 @@
             "$ref": "#/components/schemas/CampusFactProvenance"
           }
         }
+      },
+      "ApiInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "service",
+          "version",
+          "dataVersion",
+          "documentation",
+          "openapi",
+          "privacy"
+        ],
+        "properties": {
+          "service": {
+            "const": "gapwise-public-campus"
+          },
+          "version": {
+            "const": "v1"
+          },
+          "dataVersion": {
+            "type": "string"
+          },
+          "documentation": {
+            "type": "string",
+            "format": "uri"
+          },
+          "openapi": {
+            "type": "string",
+            "format": "uri"
+          },
+          "privacy": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "examples": [
+                  "invalid_request",
+                  "not_found",
+                  "method_not_allowed",
+                  "rate_limited"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {}
+            }
+          }
+        }
+      },
+      "LegacyError": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Building"
+            }
+          }
+        }
       }
     },
     "responses": {
       "ApiError": {
-        "description": "Bounded API error.",
+        "description": "The request failed. The code is stable for programmatic handling; the message is developer-readable.",
+        "headers": {
+          "RateLimit-Policy": {
+            "description": "Current public fair-use policy.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "Retry-After": {
+            "description": "Seconds to wait when rate limited.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/Error"
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            },
+            "example": {
+              "error": {
+                "code": "invalid_request",
+                "message": "Request body must be a JSON object."
+              }
+            }
+          }
+        }
+      },
+      "LegacyApiError": {
+        "description": "Legacy flat error response.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LegacyError"
             }
           }
         }

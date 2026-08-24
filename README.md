@@ -10,14 +10,14 @@
 
 [![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise.ca)
 [![CI](https://img.shields.io/github/actions/workflow/status/andrewmuratov/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/andrewmuratov/gapwise/actions/workflows/ci.yml)
-[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://gapwise.ca/openapi.json)
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://api.gapwise.ca/openapi.json)
 [![MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
 
 <sub>React 19 · TypeScript · TanStack Router/Start · MapLibre · Supabase · Bun · Vercel</sub>
 
 <br />
 
-**[Live app](https://gapwise.ca)** · **[Today](https://gapwise.ca/today)** · **[Day Replay](https://gapwise.ca/replay)** · **[Developers](https://gapwise.ca/developers)** · **[OpenAPI](https://gapwise.ca/openapi.json)** · **[Open UTM data](https://gapwise.ca/data/utm-campus-v1.json)**
+**[Live app](https://gapwise.ca)** · **[Today](https://gapwise.ca/today)** · **[Day Replay](https://gapwise.ca/replay)** · **[Developers](https://gapwise.ca/developers)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)** · **[Open UTM data](https://gapwise.ca/data/utm-campus-v1.json)**
 
 </div>
 
@@ -109,25 +109,30 @@ No replay-specific database, worker, cron job, hosted model, or timetable upload
 
 ## Gapwise Platform
 
-Gapwise exposes a deliberately small public campus-intelligence surface for UTM projects. It uses the same deterministic building, routing, and gap-planning semantics as the product rather than maintaining a second implementation.
+Gapwise exposes a deliberately small public campus-intelligence surface for UTM projects. The canonical base URL is `https://api.gapwise.ca/v1`; existing `/api/utm-*` routes on `gapwise.ca` remain compatibility aliases. It uses the same deterministic building, routing, and gap-planning semantics as the product rather than maintaining a second implementation.
 
 ### Developer resources
 
 - **Developer hub:** https://gapwise.ca/developers
-- **OpenAPI 3.1:** https://gapwise.ca/openapi.json
+- **Developer documentation:** https://docs.gapwise.ca
+- **Canonical API:** https://api.gapwise.ca/v1
+- **OpenAPI 3.1:** https://api.gapwise.ca/openapi.json
 - **Versioned UTM snapshot:** https://gapwise.ca/data/utm-campus-v1.json
-- **JavaScript SDK:** https://gapwise.ca/sdk/gapwise-utm.js
-- **TypeScript declarations:** https://gapwise.ca/sdk/gapwise-utm.d.ts
+- **JavaScript/TypeScript SDK source:** [`sdk/javascript`](sdk/javascript)
+- **Python SDK source:** [`sdk/python`](sdk/python)
 - **Platform documentation:** [`docs/GAPWISE_PLATFORM.md`](docs/GAPWISE_PLATFORM.md)
 
 ### Public API
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/utm-buildings` | Canonical UTM building inventory, routing coverage, accessibility state, and provenance |
-| `GET` | `/api/utm-building?q=MN` | Resolve one building by canonical code, official name, or known alias |
-| `POST` | `/api/utm-route` | Deterministic building-to-building routing |
-| `POST` | `/api/utm-gap-plan` | Deterministic route-aware gap assessment for an explicit free window |
+| `GET` | `/v1` | API/data version and privacy metadata |
+| `GET` | `/v1/buildings` | Canonical UTM building inventory, routing coverage, accessibility state, and provenance |
+| `GET` | `/v1/buildings/MN` | Resolve one building by canonical code, official name, or known alias |
+| `GET` | `/v1/places` | Canonical campus places, freshness, and provenance |
+| `GET` | `/v1/places/:placeId` | Resolve one campus place |
+| `POST` | `/v1/routes` | Deterministic building-to-building routing |
+| `POST` | `/v1/gaps/plan` | Deterministic route-aware gap assessment for an explicit free window |
 
 The public API is campus-only. It does **not** expose student timetables, accounts, friends, credentials, private sync state, AI delegation, or precise live location.
 
