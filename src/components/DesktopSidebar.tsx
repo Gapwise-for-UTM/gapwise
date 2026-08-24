@@ -1,9 +1,20 @@
-import { CalendarClock, CalendarRange, Home, LayoutGrid, MapPinned, Settings } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarRange,
+  Home,
+  LayoutGrid,
+  MapPinned,
+  Moon,
+  Settings,
+  Sun,
+} from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { AppDestination } from "@/features/navigation/use-app-navigation";
 
 const CAMPUS_ARRIVAL_TRIGGER = '.desktop-app-header button[aria-label="Campus arrival settings"]';
+const ACCOUNT_TRIGGER = '.desktop-app-header [role="group"][aria-label="Account"] button';
+const THEME_TRIGGER = ".desktop-app-header .theme-toggle";
 
 const destinations = [
   {
@@ -44,9 +55,30 @@ function openCampusArrivalSettings() {
   campusArrivalTrigger()?.click();
 }
 
+function openAccountSettings() {
+  const trigger = document.querySelector<HTMLButtonElement>(ACCOUNT_TRIGGER);
+  if (!trigger) return;
+
+  const signedOut = trigger.textContent?.trim() === "Sign in";
+  trigger.click();
+  if (signedOut) return;
+
+  window.setTimeout(() => {
+    const settingsItem = Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(
+      (item) => item.textContent?.includes("Account settings"),
+    );
+    settingsItem?.click();
+  }, 0);
+}
+
+function toggleTheme() {
+  document.querySelector<HTMLButtonElement>(THEME_TRIGGER)?.click();
+}
+
 /** Desktop-only primary navigation. Mobile retains the integrated bottom navigation. */
 export function DesktopSidebar({ destination }: { destination: AppDestination }) {
   const [arrivalLabel, setArrivalLabel] = useState("Campus arrival");
+  const [darkTheme, setDarkTheme] = useState(false);
 
   useEffect(() => {
     const trigger = campusArrivalTrigger();
@@ -60,6 +92,16 @@ export function DesktopSidebar({ destination }: { destination: AppDestination })
 
     const observer = new MutationObserver(syncLabel);
     observer.observe(trigger, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const syncTheme = () => setDarkTheme(root.classList.contains("dark"));
+    syncTheme();
+
+    const observer = new MutationObserver(syncTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
   }, []);
 
@@ -119,13 +161,24 @@ export function DesktopSidebar({ destination }: { destination: AppDestination })
           <Home aria-hidden="true" />
           <span>{arrivalLabel}</span>
         </button>
-        <div className="desktop-identity">
-          <span className="desktop-avatar">G</span>
-          <span>
-            <strong>Gapwise</strong>
-            <small>Private by design</small>
-          </span>
-          <Settings aria-hidden="true" />
+        <div className="desktop-account-row">
+          <button
+            type="button"
+            className="desktop-sidebar-utility desktop-account-settings"
+            onClick={openAccountSettings}
+          >
+            <Settings aria-hidden="true" />
+            <span>Account settings</span>
+          </button>
+          <button
+            type="button"
+            className="desktop-theme-toggle"
+            onClick={toggleTheme}
+            aria-pressed={darkTheme}
+            aria-label={darkTheme ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {darkTheme ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
+          </button>
         </div>
       </div>
     </aside>
