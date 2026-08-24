@@ -5,7 +5,7 @@ Gapwise ships two public SDKs from this repository:
 - JavaScript/TypeScript: `@gapwise/sdk` from `sdk/javascript`
 - Python: `gapwise` from `sdk/python`
 
-The release workflow is `.github/workflows/release-sdks.yml`. It is intentionally manual and uses short-lived OIDC credentials rather than repository secrets once each registry supports the package's trusted publisher.
+The release workflow is `.github/workflows/release-sdks.yml`. It is intentionally manual and uses short-lived OIDC credentials rather than repository secrets once each registry supports the package's trusted publisher. Registry publish jobs are also restricted to runs dispatched from the `main` branch.
 
 ## npm bootstrap and Trusted Publishing
 
@@ -43,7 +43,7 @@ No PyPI API token belongs in GitHub secrets. The pending publisher creates the p
 
 1. Confirm `main` is green and `https://api.gapwise.ca/v1` is healthy.
 2. Confirm the SDK package versions are the intended release versions.
-3. Run **Release SDKs** with target `verify`.
+3. Open **Actions → Release SDKs**, select the `main` branch, and run target `verify`.
 4. Inspect the verification run.
 5. For Python, run target `pypi` after the pending/normal PyPI Trusted Publisher is configured.
 6. For JavaScript, use target `npm` only after `@gapwise/sdk` already exists and its npm Trusted Publisher is configured. For the initial `0.1.0` package creation, use the one-time bootstrap procedure above instead.
@@ -54,6 +54,7 @@ No PyPI API token belongs in GitHub secrets. The pending publisher creates the p
 
 - No long-lived npm or PyPI publish token is stored in the repository.
 - Publish jobs receive `id-token: write` only when a publish target is selected.
+- Registry publish jobs refuse to run unless the workflow was dispatched from `main`.
 - External GitHub Actions are pinned to immutable commit SHAs.
 - Publishing remains a deliberate manual action rather than occurring on every push to `main`.
 - Any one-time npm bootstrap credential should be narrowly scoped and revoked immediately after the initial package exists.
