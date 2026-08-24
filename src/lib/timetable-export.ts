@@ -310,12 +310,11 @@ function renderTerm(
     svg += `<text x="${x + 26}" y="${y + 36}" font-size="21" font-weight="760" letter-spacing="-.45" fill="${palette.foreground}">${term}</text>`;
     svg += `<text x="${x + width - 26}" y="${y + 35}" text-anchor="end" font-size="10" font-weight="650" letter-spacing="1.1" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
   }
-  svg += `<rect x="${x + 1}" y="${y + titleHeight + 1}" width="${width - 2}" height="${dayHeight}" rx="${titleHeight === 0 ? 22 : 0}" fill="${palette.headerSurface}"/>`;
-  svg += `<text x="${scheduleStartX - EXPORT_TIME_LABEL_INSET}" y="${y + titleHeight + 29}" text-anchor="end" font-size="10" font-weight="680" letter-spacing="1" fill="${palette.mutedForeground}">TIME</text>`;
+  svg += `<rect x="${scheduleStartX + 1}" y="${y + titleHeight + 1}" width="${scheduleEndX - scheduleStartX - 2}" height="${dayHeight - 8}" rx="11" fill="${palette.headerSurface}"/>`;
   WEEKDAYS.forEach((day, index) => {
     const dx = scheduleStartX + index * dayWidth;
     svg += `<line x1="${dx}" y1="${y + titleHeight}" x2="${dx}" y2="${y + height - bottomPadding}" stroke="${palette.grid}"/>`;
-    svg += `<text x="${dx + dayWidth / 2}" y="${y + titleHeight + 29}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
+    svg += `<text x="${dx + dayWidth / 2}" y="${y + titleHeight + 26}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
   });
   hours.forEach((hour) => {
     const hy = Math.round(minuteY(hour * 60)) + 0.5;
