@@ -13,7 +13,13 @@ const twoTermFixturePath = path.join(
 test("landing page is usable without an account", async ({ page }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await expectLanding(page);
-  await expect(page.getByText("Original .ics files never leave your device")).toBeVisible();
+  await expect(
+    page.getByText(
+      isMobileProject(testInfo.project.name)
+        ? "Your calendar stays on this device. No account required."
+        : "Original .ics files never leave your device",
+    ),
+  ).toBeVisible();
   guard.assertClean();
 });
 
@@ -550,9 +556,10 @@ test("malformed calendar fails safely with a useful error", async ({ page }, tes
   });
 
   await expect(page.getByRole("alert")).toContainText("doesn't look like a calendar export");
-  await expect(
-    page.getByRole("heading", { name: "Make every gap on campus count." }),
-  ).toBeVisible();
+  const landingHeading = isMobileProject(testInfo.project.name)
+    ? "See gaps. Navigate UTM. Privately."
+    : "Make every gap on campus count.";
+  await expect(page.getByRole("heading", { name: landingHeading })).toBeVisible();
   guard.assertClean();
 });
 
