@@ -2113,16 +2113,12 @@
   gap: 0.5rem;
   align-items: center;
 }
-.gap-plan-tools > details {
-  position: relative;
-}
-.gap-plan-tools > details > summary {
+.gap-plan-tools > button {
   display: flex;
   align-items: center;
   gap: 0.4rem;
   min-height: 2.35rem;
   cursor: pointer;
-  list-style: none;
   border: 1px solid var(--color-border);
   border-radius: 0.55rem;
   padding: 0 0.75rem;
@@ -2130,38 +2126,69 @@
   font-weight: 650;
   color: var(--color-muted-foreground);
 }
-.gap-plan-tools > details > summary::-webkit-details-marker {
-  display: none;
-}
-.gap-plan-tools > details > summary:hover,
-.gap-plan-tools > details[open] > summary {
+.gap-plan-tools > button:hover,
+.gap-plan-tools > button:focus-visible,
+.gap-plan-tools > button[data-active="true"] {
   border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-border));
   color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 8%, transparent);
 }
-.gap-plan-tools summary svg {
+.gap-plan-tools button svg {
   width: 0.9rem;
 }
-.gap-tool-panel {
-  position: absolute;
-  z-index: 30;
-  top: calc(100% + 0.5rem);
-  right: 0;
-  width: min(42rem, calc(100vw - 3rem));
-  max-height: min(70vh, 42rem);
-  overflow: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 0.7rem;
-  padding: 0.6rem;
+
+.gap-auxiliary-sheet {
+  width: min(44rem, calc(100vw - 2rem));
+  max-height: min(72dvh, 44rem);
+  overflow-y: auto;
+  border-color: var(--color-border);
+  border-radius: 0.8rem;
   background: var(--color-popover);
-  box-shadow: var(--shadow-panel);
 }
-.gap-tool-panel > details {
-  border: 0;
-  background: transparent;
+.gap-sheet-handle {
+  display: none;
+}
+.gap-sheet-tabs {
+  display: flex;
+  gap: 0.35rem;
+  padding-right: 2.5rem;
+}
+.gap-sheet-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.2rem;
+  border-radius: 0.45rem;
+  padding-inline: 0.7rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+.gap-sheet-tabs button svg {
+  width: 0.9rem;
+}
+.gap-sheet-tabs button[aria-pressed="true"] {
+  color: var(--color-accent);
+  background: color-mix(in oklab, var(--color-accent) 10%, transparent);
+}
+.gap-sheet-content {
+  display: grid;
+  gap: 0.55rem;
+  animation: gap-sheet-swap 160ms var(--ease-out) both;
+}
+.gap-sheet-content > .surface {
+  margin-top: 0.4rem;
   box-shadow: none;
 }
-.gap-friends-panel {
-  width: min(48rem, calc(100vw - 3rem));
+@keyframes gap-sheet-swap {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .gap-day-strip {
@@ -2329,6 +2356,26 @@
   margin-top: 0.65rem;
   padding-left: 0.15rem;
 }
+.gap-friend-context {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: 0.55rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.68rem;
+  text-align: left;
+}
+.gap-friend-context svg {
+  color: var(--color-accent);
+}
+.gap-friend-context span {
+  margin-left: auto;
+  color: var(--color-accent);
+}
+.gap-friend-context:hover {
+  color: var(--color-foreground);
+}
 .gap-card-actions {
   margin-top: 0.6rem;
 }
@@ -2355,11 +2402,24 @@
   .gap-plan-tools {
     align-self: stretch;
   }
-  .gap-tool-panel {
-    position: fixed;
-    inset: auto 0.75rem 5rem;
-    width: auto;
-    max-height: 70vh;
+  .gap-auxiliary-sheet {
+    inset: auto 0 calc(3.5rem + env(safe-area-inset-bottom)) !important;
+    width: 100%;
+    max-width: none;
+    max-height: min(68dvh, 38rem);
+    transform: none !important;
+    gap: 0.65rem;
+    border-width: 1px 0 0;
+    border-radius: 0.9rem 0.9rem 0 0;
+    padding: 0.7rem 1rem max(1rem, env(safe-area-inset-bottom));
+  }
+  .gap-sheet-handle {
+    display: block;
+    width: 2.25rem;
+    height: 3px;
+    margin: 0 auto 0.2rem;
+    border-radius: 3px;
+    background: var(--color-border);
   }
   .gap-day-strip {
     padding-inline: 0.65rem;
@@ -2382,6 +2442,35 @@
   }
   .gap-plan-layout > section {
     padding-bottom: 0.75rem;
+  }
+}
+
+@media (min-width: 68.75rem) {
+  .gap-plan-layout {
+    padding-right: 22rem;
+  }
+  .gap-selected-surface {
+    position: fixed;
+    z-index: 10;
+    top: 13.5rem;
+    right: clamp(2rem, 3vw, 3.5rem);
+    width: 20rem;
+    max-height: calc(100dvh - 16rem);
+    overflow-y: auto;
+  }
+  .gap-plan-layout > section {
+    padding-bottom: 0.8rem;
+  }
+  .gap-day-strip {
+    padding-block: 0.65rem 0.5rem;
+  }
+  .gap-day-track {
+    height: 2.8rem;
+  }
+  .gap-day-class,
+  .gap-day-interval {
+    top: 0.35rem;
+    height: 2.1rem;
   }
 }
 

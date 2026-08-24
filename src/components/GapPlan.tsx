@@ -12,7 +12,8 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { FriendOverlapPanel } from "@/features/friends/FriendOverlapPanel";
 import type { FriendGapOverlap } from "@/features/friends/types";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
@@ -28,6 +29,7 @@ import type { Gap, Term } from "@/lib/timetable-types";
 import { formatCompactDuration, formatDuration, formatTime } from "@/lib/timetable-types";
 
 const EMPTY_FRIEND_OVERLAPS: FriendGapOverlap[] = [];
+type GapPlanOverlay = "tune" | "friends" | null;
 
 const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon; style: string }> = {
   "tight-transition": {
@@ -114,6 +116,7 @@ function DayStrip({
   activeId,
   onSelect,
   onActive,
+  showLegend,
 }: {
   gaps: Gap[];
   range: { first: number; last: number };
@@ -121,6 +124,7 @@ function DayStrip({
   activeId: string | null;
   onSelect: (id: string) => void;
   onActive: (id: string | null) => void;
+  showLegend: boolean;
 }) {
   const meetings = useMemo(() => {
     const unique = new Map<string, Gap["previous"]>();
@@ -187,11 +191,90 @@ function DayStrip({
           </button>
         ))}
       </div>
-      <div className="gap-day-legend">
-        <span>Class</span>
-        <span>Gap</span>
-      </div>
+      {showLegend ? (
+        <div className="gap-day-legend">
+          <span>Class</span>
+          <span>Gap</span>
+        </div>
+      ) : null}
     </div>
+  );
+}
+
+function GapPlanAuxiliarySurface({
+  active,
+  onChange,
+  gapPreferences,
+  onGapPreferencesChange,
+  residenceName,
+  user,
+  term,
+  onOverlapsChange,
+  restoreFocusRef,
+}: {
+  active: GapPlanOverlay;
+  onChange: (next: GapPlanOverlay) => void;
+  gapPreferences: GapPreferences;
+  onGapPreferencesChange: (next: GapPreferences) => void;
+  residenceName: string | null;
+  user: User | null;
+  term: Term;
+  onOverlapsChange: (overlaps: FriendGapOverlap[]) => void;
+  restoreFocusRef: RefObject<HTMLButtonElement | null>;
+}) {
+  return (
+    <Dialog open={active !== null} onOpenChange={(open) => !open && onChange(null)}>
+      <DialogContent
+        id="gap-plan-auxiliary"
+        className="gap-auxiliary-sheet"
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          restoreFocusRef.current?.focus();
+        }}
+      >
+        <span className="gap-sheet-handle" aria-hidden="true" />
+        <div className="gap-sheet-tabs" aria-label="Gap Plan tools">
+          <button type="button" aria-pressed={active === "tune"} onClick={() => onChange("tune")}>
+            <SlidersHorizontal aria-hidden="true" /> Tune
+          </button>
+          <button
+            type="button"
+            aria-pressed={active === "friends"}
+            onClick={() => onChange("friends")}
+          >
+            <Users aria-hidden="true" /> Friend gaps
+          </button>
+        </div>
+        <div key={active} className="gap-sheet-content">
+          {active === "tune" ? (
+            <>
+              <DialogTitle>Tune your gaps</DialogTitle>
+              <DialogDescription>
+                Changes apply to usable time and suggestions immediately.
+              </DialogDescription>
+              <GapSettings
+                value={gapPreferences}
+                onChange={onGapPreferencesChange}
+                residenceName={residenceName}
+              />
+            </>
+          ) : active === "friends" ? (
+            <>
+              <DialogTitle>Friend gaps</DialogTitle>
+              <DialogDescription>
+                Compare private free-time windows without sharing your timetable.
+              </DialogDescription>
+              <FriendOverlapPanel
+                key={user?.id ?? "guest"}
+                user={user}
+                term={term}
+                onOverlapsChange={onOverlapsChange}
+              />
+            </>
+          ) : null}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -537,6 +620,7 @@ const GapCard = memo(function GapCard({
   isSelected,
   onSelect,
   onActive,
+  onOpenFriends,
 }: {
   gap: Gap;
   preferences: UserPreferences;
@@ -546,6 +630,7 @@ const GapCard = memo(function GapCard({
   isSelected: boolean;
   onSelect: () => void;
   onActive: (active: boolean) => void;
+  onOpenFriends: () => void;
 }) {
   const { route, assessment, residenceTrip } = useMemo(
     () => planGapAssessment(gap, preferences, gapPreferences, planTransition),
@@ -694,6 +779,15 @@ const GapCard = memo(function GapCard({
         )}
       </div>
 
+      {friendOverlaps.length > 0 ? (
+        <button type="button" className="gap-friend-context" onClick={onOpenFriends}>
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {friendOverlaps.length} friend {friendOverlaps.length === 1 ? "window" : "windows"}{" "}
+          overlaps
+          <span>View ›</span>
+        </button>
+      ) : null}
+
       <div className="gap-card-actions flex flex-wrap items-center gap-2">
         {recommendations.map((recommendation) => {
           const selectedOption = selected.id === recommendation.id;
@@ -799,7 +893,10 @@ export const GapPlan = memo(function GapPlan({
   }>({ userId: null, overlaps: [] });
   const userId = user?.id ?? null;
   const [selectedGapId, setSelectedGapId] = useState<string | null>(gaps[0]?.id ?? null);
+  const [selectedByDay, setSelectedByDay] = useState<Record<string, string>>({});
   const [activeGapId, setActiveGapId] = useState<string | null>(null);
+  const [activeOverlay, setActiveOverlay] = useState<GapPlanOverlay>(null);
+  const overlayTriggerRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     if (!gaps.some((gap) => gap.id === selectedGapId)) setSelectedGapId(gaps[0]?.id ?? null);
   }, [gaps, selectedGapId]);
@@ -823,6 +920,17 @@ export const GapPlan = memo(function GapPlan({
     }
     return overlapsByGap;
   }, [friendOverlapState, gaps, userId]);
+  const selectGap = useCallback((gap: Gap) => {
+    setSelectedGapId(gap.id);
+    setSelectedByDay((current) => ({ ...current, [gap.weekday]: gap.id }));
+  }, []);
+  const toggleOverlay = useCallback(
+    (next: Exclude<GapPlanOverlay, null>, trigger: HTMLButtonElement) => {
+      overlayTriggerRef.current = trigger;
+      setActiveOverlay((current) => (current === next ? null : next));
+    },
+    [],
+  );
 
   return (
     <div className="gap-plan-layout space-y-5">
@@ -834,33 +942,38 @@ export const GapPlan = memo(function GapPlan({
           </h2>
         </div>
         <div className="gap-plan-tools">
-          <details>
-            <summary>
-              <SlidersHorizontal aria-hidden="true" /> Tune
-            </summary>
-            <div className="gap-tool-panel">
-              <GapSettings
-                value={gapPreferences}
-                onChange={onGapPreferencesChange}
-                residenceName={residence?.name ?? null}
-              />
-            </div>
-          </details>
-          <details>
-            <summary>
-              <Users aria-hidden="true" /> Friend gaps
-            </summary>
-            <div className="gap-tool-panel gap-friends-panel">
-              <FriendOverlapPanel
-                key={userId ?? "guest"}
-                user={user}
-                term={term}
-                onOverlapsChange={handleFriendOverlapsChange}
-              />
-            </div>
-          </details>
+          <button
+            type="button"
+            aria-expanded={activeOverlay === "tune"}
+            aria-controls="gap-plan-auxiliary"
+            data-active={activeOverlay === "tune" ? "true" : undefined}
+            onClick={(event) => toggleOverlay("tune", event.currentTarget)}
+          >
+            <SlidersHorizontal aria-hidden="true" /> Tune
+          </button>
+          <button
+            type="button"
+            aria-expanded={activeOverlay === "friends"}
+            aria-controls="gap-plan-auxiliary"
+            data-active={activeOverlay === "friends" ? "true" : undefined}
+            onClick={(event) => toggleOverlay("friends", event.currentTarget)}
+          >
+            <Users aria-hidden="true" /> Friend gaps
+          </button>
         </div>
       </div>
+
+      <GapPlanAuxiliarySurface
+        active={activeOverlay}
+        onChange={setActiveOverlay}
+        gapPreferences={gapPreferences}
+        onGapPreferencesChange={onGapPreferencesChange}
+        residenceName={residence?.name ?? null}
+        user={user}
+        term={term}
+        onOverlapsChange={handleFriendOverlapsChange}
+        restoreFocusRef={overlayTriggerRef}
+      />
 
       {groups.length === 0 ? (
         <div className="empty-state surface flex flex-col items-center p-8 text-center">
@@ -874,7 +987,7 @@ export const GapPlan = memo(function GapPlan({
         </div>
       ) : null}
 
-      {groups.map((group) => (
+      {groups.map((group, groupIndex) => (
         <section key={group.weekday} aria-labelledby={`gaps-${group.weekday}`}>
           <h3
             id={`gaps-${group.weekday}`}
@@ -888,10 +1001,17 @@ export const GapPlan = memo(function GapPlan({
           <DayStrip
             gaps={group.gaps}
             range={stripRange}
-            selectedId={selectedGapId}
+            selectedId={
+              selectedByDay[group.weekday] ??
+              (group.gaps.some((gap) => gap.id === selectedGapId) ? selectedGapId : null)
+            }
             activeId={activeGapId}
-            onSelect={setSelectedGapId}
+            onSelect={(id) => {
+              const gap = group.gaps.find((item) => item.id === id);
+              if (gap) selectGap(gap);
+            }}
             onActive={setActiveGapId}
+            showLegend={groupIndex === 0}
           />
           <div className="gap-selected-surface">
             {group.gaps
@@ -905,8 +1025,9 @@ export const GapPlan = memo(function GapPlan({
                   planTransition={planTransition}
                   friendOverlaps={friendOverlapsByGapId.get(gap.id) ?? EMPTY_FRIEND_OVERLAPS}
                   isSelected
-                  onSelect={() => setSelectedGapId(gap.id)}
+                  onSelect={() => selectGap(gap)}
                   onActive={(active) => setActiveGapId(active ? gap.id : null)}
+                  onOpenFriends={() => setActiveOverlay("friends")}
                 />
               ))}
           </div>
