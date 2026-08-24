@@ -31,9 +31,7 @@ test("developer entrypoint exposes the public platform contract and resources", 
   await expect(example).toContainText("https://api.gapwise.ca/v1/routes");
   await expect(example).toContainText("const { data, meta } = await response.json()");
 
-  await expect(
-    page.getByRole("heading", { name: "https://api.gapwise.ca/v1" }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "https://api.gapwise.ca/v1" })).toBeVisible();
   for (const endpoint of ["/v1/buildings", "/v1/places", "/v1/routes", "/v1/gaps/plan"]) {
     await expect(page.getByText(endpoint, { exact: true })).toBeVisible();
   }
