@@ -3,6 +3,25 @@
  * desktop-only layout without changing mobile behavior.
  */
 
+@media (max-width: 47.999rem) {
+  /* Radix DialogContent is centered with top/left transforms by default. The
+     old mobile override removed that transform and pinned both horizontal
+     edges, which shifted the sheet off-screen in Mobile Safari. Keep a real
+     centered bottom sheet with equal safe breathing room on both sides. */
+  .gap-auxiliary-sheet {
+    top: auto !important;
+    right: auto !important;
+    bottom: calc(4.25rem + env(safe-area-inset-bottom)) !important;
+    left: 50% !important;
+    width: min(32rem, calc(100vw - 1rem)) !important;
+    max-width: calc(100vw - 1rem) !important;
+    max-height: min(68dvh, 38rem);
+    margin: 0 !important;
+    transform: translateX(-50%) !important;
+    box-sizing: border-box;
+  }
+}
+
 @media (min-width: 68.75rem) {
   /* The term switcher should remain part of the document flow on Gap Plan.
      A sticky full-width paint layer caused the dark band/jump visible while scrolling. */
@@ -87,35 +106,41 @@
     white-space: nowrap;
   }
 
-  /* The redesigned desktop header is visually replaced by the sidebar, but
-     Campus arrival settings still need a real desktop entry point. Keep only
-     that existing control mounted as a compact utility row above the identity
-     card so the feature remains accessible without restoring the old header. */
-  .desktop-product-shell .desktop-app-header,
-  .desktop-product-shell .desktop-app-header > div,
-  .desktop-product-shell .desktop-app-header > div > div {
-    display: contents;
-  }
-
-  .desktop-product-shell .desktop-app-header .brand-lockup,
-  .desktop-product-shell .desktop-app-header > div > div > * {
-    display: none !important;
-  }
-
-  .desktop-product-shell
-    .desktop-app-header
-    button[aria-label="Campus arrival settings"] {
-    position: fixed;
-    z-index: 45;
-    left: 1rem;
-    bottom: 5.15rem;
-    display: inline-flex !important;
-    width: 11.75rem;
+  /* Campus arrival belongs in the persistent rail on desktop. The real
+     ResidenceSettings dialog remains mounted in the hidden product header; this
+     visible control forwards to its existing trigger so behavior and state stay
+     single-sourced. */
+  .desktop-sidebar-utility {
+    display: flex;
+    width: 100%;
     min-height: 2.4rem;
-    justify-content: flex-start;
-    pointer-events: auto;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--color-border);
     border-radius: 0.55rem;
-    padding-inline: 0.75rem;
+    color: var(--color-muted-foreground);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: left;
+    transition:
+      border-color 160ms ease,
+      color 160ms ease,
+      background-color 160ms ease;
+  }
+
+  .desktop-sidebar-utility:hover,
+  .desktop-sidebar-utility:focus-visible {
+    border-color: color-mix(in srgb, var(--color-accent) 42%, var(--color-border));
+    background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+    color: var(--color-foreground);
+  }
+
+  .desktop-sidebar-utility svg {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
   }
 
   /* The sidebar already consumes substantial width around tablet/compact-desktop
@@ -134,12 +159,5 @@
   .desktop-product-shell:has(.gap-plan-layout) .gap-selected-surface {
     width: min(100%, 52rem);
     max-width: 52rem;
-  }
-
-  .desktop-product-shell
-    .desktop-app-header
-    button[aria-label="Campus arrival settings"] {
-    left: 1.35rem;
-    width: 12.8rem;
   }
 }
