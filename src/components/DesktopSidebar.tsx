@@ -3,8 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import type { AppDestination } from "@/features/navigation/use-app-navigation";
 
-const CAMPUS_ARRIVAL_TRIGGER =
-  '.desktop-app-header button[aria-label="Campus arrival settings"]';
+const CAMPUS_ARRIVAL_TRIGGER = '.desktop-app-header button[aria-label="Campus arrival settings"]';
 
 const destinations = [
   {
