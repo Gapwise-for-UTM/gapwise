@@ -56,7 +56,7 @@ describe("Gapwise JavaScript SDK", () => {
   test("constructs discovery filters and retains pagination metadata", async () => {
     const urls: string[] = [];
     const client = new Gapwise({
-      baseUrl: "https://example.test/v1/",
+      baseUrl: "https://example.test/v1////",
       fetch: mock((url) => {
         urls.push(url);
         return Response.json({
