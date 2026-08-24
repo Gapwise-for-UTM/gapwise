@@ -1,3 +1,25 @@
-from .client import AsyncGapwise, Gapwise, GapwiseAPIError, GapwiseError, GapwiseTransportError
-from .types import Building, CampusPlace, RouteResult
-__all__ = ["AsyncGapwise", "Building", "CampusPlace", "Gapwise", "GapwiseAPIError", "GapwiseError", "GapwiseTransportError", "RouteResult"]
+"""Official Python SDK for the Gapwise Public Campus API."""
+
+from .client import (
+    AsyncGapwise,
+    Gapwise,
+    GapwiseAPIError,
+    GapwiseError,
+    GapwiseResponseError,
+    GapwiseTransportError,
+)
+from .types import ApiInfo, Building, CampusPlace, Page, RouteResult
+
+__all__ = [
+    "ApiInfo",
+    "AsyncGapwise",
+    "Building",
+    "CampusPlace",
+    "Gapwise",
+    "GapwiseAPIError",
+    "GapwiseError",
+    "GapwiseResponseError",
+    "GapwiseTransportError",
+    "Page",
+    "RouteResult",
+]

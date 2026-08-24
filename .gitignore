@@ -49,3 +49,5 @@ sdk/python/src/*.dist-info/
 
 **/__pycache__/
 *.py[cod]
+
+sdk/javascript/*.tgz

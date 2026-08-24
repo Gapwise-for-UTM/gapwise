@@ -120,7 +120,7 @@ Gapwise exposes a deliberately small public campus-intelligence surface for UTM 
 - **Versioned UTM snapshot:** https://gapwise.ca/data/utm-campus-v1.json
 - **JavaScript/TypeScript SDK source:** [`sdk/javascript`](sdk/javascript)
 - **Python SDK source:** [`sdk/python`](sdk/python)
-- **Platform documentation:** [`docs/GAPWISE_PLATFORM.md`](docs/GAPWISE_PLATFORM.md)
+- **Platform documentation:** [`docs/DEVELOPER_PLATFORM.md`](docs/DEVELOPER_PLATFORM.md)
 
 ### Public API
 
@@ -136,35 +136,17 @@ Gapwise exposes a deliberately small public campus-intelligence surface for UTM 
 
 The public API is campus-only. It does **not** expose student timetables, accounts, friends, credentials, private sync state, AI delegation, or precise live location.
 
-### Zero-dependency JS/TS client
+### Official SDKs
 
-```js
-import { gapwise } from "https://gapwise.ca/sdk/gapwise-utm.js";
+The TypeScript-first [`@gapwise/sdk`](sdk/javascript) and typed synchronous/asynchronous Python [`gapwise`](sdk/python) clients share the canonical v1 semantics. Neither package is published yet. Both support building/place discovery, routing, explicit free-interval planning, typed errors, timeouts, custom endpoints, and deterministic mocked tests.
 
-const route = await gapwise.route({
-  from: "MN",
-  to: "IB",
-});
-
-console.log(route.route.status, route.route.estimatedSeconds);
+```ts
+import { Gapwise } from "@gapwise/sdk";
+const gapwise = new Gapwise();
+const places = await gapwise.places.list({ building: "HM", openNow: "unknown" });
 ```
 
-Gap planning uses the same thin client:
-
-```js
-const plan = await gapwise.planGap({
-  from: "MN",
-  to: "IB",
-  term: "Fall",
-  weekday: "Wednesday",
-  startTime: 660,
-  endTime: 780,
-});
-
-console.log(plan.gapPlan.assessment.primary);
-```
-
-The SDK is intentionally a small wrapper around `fetch`. Projects that prefer generated clients can use the OpenAPI contract directly.
+See the [developer-platform guide](docs/DEVELOPER_PLATFORM.md) for authentication, filtering, response envelopes, errors, abuse protection, provenance, uncertainty, versioning, examples, and legacy migration.
 
 ### Open UTM data
 
@@ -256,7 +238,7 @@ Typical states include:
 
 Accessibility uncertainty is preserved through UI, API, Replay, and AI surfaces. In step-free mode, missing accessible evidence fails closed.
 
-See [`docs/CAMPUS_MAP_GEOMETRY.md`](docs/CAMPUS_MAP_GEOMETRY.md), [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md), and [`docs/GAPWISE_PLATFORM.md`](docs/GAPWISE_PLATFORM.md).
+See [`docs/CAMPUS_MAP_GEOMETRY.md`](docs/CAMPUS_MAP_GEOMETRY.md), [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md), and [`docs/DEVELOPER_PLATFORM.md`](docs/DEVELOPER_PLATFORM.md).
 
 ---
 

@@ -2,6 +2,13 @@
   "name": "@gapwise/sdk",
   "version": "0.1.0",
   "description": "Official JavaScript and TypeScript client for the Gapwise public campus API",
+  "keywords": [
+    "gapwise",
+    "utm",
+    "campus",
+    "routing",
+    "openapi"
+  ],
   "license": "MIT",
   "type": "module",
   "sideEffects": false,
@@ -15,7 +22,9 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "browser": "./dist/index.js",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
@@ -26,6 +35,13 @@
   "engines": {
     "node": ">=20"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrewmuratov/gapwise.git",
+    "directory": "sdk/javascript"
+  },
+  "bugs": "https://github.com/andrewmuratov/gapwise/issues",
+  "homepage": "https://docs.gapwise.ca",
   "publishConfig": {
     "access": "public",
     "provenance": true

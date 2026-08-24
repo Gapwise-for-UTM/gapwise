@@ -1,18 +1,32 @@
-/** Contract types mirrored from public/openapi.json and checked by contract tests. */
+/** Stable public types matching the Gapwise OpenAPI v1 contract. */
+export type ApiVersion = "v1";
 export type VerificationStatus = "verified" | "inferred" | "unknown";
+export type FactStatus =
+  "verified" | "stale" | "inferred" | "user-reported" | "unavailable" | "unknown";
 export type RouteMode = "fastest" | "prefer-indoor" | "step-free";
 export type Term = "Fall" | "Winter" | "Summer";
 export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+export type BuildingCategory = "academic" | "residence" | "facility";
+export type PlaceKind =
+  "dining" | "study" | "library" | "service" | "recreation" | "amenity" | "facility";
+export type AvailabilityState = "open" | "closed" | "unknown";
 export interface Provenance {
   source: string;
   sourceUrl: string;
   lastVerified: string;
   verificationStatus: VerificationStatus;
 }
+export interface FactProvenance {
+  sourceId: string;
+  status: FactStatus;
+  observedAt: string;
+  expiresAt?: string;
+  note?: string;
+}
 export interface Building {
   code: string;
   name: string;
-  category: "academic" | "residence" | "facility";
+  category: BuildingCategory;
   aliases: string[];
   routingCoverage: "mapped" | "identity-only";
   entranceCount: number;
@@ -21,24 +35,36 @@ export interface Building {
   indoorRoomNodeCount: number;
   provenance: Provenance[];
 }
-export type CampusFactStatus =
-  "verified" | "stale" | "inferred" | "user-reported" | "unavailable" | "unknown";
+export interface WeeklyHours {
+  timezone: "America/Toronto";
+  intervals: Partial<
+    Record<"1" | "2" | "3" | "4" | "5" | "6" | "7", Array<{ opens: string; closes: string }>>
+  >;
+}
+export interface PlaceAction {
+  label: string;
+  url: string;
+  kind: "booking" | "information" | "report";
+}
+export interface PlaceAvailability {
+  state: AvailabilityState;
+  freshness: FactStatus;
+  evaluatedAt: string;
+  nextTransition: string | null;
+}
 export interface CampusPlace {
   id: string;
   name: string;
-  kind: "dining" | "study" | "library" | "service" | "recreation" | "amenity" | "facility";
+  kind: PlaceKind;
   buildingCode: string;
   floorOrRoom?: string;
   summary: string;
   amenities: readonly string[];
+  actions?: readonly PlaceAction[];
+  hours?: WeeklyHours;
   hoursProvenance: FactProvenance;
   metadataProvenance: FactProvenance;
-}
-export interface FactProvenance {
-  sourceId: string;
-  status: CampusFactStatus;
-  observedAt: string;
-  note?: string;
+  availability: PlaceAvailability;
 }
 export interface RoutePreferences {
   mode?: RouteMode;
@@ -87,6 +113,17 @@ export interface GapPlanRequest {
   routePreferences?: RoutePreferences;
   gapPreferences?: GapPreferences;
 }
+export interface GapRecommendation {
+  id: string;
+  action: string;
+  title: string;
+  summary: string;
+  score: number;
+  activityMinutes: number;
+  reasons: string[];
+  tags: string[];
+  timeline: Array<{ kind: string; label: string; minutes: number }>;
+}
 export interface GapAssessment {
   primary: GapRecommendation;
   alternatives: GapRecommendation[];
@@ -100,17 +137,6 @@ export interface GapAssessment {
   routeStatus: string;
   routeAccuracy: string;
   warnings: string[];
-}
-export interface GapRecommendation {
-  id: string;
-  action: string;
-  title: string;
-  summary: string;
-  score: number;
-  activityMinutes: number;
-  reasons: string[];
-  tags: string[];
-  timeline: Array<{ kind: string; label: string; minutes: number }>;
 }
 export interface GapPlanResult {
   dataVersion: string;
@@ -127,18 +153,52 @@ export interface GapPlanResult {
   gapPreferences: Required<GapPreferences>;
   assessment: GapAssessment;
 }
-export interface CampusSource {
-  id: string;
-  name: string;
-  url: string;
-  retrievedAt: string;
-  verificationStatus: VerificationStatus;
+export interface Pagination {
+  limit: number;
+  offset: number;
+  count: number;
+  total: number;
+  nextOffset: number | null;
 }
-export interface RootResponse {
-  service: string;
-  version: "v1";
+export interface ResponseMeta {
+  apiVersion: ApiVersion;
   dataVersion: string;
-  documentation: string;
-  openapi: string;
+  generatedAt?: string;
+  requestId: string;
+  pagination?: Pagination;
+  filters?: Record<string, string>;
+}
+export interface Collection<T> {
+  data: T[];
+  meta: ResponseMeta & { pagination: Pagination };
+}
+export interface ApiInfo {
+  name: string;
+  apiVersion: ApiVersion;
+  campusDataVersion: string;
+  campusStateVersion: string;
+  authentication: "none";
+  documentationUrl: string;
+  openapiUrl: string;
+  capabilities: {
+    buildingSearch: boolean;
+    placeSearch: boolean;
+    placeAvailability: "source-dependent";
+    routingModes: RouteMode[];
+  };
   privacy: string;
+}
+export interface BuildingListOptions {
+  q?: string;
+  category?: BuildingCategory;
+  limit?: number;
+  offset?: number;
+}
+export interface PlaceListOptions {
+  q?: string;
+  kind?: PlaceKind;
+  building?: string;
+  openNow?: AvailabilityState;
+  limit?: number;
+  offset?: number;
 }

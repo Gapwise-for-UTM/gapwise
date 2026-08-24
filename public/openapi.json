@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Gapwise Public Campus API",
-    "version": "1.2.0",
-    "description": "The authoritative contract for Gapwise public UTM campus intelligence. The API contains no private timetable, friend, account, authentication, or precise live-location data. Consumers must preserve provenance and uncertainty semantics.",
+    "version": "1.0.0",
+    "description": "Authoritative OpenAPI 3.1 contract for the unauthenticated Gapwise Public Campus API v1. API version, campus data versions, and SDK package versions evolve independently. Additive fields and operations are non-breaking; removing or changing documented fields, semantics, or status codes requires a new API version. No timetable, friend, account, authentication, private-sync, AI-delegation, or precise live-location data is exposed.",
     "contact": {
       "name": "Gapwise",
       "url": "https://gapwise.ca/developers"
@@ -17,55 +17,64 @@
   ],
   "tags": [
     {
-      "name": "Buildings"
+      "name": "Metadata",
+      "description": "API capabilities, versions, and privacy boundary."
     },
     {
-      "name": "Routing"
+      "name": "Buildings",
+      "description": "Canonical UTM building identity and conservative accessibility/provenance facts."
     },
     {
-      "name": "Gap planning"
+      "name": "Places",
+      "description": "Source-backed campus places, discovery, hours provenance, and explicit availability uncertainty."
     },
     {
-      "name": "Places"
+      "name": "Routing",
+      "description": "Deterministic building-level campus routes."
+    },
+    {
+      "name": "Gap planning",
+      "description": "Route-aware assessment of an explicitly supplied free interval; no timetable is accepted or stored."
+    },
+    {
+      "name": "Legacy compatibility",
+      "description": "Deprecated gapwise.ca aliases retained for existing consumers."
     }
   ],
   "paths": {
     "/": {
       "get": {
-        "operationId": "getApiInfo",
-        "summary": "Get API and campus-data version information",
         "tags": [
           "Metadata"
         ],
+        "operationId": "getApiInfo",
+        "summary": "Get API capabilities, versions, and privacy boundary",
         "responses": {
           "200": {
-            "description": "API metadata and privacy boundary.",
-            "content": {
-              "application/json": {
+            "description": "API metadata.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Opaque request identifier for support and diagnostics.",
                 "schema": {
-                  "$ref": "#/components/schemas/ApiInfo"
-                },
-                "example": {
-                  "service": "gapwise-public-campus",
-                  "version": "v1",
-                  "dataVersion": "2026-08-10",
-                  "documentation": "https://docs.gapwise.ca",
-                  "openapi": "https://api.gapwise.ca/openapi.json",
-                  "privacy": "Public campus intelligence only; no student or account data is exposed."
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Response caching policy.",
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "headers": {
-              "RateLimit-Policy": {
-                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
-                },
-                "example": "\"public\";q=120;w=60"
+                  "$ref": "#/components/schemas/DataApiInfo"
+                }
               }
             }
           },
-          "405": {
+          "429": {
             "$ref": "#/components/responses/ApiError"
           }
         }
@@ -77,43 +86,83 @@
           "Buildings"
         ],
         "operationId": "listBuildings",
-        "summary": "List canonical UTM buildings",
+        "summary": "Search and list canonical UTM buildings",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Case-insensitive substring search across canonical code, name, and aliases. Unicode is normalized before matching.",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "example": "instructional"
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "academic",
+                "residence",
+                "facility"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Zero-based deterministic collection offset.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Canonical building inventory with routing coverage and provenance.",
-            "content": {
-              "application/json": {
+            "description": "Deterministically ordered building page.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Opaque request identifier for support and diagnostics.",
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "service",
-                    "buildings"
-                  ],
-                  "properties": {
-                    "service": {
-                      "const": "gapwise-public-campus"
-                    },
-                    "buildings": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/Building"
-                      }
-                    }
-                  }
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Response caching policy.",
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "headers": {
-              "RateLimit-Policy": {
-                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
-                },
-                "example": "\"public\";q=120;w=60"
+                  "$ref": "#/components/schemas/BuildingsCollection"
+                }
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/ApiError"
+          },
           "405": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
             "$ref": "#/components/responses/ApiError"
           }
         }
@@ -125,7 +174,8 @@
           "Routing"
         ],
         "operationId": "calculateRoute",
-        "summary": "Plan a deterministic building-to-building campus route",
+        "summary": "Calculate a deterministic building-level route",
+        "description": "Always inspect status, routeVerification, accuracy, and warnings. An unavailable step-free result is safer than an invented accessible route.",
         "requestBody": {
           "required": true,
           "content": {
@@ -133,12 +183,11 @@
               "schema": {
                 "$ref": "#/components/schemas/RouteRequest"
               },
-              "examples": {
-                "mnToIb": {
-                  "value": {
-                    "from": "MN",
-                    "to": "IB"
-                  }
+              "example": {
+                "from": "MN",
+                "to": "IB",
+                "preferences": {
+                  "mode": "fastest"
                 }
               }
             }
@@ -146,33 +195,26 @@
         },
         "responses": {
           "200": {
-            "description": "Route result. Always inspect status, accuracy, routeVerification, and warnings.",
-            "content": {
-              "application/json": {
+            "description": "Route result.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Opaque request identifier for support and diagnostics.",
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "service",
-                    "route"
-                  ],
-                  "properties": {
-                    "service": {
-                      "const": "gapwise-public-campus"
-                    },
-                    "route": {
-                      "$ref": "#/components/schemas/Route"
-                    }
-                  }
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Response caching policy.",
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "headers": {
-              "RateLimit-Policy": {
-                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
-                },
-                "example": "\"public\";q=120;w=60"
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
               }
             }
           },
@@ -182,13 +224,19 @@
           "404": {
             "$ref": "#/components/responses/ApiError"
           },
-          "409": {
-            "$ref": "#/components/responses/ApiError"
-          },
           "405": {
             "$ref": "#/components/responses/ApiError"
           },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          },
           "413": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "415": {
             "$ref": "#/components/responses/ApiError"
           }
         }
@@ -200,7 +248,8 @@
           "Gap planning"
         ],
         "operationId": "planGap",
-        "summary": "Assess a bounded campus gap with deterministic route and timing logic",
+        "summary": "Assess an explicitly supplied free interval",
+        "description": "Accepts only an explicit interval and boundary buildings. It does not accept, retrieve, or store a timetable.",
         "requestBody": {
           "required": true,
           "content": {
@@ -208,50 +257,39 @@
               "schema": {
                 "$ref": "#/components/schemas/GapPlanRequest"
               },
-              "examples": {
-                "wednesdayTwoHourGap": {
-                  "value": {
-                    "from": "MN",
-                    "to": "IB",
-                    "term": "Fall",
-                    "weekday": "Wednesday",
-                    "startTime": 660,
-                    "endTime": 780
-                  }
-                }
+              "example": {
+                "from": "MN",
+                "to": "IB",
+                "term": "Fall",
+                "weekday": "Wednesday",
+                "startTime": 660,
+                "endTime": 780
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Deterministic gap assessment and underlying route.",
-            "content": {
-              "application/json": {
+            "description": "Route-aware deterministic gap assessment.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Opaque request identifier for support and diagnostics.",
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "service",
-                    "gapPlan"
-                  ],
-                  "properties": {
-                    "service": {
-                      "const": "gapwise-public-campus"
-                    },
-                    "gapPlan": {
-                      "$ref": "#/components/schemas/GapPlan"
-                    }
-                  }
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Response caching policy.",
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "headers": {
-              "RateLimit-Policy": {
-                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
-                },
-                "example": "\"public\";q=120;w=60"
+                  "$ref": "#/components/schemas/GapPlanResponse"
+                }
               }
             }
           },
@@ -261,13 +299,19 @@
           "404": {
             "$ref": "#/components/responses/ApiError"
           },
-          "409": {
-            "$ref": "#/components/responses/ApiError"
-          },
           "405": {
             "$ref": "#/components/responses/ApiError"
           },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          },
           "413": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "415": {
             "$ref": "#/components/responses/ApiError"
           }
         }
@@ -279,52 +323,108 @@
           "Places"
         ],
         "operationId": "listPlaces",
-        "summary": "List source-backed UTM campus places",
+        "summary": "Discover source-backed campus places",
+        "description": "Filters combine with AND semantics. openNow=unknown is the safe way to discover places whose operating state cannot be determined. Results with unknown availability are never treated as closed.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Case-insensitive substring search across place names and amenities.",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "kind",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "dining",
+                "study",
+                "library",
+                "service",
+                "recreation",
+                "amenity",
+                "facility"
+              ]
+            }
+          },
+          {
+            "name": "building",
+            "in": "query",
+            "description": "Canonical building code.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{1,12}$"
+            }
+          },
+          {
+            "name": "openNow",
+            "in": "query",
+            "schema": {
+              "enum": [
+                "open",
+                "closed",
+                "unknown"
+              ]
+            },
+            "description": "Filter by evaluated availability. Requests using this time-dependent filter are not cached."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Page size.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Zero-based deterministic collection offset.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Versioned place snapshot with explicit provenance and freshness.",
-            "content": {
-              "application/json": {
+            "description": "Deterministically ordered place page with source-dependent availability.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Opaque request identifier for support and diagnostics.",
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "service",
-                    "dataVersion",
-                    "generatedAt",
-                    "places"
-                  ],
-                  "properties": {
-                    "service": {
-                      "const": "gapwise-public-campus"
-                    },
-                    "dataVersion": {
-                      "type": "string"
-                    },
-                    "generatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "places": {
-                      "type": "array",
-                      "items": {
-                        "$ref": "#/components/schemas/CampusPlace"
-                      }
-                    }
-                  }
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Response caching policy.",
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "headers": {
-              "RateLimit-Policy": {
-                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
-                },
-                "example": "\"public\";q=120;w=60"
+                  "$ref": "#/components/schemas/PlacesCollection"
+                }
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/ApiError"
+          },
           "405": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
             "$ref": "#/components/responses/ApiError"
           }
         }
@@ -336,13 +436,12 @@
           "Buildings"
         ],
         "operationId": "getBuilding",
-        "summary": "Resolve one canonical UTM building",
+        "summary": "Resolve one building by canonical code, exact name, or alias",
         "parameters": [
           {
             "name": "building",
             "in": "path",
             "required": true,
-            "description": "Canonical building code, exact name, or recognized alias.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -353,43 +452,42 @@
         ],
         "responses": {
           "200": {
-            "description": "Resolved building.",
-            "content": {
-              "application/json": {
+            "description": "Resolved canonical building.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Opaque request identifier for support and diagnostics.",
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "service",
-                    "building"
-                  ],
-                  "properties": {
-                    "service": {
-                      "const": "gapwise-public-campus"
-                    },
-                    "building": {
-                      "$ref": "#/components/schemas/Building"
-                    }
-                  }
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Response caching policy.",
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "headers": {
-              "RateLimit-Policy": {
-                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
-                },
-                "example": "\"public\";q=120;w=60"
+                  "$ref": "#/components/schemas/BuildingResponse"
+                }
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/ApiError"
+          },
           "404": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "405": {
             "$ref": "#/components/responses/ApiError"
           },
           "409": {
             "$ref": "#/components/responses/ApiError"
           },
-          "405": {
+          "429": {
             "$ref": "#/components/responses/ApiError"
           }
         }
@@ -401,60 +499,54 @@
           "Places"
         ],
         "operationId": "getPlace",
-        "summary": "Look up one canonical campus place",
+        "summary": "Get one canonical campus place",
         "parameters": [
           {
             "name": "placeId",
             "in": "path",
             "required": true,
-            "description": "Canonical campus place identifier.",
             "schema": {
               "type": "string",
               "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
             },
-            "example": "library"
+            "example": "utm-library"
           }
         ],
         "responses": {
           "200": {
-            "description": "Canonical place and its source.",
-            "content": {
-              "application/json": {
+            "description": "Source-backed campus place.",
+            "headers": {
+              "X-Request-Id": {
+                "description": "Opaque request identifier for support and diagnostics.",
                 "schema": {
-                  "type": "object",
-                  "required": [
-                    "service",
-                    "dataVersion",
-                    "place"
-                  ],
-                  "properties": {
-                    "service": {
-                      "const": "gapwise-public-campus"
-                    },
-                    "dataVersion": {
-                      "type": "string"
-                    },
-                    "place": {
-                      "$ref": "#/components/schemas/CampusPlace"
-                    }
-                  }
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Response caching policy.",
+                "schema": {
+                  "type": "string"
                 }
               }
             },
-            "headers": {
-              "RateLimit-Policy": {
-                "description": "Public fair-use request policy; clients should back off after 429 responses.",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
-                },
-                "example": "\"public\";q=120;w=60"
+                  "$ref": "#/components/schemas/PlaceResponse"
+                }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/ApiError"
           },
           "404": {
             "$ref": "#/components/responses/ApiError"
           },
           "405": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "429": {
             "$ref": "#/components/responses/ApiError"
           }
         }
@@ -463,7 +555,7 @@
     "/api/utm-buildings": {
       "get": {
         "tags": [
-          "Buildings"
+          "Legacy compatibility"
         ],
         "operationId": "listUtmBuildings",
         "summary": "List canonical UTM buildings",
@@ -507,7 +599,7 @@
     "/api/utm-building": {
       "get": {
         "tags": [
-          "Buildings"
+          "Legacy compatibility"
         ],
         "operationId": "getUtmBuilding",
         "summary": "Resolve one canonical UTM building",
@@ -566,7 +658,7 @@
     "/api/utm-route": {
       "post": {
         "tags": [
-          "Routing"
+          "Legacy compatibility"
         ],
         "operationId": "routeBetweenUtmBuildings",
         "summary": "Plan a deterministic building-to-building campus route",
@@ -634,7 +726,7 @@
     "/api/utm-gap-plan": {
       "post": {
         "tags": [
-          "Gap planning"
+          "Legacy compatibility"
         ],
         "operationId": "planUtmGap",
         "summary": "Assess a bounded campus gap with deterministic route and timing logic",
@@ -706,7 +798,7 @@
     "/api/utm-places": {
       "get": {
         "tags": [
-          "Places"
+          "Legacy compatibility"
         ],
         "operationId": "listUtmPlaces",
         "summary": "List source-backed UTM campus places",
@@ -737,7 +829,7 @@
                     "places": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/components/schemas/CampusPlace"
+                        "$ref": "#/components/schemas/LegacyCampusPlace"
                       }
                     }
                   }
@@ -759,7 +851,7 @@
     "/api/utm-place": {
       "get": {
         "tags": [
-          "Places"
+          "Legacy compatibility"
         ],
         "operationId": "getUtmPlace",
         "summary": "Look up one canonical campus place",
@@ -793,7 +885,7 @@
                       "type": "string"
                     },
                     "place": {
-                      "$ref": "#/components/schemas/CampusPlace"
+                      "$ref": "#/components/schemas/LegacyCampusPlace"
                     }
                   }
                 }
@@ -1553,6 +1645,460 @@
           "summary",
           "amenities",
           "hoursProvenance",
+          "metadataProvenance",
+          "availability"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "dining",
+              "study",
+              "library",
+              "service",
+              "recreation",
+              "amenity",
+              "facility"
+            ]
+          },
+          "buildingCode": {
+            "type": "string"
+          },
+          "floorOrRoom": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hoursProvenance": {
+            "$ref": "#/components/schemas/CampusFactProvenance"
+          },
+          "metadataProvenance": {
+            "$ref": "#/components/schemas/CampusFactProvenance"
+          },
+          "availability": {
+            "$ref": "#/components/schemas/PlaceAvailability"
+          }
+        }
+      },
+      "ApiInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "apiVersion",
+          "campusDataVersion",
+          "campusStateVersion",
+          "authentication",
+          "documentationUrl",
+          "openapiUrl",
+          "capabilities",
+          "privacy"
+        ],
+        "properties": {
+          "name": {
+            "const": "Gapwise Public Campus API"
+          },
+          "apiVersion": {
+            "const": "v1"
+          },
+          "campusDataVersion": {
+            "type": "string"
+          },
+          "campusStateVersion": {
+            "type": "string"
+          },
+          "authentication": {
+            "const": "none",
+            "description": "Public v1 requires no API key or user session."
+          },
+          "documentationUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "openapiUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "buildingSearch",
+              "placeSearch",
+              "placeAvailability",
+              "routingModes"
+            ],
+            "properties": {
+              "buildingSearch": {
+                "type": "boolean"
+              },
+              "placeSearch": {
+                "type": "boolean"
+              },
+              "placeAvailability": {
+                "enum": [
+                  "source-dependent"
+                ]
+              },
+              "routingModes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "fastest",
+                    "prefer-indoor",
+                    "step-free"
+                  ]
+                }
+              }
+            }
+          },
+          "privacy": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "error",
+          "meta"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "examples": [
+                  "invalid_query",
+                  "building_not_found",
+                  "rate_limited"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {}
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ErrorMeta"
+          }
+        }
+      },
+      "LegacyError": {
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Building"
+            }
+          }
+        }
+      },
+      "Pagination": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "limit",
+          "offset",
+          "count",
+          "total",
+          "nextOffset"
+        ],
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nextOffset": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        }
+      },
+      "ResponseMeta": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "apiVersion",
+          "dataVersion",
+          "requestId"
+        ],
+        "properties": {
+          "apiVersion": {
+            "const": "v1"
+          },
+          "dataVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/Pagination"
+          },
+          "filters": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ErrorMeta": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "apiVersion",
+          "requestId"
+        ],
+        "properties": {
+          "apiVersion": {
+            "const": "v1"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "PlaceAvailability": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state",
+          "freshness",
+          "evaluatedAt",
+          "nextTransition"
+        ],
+        "description": "Unknown is a first-class result and must never be presented as closed. Open/closed is returned only when published hours and provenance permit it.",
+        "properties": {
+          "state": {
+            "enum": [
+              "open",
+              "closed",
+              "unknown"
+            ]
+          },
+          "freshness": {
+            "enum": [
+              "verified",
+              "stale",
+              "inferred",
+              "user-reported",
+              "unavailable",
+              "unknown"
+            ]
+          },
+          "evaluatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nextTransition": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "DataApiInfo": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ApiInfo"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        }
+      },
+      "BuildingsCollection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Building"
+            }
+          },
+          "meta": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ],
+            "required": [
+              "pagination"
+            ]
+          }
+        }
+      },
+      "PlacesCollection": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampusPlace"
+            }
+          },
+          "meta": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ResponseMeta"
+              }
+            ],
+            "required": [
+              "pagination"
+            ]
+          }
+        }
+      },
+      "BuildingResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Building"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        }
+      },
+      "PlaceResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CampusPlace"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        }
+      },
+      "RouteResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Route"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        }
+      },
+      "GapPlanResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "data",
+          "meta"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/GapPlan"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ResponseMeta"
+          }
+        }
+      },
+      "LegacyCampusPlace": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "buildingCode",
+          "summary",
+          "amenities",
+          "hoursProvenance",
           "metadataProvenance"
         ],
         "properties": {
@@ -1597,107 +2143,26 @@
             "$ref": "#/components/schemas/CampusFactProvenance"
           }
         }
-      },
-      "ApiInfo": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "service",
-          "version",
-          "dataVersion",
-          "documentation",
-          "openapi",
-          "privacy"
-        ],
-        "properties": {
-          "service": {
-            "const": "gapwise-public-campus"
-          },
-          "version": {
-            "const": "v1"
-          },
-          "dataVersion": {
-            "type": "string"
-          },
-          "documentation": {
-            "type": "string",
-            "format": "uri"
-          },
-          "openapi": {
-            "type": "string",
-            "format": "uri"
-          },
-          "privacy": {
-            "type": "string"
-          }
-        }
-      },
-      "ErrorEnvelope": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "error"
-        ],
-        "properties": {
-          "error": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "code",
-              "message"
-            ],
-            "properties": {
-              "code": {
-                "type": "string",
-                "examples": [
-                  "invalid_request",
-                  "not_found",
-                  "method_not_allowed",
-                  "rate_limited"
-                ]
-              },
-              "message": {
-                "type": "string"
-              },
-              "details": {}
-            }
-          }
-        }
-      },
-      "LegacyError": {
-        "type": "object",
-        "required": [
-          "error",
-          "message"
-        ],
-        "properties": {
-          "error": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "candidates": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Building"
-            }
-          }
-        }
       }
     },
     "responses": {
       "ApiError": {
-        "description": "The request failed. The code is stable for programmatic handling; the message is developer-readable.",
+        "description": "Structured API error. Platform-level abuse protection may also return HTTP 429; clients must respect Retry-After when present. Gapwise does not claim a globally exact application counter on serverless instances.",
         "headers": {
-          "RateLimit-Policy": {
-            "description": "Current public fair-use policy.",
+          "X-Request-Id": {
+            "description": "Opaque request identifier for support and diagnostics.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          "Cache-Control": {
+            "description": "Response caching policy.",
             "schema": {
               "type": "string"
             }
           },
           "Retry-After": {
-            "description": "Seconds to wait when rate limited.",
+            "description": "Seconds to wait when supplied with HTTP 429.",
             "schema": {
               "type": "integer",
               "minimum": 1
@@ -1711,8 +2176,12 @@
             },
             "example": {
               "error": {
-                "code": "invalid_request",
-                "message": "Request body must be a JSON object."
+                "code": "invalid_query",
+                "message": "limit must be an integer from 1 to 100."
+              },
+              "meta": {
+                "apiVersion": "v1",
+                "requestId": "iad1::example"
               }
             }
           }

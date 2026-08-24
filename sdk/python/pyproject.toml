@@ -8,12 +8,12 @@ version = "0.1.0"
 description = "Official Python client for the Gapwise public campus API"
 readme = "README.md"
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Gapwise" }]
 dependencies = ["httpx>=0.27,<1"]
 classifiers = [
   "Development Status :: 3 - Alpha", "Intended Audience :: Developers",
-  "Programming Language :: Python :: 3", "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11", "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13", "Typing :: Typed"
 ]
@@ -24,10 +24,17 @@ Repository = "https://github.com/andrewmuratov/gapwise"
 OpenAPI = "https://api.gapwise.ca/openapi.json"
 
 [project.optional-dependencies]
-test = ["pytest>=8", "pytest-asyncio>=0.24", "build>=1.2", "twine>=5"]
+test = ["pytest>=8", "pytest-asyncio>=0.24", "build>=1.2", "twine>=5", "black>=25", "ruff>=0.12"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gapwise"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

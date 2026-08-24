@@ -1,14 +1,17 @@
 export * from "./types.js";
 import type {
+  ApiInfo,
   Building,
+  BuildingListOptions,
   CampusPlace,
+  Collection,
   GapPlanRequest,
   GapPlanResult,
-  RootResponse,
+  PlaceListOptions,
+  ResponseMeta,
   RouteRequest,
   RouteResult,
 } from "./types.js";
-
 export interface GapwiseOptions {
   baseUrl?: string;
   fetch?: typeof globalThis.fetch;
@@ -19,56 +22,76 @@ export interface RequestOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
 }
+export type GapwiseErrorCode =
+  | "ambiguous_building"
+  | "building_not_found"
+  | "http_error"
+  | "internal_error"
+  | "invalid_identifier"
+  | "invalid_json"
+  | "invalid_query"
+  | "invalid_request"
+  | "method_not_allowed"
+  | "not_found"
+  | "place_not_found"
+  | "rate_limited"
+  | "request_too_large"
+  | (string & {});
 export class GapwiseApiError extends Error {
+  readonly name = "GapwiseApiError";
   constructor(
     message: string,
     public readonly status: number,
-    public readonly code: string,
+    public readonly code: GapwiseErrorCode,
     public readonly details?: unknown,
     public readonly requestId?: string,
   ) {
     super(message);
-    this.name = "GapwiseApiError";
   }
 }
 export class GapwiseTimeoutError extends Error {
+  readonly name = "GapwiseTimeoutError";
   constructor(message = "The Gapwise API request timed out.") {
     super(message);
-    this.name = "GapwiseTimeoutError";
+  }
+}
+export class GapwiseResponseError extends Error {
+  readonly name = "GapwiseResponseError";
+  constructor(message = "The Gapwise API returned an invalid JSON response.") {
+    super(message);
   }
 }
 const DEFAULT_BASE_URL = "https://api.gapwise.ca/v1";
-
+type Envelope<T> = { data: T; meta: ResponseMeta };
+/** Official client for the unauthenticated Gapwise Public Campus API v1. */
 export class Gapwise {
   readonly buildings = {
-    list: (options?: RequestOptions) =>
-      this.request<{ buildings: Building[] }>("/buildings", {}, options).then((r) => r.buildings),
+    list: (filters: BuildingListOptions = {}, options?: RequestOptions) =>
+      this.requestCollection<Building>(`/buildings${query(filters)}`, options),
     get: (building: string, options?: RequestOptions) =>
-      this.request<{ building: Building }>(
+      this.request<Building>(
         `/buildings/${encodeURIComponent(required(building, "building"))}`,
         {},
         options,
-      ).then((r) => r.building),
+      ).then((r) => r.data),
   };
   readonly places = {
-    list: (options?: RequestOptions) =>
-      this.request<{ places: CampusPlace[] }>("/places", {}, options).then((r) => r.places),
+    list: (filters: PlaceListOptions = {}, options?: RequestOptions) =>
+      this.requestCollection<CampusPlace>(`/places${query(filters)}`, options),
     get: (placeId: string, options?: RequestOptions) =>
-      this.request<{ place: CampusPlace }>(
+      this.request<CampusPlace>(
         `/places/${encodeURIComponent(required(placeId, "placeId"))}`,
         {},
         options,
-      ).then((r) => r.place),
+      ).then((r) => r.data),
   };
   readonly routes = {
     calculate: (input: RouteRequest, options?: RequestOptions) =>
-      this.request<{ route: RouteResult }>("/routes", json(input), options).then((r) => r.route),
+      this.request<RouteResult>("/routes", json(input), options).then((r) => r.data),
   };
   readonly gaps = {
     plan: (input: GapPlanRequest, options?: RequestOptions) =>
-      this.request<{ gapPlan: GapPlanResult }>("/gaps/plan", json(input), options).then(
-        (r) => r.gapPlan,
-      ),
+      this.request<GapPlanResult>("/gaps/plan", json(input), options).then((r) => r.data),
   };
   private readonly baseUrl: string;
   private readonly fetcher: typeof globalThis.fetch;
@@ -80,58 +103,91 @@ export class Gapwise {
     if (typeof this.fetcher !== "function")
       throw new TypeError("Gapwise requires a Fetch API implementation.");
     this.timeoutMs = options.timeoutMs ?? 10_000;
+    if (!Number.isFinite(this.timeoutMs) || this.timeoutMs <= 0)
+      throw new TypeError("timeoutMs must be a positive finite number.");
     this.headers = options.headers ?? {};
   }
+  /** Return API, data-version, capability, and privacy metadata. */
   info(options?: RequestOptions) {
-    return this.request<RootResponse>("", {}, options);
+    return this.request<ApiInfo>("", {}, options).then((r) => r.data);
+  }
+  private async requestCollection<T>(
+    path: string,
+    options?: RequestOptions,
+  ): Promise<Collection<T>> {
+    return this.request<T[]>(path, {}, options) as Promise<Collection<T>>;
   }
   private async request<T>(
     path: string,
     init: RequestInit,
     options: RequestOptions = {},
-  ): Promise<T> {
-    const timeout = AbortSignal.timeout(options.timeoutMs ?? this.timeoutMs);
-    const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  ): Promise<Envelope<T>> {
+    const controller = new AbortController();
+    const timeoutMs = options.timeoutMs ?? this.timeoutMs;
+    if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
+      throw new TypeError("timeoutMs must be a positive finite number.");
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const abort = () => controller.abort(options.signal?.reason);
+    options.signal?.addEventListener("abort", abort, { once: true });
     let response: Response;
     try {
       response = await this.fetcher(`${this.baseUrl}${path}`, {
         ...init,
-        signal,
+        signal: controller.signal,
         headers: { accept: "application/json", ...this.headers, ...init.headers },
       });
     } catch (cause) {
-      if (timeout.aborted && !options.signal?.aborted) throw new GapwiseTimeoutError();
+      if (controller.signal.aborted && !options.signal?.aborted) throw new GapwiseTimeoutError();
       throw cause;
+    } finally {
+      clearTimeout(timer);
+      options.signal?.removeEventListener("abort", abort);
     }
-    let body: unknown = null;
+    let body: unknown;
     try {
       body = await response.json();
     } catch {
-      /* handled below */
+      if (!response.ok)
+        throw new GapwiseApiError(
+          `Gapwise API request failed with HTTP ${response.status}.`,
+          response.status,
+          "http_error",
+          undefined,
+          response.headers.get("x-request-id") ?? undefined,
+        );
+      throw new GapwiseResponseError();
     }
     if (!response.ok) {
-      const apiError =
-        body &&
-        typeof body === "object" &&
-        "error" in body &&
-        body.error &&
-        typeof body.error === "object"
-          ? (body.error as { code?: string; message?: string; details?: unknown })
-          : undefined;
+      const envelope =
+        body && typeof body === "object"
+          ? (body as {
+              error?: { code?: string; message?: string; details?: unknown };
+              meta?: { requestId?: string };
+            })
+          : {};
       throw new GapwiseApiError(
-        apiError?.message ?? `Gapwise API request failed with HTTP ${response.status}.`,
+        envelope.error?.message ?? `Gapwise API request failed with HTTP ${response.status}.`,
         response.status,
-        apiError?.code ?? "http_error",
-        apiError?.details,
-        response.headers.get("x-request-id") ?? undefined,
+        envelope.error?.code ?? "http_error",
+        envelope.error?.details,
+        envelope.meta?.requestId ?? response.headers.get("x-request-id") ?? undefined,
       );
     }
-    return body as T;
+    if (!body || typeof body !== "object" || !("data" in body) || !("meta" in body))
+      throw new GapwiseResponseError();
+    return body as Envelope<T>;
   }
 }
 function required(value: string, name: string) {
   if (!value?.trim()) throw new TypeError(`${name} must be a non-empty string.`);
   return value.trim();
+}
+function query(values: object) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(values as Record<string, unknown>))
+    if (value !== undefined) params.set(key, String(value));
+  const result = params.toString();
+  return result ? `?${result}` : "";
 }
 function json(value: unknown): RequestInit {
   return {
