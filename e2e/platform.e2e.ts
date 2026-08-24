@@ -18,7 +18,7 @@ test("developer entrypoint exposes the public platform contract and resources", 
     "href",
     "https://docs.gapwise.ca",
   );
-  await expect(page.getByRole("link", { name: "OpenAPI" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "OpenAPI", exact: true })).toHaveAttribute(
     "href",
     "https://api.gapwise.ca/openapi.json",
   );
