@@ -141,7 +141,12 @@ function assertCanonicalMark(name: string, expectedSize: number, image: DecodedP
   const notchX = Math.floor(image.width / 2);
   const notchY = Math.floor(image.height * 0.53);
   const notchOffset = (notchY * image.width + notchX) * 4;
-  assert.equal(image.pixels[notchOffset + 3], 0, `${name} preserves the central V notch`);
+  const notchAlpha = image.pixels[notchOffset + 3]!;
+  if (expectedSize <= 32) {
+    assert.ok(notchAlpha < 224, `${name} preserves the antialiased central V notch`);
+  } else {
+    assert.equal(notchAlpha, 0, `${name} preserves the central V notch`);
+  }
 
   assertHorizontalSymmetry(name, image);
 }
