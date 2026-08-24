@@ -70,6 +70,54 @@
     width: 100%;
   }
 
+  /* Keep the compact sidebar readable while preserving the useful Gap Plan
+     label that the previous desktop navigation exposed. */
+  .desktop-nav-copy {
+    display: grid;
+    min-width: 0;
+    line-height: 1.12;
+  }
+
+  .desktop-nav-copy small {
+    margin-top: 0.14rem;
+    color: var(--color-muted-foreground);
+    font-size: 0.54rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+
+  /* The redesigned desktop header is visually replaced by the sidebar, but
+     Campus arrival settings still need a real desktop entry point. Keep only
+     that existing control mounted as a compact utility row above the identity
+     card so the feature remains accessible without restoring the old header. */
+  .desktop-product-shell .desktop-app-header,
+  .desktop-product-shell .desktop-app-header > div,
+  .desktop-product-shell .desktop-app-header > div > div {
+    display: contents;
+  }
+
+  .desktop-product-shell .desktop-app-header .brand-lockup,
+  .desktop-product-shell .desktop-app-header > div > div > * {
+    display: none !important;
+  }
+
+  .desktop-product-shell
+    .desktop-app-header
+    button[aria-label="Campus arrival settings"] {
+    position: fixed;
+    z-index: 45;
+    left: 1rem;
+    bottom: 5.15rem;
+    display: inline-flex !important;
+    width: 11.75rem;
+    min-height: 2.4rem;
+    justify-content: flex-start;
+    pointer-events: auto;
+    border-radius: 0.55rem;
+    padding-inline: 0.75rem;
+  }
+
   /* The sidebar already consumes substantial width around tablet/compact-desktop
      breakpoints. Use a little less canvas padding there instead of compressing
      the actual timetable content. */
@@ -86,5 +134,12 @@
   .desktop-product-shell:has(.gap-plan-layout) .gap-selected-surface {
     width: min(100%, 52rem);
     max-width: 52rem;
+  }
+
+  .desktop-product-shell
+    .desktop-app-header
+    button[aria-label="Campus arrival settings"] {
+    left: 1.35rem;
+    width: 12.8rem;
   }
 }
