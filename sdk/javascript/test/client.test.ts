@@ -79,11 +79,14 @@ describe("Gapwise JavaScript SDK", () => {
     await client.places.list({ q: "study", kind: "library", building: "HM", openNow: "unknown" });
     expect(urls[1]).toContain("q=study&kind=library&building=HM&openNow=unknown");
   });
-  test("merges custom headers and supports caller cancellation", async () => {
+  test("normalizes HeadersInit forms and supports caller cancellation", async () => {
     const controller = new AbortController();
     let received: RequestInit | undefined;
     const client = new Gapwise({
-      headers: { "x-client": "example" },
+      headers: new Headers([
+        ["x-client", "example"],
+        ["accept", "application/vnd.gapwise+json"],
+      ]),
       fetch: mock(async (_url, init) => {
         received = init;
         await new Promise((_resolve, reject) =>
@@ -95,7 +98,22 @@ describe("Gapwise JavaScript SDK", () => {
     const pending = client.info({ signal: controller.signal });
     controller.abort(new Error("cancelled"));
     await expect(pending).rejects.toThrow("cancelled");
-    expect(new Headers(received?.headers).get("x-client")).toBe("example");
+    const headers = new Headers(received?.headers);
+    expect(headers.get("x-client")).toBe("example");
+    expect(headers.get("accept")).toBe("application/vnd.gapwise+json");
+  });
+  test("accepts tuple-array headers and lets request headers override client headers", async () => {
+    let received: Headers | undefined;
+    const client = new Gapwise({
+      headers: [["content-type", "text/plain"]],
+      fetch: mock((_url, init) => {
+        received = new Headers(init?.headers);
+        return Response.json({ data: { status: "routed" }, meta });
+      }),
+    });
+    await client.routes.calculate({ from: "MN", to: "IB" });
+    expect(received?.get("content-type")).toBe("application/json");
+    expect(received?.get("accept")).toBe("application/json");
   });
   test("throws a distinct timeout error", async () => {
     const client = new Gapwise({
