@@ -64,9 +64,9 @@ function openAccountSettings() {
   if (signedOut) return;
 
   window.setTimeout(() => {
-    const settingsItem = Array.from(document.querySelectorAll<HTMLElement>('[role="menuitem"]')).find(
-      (item) => item.textContent?.includes("Account settings"),
-    );
+    const settingsItem = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ).find((item) => item.textContent?.includes("Account settings"));
     settingsItem?.click();
   }, 0);
 }
