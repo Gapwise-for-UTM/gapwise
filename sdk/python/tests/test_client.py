@@ -1,3 +1,5 @@
+import json
+
 import httpx
 import pytest
 
@@ -18,6 +20,10 @@ def envelope(data, *, pagination=None):
         "data": data,
         "meta": {**META, **({"pagination": pagination} if pagination else {})},
     }
+
+
+def request_json(request: httpx.Request):
+    return json.loads(request.content)
 
 
 def test_sync_every_resource_and_serialization():
@@ -63,8 +69,8 @@ def test_sync_every_resource_and_serialization():
         "/v1/routes",
         "/v1/gaps/plan",
     ]
-    assert seen[3].json() == {"from": "MN", "to": "IB"}
-    assert seen[4].json()["startTime"] == 600
+    assert request_json(seen[3]) == {"from": "MN", "to": "IB"}
+    assert request_json(seen[4])["startTime"] == 600
 
 
 def test_sync_discovery_custom_base_headers_and_page():
