@@ -299,28 +299,33 @@ function renderTerm(
   const axisWidth = EXPORT_TIME_GUTTER;
   const scheduleStartX = x + axisWidth;
   const scheduleEndX = x + width;
-  const gridY = y + titleHeight + dayHeight;
+  const headerY = y + titleHeight;
+  const gridY = headerY + dayHeight;
   const gridHeight = height - titleHeight - dayHeight - bottomPadding;
   const hourHeight = gridHeight / Math.max(1, hours.length);
   const dayWidth = (scheduleEndX - scheduleStartX) / WEEKDAYS.length;
   const minuteY = (minute: number) => gridY + exportMinutePosition(minute, startHour, hourHeight);
-  let svg = `<g filter="url(#panel-shadow)"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24" fill="${palette.timetableBackground}" stroke="${palette.border}"/></g>`;
+  const panelClipId = `panel-${term.toLowerCase()}-${x}-${y}`;
+  let svg = `<clipPath id="${panelClipId}"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24"/></clipPath>`;
+  svg += `<g filter="url(#panel-shadow)"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24" fill="${palette.timetableBackground}" stroke="${palette.border}"/></g>`;
+  svg += `<g clip-path="url(#${panelClipId})">`;
   if (titleHeight > 0) {
-    svg += `<path d="M${x + 24} ${y + titleHeight}H${x + width - 24}" stroke="${palette.border}"/>`;
+    svg += `<line x1="${x}" y1="${headerY}" x2="${x + width}" y2="${headerY}" stroke="${palette.border}"/>`;
     svg += `<text x="${x + 26}" y="${y + 36}" font-size="21" font-weight="760" letter-spacing="-.45" fill="${palette.foreground}">${term}</text>`;
     svg += `<text x="${x + width - 26}" y="${y + 35}" text-anchor="end" font-size="10" font-weight="650" letter-spacing="1.1" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
   }
-  svg += `<rect x="${scheduleStartX + 1}" y="${y + titleHeight + 1}" width="${scheduleEndX - scheduleStartX - 2}" height="${dayHeight - 8}" rx="11" fill="${palette.headerSurface}"/>`;
+  svg += `<rect x="${scheduleStartX}" y="${headerY}" width="${scheduleEndX - scheduleStartX}" height="${dayHeight}" fill="${palette.headerSurface}"/>`;
   WEEKDAYS.forEach((day, index) => {
     const dx = scheduleStartX + index * dayWidth;
-    svg += `<line x1="${dx}" y1="${y + titleHeight}" x2="${dx}" y2="${y + height - bottomPadding}" stroke="${palette.grid}"/>`;
-    svg += `<text x="${dx + dayWidth / 2}" y="${y + titleHeight + 26}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
+    svg += `<line x1="${dx}" y1="${headerY}" x2="${dx}" y2="${y + height - bottomPadding}" stroke="${palette.grid}"/>`;
+    svg += `<text x="${dx + dayWidth / 2}" y="${headerY + 29}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
   });
   hours.forEach((hour) => {
     const hy = Math.round(minuteY(hour * 60)) + 0.5;
     svg += `<line x1="${scheduleStartX}" y1="${hy}" x2="${scheduleEndX}" y2="${hy}" stroke="${palette.grid}"/>`;
     svg += `<text x="${scheduleStartX - EXPORT_TIME_LABEL_INSET}" y="${hy}" dy="0.35em" text-anchor="end" font-size="10" font-weight="560" fill="${palette.mutedForeground}">${timeShort(hour * 60)}</text>`;
   });
+  svg += `</g>`;
   WEEKDAYS.forEach((day, dayIndex) => {
     const { laneCount, placement, sorted } = days.get(day)!;
     sorted.forEach((meeting, meetingIndex) => {
