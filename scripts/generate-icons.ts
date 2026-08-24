@@ -4,10 +4,11 @@ import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
 
 type Rgba = [number, number, number, number];
+type Point = [number, number];
 
 const logo = await readFile(new URL("../public/logo-mark.svg", import.meta.url), "utf8");
 
-for (const token of ['stroke="#203b62"', 'stroke="#67a9e4"', 'fill="#67a9e4"']) {
+for (const token of ['fill="#4EA7FE"', 'transform="translate(1254 0) scale(-1 1)"']) {
   if (!logo.includes(token)) {
     throw new Error(`logo-mark.svg is missing expected token: ${token}`);
   }
@@ -53,62 +54,119 @@ function chunk(type: string, data: Uint8Array) {
   return output;
 }
 
-function distanceToSegment(
-  x: number,
-  y: number,
-  startX: number,
-  startY: number,
-  endX: number,
-  endY: number,
+const LOGO_SCALE = 64 / 1254;
+const point = (x: number, y: number): Point => [x * LOGO_SCALE, y * LOGO_SCALE];
+
+function addCubic(
+  target: Point[],
+  start: Point,
+  control1: Point,
+  control2: Point,
+  end: Point,
+  steps = 14,
 ) {
-  const dx = endX - startX;
-  const dy = endY - startY;
-  const lengthSquared = dx * dx + dy * dy;
-
-  if (lengthSquared === 0) {
-    return Math.hypot(x - startX, y - startY);
+  for (let step = 1; step <= steps; step++) {
+    const t = step / steps;
+    const u = 1 - t;
+    target.push([
+      (u ** 3 * start[0] +
+        3 * u ** 2 * t * control1[0] +
+        3 * u * t ** 2 * control2[0] +
+        t ** 3 * end[0]) *
+        LOGO_SCALE,
+      (u ** 3 * start[1] +
+        3 * u ** 2 * t * control1[1] +
+        3 * u * t ** 2 * control2[1] +
+        t ** 3 * end[1]) *
+        LOGO_SCALE,
+    ]);
   }
+}
 
-  const projection = ((x - startX) * dx + (y - startY) * dy) / lengthSquared;
-  const position = Math.max(0, Math.min(1, projection));
-  const nearestX = startX + position * dx;
-  const nearestY = startY + position * dy;
+function upperLeftPath() {
+  const points: Point[] = [point(627, 638), point(540, 534)];
+  let start: Point = [540, 534];
+  let end: Point = [465, 485];
+  addCubic(points, start, [519, 515], [493, 502], end);
+  start = end;
+  end = [397, 353];
+  addCubic(points, start, [418, 456], [397, 408], end);
+  points.push(point(428, 353));
+  start = [428, 353];
+  end = [462, 440];
+  addCubic(points, start, [430, 385], [441, 416], end);
+  start = end;
+  end = [482, 458];
+  addCubic(points, start, [468, 446], [474, 452], end);
+  start = end;
+  end = [481, 419];
+  addCubic(points, start, [479, 444], [479, 431], end);
+  start = end;
+  end = [493, 386];
+  addCubic(points, start, [483, 406], [487, 395], end);
+  points.push(point(518, 399));
+  start = [518, 399];
+  end = [510, 441];
+  addCubic(points, start, [511, 414], [508, 429], end);
+  start = end;
+  end = [525, 478];
+  addCubic(points, start, [511, 458], [517, 470], end);
+  start = end;
+  end = [544, 493];
+  addCubic(points, start, [532, 486], [538, 490], end);
+  points.push(point(627, 530));
+  return points;
+}
 
-  return Math.hypot(x - nearestX, y - nearestY);
+function lowerLeftPath() {
+  const points: Point[] = [point(627, 692), point(522, 558)];
+  let start: Point = [522, 558];
+  let end: Point = [463, 519];
+  addCubic(points, start, [504, 539], [482, 525], end);
+  start = end;
+  end = [415, 518];
+  addCubic(points, start, [448, 518], [432, 518], end);
+  start = end;
+  end = [451, 594];
+  addCubic(points, start, [415, 548], [426, 574], end);
+  start = end;
+  end = [525, 610];
+  addCubic(points, start, [468, 606], [486, 610], end);
+  points.push(point(525, 730));
+  start = [525, 730];
+  end = [533, 750];
+  addCubic(points, start, [525, 738], [528, 744], end);
+  points.push(point(605, 850));
+  start = [605, 850];
+  end = [627, 860];
+  addCubic(points, start, [610, 857], [617, 860], end);
+  return points;
+}
+
+function mirror(points: Point[]): Point[] {
+  return points.map(([x, y]) => [64 - x, y]);
+}
+
+const upperLeft = upperLeftPath();
+const lowerLeft = lowerLeftPath();
+const deerPolygons = [upperLeft, mirror(upperLeft), lowerLeft, mirror(lowerLeft)];
+
+function pointInPolygon(x: number, y: number, polygon: Point[]) {
+  let inside = false;
+  for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index++) {
+    const [currentX, currentY] = polygon[index]!;
+    const [previousX, previousY] = polygon[previous]!;
+    const intersects =
+      currentY > y !== previousY > y &&
+      x < ((previousX - currentX) * (y - currentY)) / (previousY - currentY) + currentX;
+    if (intersects) inside = !inside;
+  }
+  return inside;
 }
 
 function pixel(x: number, y: number): Rgba {
-  const transparent: Rgba = [0, 0, 0, 0];
-  const navy: Rgba = [32, 59, 98, 255];
-  const blue: Rgba = [103, 169, 228, 255];
-
-  let color = transparent;
-
-  const circleDistance = Math.hypot(x - 32, y - 32);
-  const angle = Math.atan2(y - 32, x - 32);
-
-  const navyArc = Math.abs(circleDistance - 20) <= 2.75 && (angle <= -0.82 || angle >= 0.82);
-
-  const navyVertical = distanceToSegment(x, y, 45, 46.5, 45, 33) <= 2.75;
-
-  const navyHorizontal = distanceToSegment(x, y, 45, 33, 34, 33) <= 2.75;
-
-  if (navyArc || navyVertical || navyHorizontal) {
-    color = navy;
-  }
-
-  const upperBlueLine = distanceToSegment(x, y, 45, 17.5, 45, 25) <= 1.25;
-
-  const lowerBlueLine = distanceToSegment(x, y, 45, 39, 45, 46.5) <= 1.25;
-
-  const upperStop = Math.hypot(x - 45, y - 17.5) <= 3;
-  const lowerStop = Math.hypot(x - 45, y - 46.5) <= 3;
-
-  if (upperBlueLine || lowerBlueLine || upperStop || lowerStop) {
-    color = blue;
-  }
-
-  return color;
+  const filled = deerPolygons.some((polygon) => pointInPolygon(x, y, polygon));
+  return filled ? [78, 167, 254, 255] : [0, 0, 0, 0];
 }
 
 async function render(name: string, size: number) {
