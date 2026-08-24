@@ -310,7 +310,8 @@ function renderTerm(
   svg += `<g filter="url(#panel-shadow)"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24" fill="${palette.timetableBackground}" stroke="${palette.border}"/></g>`;
   svg += `<g clip-path="url(#${panelClipId})">`;
   if (titleHeight > 0) {
-    svg += `<line x1="${x}" y1="${headerY}" x2="${x + width}" y2="${headerY}" stroke="${palette.border}"/>`;
+    const mondayBoundaryX = scheduleStartX + dayWidth;
+    svg += `<line x1="${x}" y1="${headerY}" x2="${mondayBoundaryX}" y2="${headerY}" stroke="${palette.border}"/>`;
     svg += `<text x="${x + 26}" y="${y + 36}" font-size="21" font-weight="760" letter-spacing="-.45" fill="${palette.foreground}">${term}</text>`;
     svg += `<text x="${x + width - 26}" y="${y + 35}" text-anchor="end" font-size="10" font-weight="650" letter-spacing="1.1" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
   }
