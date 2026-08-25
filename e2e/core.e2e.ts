@@ -201,7 +201,9 @@ test("campus explorer supports public building deep links and local search", asy
 
   await page.goto("/route?building=MN");
   await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toBeVisible();
-  await expect(page.getByText("Verified mapped entrance data")).toBeVisible();
+  await expect(
+    page.getByTestId("entrance-coverage-summary").getByText("Partial coverage"),
+  ).toBeVisible();
   expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
 
   await page.getByRole("button", { name: "Close Maanjiwe nendamowinan details" }).click();
