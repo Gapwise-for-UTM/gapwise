@@ -415,10 +415,9 @@ export function CampusExplorer({
               className="mt-2 text-xs leading-5 text-muted-foreground"
             >
               UTM Facilities publishes {details.officialBarrierFreeEntranceInstances} barrier-free
-              exterior entrance {pluralize(
-                details.officialBarrierFreeEntranceInstances,
-                "instance",
-              )}. Exact identity-to-door reconciliation is still pending.
+              exterior entrance{" "}
+              {pluralize(details.officialBarrierFreeEntranceInstances, "instance")}. Exact
+              identity-to-door reconciliation is still pending.
             </p>
           ) : null}
 
