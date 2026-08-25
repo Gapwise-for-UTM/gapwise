@@ -9,6 +9,7 @@ import {
   type CampusBuilding,
 } from "@/data/utm/routing-buildings";
 import { getCampusBuildingFootprint } from "@/data/utm/building-footprints";
+import { officialEntranceCandidatesForBuilding } from "@/data/utm/official-entrance-candidates";
 import { resolveAcornLocation } from "./location-resolver";
 import type { VerificationStatus } from "./types";
 
@@ -20,13 +21,18 @@ export type BuildingSearchResult = {
   floorVerification: VerificationStatus;
 };
 
+export type EntranceCoverageStatus = "unmapped" | "partial" | "complete";
+
 export type BuildingExplorerDetails = {
   building: BuildingConfiguration;
   campus: CampusBuilding | null;
+  mappedEntrances: number;
   verifiedEntrances: number;
   inferredApproaches: number;
   accessibleEntrances: number;
   accessibilityUnknown: number;
+  officialBarrierFreeEntranceInstances: number;
+  coverageStatus: EntranceCoverageStatus;
   latestVerificationDate: string | null;
 };
 
@@ -116,15 +122,27 @@ function latestDate(entrances: BuildingEntrance[]): string | null {
   return dates.at(-1) ?? null;
 }
 
+function currentCoverageStatus(mappedEntrances: number): EntranceCoverageStatus {
+  // Fail closed. "complete" is reserved for a future explicit completeness record; the current
+  // dataset only proves individual mapped points, never that every building entrance is inventoried.
+  return mappedEntrances === 0 ? "unmapped" : "partial";
+}
+
 export function getBuildingExplorerDetails(code: string | null): BuildingExplorerDetails | null {
   if (!code) return null;
   const building = getRecognizedBuilding(code);
   const campus = getCampusBuilding(code);
   if (!building || !getCampusBuildingFootprint(code)) return null;
   const entrances = campus?.entrances ?? [];
+  const mappedEntrances = entrances.filter((entrance) => entrance.kind === "entrance").length;
+  const officialBarrierFreeEntranceInstances = officialEntranceCandidatesForBuilding(code)
+    .filter((candidate) => candidate.kind === "exterior_entrance")
+    .reduce((count, candidate) => count + candidate.instances, 0);
+
   return {
     building,
     campus,
+    mappedEntrances,
     verifiedEntrances: entrances.filter(
       (entrance) => entrance.metadata.verificationStatus === "verified",
     ).length,
@@ -135,6 +153,8 @@ export function getBuildingExplorerDetails(code: string | null): BuildingExplore
       .length,
     accessibilityUnknown: entrances.filter((entrance) => entrance.accessibility === "unknown")
       .length,
+    officialBarrierFreeEntranceInstances,
+    coverageStatus: currentCoverageStatus(mappedEntrances),
     latestVerificationDate: latestDate(entrances),
   };
 }

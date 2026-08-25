@@ -1,12 +1,15 @@
 export type CampusSourceId =
-  "utm-facilities-buildings" | "utm-facilities-snow-ice" | "utoronto-interactive-map";
+  | "openstreetmap"
+  | "utm-facilities-buildings"
+  | "utm-facilities-snow-ice"
+  | "utoronto-interactive-map";
 
 export type CampusSourceRecord = {
   id: CampusSourceId;
   organization: string;
   title: string;
   url: string;
-  sourceType: "official_web" | "official_interactive_map";
+  sourceType: "official_web" | "official_interactive_map" | "community_map";
   retrievedAt: string;
   notes?: string;
 };
@@ -21,6 +24,16 @@ export type FactEvidence = {
 };
 
 export const CAMPUS_SOURCE_RECORDS = {
+  openstreetmap: {
+    id: "openstreetmap",
+    organization: "OpenStreetMap contributors",
+    title: "OpenStreetMap",
+    url: "https://www.openstreetmap.org/copyright",
+    sourceType: "community_map",
+    retrievedAt: "2026-08-10",
+    notes:
+      "Reviewed entrance-tagged nodes and pedestrian topology under ODbL. An entrance tag establishes mapped door geometry, not public access or barrier-free suitability unless separately tagged.",
+  },
   "utm-facilities-buildings": {
     id: "utm-facilities-buildings",
     organization: "University of Toronto Mississauga Facilities Management & Planning",

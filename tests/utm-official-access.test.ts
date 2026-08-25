@@ -7,6 +7,7 @@ import { CAMPUS_SOURCE_RECORDS } from "@/data/utm/provenance";
 describe("official UTM exterior-access evidence", () => {
   test("registers the official sources with the interactive map constrained to visual QA", () => {
     expect(Object.keys(CAMPUS_SOURCE_RECORDS).sort()).toEqual([
+      "openstreetmap",
       "utm-facilities-buildings",
       "utm-facilities-snow-ice",
       "utoronto-interactive-map",
@@ -18,7 +19,7 @@ describe("official UTM exterior-access evidence", () => {
     expect(CAMPUS_SOURCE_RECORDS["utoronto-interactive-map"].notes).toContain("does not scrape");
     for (const source of Object.values(CAMPUS_SOURCE_RECORDS)) {
       expect(source.url).toStartWith("https://");
-      expect(source.retrievedAt).toBe("2026-08-21");
+      expect(source.retrievedAt).toMatch(/^2026-08-(10|21)$/);
     }
   });
 
@@ -52,13 +53,16 @@ describe("official UTM exterior-access evidence", () => {
       expect(recognizedCodes.has(candidate.buildingCode)).toBe(true);
       expect(ids.has(candidate.id)).toBe(false);
       ids.add(candidate.id);
-      expect(candidate.routingStatus).toBe("non_routable_candidate");
+      expect(["candidate", "non_routable"]).toContain(candidate.routingStatus);
       expect(candidate.coordinates).toBeNull();
       expect(candidate.routingNodeId).toBeNull();
       expect(candidate.evidence.existence.confidence).toBe("verified");
       expect(candidate.evidence.barrierFree.confidence).toBe("verified");
       expect(candidate.evidence.geometry.confidence).toBe("unknown");
       expect(candidate.evidence.publicAccess.confidence).toBe("unknown");
+      expect(["geometry_unknown", "intentionally_non_routable"]).toContain(
+        candidate.reconciliationStatus,
+      );
     }
 
     expect(

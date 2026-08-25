@@ -39,26 +39,26 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the fi
 
 UTM Facilities separately publishes named **barrier-free building entrances** in its snow and ice removal strategy: https://www.utm.utoronto.ca/facilities/utm-strategy-snow-and-ice-removal. These records establish the entrance identity and barrier-free designation, but the page does not publish exact door coordinates. Gapwise therefore keeps them as non-routable evidence candidates until a candidate can be matched to publishable geometry or a field survey.
 
-The official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) was visually reviewed on 2026-08-21 as a corroborating QA reference. Its accessibility markers reinforce that several academic-core buildings have multiple exterior access points, including clusters around MN/DH/IB/HM/CCT/DV/KN/XR/EH/OPH. Gapwise does **not** scrape, copy, reverse-engineer, or transpose proprietary marker positions into routing coordinates.
+The official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) remains a visual-QA reference only. The reproducibility investigation, including the network limitations encountered on 2026-08-25, is recorded in `docs/UTM_ENTRANCE_REGISTRY.md`. No marker position was transcribed into routing coordinates and no structured official entrance feed was validated.
 
 The “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the geocoded coordinates still need an explicit source match to the named official entrance.
 
 | Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| MN | 3 | 3 | 1 | 0 | 3 | Main; Field side; Lot #1 |
+| DH | 2 | 2 | 3 | 0 | 2 | Main; Field side |
+| IB | 3 | 3 | 2 | 0 | 3 | Main; North; South |
+| DV | 3 | 3 | 4 | 2 | 1 | Main; End of 5 Minute Walk; Connection with CCT |
+| CCT | 3 | 3 | 1 | 1 | 2 | Main; Link; Connection with DV |
+| HM | 1 | 1 | 1 | 0 | 1 | Main |
+| RAWC | 1 | 1 | 1 | 0 | 1 | Main |
+| XR | 2 | 2 | 2 | 0 | 2 | 5 Minute Walk side; Academic Annex side |
+| HB | 2 | 2 | 2 | 0 | 2 | Main; Rear |
 | AX | 1 | 1 | 0 | 0 | 1 | Main |
 | WC | 1 | 1 | 0 | 0 | 1 | Rear |
-| CCT | 3 | 3 | 1 | 1 | 2 | Main; Link; Connection with DV |
-| DH | 2 | 2 | 3 | 0 | 2 | Main; Field side |
 | DW | 1 | 1 | 1 | 0 | 1 | Main |
-| HM | 1 | 1 | 1 | 0 | 1 | Main |
-| HB | 2 | 2 | 2 | 0 | 2 | Main; Rear |
-| IB | 3 | 3 | 2 | 0 | 3 | Main; North; South |
-| MN | 3 | 3 | 1 | 0 | 3 | Main; Field side; Lot #1 |
 | NSB | 2 | 2 | 0 | 0 | 2 | Main; Rear |
-| RAWC | 1 | 1 | 1 | 0 | 1 | Main |
 | BG | 1 | 1 | 0 | 0 | 1 | Main |
-| XR | 2 | 2 | 2 | 0 | 2 | 5 Minute Walk side; Academic Annex side |
-| DV | 3 | 3 | 4 | 2 | 1 | Main; End of 5 Minute Walk; Connection with CCT |
 | EH | 2 | 3 | 0 | 0 | 3 | Main; Rear ×2 |
 | OPH | 2 | 2 | 2 | 0 | 2 | Main; Rear |
 | RIH | 1 | 1 | 0 | 0 | 1 | Main |

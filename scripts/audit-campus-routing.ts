@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { UTM_BUILDINGS } from "../src/data/utm/building-registry";
+import { UTM_ENTRANCE_REGISTRY } from "../src/data/utm/entrance-registry";
 import { officialEntranceCandidatesForBuilding } from "../src/data/utm/official-entrance-candidates";
 import type { AccessibilityStatus } from "../src/features/routing/types";
 
@@ -256,10 +257,38 @@ const records = UTM_BUILDINGS.map((building) => {
   };
 });
 
-const report = { generatedAt: "2026-08-21", failClosed: true, buildings: records };
+const report = { generatedAt: "2026-08-25", failClosed: true, buildings: records };
 await writeFile(
   resolve(root, "src/data/utm/generated/campus-access-audit.json"),
   `${JSON.stringify(report, null, 2)}\n`,
+);
+
+await writeFile(
+  resolve(root, "src/data/utm/generated/entrance-audit.geojson"),
+  `${JSON.stringify(
+    {
+      type: "FeatureCollection",
+      features: UTM_ENTRANCE_REGISTRY.map((entrance) => ({
+        type: "Feature",
+        id: entrance.id,
+        geometry: entrance.coordinates
+          ? { type: "Point", coordinates: entrance.coordinates }
+          : null,
+        properties: {
+          buildingCode: entrance.buildingCode,
+          label: entrance.label,
+          kind: entrance.kind,
+          routability: entrance.routability,
+          publicAccess: entrance.publicAccess,
+          barrierFree: entrance.barrierFree,
+          geometryConfidence: entrance.geometryConfidence,
+          reconciliation: entrance.officialReconciliation ?? null,
+        },
+      })),
+    },
+    null,
+    2,
+  )}\n`,
 );
 
 const rows = records.map(
@@ -289,6 +318,6 @@ const officialRows = UTM_BUILDINGS.flatMap((building) => {
 
 await writeFile(
   resolve(root, "docs/CAMPUS_ACCESS_AUDIT.md"),
-  `# UTM campus access audit\n\nGenerated deterministically by \`bun run routing:audit\`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Graph-connected” means only that the point is attached to the bundled pedestrian graph; it does not by itself establish endpoint eligibility. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.\n\n| Building | Verified geocoded doors | Inferred geocoded approaches | Graph-connected access points | Explicitly accessible geocoded doors | Unresolved |\n| --- | ---: | ---: | ---: | ---: | --- |\n${rows.join("\n")}\n\n## Official UTM barrier-free entrance reconciliation\n\nUTM Facilities separately publishes named **barrier-free building entrances** in its snow and ice removal strategy: https://www.utm.utoronto.ca/facilities/utm-strategy-snow-and-ice-removal. These records establish the entrance identity and barrier-free designation, but the page does not publish exact door coordinates. Gapwise therefore keeps them as non-routable evidence candidates until a candidate can be matched to publishable geometry or a field survey.\n\nThe official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) was visually reviewed on 2026-08-21 as a corroborating QA reference. Its accessibility markers reinforce that several academic-core buildings have multiple exterior access points, including clusters around MN/DH/IB/HM/CCT/DV/KN/XR/EH/OPH. Gapwise does **not** scrape, copy, reverse-engineer, or transpose proprietary marker positions into routing coordinates.\n\nThe “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the geocoded coordinates still need an explicit source match to the named official entrance.\n\n| Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n${officialRows.join("\n")}\n\nThe same official Facilities source also names **Early Learning Centre: Main**. Early Learning Centre is not currently in the Gapwise UTM building registry, so it is recorded here as an upstream coverage gap rather than silently assigned to another building. Absence from the barrier-free list does not prove that a building is inaccessible.\n`,
+  `# UTM campus access audit\n\nGenerated deterministically by \`bun run routing:audit\`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Graph-connected” means only that the point is attached to the bundled pedestrian graph; it does not by itself establish endpoint eligibility. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.\n\n| Building | Verified geocoded doors | Inferred geocoded approaches | Graph-connected access points | Explicitly accessible geocoded doors | Unresolved |\n| --- | ---: | ---: | ---: | ---: | --- |\n${rows.join("\n")}\n\n## Official UTM barrier-free entrance reconciliation\n\nUTM Facilities separately publishes named **barrier-free building entrances** in its snow and ice removal strategy: https://www.utm.utoronto.ca/facilities/utm-strategy-snow-and-ice-removal. These records establish the entrance identity and barrier-free designation, but the page does not publish exact door coordinates. Gapwise therefore keeps them as non-routable evidence candidates until a candidate can be matched to publishable geometry or a field survey.\n\nThe official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) remains a visual-QA reference only. The reproducibility investigation, including the network limitations encountered on 2026-08-25, is recorded in \`docs/UTM_ENTRANCE_REGISTRY.md\`. No marker position was transcribed into routing coordinates and no structured official entrance feed was validated.\n\nThe “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the geocoded coordinates still need an explicit source match to the named official entrance.\n\n| Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n${officialRows.join("\n")}\n\nThe same official Facilities source also names **Early Learning Centre: Main**. Early Learning Centre is not currently in the Gapwise UTM building registry, so it is recorded here as an upstream coverage gap rather than silently assigned to another building. Absence from the barrier-free list does not prove that a building is inaccessible.\n`,
 );
 console.log(`Audited ${records.length} buildings and ${entrances.length} geocoded access points.`);
