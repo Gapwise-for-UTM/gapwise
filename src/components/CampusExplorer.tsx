@@ -1,10 +1,11 @@
-import { DoorOpen, MapPin, Search, ShieldCheck, X } from "lucide-react";
+import { DoorOpen, MapPin, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CampusMap, type CampusMapProps, type MapFocusPadding } from "./CampusMap";
 import {
   getBuildingExplorerDetails,
   searchCampusBuildings,
   type BuildingSearchResult,
+  type EntranceCoverageStatus,
 } from "@/features/routing/building-explorer";
 import { formatTime, locationLabel } from "@/lib/timetable-types";
 
@@ -13,18 +14,27 @@ type CampusExplorerProps = Omit<CampusMapProps, "selectedBuildingCode" | "onSele
   onSelectBuilding: (code: string | null) => void;
 };
 
-function verificationLabel(verified: number, inferred: number) {
-  if (verified > 0 && inferred === 0) return "Verified mapped entrance data";
-  if (verified > 0) return "Mixed verified and inferred approach data";
-  if (inferred > 0) return "Mapped approach; entrance verification pending";
-  return "Entrance verification unknown";
+function pluralize(count: number, singular: string, plural = `${singular}s`) {
+  return count === 1 ? singular : plural;
 }
 
-function confidenceLabel(verified: number, inferred: number) {
-  if (verified > 0 && inferred === 0) return "Verified";
-  if (verified > 0 && inferred > 0) return "Mixed";
-  if (inferred > 0) return "Inferred";
-  return "Unknown";
+function coverageLabel(status: EntranceCoverageStatus) {
+  if (status === "complete") return "Complete coverage";
+  if (status === "partial") return "Partial coverage";
+  return "Not mapped";
+}
+
+function coverageSummary(mappedEntrances: number, inferredApproaches: number) {
+  if (mappedEntrances > 0 && inferredApproaches > 0) {
+    return `${mappedEntrances} source-backed mapped ${pluralize(mappedEntrances, "entrance")} and ${inferredApproaches} inferred ${pluralize(inferredApproaches, "approach")} are known. Other entrances may be missing`;
+  }
+  if (mappedEntrances > 0) {
+    return `${mappedEntrances} source-backed mapped ${pluralize(mappedEntrances, "entrance")} ${mappedEntrances === 1 ? "is" : "are"} known. Other entrances may be missing`;
+  }
+  if (inferredApproaches > 0) {
+    return `${inferredApproaches} inferred ${pluralize(inferredApproaches, "approach")} ${inferredApproaches === 1 ? "is" : "are"} mapped, but physical entrance coverage is not established`;
+  }
+  return "No physical entrances are currently mapped for this building";
 }
 
 function floorStatusLabel(result: BuildingSearchResult) {
@@ -378,28 +388,43 @@ export function CampusExplorer({
             </div>
           ) : null}
 
-          <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background/50 p-2.5 text-xs">
+          <div
+            data-testid="entrance-coverage-summary"
+            className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background/50 p-2.5 text-xs"
+          >
             <DoorOpen className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
             <span className="font-semibold">
-              {details.campus?.entrances.length ?? 0} mapped entrances
+              {details.mappedEntrances} mapped {pluralize(details.mappedEntrances, "entrance")}
             </span>
-            <span className="ml-auto flex items-center gap-1 text-muted-foreground">
-              <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-              {confidenceLabel(details.verifiedEntrances, details.inferredApproaches)}
+            <span className="ml-auto font-semibold text-muted-foreground">
+              {coverageLabel(details.coverageStatus)}
             </span>
           </div>
 
           <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
             <span>
-              {verificationLabel(details.verifiedEntrances, details.inferredApproaches)}. Indoor
-              room paths are not currently mapped.
+              {coverageSummary(details.mappedEntrances, details.inferredApproaches)}. Indoor room
+              paths are not currently mapped.
             </span>
           </p>
 
+          {details.officialBarrierFreeEntranceInstances > 0 ? (
+            <p
+              data-testid="official-barrier-free-note"
+              className="mt-2 text-xs leading-5 text-muted-foreground"
+            >
+              UTM Facilities publishes {details.officialBarrierFreeEntranceInstances} barrier-free
+              exterior entrance {pluralize(
+                details.officialBarrierFreeEntranceInstances,
+                "instance",
+              )}. Exact identity-to-door reconciliation is still pending.
+            </p>
+          ) : null}
+
           <ul
             className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs"
-            aria-label="Mapped entrances"
+            aria-label="Mapped entrance and approach points"
           >
             {(details.campus?.entrances ?? []).map((entrance) => {
               const active = entrance.id === activeEntranceId;
@@ -422,15 +447,16 @@ export function CampusExplorer({
                       <span className="font-semibold">{entrance.label}</span>
                       <span className="shrink-0 text-[0.68rem] font-semibold text-muted-foreground">
                         {entrance.accessibility === "accessible"
-                          ? "Accessible"
+                          ? "Barrier-free evidence"
                           : entrance.accessibility === "not_accessible"
-                            ? "Not accessible"
-                            : "Access unknown"}
+                            ? "Not barrier-free"
+                            : "Barrier-free unknown"}
                       </span>
                     </span>
                     <span className="mt-0.5 block text-muted-foreground">
-                      {entrance.kind === "entrance" ? "Mapped entrance" : "Mapped approach"}
-                      {entrance.metadata.verificationStatus === "inferred" ? " · inferred" : ""}
+                      {entrance.kind === "entrance"
+                        ? "Mapped entrance · source-backed geometry"
+                        : "Mapped approach · inferred"}
                     </span>
                     {entrance.notes ? (
                       <span className="mt-0.5 block leading-5 text-muted-foreground">

@@ -74,6 +74,26 @@ describe("UTM campus building explorer", () => {
     ).toBe(true);
   });
 
+  test("fails closed on building-level entrance coverage", () => {
+    const dh = getBuildingExplorerDetails("DH");
+    expect(dh?.mappedEntrances).toBeGreaterThan(0);
+    expect(dh?.coverageStatus).toBe("partial");
+
+    const wc = getBuildingExplorerDetails("WC");
+    expect(wc?.mappedEntrances).toBe(0);
+    expect(wc?.coverageStatus).toBe("unmapped");
+
+    expect(getBuildingExplorerDetails("IB")?.officialBarrierFreeEntranceInstances).toBe(3);
+    expect(getBuildingExplorerDetails("EH")?.officialBarrierFreeEntranceInstances).toBe(3);
+
+    for (const building of UTM_BUILDINGS) {
+      const details = getBuildingExplorerDetails(building.code);
+      expect(details?.coverageStatus, `${building.code} must not imply complete coverage`).not.toBe(
+        "complete",
+      );
+    }
+  });
+
   test("normalizes valid public building state and ignores invalid codes", () => {
     expect(normalizePublicBuildingCode("mn")).toBe("MN");
     expect(normalizePublicBuildingCode("CC")).toBe("CCT");

@@ -1,0 +1,1046 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "mn-13738201127",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6654141, 43.5513221]
+      },
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Mapped entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dh-13568164836",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6659651, 43.5503162]
+      },
+      "properties": {
+        "buildingCode": "DH",
+        "label": "Main entrance A",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dh-13568164837",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6666995, 43.5505658]
+      },
+      "properties": {
+        "buildingCode": "DH",
+        "label": "Main entrance B",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dh-13751172451",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6660506, 43.5505348]
+      },
+      "properties": {
+        "buildingCode": "DH",
+        "label": "Mapped entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-2383650599",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6636318, 43.5516425]
+      },
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-2383653565",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6642634, 43.5514803]
+      },
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Mapped entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-1728238982",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6617704, 43.5484051]
+      },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Main entrance A",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-13568164844",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6625598, 43.5494213]
+      },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Accessible main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-13736463909",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6618689, 43.5477041]
+      },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Accessible main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dv-370306723",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6623618, 43.5493975]
+      },
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Main entrance B",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "cct-13568164845",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6626873, 43.5495452]
+      },
+      "properties": {
+        "buildingCode": "CCT",
+        "label": "Accessible entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "hm-13731205434",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6630169, 43.5510334]
+      },
+      "properties": {
+        "buildingCode": "HM",
+        "label": "Main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "kn-13568164841",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6635084, 43.5480958]
+      },
+      "properties": {
+        "buildingCode": "KN",
+        "label": "Accessible main entrance A",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "kn-1312579120",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6628687, 43.5479701]
+      },
+      "properties": {
+        "buildingCode": "KN",
+        "label": "Accessible main entrance B",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "kn-13568164842",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6632372, 43.5485709]
+      },
+      "properties": {
+        "buildingCode": "KN",
+        "label": "Accessible main entrance C",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rawc-13568164832",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6606714, 43.5479331]
+      },
+      "properties": {
+        "buildingCode": "RAWC",
+        "label": "Main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "xr-13568164843",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6637236, 43.5488462]
+      },
+      "properties": {
+        "buildingCode": "XR",
+        "label": "Main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "xr-2105676602",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6639869, 43.5485377]
+      },
+      "properties": {
+        "buildingCode": "XR",
+        "label": "Mapped entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "hb-13738956113",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6622362, 43.5497526]
+      },
+      "properties": {
+        "buildingCode": "HB",
+        "label": "Main entrance A",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "hb-13568164846",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6623068, 43.5494997]
+      },
+      "properties": {
+        "buildingCode": "HB",
+        "label": "Main entrance B",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ax-1728239148",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6643646, 43.5481895]
+      },
+      "properties": {
+        "buildingCode": "AX",
+        "label": "Mapped pedestrian approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dw-13767739551",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6661378, 43.5499078]
+      },
+      "properties": {
+        "buildingCode": "DW",
+        "label": "Mapped entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "oph-13738728068",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6659355, 43.5486076]
+      },
+      "properties": {
+        "buildingCode": "OPH",
+        "label": "Main entrance A",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "oph-1728224590",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6656991, 43.548785]
+      },
+      "properties": {
+        "buildingCode": "OPH",
+        "label": "Main entrance B",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "eh-1312381405",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.665827, 43.5496711]
+      },
+      "properties": {
+        "buildingCode": "EH",
+        "label": "Mapped residence approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "rih-1312390438",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6669481, 43.5483514]
+      },
+      "properties": {
+        "buildingCode": "RIH",
+        "label": "Mapped residence approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mc-1312572625",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6663369, 43.5477885]
+      },
+      "properties": {
+        "buildingCode": "MC",
+        "label": "Mapped residence approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "pp-1312345673",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6647968, 43.5466479]
+      },
+      "properties": {
+        "buildingCode": "PP",
+        "label": "Mapped residence approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ll-10307744191",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6629614, 43.5460646]
+      },
+      "properties": {
+        "buildingCode": "LL",
+        "label": "Mapped residence approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mv-13783936312",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6618427, 43.5459624]
+      },
+      "properties": {
+        "buildingCode": "MV",
+        "label": "Mapped residence approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "sw-4210336797",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6678759, 43.5492673]
+      },
+      "properties": {
+        "buildingCode": "SW",
+        "label": "Mapped residence approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "nrb-1312470630",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.6671122, 43.5494972]
+      },
+      "properties": {
+        "buildingCode": "NRB",
+        "label": "Five Minute Walk approach",
+        "kind": "pedestrian_approach",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "inferred",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:ax:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "AX",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:wc:rear",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "WC",
+        "label": "Rear",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:cct:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "CCT",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:cct:link",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "CCT",
+        "label": "Link",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:cct:connection-with-dv",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "CCT",
+        "label": "Connection with DV",
+        "kind": "building_connection",
+        "routability": "non_routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "intentionally_non_routable"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:dh:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "DH",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:dh:field-side",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "DH",
+        "label": "Field side",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:dw:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "DW",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:hm:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "HM",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:hb:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "HB",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:hb:rear",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "HB",
+        "label": "Rear",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:ib:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:ib:north",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "IB",
+        "label": "North",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:ib:south",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "IB",
+        "label": "South",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:mn:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:mn:field-side",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Field side",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:mn:lot-1",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Lot #1",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:nsb:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "NSB",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:nsb:rear",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "NSB",
+        "label": "Rear",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:rawc:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "RAWC",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:bg:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "BG",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:xr:five-minute-walk-side",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "XR",
+        "label": "5 Minute Walk side",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:xr:academic-annex-side",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "XR",
+        "label": "Academic Annex side",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:dv:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:dv:end-of-five-minute-walk",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "DV",
+        "label": "End of 5 Minute Walk",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:dv:connection-with-cct",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "DV",
+        "label": "Connection with CCT",
+        "kind": "building_connection",
+        "routability": "non_routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "intentionally_non_routable"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:eh:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "EH",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:eh:rear",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "EH",
+        "label": "Rear",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:oph:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "OPH",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:oph:rear",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "OPH",
+        "label": "Rear",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "utm:entrance-candidate:rih:main",
+      "geometry": null,
+      "properties": {
+        "buildingCode": "RIH",
+        "label": "Main",
+        "kind": "exterior_entrance",
+        "routability": "candidate",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "unknown",
+        "reconciliation": "geometry_unknown"
+      }
+    }
+  ]
+}
