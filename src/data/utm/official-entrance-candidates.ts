@@ -6,7 +6,14 @@ export type OfficialEntranceCandidate = {
   label: string;
   /** Multiple physical entrances may share one published identity (for example Rear x 2). */
   instances: number;
-  routingStatus: "non_routable_candidate";
+  kind: "exterior_entrance" | "building_connection";
+  reconciliationStatus:
+    | "matched"
+    | "geometry_unknown"
+    | "access_unknown"
+    | "requires_field_verification"
+    | "intentionally_non_routable";
+  routingStatus: "candidate" | "non_routable";
   coordinates: null;
   routingNodeId: null;
   evidence: {
@@ -46,6 +53,7 @@ type CandidateIdentity = readonly [
   buildingCode: string,
   label: string,
   instances?: number,
+  kind?: OfficialEntranceCandidate["kind"],
 ];
 
 /**
@@ -58,7 +66,7 @@ const BARRIER_FREE_IDENTITIES: readonly CandidateIdentity[] = [
   ["wc:rear", "WC", "Rear"],
   ["cct:main", "CCT", "Main"],
   ["cct:link", "CCT", "Link"],
-  ["cct:connection-with-dv", "CCT", "Connection with DV"],
+  ["cct:connection-with-dv", "CCT", "Connection with DV", 1, "building_connection"],
   ["dh:main", "DH", "Main"],
   ["dh:field-side", "DH", "Field side"],
   ["dw:main", "DW", "Main"],
@@ -79,7 +87,7 @@ const BARRIER_FREE_IDENTITIES: readonly CandidateIdentity[] = [
   ["xr:academic-annex-side", "XR", "Academic Annex side"],
   ["dv:main", "DV", "Main"],
   ["dv:end-of-five-minute-walk", "DV", "End of 5 Minute Walk"],
-  ["dv:connection-with-cct", "DV", "Connection with CCT"],
+  ["dv:connection-with-cct", "DV", "Connection with CCT", 1, "building_connection"],
   ["eh:main", "EH", "Main"],
   ["eh:rear", "EH", "Rear", 2],
   ["oph:main", "OPH", "Main"],
@@ -88,21 +96,26 @@ const BARRIER_FREE_IDENTITIES: readonly CandidateIdentity[] = [
 ];
 
 export const OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES: readonly OfficialEntranceCandidate[] =
-  BARRIER_FREE_IDENTITIES.map(([stableId, buildingCode, label, instances = 1]) => ({
-    id: `utm:entrance-candidate:${stableId}`,
-    buildingCode,
-    label,
-    instances,
-    routingStatus: "non_routable_candidate",
-    coordinates: null,
-    routingNodeId: null,
-    evidence: {
-      existence: BARRIER_FREE_EXISTENCE,
-      barrierFree: BARRIER_FREE_ACCESSIBILITY,
-      geometry: UNKNOWN_GEOMETRY,
-      publicAccess: UNKNOWN_PUBLIC_ACCESS,
-    },
-  }));
+  BARRIER_FREE_IDENTITIES.map(
+    ([stableId, buildingCode, label, instances = 1, kind = "exterior_entrance"]) => ({
+      id: `utm:entrance-candidate:${stableId}`,
+      buildingCode,
+      label,
+      instances,
+      kind,
+      reconciliationStatus:
+        kind === "building_connection" ? "intentionally_non_routable" : "geometry_unknown",
+      routingStatus: kind === "building_connection" ? "non_routable" : "candidate",
+      coordinates: null,
+      routingNodeId: null,
+      evidence: {
+        existence: BARRIER_FREE_EXISTENCE,
+        barrierFree: BARRIER_FREE_ACCESSIBILITY,
+        geometry: UNKNOWN_GEOMETRY,
+        publicAccess: UNKNOWN_PUBLIC_ACCESS,
+      },
+    }),
+  );
 
 export function officialEntranceCandidatesForBuilding(
   buildingCode: string,
