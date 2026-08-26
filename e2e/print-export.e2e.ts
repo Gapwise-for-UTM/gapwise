@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectLanding, watchForAppFailures } from "./helpers";
 
-test("timetable export exposes a dedicated print-ready vector flow", async ({ page }, testInfo) => {
+test("unified timetable export exposes the print-ready vector flow", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "print export coverage runs once in Chromium");
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await expectLanding(page);
@@ -9,7 +9,7 @@ test("timetable export exposes a dedicated print-ready vector flow", async ({ pa
   await expect(page).toHaveURL(/\/timetable$/);
 
   await expect(page.getByRole("button", { name: "Print-ready" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Export image" }).click();
+  await page.getByRole("button", { name: "Export timetable", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Export timetable image" })).toBeVisible();
 
   const formats = page.getByRole("radiogroup", { name: "Export format" });
