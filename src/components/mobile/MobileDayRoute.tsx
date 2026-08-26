@@ -29,7 +29,13 @@ import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import { formatDuration, formatTime, TERMS, WEEKDAYS } from "@/lib/timetable-types";
+import {
+  formatDuration,
+  formatTime,
+  TERMS,
+  visibleWeekdaysForMeetings,
+  weekdayForDate,
+} from "@/lib/timetable-types";
 
 type DaySegment = {
   id: string;
@@ -48,6 +54,8 @@ const DAY_SHORT: Record<Weekday, string> = {
   Wednesday: "Wed",
   Thursday: "Thu",
   Friday: "Fri",
+  Saturday: "Sat",
+  Sunday: "Sun",
 };
 
 function secondsLabel(seconds: number): string {
@@ -68,14 +76,14 @@ function departureMetricLabel(kind: "residence" | "transit" | "parking" | "picku
 function defaultWeekday(meetings: Meeting[], term: Term, targetId: string | null): Weekday {
   const target = targetId ? meetings.find((meeting) => meeting.id === targetId) : null;
   if (target?.term === term) return target.weekday;
-  const today = WEEKDAYS[new Date().getDay() - 1];
-  if (today && meetings.some((meeting) => meeting.term === term && meeting.weekday === today)) {
+  const termMeetings = meetings.filter((meeting) => meeting.term === term);
+  const visibleDays = visibleWeekdaysForMeetings(termMeetings);
+  const today = weekdayForDate(new Date());
+  if (visibleDays.includes(today) && termMeetings.some((meeting) => meeting.weekday === today)) {
     return today;
   }
   return (
-    WEEKDAYS.find((day) =>
-      meetings.some((meeting) => meeting.term === term && meeting.weekday === day),
-    ) ?? "Monday"
+    visibleDays.find((day) => termMeetings.some((meeting) => meeting.weekday === day)) ?? "Monday"
   );
 }
 
@@ -330,6 +338,15 @@ export function MobileDayRoute({
     () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
     [meetings],
   );
+  const routeDays = useMemo(
+    () => visibleWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),
+    [meetings, term],
+  );
+  useEffect(() => {
+    if (!routeDays.includes(weekday)) {
+      setWeekday(defaultWeekday(meetings, term, requestedMeetingId));
+    }
+  }, [meetings, requestedMeetingId, routeDays, term, weekday]);
   const dayMeetings = useMemo(
     () =>
       meetings
@@ -481,8 +498,13 @@ export function MobileDayRoute({
           </div>
         ) : null}
 
-        <div className="mt-2 grid grid-cols-5 gap-1" role="group" aria-label="Route weekday">
-          {WEEKDAYS.map((day) => (
+        <div
+          className="mt-2 grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${routeDays.length}, minmax(0, 1fr))` }}
+          role="group"
+          aria-label="Route weekday"
+        >
+          {routeDays.map((day) => (
             <button
               key={day}
               type="button"

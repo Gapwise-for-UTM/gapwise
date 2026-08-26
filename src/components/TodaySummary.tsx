@@ -17,7 +17,7 @@ import {
 } from "@/features/today/today-state";
 import { useTodayState } from "@/features/today/use-today-state";
 import type { Meeting, Term } from "@/lib/timetable-types";
-import { formatCompactDuration, formatTime, WEEKDAYS } from "@/lib/timetable-types";
+import { formatCompactDuration, formatTime, weekdayForDate } from "@/lib/timetable-types";
 
 export const TodaySummary = memo(function TodaySummary({
   meetings,
@@ -54,7 +54,7 @@ export const TodaySummary = memo(function TodaySummary({
   let detail: string | null = null;
   let secondary: string | null = null;
   let SecondaryIcon: LucideIcon = Navigation;
-  let heading = `Today · ${WEEKDAYS[now.getDay() - 1] ?? "Weekend"}`;
+  let heading = `Today · ${weekdayForDate(now)}`;
 
   switch (summary.kind) {
     case "before":

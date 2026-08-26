@@ -201,8 +201,10 @@ function orientedEdgeCoordinates(
           [from.longitude, from.latitude],
           [to.longitude, to.latitude],
         ];
-  const shape = traversal.edge.geometry ?? fallback;
-  return traversal.from === traversal.edge.from ? shape : [...shape].reverse();
+  if (!traversal.edge.geometry) return fallback;
+  return traversal.from === traversal.edge.from
+    ? traversal.edge.geometry
+    : [...traversal.edge.geometry].reverse();
 }
 
 function sameCoordinate(a: [number, number], b: [number, number]): boolean {

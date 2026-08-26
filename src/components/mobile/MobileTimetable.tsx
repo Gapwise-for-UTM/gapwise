@@ -29,7 +29,8 @@ import {
   formatTime,
   locationLabel,
   meetingLocationType,
-  WEEKDAYS,
+  visibleWeekdaysForMeetings,
+  weekdayForDate,
 } from "@/lib/timetable-types";
 
 const DAY_SHORT: Record<Weekday, string> = {
@@ -38,13 +39,16 @@ const DAY_SHORT: Record<Weekday, string> = {
   Wednesday: "Wed",
   Thursday: "Thu",
   Friday: "Fri",
+  Saturday: "Sat",
+  Sunday: "Sun",
 };
 
 function initialDay(meetings: Meeting[]): Weekday {
-  const now = new Date();
-  const today = WEEKDAYS[now.getDay() - 1];
-  if (today && meetings.some((meeting) => meeting.weekday === today)) return today;
-  return WEEKDAYS.find((day) => meetings.some((meeting) => meeting.weekday === day)) ?? "Monday";
+  const visibleDays = visibleWeekdaysForMeetings(meetings);
+  const today = weekdayForDate(new Date());
+  if (visibleDays.includes(today) && meetings.some((meeting) => meeting.weekday === today))
+    return today;
+  return visibleDays.find((day) => meetings.some((meeting) => meeting.weekday === day)) ?? "Monday";
 }
 
 function MeetingDetailsSheet({
@@ -228,6 +232,7 @@ export function MobileTimetable({
   const [selectedDay, setSelectedDay] = useState<Weekday>(() => initialDay(meetings));
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const { setRouteTargetId } = useMobileRouteTarget();
+  const visibleDays = useMemo(() => visibleWeekdaysForMeetings(meetings), [meetings]);
 
   useEffect(() => {
     setSelectedDay((currentDay) =>
@@ -306,11 +311,12 @@ export function MobileTimetable({
         ) : null}
 
         <div
-          className="mobile-day-tabs mt-4 grid grid-cols-5 gap-1"
+          className="mobile-day-tabs mt-4 grid gap-1"
+          style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))` }}
           role="group"
           aria-label="Weekday"
         >
-          {WEEKDAYS.map((day) => {
+          {visibleDays.map((day) => {
             const active = day === selectedDay;
             const count = meetings.filter((meeting) => meeting.weekday === day).length;
             return (

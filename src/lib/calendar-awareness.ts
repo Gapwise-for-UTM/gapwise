@@ -1,4 +1,4 @@
-import { type Meeting, type Term, termForMonth, type Weekday, WEEKDAYS } from "./timetable-types";
+import { type Meeting, type Term, termForMonth, weekdayForDate } from "./timetable-types";
 
 export type TermStatus = "before" | "active" | "ended" | "unknown";
 
@@ -28,10 +28,6 @@ function addDays(date: Date, days: number): Date {
   return next;
 }
 
-function weekdayFor(date: Date): Weekday | null {
-  return WEEKDAYS[date.getDay() - 1] ?? null;
-}
-
 function weekStartUtc(date: Date): number {
   const weekday = date.getDay() === 0 ? 6 : date.getDay() - 1;
   return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate() - weekday);
@@ -42,7 +38,7 @@ function repeats(meeting: Meeting): boolean {
 }
 
 export function meetingOccursOnDate(meeting: Meeting, date: Date): boolean {
-  if (weekdayFor(date) !== meeting.weekday) return false;
+  if (weekdayForDate(date) !== meeting.weekday) return false;
   const range = meeting.dateRange;
   if (!range) return true;
 

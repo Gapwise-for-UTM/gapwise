@@ -30,7 +30,8 @@ import {
   locationLabel,
   meetingLocationType,
   termForMonth,
-  WEEKDAYS,
+  visibleWeekdaysForMeetings,
+  weekdayForDate,
 } from "@/lib/timetable-types";
 import {
   buildTimetableModel,
@@ -394,7 +395,11 @@ export const TimetableGrid = memo(function TimetableGrid({
   onResizePersonal?: (id: string, startTime: number, endTime: number) => void;
   headerAction?: ReactNode;
 }) {
-  const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);
+  const visibleDays = useMemo(() => visibleWeekdaysForMeetings(meetings), [meetings]);
+  const { startHour, hours, days } = useMemo(
+    () => buildTimetableModel(meetings, visibleDays),
+    [meetings, visibleDays],
+  );
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [dragState, setDragState] = useState<null | {
     type: "create" | "move" | "resize";
@@ -411,7 +416,7 @@ export const TimetableGrid = memo(function TimetableGrid({
     [compactHours, hours, meetings],
   );
 
-  const currentDay = now ? (WEEKDAYS[now.getDay() - 1] ?? null) : null;
+  const currentDay = now ? weekdayForDate(now) : null;
   const currentMinute = now ? now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60 : null;
   const selectedTerm = meetings[0]?.term ?? null;
   const selectedTermStatus =
@@ -443,8 +448,8 @@ export const TimetableGrid = memo(function TimetableGrid({
     [meetings],
   );
   const gapsByDay = useMemo(
-    () => new Map(WEEKDAYS.map((day) => [day, gaps.filter((gap) => gap.weekday === day)])),
-    [gaps],
+    () => new Map(visibleDays.map((day) => [day, gaps.filter((gap) => gap.weekday === day)])),
+    [gaps, visibleDays],
   );
 
   return (
@@ -482,11 +487,14 @@ export const TimetableGrid = memo(function TimetableGrid({
       {/* Desktop grid */}
       <div className="hidden md:block">
         <div className="timetable-shell surface overflow-hidden bg-card">
-          <div className="timetable-day-header grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border">
+          <div
+            className="timetable-day-header grid border-b border-border"
+            style={{ gridTemplateColumns: `4.5rem repeat(${visibleDays.length}, minmax(0, 1fr))` }}
+          >
             <div className="flex items-center px-2.5 py-3 text-xs font-semibold text-muted-foreground">
               Time
             </div>
-            {WEEKDAYS.map((day) => {
+            {visibleDays.map((day) => {
               const meetingCount = days.get(day)!.sorted.length;
               const isToday = termIsCurrent && day === currentDay;
               return (
@@ -508,7 +516,10 @@ export const TimetableGrid = memo(function TimetableGrid({
               );
             })}
           </div>
-          <div className="grid grid-cols-[4.5rem_repeat(5,1fr)]">
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: `4.5rem repeat(${visibleDays.length}, minmax(0, 1fr))` }}
+          >
             <div className="relative bg-secondary/14">
               {hours.map((hour) => (
                 <div
@@ -532,7 +543,7 @@ export const TimetableGrid = memo(function TimetableGrid({
                 </span>
               ) : null}
             </div>
-            {WEEKDAYS.map((day) => {
+            {visibleDays.map((day) => {
               const { laneCount, placement, sorted } = days.get(day)!;
               return (
                 <div
@@ -889,7 +900,7 @@ export const TimetableGrid = memo(function TimetableGrid({
 
       {/* Mobile day list */}
       <div className="space-y-4 md:hidden">
-        {WEEKDAYS.map((day) => {
+        {visibleDays.map((day) => {
           const dayMeetings = days.get(day)!.sorted;
           return (
             <section

@@ -9,6 +9,36 @@ const twoTermFixturePath = path.join(
   "fixtures",
   "sample-two-term-timetable.ics",
 );
+const weekendFixturePath = path.join(process.cwd(), "tests", "fixtures", "weekend-timetable.ics");
+
+test("weekend classes appear in timetable, gap plan, and day route without adding empty Sunday", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "weekend workflow gate runs once in Chromium");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+  const fileInput = page.locator('input[type="file"]').first();
+  await fileInput.setInputFiles(weekendFixturePath);
+  await expect(page).toHaveURL(/\/timetable$/);
+
+  const timetable = page.getByText("Week at a glance").locator("..").locator("..");
+  await expect(page.getByText("Saturday", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Sunday", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("CSC110Y5").first()).toBeVisible();
+
+  const viewMode = page.getByRole("group", { name: "View mode" });
+  await viewMode.getByRole("button", { name: "Gap plan" }).click();
+  await expect(page.getByText("Saturday", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/2 hr/).first()).toBeVisible();
+
+  await viewMode.getByRole("button", { name: "Day route" }).click();
+  const routeDay = page.getByRole("group", { name: "Route weekday" });
+  await expect(routeDay.getByRole("button", { name: "Saturday" })).toBeVisible();
+  await expect(routeDay.getByRole("button", { name: "Sunday" })).toHaveCount(0);
+  await routeDay.getByRole("button", { name: "Saturday" }).click();
+  await expect(page.getByText("CSC110Y5").first()).toBeVisible();
+  guard.assertClean();
+});
 
 test("landing page is usable without an account", async ({ page }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));

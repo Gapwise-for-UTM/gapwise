@@ -7,7 +7,7 @@ import {
   type ActivityType,
   type Meeting,
   type Term,
-  WEEKDAYS,
+  visibleWeekdaysForMeetings,
 } from "./timetable-types";
 
 export type ExportSelection = Term | "all";
@@ -123,9 +123,13 @@ export function availableExportTerms(meetings: readonly Meeting[]): Term[] {
 
 function termMetrics(meetings: readonly Meeting[], term: Term) {
   const selected = meetings.filter((meeting) => meeting.term === term);
-  const model = buildTimetableModel(selected);
-  const busiestDay = Math.max(0, ...WEEKDAYS.map((day) => model.days.get(day)?.sorted.length ?? 0));
-  const maxLanes = Math.max(1, ...WEEKDAYS.map((day) => model.days.get(day)?.laneCount ?? 1));
+  const visibleDays = visibleWeekdaysForMeetings(selected);
+  const model = buildTimetableModel(selected, visibleDays);
+  const busiestDay = Math.max(
+    0,
+    ...visibleDays.map((day) => model.days.get(day)?.sorted.length ?? 0),
+  );
+  const maxLanes = Math.max(1, ...visibleDays.map((day) => model.days.get(day)?.laneCount ?? 1));
   const earliestMinute = Math.min(...selected.map((meeting) => meeting.startTime));
   const latestMinute = Math.max(...selected.map((meeting) => meeting.endTime));
   const startHour = Math.max(0, Math.floor(earliestMinute / 60) - 1);
@@ -316,7 +320,8 @@ function renderTerm(
 ) {
   const { term, x, y, width, height, startHour, endHour } = panel;
   const selected = meetings.filter((meeting) => meeting.term === term);
-  const { days } = buildTimetableModel(selected);
+  const visibleDays = visibleWeekdaysForMeetings(selected);
+  const { days } = buildTimetableModel(selected, visibleDays);
   const hours = Array.from({ length: endHour - startHour }, (_, index) => startHour + index);
   const titleHeight = plan.terms.length > 1 ? 58 : 0;
   const dayHeight = EXPORT_DAY_HEADER_HEIGHT;
@@ -328,7 +333,7 @@ function renderTerm(
   const gridY = headerY + dayHeight;
   const gridHeight = height - titleHeight - dayHeight - bottomPadding;
   const hourHeight = gridHeight / Math.max(1, hours.length);
-  const dayWidth = (scheduleEndX - scheduleStartX) / WEEKDAYS.length;
+  const dayWidth = (scheduleEndX - scheduleStartX) / visibleDays.length;
   const minuteY = (minute: number) => gridY + exportMinutePosition(minute, startHour, hourHeight);
   const panelClipId = `panel-${term.toLowerCase()}-${x}-${y}`;
   let svg = `<clipPath id="${panelClipId}"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="24"/></clipPath>`;
@@ -340,7 +345,7 @@ function renderTerm(
     svg += `<text x="${x + width - 26}" y="${y + 35}" text-anchor="end" font-size="10" font-weight="650" letter-spacing="1.1" fill="${palette.mutedForeground}">${selected.length} ${selected.length === 1 ? "EVENT" : "EVENTS"}</text>`;
   }
   svg += `<rect x="${scheduleStartX}" y="${headerY}" width="${scheduleEndX - scheduleStartX}" height="${dayHeight}" fill="${palette.headerSurface}"/>`;
-  WEEKDAYS.forEach((day, index) => {
+  visibleDays.forEach((day, index) => {
     const dx = scheduleStartX + index * dayWidth;
     svg += `<line x1="${dx}" y1="${headerY}" x2="${dx}" y2="${y + height - bottomPadding}" stroke="${palette.grid}"/>`;
     svg += `<text x="${dx + dayWidth / 2}" y="${headerY + 29}" text-anchor="middle" font-size="12" font-weight="720" fill="${palette.secondaryForeground}">${day.slice(0, 3).toUpperCase()}</text>`;
@@ -351,7 +356,7 @@ function renderTerm(
     svg += `<text x="${scheduleStartX - EXPORT_TIME_LABEL_INSET}" y="${hy}" dy="0.35em" text-anchor="end" font-size="10" font-weight="560" fill="${palette.mutedForeground}">${timeShort(hour * 60)}</text>`;
   });
   svg += `</g>`;
-  WEEKDAYS.forEach((day, dayIndex) => {
+  visibleDays.forEach((day, dayIndex) => {
     const { laneCount, placement, sorted } = days.get(day)!;
     sorted.forEach((meeting, meetingIndex) => {
       const lane = placement.get(meeting.id) ?? 0;

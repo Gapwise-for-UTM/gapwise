@@ -13,7 +13,15 @@ import type { RoutePreferences } from "../src/features/routing/types.js";
 import type { Term, Weekday } from "../src/lib/timetable-types.js";
 
 const TERMS = new Set<Term>(["Fall", "Winter", "Summer"]);
-const WEEKDAYS = new Set<Weekday>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);
+const WEEKDAYS = new Set<Weekday>([
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+]);
 
 function invalid(message: string): never {
   throw new PublicApiError(400, "invalid_request", message);
@@ -137,7 +145,7 @@ export default {
         invalid("term must be Fall, Winter, or Summer.");
       }
       if (typeof weekday !== "string" || !WEEKDAYS.has(weekday as Weekday)) {
-        invalid("weekday must be Monday through Friday.");
+        invalid("weekday must be Monday through Sunday.");
       }
       const startTime = requireMinute(body["startTime"], "startTime");
       const endTime = requireMinute(body["endTime"], "endTime");
