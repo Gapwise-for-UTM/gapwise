@@ -1,10 +1,37 @@
 export type ActivityType = "LEC" | "TUT" | "PRA" | "OTHER";
 export type Term = "Fall" | "Winter" | "Summer";
-export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+export type Weekday =
+  "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 export type MeetingLocationType = "physical" | "tba" | "online" | "unknown";
 
 export const TERMS: Term[] = ["Fall", "Winter", "Summer"];
-export const WEEKDAYS: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+export const WORKWEEK_DAYS: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+export const WEEKDAYS: Weekday[] = [...WORKWEEK_DAYS, "Saturday", "Sunday"];
+
+const JS_WEEKDAYS: readonly Weekday[] = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+/** Canonical JavaScript Date day-of-week conversion, including weekends. */
+export function weekdayForDate(date: Date): Weekday {
+  return JS_WEEKDAYS[date.getDay()]!;
+}
+
+/** Keep Mon-Fri as the baseline and append only weekend days that are actually scheduled. */
+export function visibleWeekdaysForMeetings(meetings: readonly { weekday: Weekday }[]): Weekday[] {
+  const present = new Set(meetings.map((meeting) => meeting.weekday));
+  return [
+    ...WORKWEEK_DAYS,
+    ...(present.has("Saturday") ? (["Saturday"] as const) : []),
+    ...(present.has("Sunday") ? (["Sunday"] as const) : []),
+  ];
+}
 
 /** U of T terms follow calendar months: Winter Jan-Apr, Summer May-Aug, Fall Sep-Dec. */
 export function termForMonth(month: number): Term {

@@ -5,7 +5,8 @@ export type FactStatus =
   "verified" | "stale" | "inferred" | "user-reported" | "unavailable" | "unknown";
 export type RouteMode = "fastest" | "prefer-indoor" | "step-free";
 export type Term = "Fall" | "Winter" | "Summer";
-export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+export type Weekday =
+  "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 export type BuildingCategory = "academic" | "residence" | "facility";
 export type PlaceKind =
   "dining" | "study" | "library" | "service" | "recreation" | "amenity" | "facility";

@@ -13,7 +13,7 @@ import {
   routeMinutes,
   type TodayState,
 } from "@/features/today/today-state";
-import { formatCompactDuration, formatTime, WEEKDAYS } from "@/lib/timetable-types";
+import { formatCompactDuration, formatTime, weekdayForDate } from "@/lib/timetable-types";
 
 type Row = { icon: LucideIcon; text: string };
 
@@ -25,7 +25,7 @@ type Presentation = {
 };
 
 function present(state: TodayState, now: Date, selectedTerm: string): Presentation {
-  const weekdayLabel = WEEKDAYS[now.getDay() - 1] ?? "Weekend";
+  const weekdayLabel = weekdayForDate(now);
   switch (state.kind) {
     case "before":
       return {

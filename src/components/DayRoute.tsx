@@ -21,7 +21,13 @@ import type { UserPreferences } from "@/features/sync/preferences";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import { formatDuration, formatTime, TERMS, WEEKDAYS } from "@/lib/timetable-types";
+import {
+  formatDuration,
+  formatTime,
+  TERMS,
+  visibleWeekdaysForMeetings,
+  weekdayForDate,
+} from "@/lib/timetable-types";
 
 type DaySegment = {
   id: string;
@@ -75,15 +81,21 @@ export function DayRoute({
     () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
     [meetings],
   );
-  const initialDay =
-    WEEKDAYS[new Date().getDay() - 1] && new Date().getDay() <= 5
-      ? WEEKDAYS[new Date().getDay() - 1]!
-      : "Monday";
+  const routeDays = useMemo(
+    () => visibleWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),
+    [meetings, term],
+  );
+  const today = weekdayForDate(new Date());
+  const initialDay = routeDays.includes(today) ? today : "Monday";
   const [weekday, setWeekday] = useState<Weekday>(initialDay);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [hoveredBuildingCode, setHoveredBuildingCode] = useState<string | null>(null);
   const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!routeDays.includes(weekday)) setWeekday("Monday");
+  }, [routeDays, weekday]);
 
   const dayMeetings = useMemo(
     () =>
@@ -192,7 +204,7 @@ export function DayRoute({
             />
             <BubbleTabs
               label="Route weekday"
-              items={WEEKDAYS.map((day) => ({
+              items={routeDays.map((day) => ({
                 value: day,
                 label: day.slice(0, 3),
                 ariaLabel: day,

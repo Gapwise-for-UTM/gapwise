@@ -7,6 +7,7 @@ import {
   type ParsedTimetable,
   type Weekday,
   termForMonth,
+  weekdayForDate,
   WEEKDAYS,
 } from "./timetable-types";
 import { resolveAcornLocation } from "@/features/routing/location-resolver";
@@ -22,9 +23,9 @@ const DAY_MAP: Record<string, Weekday> = {
   WE: "Wednesday",
   TH: "Thursday",
   FR: "Friday",
+  SA: "Saturday",
+  SU: "Sunday",
 };
-
-const JS_DAY: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
 function unescapeText(value: string): string {
   return value
@@ -229,13 +230,7 @@ export function parseIcs(text: string): ParsedTimetable {
       continue;
     }
 
-    const jsDay = new Date(start.year, start.month - 1, start.day).getDay();
-    const startWeekday = (jsDay >= 1 && jsDay <= 5 ? JS_DAY[jsDay - 1] : null) ?? null;
-    if (!startWeekday) {
-      warnings.add(
-        `${courseCode} ${activityType} falls on a weekend and was not placed on the grid.`,
-      );
-    }
+    const startWeekday = weekdayForDate(new Date(start.year, start.month - 1, start.day));
 
     const rules = vevent.getAllProperties("rrule");
     const hasRrule = rules.length > 0;

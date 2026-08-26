@@ -1,5 +1,5 @@
 import type { Meeting, Weekday } from "@/lib/timetable-types";
-import { WEEKDAYS } from "@/lib/timetable-types";
+import { visibleWeekdaysForMeetings } from "@/lib/timetable-types";
 
 type DayLayout = {
   laneCount: number;
@@ -31,13 +31,16 @@ function layout(day: Meeting[]): DayLayout {
   return { laneCount: Math.max(1, lanes.length), placement, sorted };
 }
 
-export function buildTimetableModel(meetings: Meeting[]) {
-  const meetingsByDay = new Map<Weekday, Meeting[]>(WEEKDAYS.map((weekday) => [weekday, []]));
+export function buildTimetableModel(
+  meetings: Meeting[],
+  visibleDays: readonly Weekday[] = visibleWeekdaysForMeetings(meetings),
+) {
+  const meetingsByDay = new Map<Weekday, Meeting[]>(visibleDays.map((weekday) => [weekday, []]));
   let earliestMinute = Number.POSITIVE_INFINITY;
   let latestMinute = Number.NEGATIVE_INFINITY;
 
   for (const meeting of meetings) {
-    meetingsByDay.get(meeting.weekday)!.push(meeting);
+    meetingsByDay.get(meeting.weekday)?.push(meeting);
     earliestMinute = Math.min(earliestMinute, meeting.startTime);
     latestMinute = Math.max(latestMinute, meeting.endTime);
   }
@@ -46,7 +49,7 @@ export function buildTimetableModel(meetings: Meeting[]) {
     return {
       startHour: 7,
       hours: [] as number[],
-      days: new Map(WEEKDAYS.map((weekday) => [weekday, layout([])])),
+      days: new Map(visibleDays.map((weekday) => [weekday, layout([])])),
     };
   }
 
@@ -54,7 +57,7 @@ export function buildTimetableModel(meetings: Meeting[]) {
   const endHour = Math.min(23, Math.ceil(latestMinute / 60) + 1);
   const hours = Array.from({ length: Math.max(0, endHour - startHour) }, (_, i) => startHour + i);
   const days = new Map(
-    WEEKDAYS.map((weekday) => [weekday, layout(meetingsByDay.get(weekday)!)] as const),
+    visibleDays.map((weekday) => [weekday, layout(meetingsByDay.get(weekday) ?? [])] as const),
   );
   return { startHour, hours, days };
 }

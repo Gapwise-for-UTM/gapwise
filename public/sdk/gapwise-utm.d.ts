@@ -3,7 +3,8 @@ export type RouteMode = "fastest" | "prefer-indoor" | "step-free";
 export type RouteStatus = "same-building" | "routed" | "approximate" | "unavailable";
 export type RouteVerification = "verified" | "mixed" | "inferred" | "unavailable";
 export type Term = "Fall" | "Winter" | "Summer";
-export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";
+export type Weekday =
+  "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
 
 export interface Provenance {
   source: string;

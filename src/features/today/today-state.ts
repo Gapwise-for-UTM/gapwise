@@ -14,7 +14,7 @@ import {
 import { calculateLeaveBy } from "@/lib/gaps";
 import { querySchedulePosition } from "@/lib/schedule-context";
 import type { Gap, Meeting, Term } from "@/lib/timetable-types";
-import { formatTime, termForMonth, WEEKDAYS } from "@/lib/timetable-types";
+import { formatTime, termForMonth } from "@/lib/timetable-types";
 
 export type TodayOccurrence = { date: Date; meeting: Meeting };
 
@@ -144,12 +144,9 @@ export function buildTodayState({
     return result({ kind: "dates-unavailable" });
   }
 
-  const weekday = WEEKDAYS[now.getDay() - 1] ?? null;
-  const day = weekday
-    ? selectedMeetings
-        .filter((meeting) => meetingOccursOnDate(meeting, now))
-        .sort((a, b) => a.startTime - b.startTime)
-    : [];
+  const day = selectedMeetings
+    .filter((meeting) => meetingOccursOnDate(meeting, now))
+    .sort((a, b) => a.startTime - b.startTime);
   const {
     currentCommitment: current,
     nextCommitment: next,
