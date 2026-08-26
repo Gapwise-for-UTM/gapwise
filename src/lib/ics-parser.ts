@@ -101,7 +101,12 @@ function calendarDates(properties: ICAL.Property[]): string[] {
     .map(calendarDate);
 }
 
-function recurrenceMetadata(vevent: ICAL.Component, start: ICAL.Time, weekly: boolean) {
+function recurrenceMetadata(
+  vevent: ICAL.Component,
+  start: ICAL.Time,
+  weekly: boolean,
+  cancelledDates: readonly string[],
+) {
   const rules = vevent
     .getAllProperties("rrule")
     .map((property) => property.getFirstValue())
@@ -129,7 +134,9 @@ function recurrenceMetadata(vevent: ICAL.Component, start: ICAL.Time, weekly: bo
   }
   return {
     dateRange: { startDate: calendarDate(start), endDate },
-    excludedDates: [...new Set(calendarDates(vevent.getAllProperties("exdate")))].sort(),
+    excludedDates: [
+      ...new Set([...calendarDates(vevent.getAllProperties("exdate")), ...cancelledDates]),
+    ].sort(),
     recurrenceIntervalWeeks: rules.find((rule) => rule.freq === "WEEKLY")?.interval ?? 1,
   };
 }
@@ -188,8 +195,31 @@ export function parseIcs(text: string): ParsedTimetable {
 
   const warnings = new Set<string>();
   const byKey = new Map<string, Meeting>();
+  const cancelledRecurrences = new Map<string, Set<string>>();
 
   for (const vevent of vevents) {
+    const status = String(vevent.getFirstPropertyValue("status") ?? "").toUpperCase();
+    const recurrenceId = vevent.getFirstPropertyValue("recurrence-id");
+    const uid = String(vevent.getFirstPropertyValue("uid") ?? "");
+    if (status !== "CANCELLED" || !(recurrenceId instanceof ICAL.Time) || !uid) continue;
+    const dates = cancelledRecurrences.get(uid) ?? new Set<string>();
+    dates.add(calendarDate(recurrenceId));
+    cancelledRecurrences.set(uid, dates);
+  }
+
+  for (const vevent of vevents) {
+    const status = String(vevent.getFirstPropertyValue("status") ?? "").toUpperCase();
+    const recurrenceId = vevent.getFirstPropertyValue("recurrence-id");
+    if (status === "CANCELLED") {
+      continue;
+    }
+    if (recurrenceId) {
+      warnings.add(
+        "A changed recurring occurrence was skipped because recurrence overrides are not supported yet.",
+      );
+      continue;
+    }
+
     let event: ICAL.Event;
     try {
       event = new ICAL.Event(vevent);
@@ -256,7 +286,10 @@ export function parseIcs(text: string): ParsedTimetable {
     }
 
     const term = termForMonth(start.month);
-    const recurrence = recurrenceMetadata(vevent, start, supportsWeeklyRecurrence);
+    const uid = String(vevent.getFirstPropertyValue("uid") ?? "");
+    const recurrence = recurrenceMetadata(vevent, start, supportsWeeklyRecurrence, [
+      ...(cancelledRecurrences.get(uid) ?? []),
+    ]);
 
     for (const weekday of days) {
       const meeting: Meeting = {

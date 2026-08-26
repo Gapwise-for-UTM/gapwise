@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
 import { IcsParseError, MAX_ICS_EVENTS, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
 import { meetingOccursOnDate } from "@/lib/calendar-awareness";
 import { locationLabel } from "@/lib/timetable-types";
@@ -31,6 +32,35 @@ function calendar(events: string[]) {
 }
 
 describe("untrusted ICS parsing", () => {
+  test("covers a synthetic ACORN edge-case corpus deterministically", () => {
+    const fixture = readFileSync(
+      new URL("./fixtures/acorn-edge-cases.ics", import.meta.url),
+      "utf8",
+    );
+    const first = parseIcs(fixture);
+
+    expect(first).toEqual(parseIcs(fixture));
+    expect(first.meetings.map((meeting) => meeting.weekday)).toEqual([
+      "Monday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ]);
+    expect(first.meetings.filter((meeting) => meeting.courseCode === "CSC108H5")).toHaveLength(7);
+    expect(first.meetings[0]?.courseCode).toBe("CSC108H5");
+    expect(first.meetings[0]?.excludedDates).toEqual(["2026-11-01"]);
+    expect(first.meetings[1]).toMatchObject({
+      courseCode: "MAT102H5",
+      locationType: "tba",
+    });
+    expect(first.meetings.some((meeting) => meeting.courseCode === "STA256H5")).toBe(false);
+    expect(first.warnings.join(" ")).toContain("recurrence overrides are not supported");
+  });
+
   test("parses a supported ACORN course event", () => {
     const result = parseIcs(calendar([event("one")]));
 
@@ -121,6 +151,41 @@ describe("untrusted ICS parsing", () => {
 
   test("deduplicates repeated course meetings", () => {
     expect(parseIcs(calendar([event("one"), event("two")])).meetings).toHaveLength(1);
+  });
+
+  test("does not import cancelled events", () => {
+    const cancelled = event("cancelled").replace(
+      "DESCRIPTION:",
+      "STATUS:CANCELLED\r\nDESCRIPTION:",
+    );
+
+    expect(() => parseIcs(calendar([cancelled]))).toThrow("found no classes");
+  });
+
+  test("turns a cancelled recurring occurrence into an exclusion", () => {
+    const recurring = event("series", "CSC108H5 LEC 0101", {
+      recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261005T130000Z"],
+    });
+    const cancellation = event("series").replace(
+      "DTSTART:",
+      "RECURRENCE-ID:20260914T090000\r\nSTATUS:CANCELLED\r\nDTSTART:",
+    );
+    const result = parseIcs(calendar([recurring, cancellation]));
+
+    expect(result.meetings).toHaveLength(1);
+    expect(result.meetings[0]?.excludedDates).toEqual(["2026-09-14"]);
+  });
+
+  test("keeps valid events when a recurrence override is unsupported", () => {
+    const override = event("same", "CSC108H5 LEC 0101", {
+      start: "20260914T110000",
+      end: "20260914T120000",
+    }).replace("DTSTART:", "RECURRENCE-ID:20260914T090000\r\nDTSTART:");
+    const result = parseIcs(calendar([event("same"), override]));
+
+    expect(result.meetings).toHaveLength(1);
+    expect(result.meetings[0]?.startTime).toBe(9 * 60);
+    expect(result.warnings.join(" ")).toContain("recurrence overrides are not supported");
   });
 
   test("rejects input above the file-size budget before parsing", () => {
