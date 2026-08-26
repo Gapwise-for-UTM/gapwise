@@ -30,8 +30,8 @@ test("weekend classes flow through timetable, gaps, and day route", async ({ pag
   await expect(routeDay.getByRole("button", { name: "Saturday" })).toBeVisible();
   await expect(routeDay.getByRole("button", { name: "Sunday" })).toHaveCount(0);
   await routeDay.getByRole("button", { name: "Saturday" }).click();
-  await expect(page.getByText("CSC110Y5").first()).toBeVisible();
-  await expect(page.getByText("MAT102H5").first()).toBeVisible();
+  await expect(page.locator("span:visible", { hasText: "CSC110Y5" }).first()).toBeVisible();
+  await expect(page.locator("span:visible", { hasText: "MAT102H5" }).first()).toBeVisible();
 
   guard.assertClean();
 });
