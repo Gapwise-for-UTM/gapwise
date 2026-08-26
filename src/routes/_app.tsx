@@ -547,6 +547,9 @@ function AppLayout() {
             user={user}
             loading={authLoading}
             onAccountDeleted={handleAccountDeleted}
+            hasTimetable={Boolean(meetings?.length)}
+            onOnboardingContinue={navigateToday}
+            onOnboardingImport={() => replacementInputRef.current?.click()}
           />
         </MobileMoreSheet>
         <AcademicWorkDialog
@@ -618,6 +621,9 @@ function AppLayout() {
               user={user}
               loading={authLoading}
               onAccountDeleted={handleAccountDeleted}
+              hasTimetable={Boolean(meetings?.length)}
+              onOnboardingContinue={navigateToday}
+              onOnboardingImport={() => replacementInputRef.current?.click()}
               settingsRequest={accountSettingsRequest}
             />
           </div>
