@@ -29,9 +29,7 @@ describe("print-ready timetable export", () => {
       meeting({ activityType: "PRA", color: "#ef4444", sectionCode: "PRA0101" }),
     );
     const study = meetingPrintStyle(meeting({ sectionCode: "STUDY", color: "#22c55e" }));
-    const personal = meetingPrintStyle(
-      meeting({ sectionCode: "PERSONAL", color: "#3b82f6" }),
-    );
+    const personal = meetingPrintStyle(meeting({ sectionCode: "PERSONAL", color: "#3b82f6" }));
 
     expect(custom.label).toBe("PRA");
     expect(custom.base).toBe(PRINT_EXPORT_PALETTE.practiceEventSurface);
@@ -85,11 +83,7 @@ describe("print-ready timetable export", () => {
       "fall-winter-timetable-print.svg",
     );
 
-    const result = await generateTimetablePrintSvg(
-      schedule,
-      "Fall",
-      "data:font/woff2;base64,AA==",
-    );
+    const result = await generateTimetablePrintSvg(schedule, "Fall", "data:font/woff2;base64,AA==");
     expect(result.filename).toBe("fall-timetable-print.svg");
     expect(result.blob.type).toBe("image/svg+xml;charset=utf-8");
     expect(await result.blob.text()).toContain("<svg");
