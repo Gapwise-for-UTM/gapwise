@@ -1,0 +1,59 @@
+.account-onboarding-backdrop {
+  background: color-mix(in srgb, var(--color-background) 42%, transparent);
+  backdrop-filter: blur(5px);
+  animation: account-onboarding-fade 180ms ease-out both;
+}
+.account-onboarding-panel {
+  animation: account-onboarding-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.account-onboarding-check {
+  animation: account-onboarding-resolve 360ms 100ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.account-onboarding-reveal,
+.account-onboarding-action {
+  animation: account-onboarding-reveal 240ms ease-out both;
+}
+.account-onboarding-reveal-one {
+  animation-delay: 120ms;
+}
+.account-onboarding-reveal-two {
+  animation-delay: 180ms;
+}
+.account-onboarding-reveal-three {
+  animation-delay: 230ms;
+}
+.account-onboarding-action {
+  animation-delay: 270ms;
+}
+@keyframes account-onboarding-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes account-onboarding-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1rem) scale(0.985);
+  }
+}
+@keyframes account-onboarding-resolve {
+  from {
+    opacity: 0;
+    transform: scale(0.72) rotate(-8deg);
+  }
+}
+@keyframes account-onboarding-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.4rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .account-onboarding-backdrop,
+  .account-onboarding-panel,
+  .account-onboarding-check,
+  .account-onboarding-reveal,
+  .account-onboarding-action {
+    animation: none;
+  }
+}

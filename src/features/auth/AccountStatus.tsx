@@ -73,11 +73,17 @@ export function AccountStatus({
   user,
   loading,
   onAccountDeleted,
+  hasTimetable,
+  onOnboardingContinue,
+  onOnboardingImport,
   settingsRequest = 0,
 }: {
   user: User | null;
   loading: boolean;
   onAccountDeleted: (clearLocal: boolean) => void;
+  hasTimetable: boolean;
+  onOnboardingContinue: () => void;
+  onOnboardingImport: () => void;
   /** Monotonic app-shell action token used to open the single settings dialog directly. */
   settingsRequest?: number;
 }) {
@@ -400,7 +406,12 @@ export function AccountStatus({
         </DialogContent>
       </Dialog>
 
-      <AccountOnboarding userId={user?.id ?? null} />
+      <AccountOnboarding
+        userId={user?.id ?? null}
+        hasTimetable={hasTimetable}
+        onContinue={onOnboardingContinue}
+        onImport={onOnboardingImport}
+      />
 
       {message ? (
         <div
