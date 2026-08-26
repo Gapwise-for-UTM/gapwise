@@ -1,7 +1,7 @@
 import { DEFAULT_ROUTE_PREFERENCES } from "@/config/routing";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { findBestRoute, findRoute } from "@/features/routing/engine";
-import type { RoutingGraph } from "@/features/routing/types";
+import type { RouteResult, RoutingGraph } from "@/features/routing/types";
 
 const graph: RoutingGraph = {
   nodes: [
@@ -38,6 +38,26 @@ const graph: RoutingGraph = {
   ],
 };
 
+function expectCoordinatesFollowNodes(route: RouteResult) {
+  let coordinateIndex = 0;
+  for (const node of route.nodes) {
+    if (node.longitude === undefined || node.latitude === undefined) continue;
+    const nextIndex = route.coordinates.findIndex(
+      (coordinate, index) =>
+        index >= coordinateIndex &&
+        coordinate[0] === node.longitude &&
+        coordinate[1] === node.latitude,
+    );
+    expect(nextIndex).toBeGreaterThanOrEqual(coordinateIndex);
+    coordinateIndex = nextIndex;
+  }
+}
+
+const endpoints = (code: string) =>
+  UTM_ROUTING_GRAPH.nodes
+    .filter((node) => node.kind === "building-entrance" && node.buildingCode === code)
+    .map((node) => node.id);
+
 test("reverse traversal fallback coordinates follow the selected direction", () => {
   const route = findRoute(graph, "b", "a", DEFAULT_ROUTE_PREFERENCES);
   expect(route?.nodes.map((node) => node.id)).toEqual(["b", "a"]);
@@ -68,21 +88,23 @@ test("explicit edge geometry is reversed exactly once", () => {
   ]);
 });
 
-test("IB to DV map geometry starts and ends at the optimizer-selected entrances", () => {
-  const endpoints = (code: string) =>
-    UTM_ROUTING_GRAPH.nodes
-      .filter((node) => node.kind === "building-entrance" && node.buildingCode === code)
-      .map((node) => node.id);
-  const route = findBestRoute(
-    UTM_ROUTING_GRAPH,
-    endpoints("IB"),
-    endpoints("DV"),
-    DEFAULT_ROUTE_PREFERENCES,
-  );
-  expect(route).not.toBeNull();
-  expect(route!.totalDistanceMeters).toBeLessThan(500);
-  const first = route!.nodes[0]!;
-  const last = route!.nodes.at(-1)!;
-  expect(route!.coordinates[0]).toEqual([first.longitude, first.latitude]);
-  expect(route!.coordinates.at(-1)).toEqual([last.longitude, last.latitude]);
+test("IB and DV use a short optimizer-selected route whose drawing follows every route node", () => {
+  for (const [from, to] of [
+    ["IB", "DV"],
+    ["DV", "IB"],
+  ] as const) {
+    const route = findBestRoute(
+      UTM_ROUTING_GRAPH,
+      endpoints(from),
+      endpoints(to),
+      DEFAULT_ROUTE_PREFERENCES,
+    );
+    expect(route).not.toBeNull();
+    expect(route!.totalDistanceMeters).toBeLessThan(500);
+    const first = route!.nodes[0]!;
+    const last = route!.nodes.at(-1)!;
+    expect(route!.coordinates[0]).toEqual([first.longitude, first.latitude]);
+    expect(route!.coordinates.at(-1)).toEqual([last.longitude, last.latitude]);
+    expectCoordinatesFollowNodes(route!);
+  }
 });
