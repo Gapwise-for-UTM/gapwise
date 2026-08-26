@@ -12,7 +12,9 @@ test("weekend classes flow through timetable, gaps, and day route", async ({ pag
   await page.locator('input[type="file"]').first().setInputFiles(weekendFixturePath);
   await expect(page).toHaveURL(/\/timetable$/);
 
-  await expect(page.getByText("2 meetings in Fall · 1 gaps detected", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("2 meetings in Fall · 1 gaps detected", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText("Saturday", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Sunday", { exact: true })).toHaveCount(0);
   await expect(page.getByText("CSC110Y5").first()).toBeVisible();
