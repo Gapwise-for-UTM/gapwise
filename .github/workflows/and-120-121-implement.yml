@@ -1,0 +1,626 @@
+name: AND-120/121 implementation
+
+on:
+  push:
+    branches:
+      - andrewamuratov/and-120-and-121-weekend-shortest-routes
+    paths:
+      - ".github/workflows/and-120-121-implement.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - name: Apply weekend and route fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+
+          def load(path):
+              return Path(path).read_text()
+
+          def save(path, text):
+              Path(path).write_text(text)
+
+          def rep(path, old, new, expected=1):
+              text = load(path)
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f"{path}: expected {expected} occurrences, found {count} for {old[:100]!r}")
+              save(path, text.replace(old, new))
+
+          # Canonical seven-day model + conditional weekend presentation.
+          rep(
+              "src/lib/timetable-types.ts",
+              'export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";\n',
+              'export type Weekday =\n  | "Monday"\n  | "Tuesday"\n  | "Wednesday"\n  | "Thursday"\n  | "Friday"\n  | "Saturday"\n  | "Sunday";\n',
+          )
+          rep(
+              "src/lib/timetable-types.ts",
+              'export const WEEKDAYS: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];\n',
+              '''export const WORKWEEK_DAYS: Weekday[] = [\n  "Monday",\n  "Tuesday",\n  "Wednesday",\n  "Thursday",\n  "Friday",\n];\nexport const WEEKDAYS: Weekday[] = [...WORKWEEK_DAYS, "Saturday", "Sunday"];\n\nconst JS_WEEKDAYS: readonly Weekday[] = [\n  "Sunday",\n  "Monday",\n  "Tuesday",\n  "Wednesday",\n  "Thursday",\n  "Friday",\n  "Saturday",\n];\n\n/** Canonical JavaScript Date day-of-week conversion, including weekends. */\nexport function weekdayForDate(date: Date): Weekday {\n  return JS_WEEKDAYS[date.getDay()]!;\n}\n\n/** Keep Mon-Fri as the baseline and append only weekend days that are actually scheduled. */\nexport function visibleWeekdaysForMeetings(\n  meetings: readonly { weekday: Weekday }[],\n): Weekday[] {\n  const present = new Set(meetings.map((meeting) => meeting.weekday));\n  return [\n    ...WORKWEEK_DAYS,\n    ...(present.has("Saturday") ? (["Saturday"] as const) : []),\n    ...(present.has("Sunday") ? (["Sunday"] as const) : []),\n  ];\n}\n''',
+          )
+
+          # ICS parser: retain SA/SU and centralize JS-date mapping.
+          rep(
+              "src/lib/ics-parser.ts",
+              '  termForMonth,\n  WEEKDAYS,\n',
+              '  termForMonth,\n  weekdayForDate,\n  WEEKDAYS,\n',
+          )
+          rep(
+              "src/lib/ics-parser.ts",
+              '  FR: "Friday",\n};\n\nconst JS_DAY: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];\n',
+              '  FR: "Friday",\n  SA: "Saturday",\n  SU: "Sunday",\n};\n',
+          )
+          rep(
+              "src/lib/ics-parser.ts",
+              '''    const jsDay = new Date(start.year, start.month - 1, start.day).getDay();\n    const startWeekday = (jsDay >= 1 && jsDay <= 5 ? JS_DAY[jsDay - 1] : null) ?? null;\n    if (!startWeekday) {\n      warnings.add(\n        `${courseCode} ${activityType} falls on a weekend and was not placed on the grid.`,\n      );\n    }\n''',
+              '''    const startWeekday = weekdayForDate(new Date(start.year, start.month - 1, start.day));\n''',
+          )
+
+          # Timetable layout uses conditional visible-day list supplied by presentation surfaces.
+          rep(
+              "src/lib/timetable-layout.ts",
+              'import { WEEKDAYS } from "@/lib/timetable-types";\n',
+              'import { visibleWeekdaysForMeetings } from "@/lib/timetable-types";\n',
+          )
+          rep(
+              "src/lib/timetable-layout.ts",
+              '''export function buildTimetableModel(meetings: Meeting[]) {\n  const meetingsByDay = new Map<Weekday, Meeting[]>(WEEKDAYS.map((weekday) => [weekday, []]));\n''',
+              '''export function buildTimetableModel(\n  meetings: Meeting[],\n  visibleDays: readonly Weekday[] = visibleWeekdaysForMeetings(meetings),\n) {\n  const meetingsByDay = new Map<Weekday, Meeting[]>(visibleDays.map((weekday) => [weekday, []]));\n''',
+          )
+          rep(
+              "src/lib/timetable-layout.ts",
+              '    meetingsByDay.get(meeting.weekday)!.push(meeting);\n',
+              '    meetingsByDay.get(meeting.weekday)?.push(meeting);\n',
+          )
+          rep(
+              "src/lib/timetable-layout.ts",
+              '      days: new Map(WEEKDAYS.map((weekday) => [weekday, layout([])])),\n',
+              '      days: new Map(visibleDays.map((weekday) => [weekday, layout([])])),\n',
+          )
+          rep(
+              "src/lib/timetable-layout.ts",
+              '    WEEKDAYS.map((weekday) => [weekday, layout(meetingsByDay.get(weekday)!)] as const),\n',
+              '    visibleDays.map((weekday) => [weekday, layout(meetingsByDay.get(weekday) ?? [])] as const),\n',
+          )
+
+          # Calendar awareness and Today now work on every calendar day.
+          rep(
+              "src/lib/calendar-awareness.ts",
+              'import { type Meeting, type Term, termForMonth, type Weekday, WEEKDAYS } from "./timetable-types";\n',
+              'import { type Meeting, type Term, termForMonth, weekdayForDate } from "./timetable-types";\n',
+          )
+          rep(
+              "src/lib/calendar-awareness.ts",
+              '''function weekdayFor(date: Date): Weekday | null {\n  return WEEKDAYS[date.getDay() - 1] ?? null;\n}\n\n''',
+              '',
+          )
+          rep(
+              "src/lib/calendar-awareness.ts",
+              '  if (weekdayFor(date) !== meeting.weekday) return false;\n',
+              '  if (weekdayForDate(date) !== meeting.weekday) return false;\n',
+          )
+          rep(
+              "src/features/today/today-state.ts",
+              'import { formatTime, termForMonth, WEEKDAYS } from "@/lib/timetable-types";\n',
+              'import { formatTime, termForMonth } from "@/lib/timetable-types";\n',
+          )
+          rep(
+              "src/features/today/today-state.ts",
+              '''  const weekday = WEEKDAYS[now.getDay() - 1] ?? null;\n  const day = weekday\n    ? selectedMeetings\n        .filter((meeting) => meetingOccursOnDate(meeting, now))\n        .sort((a, b) => a.startTime - b.startTime)\n    : [];\n''',
+              '''  const day = selectedMeetings\n    .filter((meeting) => meetingOccursOnDate(meeting, now))\n    .sort((a, b) => a.startTime - b.startTime);\n''',
+          )
+          rep(
+              "src/components/TodaySummary.tsx",
+              'import { formatCompactDuration, formatTime, WEEKDAYS } from "@/lib/timetable-types";\n',
+              'import { formatCompactDuration, formatTime, weekdayForDate } from "@/lib/timetable-types";\n',
+          )
+          rep(
+              "src/components/TodaySummary.tsx",
+              '  let heading = `Today · ${WEEKDAYS[now.getDay() - 1] ?? "Weekend"}`;\n',
+              '  let heading = `Today · ${weekdayForDate(now)}`;\n',
+          )
+          rep(
+              "src/components/mobile/MobileToday.tsx",
+              'import { formatCompactDuration, formatTime, WEEKDAYS } from "@/lib/timetable-types";\n',
+              'import { formatCompactDuration, formatTime, weekdayForDate } from "@/lib/timetable-types";\n',
+          )
+          rep(
+              "src/components/mobile/MobileToday.tsx",
+              '  const weekdayLabel = WEEKDAYS[now.getDay() - 1] ?? "Weekend";\n',
+              '  const weekdayLabel = weekdayForDate(now);\n',
+          )
+
+          # Desktop timetable: Mon-Fri baseline, conditional Sat/Sun, dynamic columns.
+          rep(
+              "src/components/TimetableGrid.tsx",
+              '  termForMonth,\n  WEEKDAYS,\n',
+              '  termForMonth,\n  visibleWeekdaysForMeetings,\n  weekdayForDate,\n',
+          )
+          rep(
+              "src/components/TimetableGrid.tsx",
+              '  const { startHour, hours, days } = useMemo(() => buildTimetableModel(meetings), [meetings]);\n',
+              '''  const visibleDays = useMemo(() => visibleWeekdaysForMeetings(meetings), [meetings]);\n  const { startHour, hours, days } = useMemo(\n    () => buildTimetableModel(meetings, visibleDays),\n    [meetings, visibleDays],\n  );\n''',
+          )
+          rep(
+              "src/components/TimetableGrid.tsx",
+              '  const currentDay = now ? (WEEKDAYS[now.getDay() - 1] ?? null) : null;\n',
+              '  const currentDay = now ? weekdayForDate(now) : null;\n',
+          )
+          rep(
+              "src/components/TimetableGrid.tsx",
+              '    () => new Map(WEEKDAYS.map((day) => [day, gaps.filter((gap) => gap.weekday === day)])),\n',
+              '    () => new Map(visibleDays.map((day) => [day, gaps.filter((gap) => gap.weekday === day)])),\n',
+          )
+          rep(
+              "src/components/TimetableGrid.tsx",
+              '    [gaps],\n  );\n\n  return (\n',
+              '    [gaps, visibleDays],\n  );\n\n  return (\n',
+          )
+          rep(
+              "src/components/TimetableGrid.tsx",
+              '<div className="timetable-day-header grid grid-cols-[4.5rem_repeat(5,1fr)] border-b border-border">',
+              '<div\n            className="timetable-day-header grid border-b border-border"\n            style={{ gridTemplateColumns: `4.5rem repeat(${visibleDays.length}, minmax(0, 1fr))` }}\n          >',
+          )
+          rep(
+              "src/components/TimetableGrid.tsx",
+              '<div className="grid grid-cols-[4.5rem_repeat(5,1fr)]">',
+              '<div\n            className="grid"\n            style={{ gridTemplateColumns: `4.5rem repeat(${visibleDays.length}, minmax(0, 1fr))` }}\n          >',
+          )
+          text = load("src/components/TimetableGrid.tsx")
+          if text.count("WEEKDAYS.map((day) => {") != 2:
+              raise SystemExit("TimetableGrid: expected two WEEKDAYS map calls")
+          save("src/components/TimetableGrid.tsx", text.replace("WEEKDAYS.map((day) => {", "visibleDays.map((day) => {"))
+
+          # Mobile timetable.
+          rep(
+              "src/components/mobile/MobileTimetable.tsx",
+              '  meetingLocationType,\n  WEEKDAYS,\n',
+              '  meetingLocationType,\n  visibleWeekdaysForMeetings,\n  weekdayForDate,\n',
+          )
+          rep(
+              "src/components/mobile/MobileTimetable.tsx",
+              '  Friday: "Fri",\n};\n',
+              '  Friday: "Fri",\n  Saturday: "Sat",\n  Sunday: "Sun",\n};\n',
+          )
+          rep(
+              "src/components/mobile/MobileTimetable.tsx",
+              '''function initialDay(meetings: Meeting[]): Weekday {\n  const now = new Date();\n  const today = WEEKDAYS[now.getDay() - 1];\n  if (today && meetings.some((meeting) => meeting.weekday === today)) return today;\n  return WEEKDAYS.find((day) => meetings.some((meeting) => meeting.weekday === day)) ?? "Monday";\n}\n''',
+              '''function initialDay(meetings: Meeting[]): Weekday {\n  const visibleDays = visibleWeekdaysForMeetings(meetings);\n  const today = weekdayForDate(new Date());\n  if (visibleDays.includes(today) && meetings.some((meeting) => meeting.weekday === today)) return today;\n  return visibleDays.find((day) => meetings.some((meeting) => meeting.weekday === day)) ?? "Monday";\n}\n''',
+          )
+          rep(
+              "src/components/mobile/MobileTimetable.tsx",
+              '  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);\n  const { setRouteTargetId } = useMobileRouteTarget();\n',
+              '  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);\n  const { setRouteTargetId } = useMobileRouteTarget();\n  const visibleDays = useMemo(() => visibleWeekdaysForMeetings(meetings), [meetings]);\n',
+          )
+          rep(
+              "src/components/mobile/MobileTimetable.tsx",
+              '          className="mobile-day-tabs mt-4 grid grid-cols-5 gap-1"\n',
+              '          className="mobile-day-tabs mt-4 grid gap-1"\n          style={{ gridTemplateColumns: `repeat(${visibleDays.length}, minmax(0, 1fr))` }}\n',
+          )
+          rep(
+              "src/components/mobile/MobileTimetable.tsx",
+              '          {WEEKDAYS.map((day) => {\n',
+              '          {visibleDays.map((day) => {\n',
+          )
+
+          # Desktop Day Route.
+          rep(
+              "src/components/DayRoute.tsx",
+              'import { formatDuration, formatTime, TERMS, WEEKDAYS } from "@/lib/timetable-types";\n',
+              'import {\n  formatDuration,\n  formatTime,\n  TERMS,\n  visibleWeekdaysForMeetings,\n  weekdayForDate,\n} from "@/lib/timetable-types";\n',
+          )
+          rep(
+              "src/components/DayRoute.tsx",
+              '''  const initialDay =\n    WEEKDAYS[new Date().getDay() - 1] && new Date().getDay() <= 5\n      ? WEEKDAYS[new Date().getDay() - 1]!\n      : "Monday";\n  const [weekday, setWeekday] = useState<Weekday>(initialDay);\n''',
+              '''  const routeDays = useMemo(\n    () =>\n      visibleWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),\n    [meetings, term],\n  );\n  const today = weekdayForDate(new Date());\n  const initialDay = routeDays.includes(today) ? today : "Monday";\n  const [weekday, setWeekday] = useState<Weekday>(initialDay);\n''',
+          )
+          rep(
+              "src/components/DayRoute.tsx",
+              '  const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);\n\n  const dayMeetings = useMemo(\n',
+              '''  const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);\n\n  useEffect(() => {\n    if (!routeDays.includes(weekday)) setWeekday("Monday");\n  }, [routeDays, weekday]);\n\n  const dayMeetings = useMemo(\n''',
+          )
+          rep(
+              "src/components/DayRoute.tsx",
+              '              items={WEEKDAYS.map((day) => ({\n',
+              '              items={routeDays.map((day) => ({\n',
+          )
+
+          # Mobile Day Route.
+          rep(
+              "src/components/mobile/MobileDayRoute.tsx",
+              'import { formatDuration, formatTime, TERMS, WEEKDAYS } from "@/lib/timetable-types";\n',
+              'import {\n  formatDuration,\n  formatTime,\n  TERMS,\n  visibleWeekdaysForMeetings,\n  weekdayForDate,\n} from "@/lib/timetable-types";\n',
+          )
+          rep(
+              "src/components/mobile/MobileDayRoute.tsx",
+              '  Friday: "Fri",\n};\n',
+              '  Friday: "Fri",\n  Saturday: "Sat",\n  Sunday: "Sun",\n};\n',
+          )
+          rep(
+              "src/components/mobile/MobileDayRoute.tsx",
+              '''function defaultWeekday(meetings: Meeting[], term: Term, targetId: string | null): Weekday {\n  const target = targetId ? meetings.find((meeting) => meeting.id === targetId) : null;\n  if (target?.term === term) return target.weekday;\n  const today = WEEKDAYS[new Date().getDay() - 1];\n  if (today && meetings.some((meeting) => meeting.term === term && meeting.weekday === today)) {\n    return today;\n  }\n  return (\n    WEEKDAYS.find((day) =>\n      meetings.some((meeting) => meeting.term === term && meeting.weekday === day),\n    ) ?? "Monday"\n  );\n}\n''',
+              '''function defaultWeekday(meetings: Meeting[], term: Term, targetId: string | null): Weekday {\n  const target = targetId ? meetings.find((meeting) => meeting.id === targetId) : null;\n  if (target?.term === term) return target.weekday;\n  const termMeetings = meetings.filter((meeting) => meeting.term === term);\n  const visibleDays = visibleWeekdaysForMeetings(termMeetings);\n  const today = weekdayForDate(new Date());\n  if (visibleDays.includes(today) && termMeetings.some((meeting) => meeting.weekday === today)) {\n    return today;\n  }\n  return visibleDays.find((day) => termMeetings.some((meeting) => meeting.weekday === day)) ?? "Monday";\n}\n''',
+          )
+          rep(
+              "src/components/mobile/MobileDayRoute.tsx",
+              '''  const availableTerms = useMemo(\n    () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),\n    [meetings],\n  );\n  const dayMeetings = useMemo(\n''',
+              '''  const availableTerms = useMemo(\n    () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),\n    [meetings],\n  );\n  const routeDays = useMemo(\n    () => visibleWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),\n    [meetings, term],\n  );\n  useEffect(() => {\n    if (!routeDays.includes(weekday)) {\n      setWeekday(defaultWeekday(meetings, term, requestedMeetingId));\n    }\n  }, [meetings, requestedMeetingId, routeDays, term, weekday]);\n  const dayMeetings = useMemo(\n''',
+          )
+          rep(
+              "src/components/mobile/MobileDayRoute.tsx",
+              '        <div className="mt-2 grid grid-cols-5 gap-1" role="group" aria-label="Route weekday">\n          {WEEKDAYS.map((day) => (\n',
+              '        <div\n          className="mt-2 grid gap-1"\n          style={{ gridTemplateColumns: `repeat(${routeDays.length}, minmax(0, 1fr))` }}\n          role="group"\n          aria-label="Route weekday"\n        >\n          {routeDays.map((day) => (\n',
+          )
+
+          # Export only days visible for each term.
+          rep(
+              "src/lib/timetable-export.ts",
+              '  type Term,\n  WEEKDAYS,\n',
+              '  type Term,\n  visibleWeekdaysForMeetings,\n',
+          )
+          rep(
+              "src/lib/timetable-export.ts",
+              '''  const selected = meetings.filter((meeting) => meeting.term === term);\n  const model = buildTimetableModel(selected);\n  const busiestDay = Math.max(0, ...WEEKDAYS.map((day) => model.days.get(day)?.sorted.length ?? 0));\n  const maxLanes = Math.max(1, ...WEEKDAYS.map((day) => model.days.get(day)?.laneCount ?? 1));\n''',
+              '''  const selected = meetings.filter((meeting) => meeting.term === term);\n  const visibleDays = visibleWeekdaysForMeetings(selected);\n  const model = buildTimetableModel(selected, visibleDays);\n  const busiestDay = Math.max(\n    0,\n    ...visibleDays.map((day) => model.days.get(day)?.sorted.length ?? 0),\n  );\n  const maxLanes = Math.max(\n    1,\n    ...visibleDays.map((day) => model.days.get(day)?.laneCount ?? 1),\n  );\n''',
+          )
+          rep(
+              "src/lib/timetable-export.ts",
+              '''  const selected = meetings.filter((meeting) => meeting.term === term);\n  const { days } = buildTimetableModel(selected);\n''',
+              '''  const selected = meetings.filter((meeting) => meeting.term === term);\n  const visibleDays = visibleWeekdaysForMeetings(selected);\n  const { days } = buildTimetableModel(selected, visibleDays);\n''',
+          )
+          rep(
+              "src/lib/timetable-export.ts",
+              '  const dayWidth = (scheduleEndX - scheduleStartX) / WEEKDAYS.length;\n',
+              '  const dayWidth = (scheduleEndX - scheduleStartX) / visibleDays.length;\n',
+          )
+          text = load("src/lib/timetable-export.ts")
+          if text.count("WEEKDAYS.forEach((day, index) => {") != 1 or text.count("WEEKDAYS.forEach((day, dayIndex) => {") != 1:
+              raise SystemExit("timetable-export: expected weekday loops")
+          text = text.replace("WEEKDAYS.forEach((day, index) => {", "visibleDays.forEach((day, index) => {")
+          text = text.replace("WEEKDAYS.forEach((day, dayIndex) => {", "visibleDays.forEach((day, dayIndex) => {")
+          save("src/lib/timetable-export.ts", text)
+
+          # Public contract + SDKs.
+          rep(
+              "api/utm-gap-plan.ts",
+              'const WEEKDAYS = new Set<Weekday>(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]);\n',
+              'const WEEKDAYS = new Set<Weekday>([\n  "Monday",\n  "Tuesday",\n  "Wednesday",\n  "Thursday",\n  "Friday",\n  "Saturday",\n  "Sunday",\n]);\n',
+          )
+          rep(
+              "api/utm-gap-plan.ts",
+              '        invalid("weekday must be Monday through Friday.");\n',
+              '        invalid("weekday must be Monday through Sunday.");\n',
+          )
+          for path in ["sdk/javascript/src/types.ts", "public/sdk/gapwise-utm.d.ts"]:
+              rep(
+                  path,
+                  'export type Weekday = "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday";\n',
+                  'export type Weekday =\n  | "Monday"\n  | "Tuesday"\n  | "Wednesday"\n  | "Thursday"\n  | "Friday"\n  | "Saturday"\n  | "Sunday";\n',
+              )
+          rep(
+              "sdk/python/src/gapwise/types.py",
+              'Weekday = Literal["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]\n',
+              'Weekday = Literal["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]\n',
+          )
+          openapi_path = Path("public/openapi.json")
+          doc = json.loads(openapi_path.read_text())
+          workweek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+          changed = 0
+          def expand(value):
+              global changed
+              if isinstance(value, list):
+                  if value == workweek:
+                      changed += 1
+                      return workweek + ["Saturday", "Sunday"]
+                  return [expand(item) for item in value]
+              if isinstance(value, dict):
+                  return {key: expand(item) for key, item in value.items()}
+              return value
+          doc = expand(doc)
+          if changed == 0:
+              raise SystemExit("public/openapi.json: no weekday enum found")
+          openapi_path.write_text(json.dumps(doc, indent=2) + "\n")
+
+          # Route drawing must follow the selected shortest traversal. The old fallback was already
+          # traversal-oriented, then reversed again for reverse edges, creating visual backtracking.
+          rep(
+              "src/features/routing/engine.ts",
+              '''  const shape = traversal.edge.geometry ?? fallback;\n  return traversal.from === traversal.edge.from ? shape : [...shape].reverse();\n''',
+              '''  if (!traversal.edge.geometry) return fallback;\n  return traversal.from === traversal.edge.from\n    ? traversal.edge.geometry\n    : [...traversal.edge.geometry].reverse();\n''',
+          )
+
+          # Synthetic unit coverage: no real student timetable data.
+          Path("tests/weekend-schedule.test.ts").write_text(r'''import { meetingOccursOnDate } from "@/lib/calendar-awareness";
+          import { findGaps } from "@/lib/gaps";
+          import { parseIcs } from "@/lib/ics-parser";
+          import { buildTimetableModel } from "@/lib/timetable-layout";
+          import {
+            type Meeting,
+            visibleWeekdaysForMeetings,
+            weekdayForDate,
+          } from "@/lib/timetable-types";
+          import { createTimetableExportPlan, renderTimetableExportSvg } from "@/lib/timetable-export";
+
+          const meeting = (id: string, weekday: Meeting["weekday"], startTime: number, endTime: number): Meeting => ({
+            id,
+            courseCode: id.toUpperCase(),
+            activityType: "LEC",
+            sectionCode: "0101",
+            courseName: `Synthetic ${id}`,
+            startTime,
+            endTime,
+            weekday,
+            buildingCode: "IB",
+            room: "110",
+            term: "Fall",
+            locationUnknown: false,
+            locationType: "physical",
+          });
+
+          test("canonical date mapping covers Saturday and Sunday", () => {
+            expect(weekdayForDate(new Date(2026, 8, 5, 12))).toBe("Saturday");
+            expect(weekdayForDate(new Date(2026, 8, 6, 12))).toBe("Sunday");
+          });
+
+          test("ACORN-style weekly recurrence preserves Saturday and Sunday", () => {
+            const parsed = parseIcs(`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:weekend-csc110\r\nDTSTART;TZID=America/Toronto:20260905T100000\r\nDTEND;TZID=America/Toronto:20260905T110000\r\nRRULE:FREQ=WEEKLY;BYDAY=SA,SU;UNTIL=20260913T140000Z\r\nSUMMARY:CSC110Y5 LEC 0101\r\nDESCRIPTION:Foundations of Computer Science\r\nLOCATION:IB 110\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`);
+            expect(parsed.meetings.map((item) => item.weekday)).toEqual(["Saturday", "Sunday"]);
+            expect(parsed.warnings.join(" ").toLowerCase()).not.toContain("weekend");
+          });
+
+          test("weekday presentation stays five days until a weekend is actually scheduled", () => {
+            expect(visibleWeekdaysForMeetings([meeting("mon", "Monday", 540, 600)])).toEqual([
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+            ]);
+            expect(visibleWeekdaysForMeetings([meeting("sat", "Saturday", 540, 600)])).toEqual([
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+            ]);
+            expect(
+              visibleWeekdaysForMeetings([
+                meeting("sat", "Saturday", 540, 600),
+                meeting("sun", "Sunday", 660, 720),
+              ]),
+            ).toEqual(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]);
+          });
+
+          test("timetable layout and gap detection include weekend meetings", () => {
+            const meetings = [
+              meeting("sat-a", "Saturday", 9 * 60, 10 * 60),
+              meeting("sat-b", "Saturday", 12 * 60, 13 * 60),
+            ];
+            const model = buildTimetableModel(meetings);
+            expect(model.days.get("Saturday")?.sorted).toHaveLength(2);
+            const gaps = findGaps(meetings, "Fall");
+            expect(gaps).toHaveLength(1);
+            expect(gaps[0]?.weekday).toBe("Saturday");
+            expect(gaps[0]?.durationMinutes).toBe(120);
+          });
+
+          test("recurrence awareness recognizes weekend dates", () => {
+            const saturday = {
+              ...meeting("sat", "Saturday", 600, 660),
+              dateRange: { startDate: "2026-09-05", endDate: "2026-09-19" },
+              recurrenceIntervalWeeks: 1,
+            };
+            const sunday = {
+              ...meeting("sun", "Sunday", 600, 660),
+              dateRange: { startDate: "2026-09-06", endDate: "2026-09-20" },
+              recurrenceIntervalWeeks: 1,
+            };
+            expect(meetingOccursOnDate(saturday, new Date(2026, 8, 12, 12))).toBe(true);
+            expect(meetingOccursOnDate(sunday, new Date(2026, 8, 13, 12))).toBe(true);
+          });
+
+          test("PNG export keeps workweek unchanged and adds only scheduled weekend columns", () => {
+            const weekdayMeetings = [meeting("mon", "Monday", 540, 600)];
+            const workweekPlan = createTimetableExportPlan(weekdayMeetings, "Fall", 2);
+            const workweekSvg = renderTimetableExportSvg(weekdayMeetings, workweekPlan);
+            expect(workweekSvg).toContain(">MON<");
+            expect(workweekSvg).not.toContain(">SAT<");
+            expect(workweekSvg).not.toContain(">SUN<");
+
+            const weekendMeetings = [
+              ...weekdayMeetings,
+              meeting("sat", "Saturday", 600, 660),
+              meeting("sun", "Sunday", 720, 780),
+            ];
+            const weekendPlan = createTimetableExportPlan(weekendMeetings, "Fall", 2);
+            const weekendSvg = renderTimetableExportSvg(weekendMeetings, weekendPlan);
+            expect(weekendSvg).toContain(">SAT<");
+            expect(weekendSvg).toContain(">SUN<");
+          });
+          ''')
+
+          Path("tests/routing-coordinate-order.test.ts").write_text(r'''import { DEFAULT_ROUTE_PREFERENCES } from "@/config/routing";
+          import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
+          import { findBestRoute, findRoute } from "@/features/routing/engine";
+          import type { RoutingGraph } from "@/features/routing/types";
+
+          const graph: RoutingGraph = {
+            nodes: [
+              {
+                id: "a",
+                kind: "path-intersection",
+                buildingCode: null,
+                floor: null,
+                accessibility: "unknown",
+                longitude: -79.0,
+                latitude: 43.0,
+              },
+              {
+                id: "b",
+                kind: "path-intersection",
+                buildingCode: null,
+                floor: null,
+                accessibility: "unknown",
+                longitude: -79.001,
+                latitude: 43.001,
+              },
+            ],
+            edges: [
+              {
+                id: "ab",
+                from: "a",
+                to: "b",
+                distanceMeters: 150,
+                environment: "outdoor",
+                stairs: false,
+                bidirectional: true,
+                accessibility: "unknown",
+              },
+            ],
+          };
+
+          test("reverse traversal fallback coordinates follow the selected direction", () => {
+            const route = findRoute(graph, "b", "a", DEFAULT_ROUTE_PREFERENCES);
+            expect(route?.nodes.map((node) => node.id)).toEqual(["b", "a"]);
+            expect(route?.coordinates).toEqual([
+              [-79.001, 43.001],
+              [-79.0, 43.0],
+            ]);
+          });
+
+          test("explicit edge geometry is reversed exactly once", () => {
+            const shaped: RoutingGraph = {
+              nodes: graph.nodes,
+              edges: [
+                {
+                  ...graph.edges[0]!,
+                  geometry: [
+                    [-79.0, 43.0],
+                    [-79.0005, 43.0005],
+                    [-79.001, 43.001],
+                  ],
+                },
+              ],
+            };
+            expect(findRoute(shaped, "b", "a", DEFAULT_ROUTE_PREFERENCES)?.coordinates).toEqual([
+              [-79.001, 43.001],
+              [-79.0005, 43.0005],
+              [-79.0, 43.0],
+            ]);
+          });
+
+          test("IB to DV map geometry starts and ends at the optimizer-selected entrances", () => {
+            const endpoints = (code: string) =>
+              UTM_ROUTING_GRAPH.nodes
+                .filter((node) => node.kind === "building-entrance" && node.buildingCode === code)
+                .map((node) => node.id);
+            const route = findBestRoute(
+              UTM_ROUTING_GRAPH,
+              endpoints("IB"),
+              endpoints("DV"),
+              DEFAULT_ROUTE_PREFERENCES,
+            );
+            expect(route).not.toBeNull();
+            expect(route!.totalDistanceMeters).toBeLessThan(500);
+            const first = route!.nodes[0]!;
+            const last = route!.nodes.at(-1)!;
+            expect(route!.coordinates[0]).toEqual([first.longitude, first.latitude]);
+            expect(route!.coordinates.at(-1)).toEqual([last.longitude, last.latitude]);
+          });
+          ''')
+
+          # Synthetic browser fixture and a focused Chromium E2E.
+          Path("tests/fixtures/weekend-timetable.ics").write_text('''BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Gapwise Test//Weekend Schedule//EN\r\nBEGIN:VEVENT\r\nUID:weekend-1@example.test\r\nDTSTART;TZID=America/Toronto:20260905T100000\r\nDTEND;TZID=America/Toronto:20260905T110000\r\nRRULE:FREQ=WEEKLY;BYDAY=SA;UNTIL=20261205T160000Z\r\nSUMMARY:CSC110Y5 LEC 0101\r\nDESCRIPTION:Foundations of Computer Science\r\nLOCATION:IB 110\r\nEND:VEVENT\r\nBEGIN:VEVENT\r\nUID:weekend-2@example.test\r\nDTSTART;TZID=America/Toronto:20260905T130000\r\nDTEND;TZID=America/Toronto:20260905T140000\r\nRRULE:FREQ=WEEKLY;BYDAY=SA;UNTIL=20261205T190000Z\r\nSUMMARY:MAT102H5 LEC 0201\r\nDESCRIPTION:Introduction to Mathematical Proofs\r\nLOCATION:DV 2070\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n''')
+          core = load("e2e/core.e2e.ts")
+          anchor = '''const twoTermFixturePath = path.join(\n  process.cwd(),\n  "tests",\n  "fixtures",\n  "sample-two-term-timetable.ics",\n);\n'''
+          if anchor not in core:
+              raise SystemExit("e2e/core.e2e.ts fixture anchor missing")
+          core = core.replace(anchor, anchor + '''const weekendFixturePath = path.join(\n  process.cwd(),\n  "tests",\n  "fixtures",\n  "weekend-timetable.ics",\n);\n''')
+          e2e = r'''
+          test("weekend classes appear in timetable, gap plan, and day route without adding empty Sunday", async ({
+            page,
+          }, testInfo) => {
+            test.skip(testInfo.project.name !== "chromium", "weekend workflow gate runs once in Chromium");
+            const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+            await expectLanding(page);
+            const fileInput = page.locator('input[type="file"]').first();
+            await fileInput.setInputFiles(weekendFixturePath);
+            await expect(page).toHaveURL(/\/timetable$/);
+
+            const timetable = page.getByText("Week at a glance").locator("..").locator("..");
+            await expect(page.getByText("Saturday", { exact: true }).first()).toBeVisible();
+            await expect(page.getByText("Sunday", { exact: true })).toHaveCount(0);
+            await expect(page.getByText("CSC110Y5").first()).toBeVisible();
+
+            const viewMode = page.getByRole("group", { name: "View mode" });
+            await viewMode.getByRole("button", { name: "Gap plan" }).click();
+            await expect(page.getByText("Saturday", { exact: true }).first()).toBeVisible();
+            await expect(page.getByText(/2 hr/).first()).toBeVisible();
+
+            await viewMode.getByRole("button", { name: "Day route" }).click();
+            const routeDay = page.getByRole("group", { name: "Route weekday" });
+            await expect(routeDay.getByRole("button", { name: "Saturday" })).toBeVisible();
+            await expect(routeDay.getByRole("button", { name: "Sunday" })).toHaveCount(0);
+            await routeDay.getByRole("button", { name: "Saturday" }).click();
+            await expect(page.getByText("CSC110Y5").first()).toBeVisible();
+            guard.assertClean();
+          });
+          '''
+          insert_at = core.find('test("landing page is usable without an account"')
+          if insert_at < 0:
+              raise SystemExit("e2e insertion anchor missing")
+          core = core[:insert_at] + e2e + "\n" + core[insert_at:]
+          save("e2e/core.e2e.ts", core)
+
+          # Remove temporary diagnostics/implementation workflow before the final feature commit.
+          for path in [
+              ".github/workflows/and-120-121-diagnose.yml",
+              ".github/workflows/and-121-hypothesis.yml",
+              ".github/workflows/and-121-topology-diagnosis.yml",
+              ".github/workflows/and-120-121-implement.yml",
+          ]:
+              Path(path).unlink(missing_ok=True)
+          PY
+      - name: Format
+        run: bun run format
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Focused unit tests
+        run: bun test tests/weekend-schedule.test.ts tests/routing-coordinate-order.test.ts tests/campus-routing-optimality.test.ts tests/timetable-export.test.ts
+      - name: Full unit suite
+        run: bun test
+      - name: Lint
+        run: bun run lint
+      - name: Build
+        run: bun run build
+      - name: Format check
+        run: bun run format:check
+      - name: Routing audit
+        run: bun run routing:audit
+      - name: Diff check
+        run: git diff --check
+      - name: Commit and push
+        run: |
+          git config user.name "Andrew Muratov"
+          git config user.email "andrewamuratov@gmail.com"
+          git add -A
+          git diff --cached --stat
+          git commit -m "feat: support weekend schedules and correct route geometry" -m "Fixes AND-120\nRelates to AND-121\n\nCo-authored-by: Codex <noreply@openai.com>"
+          git push origin HEAD:andrewamuratov/and-120-and-121-weekend-shortest-routes
