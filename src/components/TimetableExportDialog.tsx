@@ -85,6 +85,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
     <>
       <button
         type="button"
+        aria-label="Export image"
         onClick={openExport}
         className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-xs font-semibold"
       >
