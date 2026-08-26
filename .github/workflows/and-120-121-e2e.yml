@@ -6,6 +6,8 @@ on:
       - andrewamuratov/and-120-and-121-weekend-shortest-routes
     paths:
       - ".github/workflows/and-120-121-e2e.yml"
+      - "e2e/weekend.e2e.ts"
+      - "tests/fixtures/weekend-timetable.ics"
   workflow_dispatch:
 
 permissions:
