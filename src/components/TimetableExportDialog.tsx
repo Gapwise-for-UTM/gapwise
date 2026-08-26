@@ -38,9 +38,9 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
   };
 
-  const openExport = (nextOutput: ExportOutput) => {
+  const openExport = () => {
     setSelection(terms.length === 1 ? terms[0]! : "all");
-    setOutput(nextOutput);
+    setOutput("image");
     setError(null);
     setOpen(true);
   };
@@ -83,24 +83,14 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => openExport("image")}
-          className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-xs font-semibold"
-        >
-          <Image className="h-4 w-4" aria-hidden="true" />
-          Export image
-        </button>
-        <button
-          type="button"
-          onClick={() => openExport("print")}
-          className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-xs font-semibold"
-        >
-          <Printer className="h-4 w-4" aria-hidden="true" />
-          Print-ready
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={openExport}
+        className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-xs font-semibold"
+      >
+        <Download className="h-4 w-4" aria-hidden="true" />
+        Export
+      </button>
       <Dialog open={open} onOpenChange={(next) => !exporting && setOpen(next)}>
         <DialogContent className="glass-panel max-w-md bg-card/95">
           <DialogHeader className="pr-7">
