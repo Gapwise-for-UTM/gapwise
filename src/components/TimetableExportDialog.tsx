@@ -1,4 +1,4 @@
-import { Download, Image, Loader2, Share2 } from "lucide-react";
+import { Download, Image, Loader2, Printer, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   Dialog,
@@ -14,7 +14,10 @@ import {
   type ExportAppearance,
   type ExportSelection,
 } from "@/lib/timetable-export";
+import { generateTimetablePrintSvg } from "@/lib/timetable-print-export";
 import type { Meeting } from "@/lib/timetable-types";
+
+type ExportOutput = "image" | "print";
 
 export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
   const terms = useMemo(() => availableExportTerms(meetings), [meetings]);
@@ -23,12 +26,36 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [appearance, setAppearance] = useState<ExportAppearance>("match");
+  const [output, setOutput] = useState<ExportOutput>("image");
   const supportsShare = typeof navigator !== "undefined" && "share" in navigator;
 
-  const exportImage = async () => {
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  };
+
+  const openExport = (nextOutput: ExportOutput) => {
+    setSelection(terms.length === 1 ? terms[0]! : "all");
+    setOutput(nextOutput);
+    setError(null);
+    setOpen(true);
+  };
+
+  const exportTimetable = async () => {
     setExporting(true);
     setError(null);
     try {
+      if (output === "print") {
+        const { blob, filename } = await generateTimetablePrintSvg(meetings, selection);
+        downloadBlob(blob, filename);
+        setOpen(false);
+        return;
+      }
+
       const resolvedGapwiseTheme = document.documentElement.classList.contains("dark")
         ? "dark"
         : "light";
@@ -41,12 +68,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "My timetable" });
       } else {
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = filename;
-        anchor.click();
-        window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+        downloadBlob(blob, filename);
       }
       setOpen(false);
     } catch (cause) {
@@ -61,25 +83,34 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          setSelection(terms.length === 1 ? terms[0]! : "all");
-          setError(null);
-          setOpen(true);
-        }}
-        className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-xs font-semibold"
-      >
-        <Image className="h-4 w-4" aria-hidden="true" />
-        Export image
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => openExport("image")}
+          className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-xs font-semibold"
+        >
+          <Image className="h-4 w-4" aria-hidden="true" />
+          Export image
+        </button>
+        <button
+          type="button"
+          onClick={() => openExport("print")}
+          className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-3 text-xs font-semibold"
+        >
+          <Printer className="h-4 w-4" aria-hidden="true" />
+          Print-ready
+        </button>
+      </div>
       <Dialog open={open} onOpenChange={(next) => !exporting && setOpen(next)}>
         <DialogContent className="glass-panel max-w-md bg-card/95">
           <DialogHeader className="pr-7">
-            <DialogTitle className="font-display text-xl">Export timetable image</DialogTitle>
+            <DialogTitle className="font-display text-xl">
+              {output === "print" ? "Print timetable" : "Export timetable image"}
+            </DialogTitle>
             <DialogDescription className="leading-6">
-              Create a private, high-resolution PNG entirely in this browser. Your schedule is not
-              uploaded.
+              {output === "print"
+                ? "Create a razor-sharp black-and-white vector for paper entirely in this browser. Your schedule is not uploaded."
+                : "Create a private, high-resolution PNG entirely in this browser. Your schedule is not uploaded."}
             </DialogDescription>
           </DialogHeader>
           {terms.length > 1 ? (
@@ -110,32 +141,81 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
             </p>
           )}
           <fieldset>
-            <legend className="mb-2 text-sm font-semibold">Appearance</legend>
-            <div
-              className="grid grid-cols-3 rounded-xl border border-border bg-background/45 p-1"
-              role="radiogroup"
-              aria-label="Export appearance"
-            >
-              {(
-                [
-                  ["match", "Match Gapwise"],
-                  ["light", "Light"],
-                  ["dark", "Dark"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  role="radio"
-                  aria-checked={appearance === value}
-                  onClick={() => setAppearance(value)}
-                  className={`min-h-10 rounded-lg px-2 text-xs font-semibold transition-colors ${appearance === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  {label}
-                </button>
-              ))}
+            <legend className="mb-2 text-sm font-semibold">Format</legend>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Export format">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={output === "image"}
+                onClick={() => setOutput("image")}
+                className={`min-h-20 rounded-xl border p-3 text-left transition-colors ${output === "image" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <Image className="h-4 w-4" aria-hidden="true" />
+                  Share image
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                  High-resolution PNG for screens
+                </span>
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={output === "print"}
+                onClick={() => setOutput("print")}
+                className={`min-h-20 rounded-xl border p-3 text-left transition-colors ${output === "print" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
+              >
+                <span className="flex items-center gap-2 text-sm font-semibold">
+                  <Printer className="h-4 w-4" aria-hidden="true" />
+                  Print-ready B&amp;W
+                </span>
+                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                  Vector SVG · unlimited sharpness
+                </span>
+              </button>
             </div>
           </fieldset>
+          {output === "image" ? (
+            <fieldset>
+              <legend className="mb-2 text-sm font-semibold">Appearance</legend>
+              <div
+                className="grid grid-cols-3 rounded-xl border border-border bg-background/45 p-1"
+                role="radiogroup"
+                aria-label="Export appearance"
+              >
+                {(
+                  [
+                    ["match", "Match Gapwise"],
+                    ["light", "Light"],
+                    ["dark", "Dark"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={appearance === value}
+                    onClick={() => setAppearance(value)}
+                    className={`min-h-10 rounded-lg px-2 text-xs font-semibold transition-colors ${appearance === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          ) : (
+            <div className="rounded-xl border border-border bg-background/45 p-3">
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <Printer className="h-4 w-4" aria-hidden="true" />
+                Built specifically for paper
+              </p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Pure monochrome vector artwork with embedded typography, crisp grid lines, and no
+                screen-only shadows or gradients. Scale it to any printer DPI or page size without
+                losing sharpness.
+              </p>
+            </div>
+          )}
           {error ? (
             <p
               role="alert"
@@ -147,20 +227,32 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
           <button
             type="button"
             disabled={exporting}
-            onClick={() => void exportImage()}
+            onClick={() => void exportTimetable()}
             className="button-primary inline-flex min-h-12 w-full items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
           >
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : output === "print" ? (
+              <Printer className="h-4 w-4" aria-hidden="true" />
             ) : supportsShare ? (
               <Share2 className="h-4 w-4" aria-hidden="true" />
             ) : (
               <Download className="h-4 w-4" aria-hidden="true" />
             )}
-            {exporting ? "Generating high-resolution PNG…" : "Generate image"}
+            {exporting
+              ? output === "print"
+                ? "Preparing print-ready vector…"
+                : "Generating high-resolution PNG…"
+              : output === "print"
+                ? "Download print-ready SVG"
+                : "Generate image"}
           </button>
           <p aria-live="polite" className="sr-only">
-            {exporting ? "Generating timetable image" : (error ?? "")}
+            {exporting
+              ? output === "print"
+                ? "Preparing print-ready timetable"
+                : "Generating timetable image"
+              : (error ?? "")}
           </p>
         </DialogContent>
       </Dialog>
