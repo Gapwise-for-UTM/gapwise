@@ -170,7 +170,7 @@ test("timetable export offers available terms and downloads light and dark PNGs"
   await page.getByRole("button", { name: "Try a demo" }).click();
   await expect(page).toHaveURL(/\/timetable$/);
 
-  await page.getByRole("button", { name: "Export image" }).click();
+  await page.getByRole("button", { name: "Export timetable", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Export timetable image" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Fall" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Winter" })).toBeVisible();
@@ -185,7 +185,7 @@ test("timetable export offers available terms and downloads light and dark PNGs"
   await page.getByRole("button", { name: "Generate image" }).click();
   expect((await downloadPromise).suggestedFilename()).toBe("fall-winter-timetable.png");
 
-  await page.getByRole("button", { name: "Export image" }).click();
+  await page.getByRole("button", { name: "Export timetable", exact: true }).click();
   await page.getByRole("radio", { name: "Dark", exact: true }).click();
   const darkDownloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Generate image" }).click();
