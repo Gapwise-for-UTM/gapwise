@@ -58,58 +58,9 @@ jobs:
           }
           TS
           bun /tmp/diagnose-route.ts
-      - name: Find suspicious near-crossing pedestrian segments
+      - name: Inventory hard-coded weekday assumptions
         run: |
-          python3 - <<'PY'
-          import json, math
-          from pathlib import Path
-
-          nodes_doc = json.loads(Path("src/data/utm/outdoor-nodes.geojson").read_text())
-          edges_doc = json.loads(Path("src/data/utm/outdoor-edges.json").read_text())
-          nodes = {f["id"]: tuple(f["geometry"]["coordinates"]) for f in nodes_doc["features"]}
-          edges = [e for e in edges_doc["edges"] if e["environment"] == "outdoor" and e["from"] in nodes and e["to"] in nodes]
-
-          lat0 = 43.549
-          sx = 111320 * math.cos(math.radians(lat0))
-          sy = 110540
-          def xy(p): return (p[0]*sx, p[1]*sy)
-          def point_seg_distance(p,a,b):
-              px,py=xy(p); ax,ay=xy(a); bx,by=xy(b)
-              vx,vy=bx-ax,by-ay; wx,wy=px-ax,py-ay
-              vv=vx*vx+vy*vy
-              if vv == 0: return math.hypot(px-ax,py-ay),0.0
-              t=max(0.0,min(1.0,(wx*vx+wy*vy)/vv))
-              qx,qy=ax+t*vx,ay+t*vy
-              return math.hypot(px-qx,py-qy),t
-          def orient(a,b,c):
-              ax,ay=xy(a); bx,by=xy(b); cx,cy=xy(c)
-              return (bx-ax)*(cy-ay)-(by-ay)*(cx-ax)
-          def proper_intersection(a,b,c,d):
-              o1,o2,o3,o4=orient(a,b,c),orient(a,b,d),orient(c,d,a),orient(c,d,b)
-              return (o1*o2 < 0) and (o3*o4 < 0)
-
-          suspicious=[]
-          for i,e1 in enumerate(edges):
-              a,b=nodes[e1["from"]],nodes[e1["to"]]
-              ids1={e1["from"],e1["to"]}
-              for e2 in edges[i+1:]:
-                  if ids1 & {e2["from"],e2["to"]}: continue
-                  c,d=nodes[e2["from"]],nodes[e2["to"]]
-                  if proper_intersection(a,b,c,d):
-                      suspicious.append((0.0,"cross",e1["id"],e2["id"]))
-                      continue
-                  vals=[]
-                  for p,label in [(a,e1["from"]),(b,e1["to"])]:
-                      dist,t=point_seg_distance(p,c,d)
-                      if 0.02 < t < 0.98: vals.append((dist,label,e2["id"]))
-                  for p,label in [(c,e2["from"]),(d,e2["to"])]:
-                      dist,t=point_seg_distance(p,a,b)
-                      if 0.02 < t < 0.98: vals.append((dist,label,e1["id"]))
-                  if vals:
-                      dist,label,other=min(vals)
-                      if dist <= 1.5:
-                          suspicious.append((dist,"near",label,other))
-          suspicious.sort()
-          print(f"SUSPICIOUS_COUNT={len(suspicious)}")
-          for row in suspicious[:100]: print("SUSPICIOUS", row)
-          PY
+          echo '=== getDay assumptions ==='
+          rg -n 'getDay\(\).*[-+]\s*1|WEEKDAYS\[.*getDay|Monday through Friday|grid-cols-5|repeat\(5' src api sdk public tests e2e scripts || true
+          echo '=== explicit five-day unions and arrays ==='
+          rg -n '"Monday".*"Tuesday".*"Wednesday".*"Thursday".*"Friday"|Monday.*Tuesday.*Wednesday.*Thursday.*Friday' src api sdk public tests e2e scripts || true
