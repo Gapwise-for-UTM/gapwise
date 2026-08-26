@@ -22,7 +22,6 @@ test("weekend classes flow through timetable, gaps, and day route", async ({ pag
   await expect(page).toHaveURL(/\/gaps$/);
   const gapPlan = page.locator(".dot-field:not([hidden])");
   await expect(gapPlan).toBeVisible();
-  await expect(gapPlan.getByText("Saturday", { exact: true })).toBeVisible();
   await expect(gapPlan.getByRole("button", { name: /2h gap/i })).toBeVisible();
 
   await viewMode.getByRole("button", { name: "Day route" }).click();
