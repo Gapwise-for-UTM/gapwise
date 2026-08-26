@@ -36,6 +36,6 @@ jobs:
         run: |
           git config user.name "Andrew Muratov"
           git config user.email "andrewamuratov@gmail.com"
-          git add e2e/core.e2e.ts .github/workflows/and-125-fix-export-e2e.yml
+          git add -A
           git commit -m "test: update remaining export accessibility coverage"
           git push origin HEAD:codex/perform-pre-release-audit-on-gapwise
