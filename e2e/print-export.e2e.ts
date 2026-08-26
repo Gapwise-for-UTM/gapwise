@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectLanding, watchForAppFailures } from "./helpers";
 
-test("timetable export exposes a dedicated print-ready vector flow", async ({ page }, testInfo) => {
+test("unified timetable export exposes the print-ready vector flow", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium", "print export coverage runs once in Chromium");
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await expectLanding(page);
