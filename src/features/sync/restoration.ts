@@ -34,6 +34,16 @@ export function chooseRestoration(
   if (memory?.length) return { source: "memory", state: "restored-memory", meetings: memory };
   const localValid = local?.data?.length ? local : null;
   const cloudValid = cloud?.privateData || cloud?.meetings?.length ? cloud : null;
+  // An encrypted payload may intentionally contain no schedule. That is authoritative when it
+  // is the account's only source, but an auth transition must not let it erase a valid schedule
+  // already owned by this browser.
+  if (localValid && cloudValid && !cloudValid.meetings.length) {
+    return {
+      source: "local",
+      state: "cloud-version-available",
+      meetings: localValid.data,
+    };
+  }
   if (localValid && !cloudValid)
     return { source: "local", state: "restored-local", meetings: localValid.data };
   if (cloudValid && !localValid)

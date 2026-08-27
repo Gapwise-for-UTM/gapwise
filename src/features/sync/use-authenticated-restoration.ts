@@ -71,6 +71,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
   const requestVersion = useRef(0);
   const requestedUser = useRef<string | null>(null);
   const previousUser = useRef<string | null>(null);
+  const signInGuestCandidate = useRef<GuestTimetableRestoration | null>(null);
 
   latestMeetings.current = meetings;
 
@@ -156,6 +157,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
     }
 
     if (previousUser.current !== userId) {
+      const signingInFromGuest = previousUser.current === null;
       cloudRestoration.cancel(previousUser.current);
       requestVersion.current += 1;
       requestedUser.current = null;
@@ -170,6 +172,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
           lastEncryptedFingerprint.current = null;
         }
       }
+      signInGuestCandidate.current = signingInFromGuest && guest.meetings?.length ? guest : null;
       previousUser.current = userId;
     }
 
@@ -206,9 +209,15 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
           return;
         const choice = chooseRestoration(
           memoryCandidate(restoredSource.current, latestMeetings.current),
-          null,
+          signInGuestCandidate.current?.meetings
+            ? {
+                data: signInGuestCandidate.current.meetings,
+                updatedAt: signInGuestCandidate.current.updatedAt,
+              }
+            : null,
           cloud,
         );
+        signInGuestCandidate.current = null;
         if (choice.meetings && choice.source !== "memory") {
           latestMeetings.current = choice.meetings;
           setMeetings(choice.meetings);
@@ -238,9 +247,15 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
           return;
         const choice = chooseRestoration(
           memoryCandidate(restoredSource.current, latestMeetings.current),
-          null,
+          signInGuestCandidate.current?.meetings
+            ? {
+                data: signInGuestCandidate.current.meetings,
+                updatedAt: signInGuestCandidate.current.updatedAt,
+              }
+            : null,
           null,
         );
+        signInGuestCandidate.current = null;
         if (choice.meetings && choice.source !== "memory") {
           latestMeetings.current = choice.meetings;
           setMeetings(choice.meetings);

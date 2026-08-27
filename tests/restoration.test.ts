@@ -48,4 +48,20 @@ describe("cloud restoration precedence", () => {
     expect(choice.source).toBe("cloud");
     expect(choice.meetings).toEqual([]);
   });
+  test("never replaces a valid browser schedule with a newer empty private payload", () => {
+    const choice = chooseRestoration(null, local("2026-08-01"), {
+      meetings: [],
+      updatedAt: "2026-08-12T00:00:00.000Z",
+      privateData: {
+        schemaVersion: 1,
+        schedule: [],
+        personalItems: [],
+        preferences: DEFAULT_USER_PREFERENCES,
+        gapPreferences: DEFAULT_GAP_PREFERENCES,
+      },
+    });
+    expect(choice.source).toBe("local");
+    expect(choice.state).toBe("cloud-version-available");
+    expect(choice.meetings).toEqual([localMeeting]);
+  });
 });
