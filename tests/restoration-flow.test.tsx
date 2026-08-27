@@ -81,6 +81,11 @@ const saveCalls: Array<{
 }> = [];
 const clearLocalCalls: string[] = [];
 let syncOptedIn = false;
+let guestFixture = { remember: false, meetings: null, updatedAt: null } as {
+  remember: boolean;
+  meetings: Meeting[] | null;
+  updatedAt: string | null;
+};
 
 function payload(meetings: Meeting[]): PrivateDataPayloadV1 {
   return {
@@ -120,9 +125,13 @@ mock.module("@/features/sync/encrypted-sync-service", () => ({
   isEncryptedSyncOptedIn: () => syncOptedIn,
 }));
 mock.module("@/features/security/guest-timetable", () => ({
-  loadGuestTimetable: async () => ({ remember: false, meetings: null, updatedAt: null }),
-  saveGuestTimetable: async () => undefined,
-  clearGuestTimetable: async () => undefined,
+  loadGuestTimetable: async () => guestFixture,
+  saveGuestTimetable: async (meetings: Meeting[] | null) => {
+    guestFixture = { remember: true, meetings, updatedAt: "2026-08-10T00:00:00.000Z" };
+  },
+  clearGuestTimetable: async () => {
+    guestFixture = { remember: false, meetings: null, updatedAt: null };
+  },
 }));
 
 const { createRoot } = await import("react-dom/client");
@@ -173,6 +182,10 @@ async function mountRoute(initialEntry = "/") {
   });
 }
 
+function rememberGuest(meetings: Meeting[], updatedAt = "2026-08-10T00:00:00.000Z") {
+  guestFixture = { remember: true, meetings, updatedAt };
+}
+
 async function unmountRoute() {
   if (root) {
     await act(async () => root?.unmount());
@@ -198,6 +211,7 @@ beforeEach(() => {
   saveCalls.length = 0;
   clearLocalCalls.length = 0;
   syncOptedIn = false;
+  guestFixture = { remember: false, meetings: null, updatedAt: null };
   Object.defineProperty(browserWindow.navigator, "onLine", { configurable: true, value: true });
   localStorage.clear();
   sessionStorage.clear();
@@ -210,6 +224,49 @@ afterEach(async () => {
 });
 
 describe("route-level encrypted timetable restoration", () => {
+  test("keeps a remembered guest timetable through reload and first sign-in with empty cloud", async () => {
+    const guestMeeting = meeting({ id: "guest-owned", courseCode: "GUEST101H5" });
+    rememberGuest([guestMeeting]);
+    authSnapshot = { user: null, loading: false, error: null };
+
+    await mountRoute();
+    await waitFor(() => pageText().includes("GUEST101H5"), "the remembered guest timetable");
+    await unmountRoute();
+    await mountRoute();
+    await waitFor(() => pageText().includes("GUEST101H5"), "the guest timetable after reload");
+
+    loadImplementation = async () => ({
+      meetings: [],
+      updatedAt: "2026-08-12T00:00:00.000Z",
+      privateData: payload([]),
+    });
+    await setAuth({ user: authenticatedUser, loading: false, error: null });
+    await waitFor(() => loadCalls.length === 1, "the first account restore");
+    await waitFor(
+      () => pageText().includes("A cloud version is available"),
+      "the local precedence notice",
+    );
+
+    expect(pageText()).toContain("GUEST101H5");
+  });
+
+  test("keeps a remembered guest timetable when first account restore fails", async () => {
+    rememberGuest([meeting({ id: "guest-failed", courseCode: "SAFE101H5" })]);
+    authSnapshot = { user: null, loading: false, error: null };
+    loadImplementation = async () => {
+      throw new Error("interrupted request");
+    };
+
+    await mountRoute();
+    await waitFor(() => pageText().includes("SAFE101H5"), "the guest timetable");
+    await setAuth({ user: authenticatedUser, loading: false, error: null });
+    await waitFor(
+      () => pageText().includes("We couldn't restore your cloud timetable"),
+      "the interrupted restore warning",
+    );
+
+    expect(pageText()).toContain("SAFE101H5");
+  });
   test("persists an opted-in timetable edit locally while offline", async () => {
     authSnapshot = { user: authenticatedUser, loading: false, error: null };
     syncOptedIn = true;
