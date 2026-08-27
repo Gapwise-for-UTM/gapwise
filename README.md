@@ -29,15 +29,17 @@ Gapwise turns a UTM ACORN `.ics` timetable export into a local-first system for 
 
 The original calendar file is parsed entirely in the browser. From that normalized schedule, Gapwise builds timetable views, detects gaps, computes route-aware activity budgets, produces leave-by timing, and renders campus navigation without requiring an account.
 
-The project now has three connected surfaces:
+The product now spans five connected first-party surfaces:
 
 | Surface | Purpose |
 | --- | --- |
-| **Student app** | Timetable, Today, gap planning, campus routing, destination feasibility, encrypted sync, and Day Replay |
-| **Gapwise Platform** | Public UTM building/routing/gap API, OpenAPI 3.1 contract, zero-dependency JS/TS SDK, and versioned open campus snapshot |
-| **Gapwise AI** | Optional permissioned MCP access to explicitly delegated student context plus the public campus-intelligence tools |
+| **Student web/PWA** | Timetable, Today, gap planning, campus routing, destination feasibility, encrypted sync, and Day Replay |
+| **Gapwise Platform** | Public UTM building/routing/gap API, OpenAPI 3.1 contract, SDK source, and versioned open campus snapshot |
+| **Gapwise Mobile** | Native iOS and Android client consuming canonical Gapwise product and platform semantics |
+| **Gapwise AI** | Optional permissioned MCP access to explicitly delegated student context plus bounded AI-facing actions |
+| **Gapwise Docs** | Public documentation for the API, SDKs, platform behavior, and AI/MCP integration |
 
-The architectural rule is simple: **Gapwise owns the facts and deterministic calculations. Interfaces—including AI assistants—consume that truth rather than recreating it.**
+The architectural rule is simple: **Gapwise owns the facts and deterministic calculations. Interfaces—including mobile and AI assistants—consume that truth rather than recreating it, while the docs describe released public behavior.**
 
 ---
 
@@ -366,6 +368,21 @@ tests/               unit/integration/security/contract regression coverage
 docs/                architecture, operations, platform and campus-data docs
 scripts/             deterministic generation/import/review tooling
 ```
+
+---
+
+## Gapwise ecosystem
+
+The first-party repositories are separate deployment surfaces with one product identity, trust model, and source-of-truth hierarchy:
+
+| Repository | Role | Primary surface |
+| --- | --- | --- |
+| **[`gapwise`](https://github.com/andrewmuratov/gapwise)** | Core web/PWA product, canonical student-state behavior, deterministic UTM campus intelligence, public API, OpenAPI contract, and SDK source | [gapwise.ca](https://gapwise.ca) / [api.gapwise.ca](https://api.gapwise.ca/v1) |
+| **[`gapwise-mobile`](https://github.com/andrewmuratov/gapwise-mobile)** | Native iOS and Android client consuming canonical Gapwise contracts and product semantics | Native mobile app |
+| **[`gapwise-ai`](https://github.com/andrewmuratov/gapwise-ai)** | Permissioned OAuth/MCP layer for explicitly delegated student context and bounded AI actions | [ai.gapwise.ca](https://ai.gapwise.ca/api/mcp) |
+| **[`gapwise-docs`](https://github.com/andrewmuratov/gapwise-docs)** | Public developer documentation for the API, SDKs, platform behavior, and AI/MCP integration | [docs.gapwise.ca](https://docs.gapwise.ca) |
+
+This repository remains authoritative for deterministic timetable, gap, campus, routing, and primary student-state semantics. Mobile and AI consume its contracts rather than becoming parallel sources of truth; the docs describe released public behavior. All four repositories should keep cross-links, terminology, trust boundaries, and brand presentation consistent.
 
 ---
 
