@@ -1,7 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import {
   ChevronDown,
-  CreditCard,
   GitBranch,
   LogOut,
   Settings2,
@@ -93,9 +92,6 @@ export function AccountStatus({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<AccountSettingsTab>("account");
-  const [billingReturnStatus, setBillingReturnStatus] = useState<"success" | "cancelled" | null>(
-    null,
-  );
   const [clearLocal, setClearLocal] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [cleanupUserId, setCleanupUserId] = useState<string | null>(null);
@@ -129,23 +125,8 @@ export function AccountStatus({
   useEffect(() => {
     if (user) {
       setSignInOpen(false);
-      const url = new URL(window.location.href);
-      const billing = url.searchParams.get("billing");
-      if (billing === "success" || billing === "cancelled") {
-        setBillingReturnStatus(billing);
-        setSettingsTab("billing");
-        setSettingsOpen(true);
-        url.searchParams.delete("billing");
-        url.searchParams.delete("session_id");
-        window.history.replaceState(
-          window.history.state,
-          "",
-          `${url.pathname}${url.search}${url.hash}`,
-        );
-      }
     } else {
       setSettingsOpen(false);
-      setBillingReturnStatus(null);
     }
   }, [user]);
 
@@ -263,15 +244,6 @@ export function AccountStatus({
               >
                 <Settings2 aria-hidden="true" /> Account settings
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  setBillingReturnStatus(null);
-                  setSettingsTab("billing");
-                  setSettingsOpen(true);
-                }}
-              >
-                <CreditCard aria-hidden="true" /> Plan & billing
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled={busy} onSelect={() => void leaveAccount()}>
                 <LogOut aria-hidden="true" /> Sign out
@@ -290,13 +262,8 @@ export function AccountStatus({
             open={settingsOpen}
             onOpenChange={(open) => !busy && setSettingsOpen(open)}
             identity={getAccountIdentity(user)}
-            userId={user.id}
             tab={settingsTab}
-            onTabChange={(tab) => {
-              setSettingsTab(tab);
-              if (tab !== "billing") setBillingReturnStatus(null);
-            }}
-            billingReturnStatus={billingReturnStatus}
+            onTabChange={setSettingsTab}
             aiController={aiController}
           />
 
