@@ -39,8 +39,12 @@ test("trust center exposes evidence-backed boundaries and limitations", async ({
   await expect(page).toHaveTitle("Trust Center — Gapwise for UTM");
   await expect(page.getByRole("heading", { name: "Evidence before promises." })).toBeVisible();
   await expect(page.getByText("Gapwise does not ask for your ACORN password.")).toBeVisible();
-  await expect(page.getByText(/does not call the design end-to-end encrypted or zero knowledge/)).toBeVisible();
-  await expect(page.getByText(/No repository-verified dedicated public status service/)).toBeVisible();
+  await expect(
+    page.getByText(/does not call the design end-to-end encrypted or zero knowledge/),
+  ).toBeVisible();
+  await expect(
+    page.getByText(/No repository-verified dedicated public status service/),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Report a vulnerability" })).toHaveAttribute(
     "href",
     "/security",

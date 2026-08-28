@@ -37,15 +37,21 @@ function TrustPage() {
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <Link to="/privacy" className={cardClass}>
             <strong className="block text-foreground">Privacy & data use</strong>
-            <span className="mt-1 block">Timetables, accounts, location, analytics, and controls.</span>
+            <span className="mt-1 block">
+              Timetables, accounts, location, analytics, and controls.
+            </span>
           </Link>
           <Link to="/security" className={cardClass}>
             <strong className="block text-foreground">Security reporting</strong>
-            <span className="mt-1 block">Vulnerability disclosure and the private report path.</span>
+            <span className="mt-1 block">
+              Vulnerability disclosure and the private report path.
+            </span>
           </Link>
           <Link to="/accessibility" className={cardClass}>
             <strong className="block text-foreground">Accessibility</strong>
-            <span className="mt-1 block">Current evidence, targets, limitations, and feedback.</span>
+            <span className="mt-1 block">
+              Current evidence, targets, limitations, and feedback.
+            </span>
           </Link>
           <a href="https://docs.gapwise.ca/platform/security/" className={cardClass}>
             <strong className="block text-foreground">Security architecture</strong>
@@ -107,7 +113,10 @@ function TrustPage() {
           <a href="https://docs.gapwise.ca/ai/permissions/" className="text-accent hover:underline">
             AI permission documentation
           </a>
-          <a href="https://docs.gapwise.ca/platform/architecture/" className="text-accent hover:underline">
+          <a
+            href="https://docs.gapwise.ca/platform/architecture/"
+            className="text-accent hover:underline"
+          >
             Architecture and data flow
           </a>
         </div>
@@ -163,8 +172,8 @@ function TrustPage() {
         <p>
           Gapwise publishes a vulnerability disclosure policy and canonical security.txt. The
           incident-response runbook separates verified evidence, process commitments, and
-          confirmation-required facts; it covers severity, containment, provider escalation,
-          privacy triage, notification decisions, recovery, and public postmortem preparation.
+          confirmation-required facts; it covers severity, containment, provider escalation, privacy
+          triage, notification decisions, recovery, and public postmortem preparation.
         </p>
         <p>
           No repository-verified dedicated public status service, uptime percentage, response-time
@@ -228,11 +237,16 @@ function TrustPage() {
       <section>
         <h2>What still needs human or independent evidence</h2>
         <ul>
-          <li>Provider contract, residency, backup, log-retention, and production-dashboard facts.</li>
+          <li>
+            Provider contract, residency, backup, log-retention, and production-dashboard facts.
+          </li>
           <li>Formal legal, tax, insurance, trademark, procurement, or university decisions.</li>
           <li>An independent penetration test or certification, if one is commissioned later.</li>
           <li>Manual assistive-technology evaluation needed for stronger accessibility claims.</li>
-          <li>Measured operational statistics before any uptime, incident, or transparency number is published.</li>
+          <li>
+            Measured operational statistics before any uptime, incident, or transparency number is
+            published.
+          </li>
         </ul>
       </section>
     </LegalPage>

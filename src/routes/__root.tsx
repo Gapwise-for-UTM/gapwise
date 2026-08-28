@@ -118,19 +118,6 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </AppErrorBoundary>
-      <footer
-        aria-label="Gapwise trust links"
-        className="border-t border-border bg-background px-4 py-4 text-center text-xs text-muted-foreground"
-      >
-        <span>Independent student project · </span>
-        <Link to="/trust" className="font-medium text-accent hover:underline">
-          Trust Center
-        </Link>
-        <span> · </span>
-        <Link to="/accessibility" className="font-medium text-accent hover:underline">
-          Accessibility
-        </Link>
-      </footer>
       <AppUpdatePrompt />
     </QueryClientProvider>
   );
