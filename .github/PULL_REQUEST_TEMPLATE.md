@@ -10,6 +10,7 @@ Describe what changed and why.
 ## Verification
 
 - [ ] `bun install --frozen-lockfile`
+- [ ] `bun run security:audit`
 - [ ] `bun run lint`
 - [ ] `bun test`
 - [ ] `bun run build`
@@ -20,9 +21,14 @@ Describe what changed and why.
 ## Security and privacy
 
 - [ ] No secrets, tokens, credentials, real timetable data, or private floor plans are included
-- [ ] Authorization, authentication, file parsing, and deletion implications were considered
+- [ ] New or updated dependencies were reviewed; there are no unexplained package sources or lifecycle-script exceptions
+- [ ] Authorization, authentication, file parsing, deletion, and tenant-isolation implications were considered
+- [ ] HTTP/request inputs are bounded and explicitly allowlisted; request objects are never mass-assigned into persistence
 - [ ] Database changes preserve Row Level Security and are represented by versioned migrations
-- [ ] Analytics and logs do not receive timetable contents or authentication tokens
+- [ ] AI/tool changes preserve explicit permissions and the data-versus-instructions boundary
+- [ ] OAuth changes preserve exact redirect/origin rules and per-client isolation
+- [ ] Analytics, audit events, and logs do not receive timetable contents, decrypted private data, keys, or authentication tokens
+- [ ] Recovery, backup, and monitoring implications were considered for schema, encryption, or deployment changes
 
 ## Deployment and integrations
 
