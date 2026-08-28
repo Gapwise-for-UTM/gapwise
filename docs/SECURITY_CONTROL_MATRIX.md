@@ -8,6 +8,8 @@ Status meanings:
 - **Operational** — the control depends on production platform configuration or an operator procedure and must be re-verified periodically.
 - **Review required** — the control is present in part but still has a production/platform item that cannot be proven from this repository alone.
 
+## Checklist controls
+
 ### 37. Vulnerable dependencies — Enforced
 
 Frozen Bun lockfile, weekly Dependabot, a pinned package-manager version, and CI `bun audit --prod --audit-level=high` protect the dependency path. Keep the audit gate green before merge and release.
