@@ -1,4 +1,4 @@
-export type EntitlementTier = "free";
+export type EntitlementTier = string;
 export type FeatureCapability =
   | "academic_planner"
   | "coursework_management"
