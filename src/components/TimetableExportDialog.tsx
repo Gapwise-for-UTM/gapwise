@@ -1,5 +1,5 @@
 import { Download, Image, Loader2, Printer, Share2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,7 @@ type ExportOutput = "image" | "print";
 
 export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
   const terms = useMemo(() => availableExportTerms(meetings), [meetings]);
+  const exportTriggerRef = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [selection, setSelection] = useState<ExportSelection>(terms[0] ?? "Fall");
   const [exporting, setExporting] = useState(false);
@@ -84,6 +85,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
   return (
     <>
       <button
+        ref={exportTriggerRef}
         type="button"
         aria-label="Export timetable"
         onClick={openExport}
@@ -93,7 +95,13 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
         Export
       </button>
       <Dialog open={open} onOpenChange={(next) => !exporting && setOpen(next)}>
-        <DialogContent className="glass-panel max-w-md bg-card/95">
+        <DialogContent
+          className="glass-panel max-w-md bg-card/95"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            exportTriggerRef.current?.focus();
+          }}
+        >
           <DialogHeader className="pr-7">
             <DialogTitle className="font-display text-xl">
               {output === "print" ? "Print timetable" : "Export timetable image"}
