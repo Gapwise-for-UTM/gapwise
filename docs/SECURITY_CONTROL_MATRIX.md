@@ -36,7 +36,7 @@ As of 2026-08-28, production verification found two platform-level items that so
 1. Supabase Auth leaked-password protection is disabled and should be enabled in the production project.
 2. GitHub required status-check/review enforcement on the protected production branch must be verified/enabled so CI and review controls cannot be bypassed by a direct push.
 
-Supabase also warns that several authenticated `SECURITY DEFINER` friendship/key-rotation RPCs are externally callable. These are expected to be user-facing RPCs only if their internal authorization, bounded behavior and grants remain intentional. Keep them covered by isolated database-security tests and review every advisor warning after schema changes rather than blanket-suppressing the advisor.
+Supabase also reports that several friendship/key-rotation `SECURITY DEFINER` RPCs are callable by the `authenticated` role. This exposure is intentional: the current implementations derive the caller from `auth.uid()`, reject non-direct/OAuth sessions through `private.is_direct_user_session()`, scope friendship operations to the caller, validate bounded arguments/key material, and keep OAuth isolation under database tests. Treat future advisor warnings as review triggers anyway; do not blanket-suppress them or broaden the grants casually.
 
 ## Release rule
 
