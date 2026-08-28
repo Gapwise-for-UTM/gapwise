@@ -59,6 +59,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Audit production dependencies
         run: bun run security:audit
+      - name: Verify API, OpenAPI, SDK, and maintained docs conformance
+        run: bun run contract:check
       - if: needs.changes.outputs.runtime == 'true'
         run: bun run typecheck
       - if: needs.changes.outputs.runtime == 'true'
