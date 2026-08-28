@@ -47,6 +47,8 @@ Record only completed, evidence-backed changes. For each item include the effect
 - **AI/MCP permissions:** `[added, removed, or narrowed capability]`
 - **Major policies:** `[effective revision and canonical history]`
 
+For any claim that an operational action was completed, retain execution evidence showing the action actually occurred. A runbook, checklist, template, plan, issue, or policy alone is not completion evidence for a drill, restore, notification, review, external process, or other operational activity. Apply the same boundary to completed security, privacy, and accessibility improvements: cite implementation/configuration/test evidence for shipped controls and execution records for activities that must actually be performed.
+
 If the authoritative inventory or change history does not cover the whole period, say so; do not report “no changes.” Planned work belongs under commitments instead.
 
 ## Independent assessments
@@ -77,5 +79,7 @@ For each commitment record:
 - [ ] Legal-request publication and legal characterizations received appropriate human/legal review.
 - [ ] No personal, privileged, secret, or exploit-enabling detail is disclosed.
 - [ ] Completed improvements and future commitments are clearly separated.
+- [ ] Any claimed drill, restore, notification, review, external process, or other completed operational action has retained execution evidence rather than only a runbook, checklist, template, plan, or issue.
+- [ ] Notification delivery evidence and failed-delivery evidence, when notification occurred, is retained in an approved restricted location as required by `INCIDENT_RESPONSE.md`.
 - [ ] Subprocessor, AI/MCP, accessibility, policy, assessment, and affiliation claims match current evidence and do not overstate assurance.
 - [ ] Links and correction history were checked before publication.
