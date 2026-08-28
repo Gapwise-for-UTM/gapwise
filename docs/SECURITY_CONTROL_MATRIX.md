@@ -36,9 +36,9 @@ Operational policy forbids sensitive payload logging, and Gapwise AI's intended 
 
 Vercel runtime errors and function status plus Supabase Security and Performance Advisors are part of the production runbook. Review them after deployments and migrations, and investigate unexpected auth, database, or function error rates without adding sensitive payload logging.
 
-### 44. No backups/restore — Operational
+### 44. No backups/restore — Review required on the current Free plan
 
-KEK recovery/rotation and database restore procedures are documented. Private data has local-first recovery behavior and encrypted cloud restore checks. Periodically verify the actual Supabase backup/recovery entitlement and configuration, test a safe recovery procedure, and keep offline recovery copies of active KEKs.
+KEK recovery/rotation and application-level encrypted restore procedures are documented, and private data has local-first recovery behavior. The production Supabase organization is currently on the Free plan, where Supabase does not provide the daily automated backups available on Pro/Team/Enterprise and recommends regular off-site logical exports instead. Before calling database recovery fully operational, establish a repeatable off-site `db dump` procedure and exercise a safe restore into a non-production target. Keep offline recovery copies of active KEKs separate from database backups.
 
 ### 45. Exposed internal dashboards — Enforced by architecture/platform access
 
@@ -84,8 +84,9 @@ Production origins are exact, the AI base URL is canonical and HTTPS, client ide
 
 As of 2026-08-28, production verification found these platform-level items that source code cannot close by itself:
 
-1. Supabase Auth leaked-password protection is disabled and should be enabled in the production project.
+1. Supabase Auth leaked-password protection is disabled, but the production organization is on the Free plan and Supabase documents this control as Pro-only. The current database contains OAuth identities only (Google/GitHub), and the web repository has no password sign-in/sign-up code path. Do not upgrade the service merely to clear a generic warning; instead verify that unused password authentication remains disabled or otherwise unreachable. Revisit leaked-password protection if Gapwise intentionally adds password authentication or moves to a paid Supabase plan.
 2. GitHub default-branch required status checks are verified active: the repository ruleset strictly requires `verify` and `database-security`, requires PRs, prevents deletion/non-fast-forward updates, and has no bypass actors. Approving reviews, code-owner review, and review-thread resolution are not currently required by the ruleset; strengthen those account-level settings if repository-enforced human review is desired.
+3. The production Supabase organization is on the Free plan, so provider-managed daily database backups are not available. Supabase recommends regular off-site logical exports for Free projects. Establish and test that procedure before treating database disaster recovery as complete.
 
 Supabase also reports that several friendship/key-rotation `SECURITY DEFINER` RPCs are callable by the `authenticated` role. This exposure is intentional: the current implementations derive the caller from `auth.uid()`, reject non-direct/OAuth sessions through `private.is_direct_user_session()`, scope friendship operations to the caller, validate bounded arguments/key material, and keep OAuth isolation under database tests. Treat future advisor warnings as review triggers anyway; do not blanket-suppress them or broaden the grants casually.
 
