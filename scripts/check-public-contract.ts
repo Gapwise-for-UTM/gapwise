@@ -1,15 +1,35 @@
+import { readFile } from "node:fs/promises";
 import ts from "typescript";
 import { fetchV1 } from "../api/v1";
-import { Gapwise } from "../sdk/javascript/src/index";
 
 // OpenAPI is decoded JSON whose shape is validated by the conformance checks below.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Json = Record<string, any>;
+type GapwiseClient = {
+  info(): Promise<unknown>;
+  buildings: { list(): Promise<unknown>; get(building: string): Promise<unknown> };
+  places: { list(): Promise<unknown>; get(placeId: string): Promise<unknown> };
+  routes: { calculate(input: { from: string; to: string }): Promise<unknown> };
+  gaps: {
+    plan(input: {
+      from: string;
+      to: string;
+      term: "Fall";
+      weekday: "Sunday";
+      startTime: number;
+      endTime: number;
+    }): Promise<unknown>;
+  };
+};
+type GapwiseModule = {
+  Gapwise: new (options: { fetch: typeof fetch }) => GapwiseClient;
+};
+
 const errors: string[] = [];
 const fail = (message: string) => errors.push(message);
-const spec = (await Bun.file("public/openapi.json").json()) as Json;
+const spec = JSON.parse(await readFile("public/openapi.json", "utf8")) as Json;
 
-const canonicalOperations = Object.entries(spec.paths as Record<string, Json>)
+const canonicalOperations = Object.entries(spec["paths"] as Record<string, Json>)
   .filter(([path]) => !path.startsWith("/api/"))
   .flatMap(([path, item]) =>
     ["get", "post", "put", "patch", "delete"]
@@ -50,6 +70,10 @@ const fixtureFetch: typeof fetch = async (input, init) => {
   });
 };
 
+// Use a runtime-computed module specifier so the root app's stricter tsconfig does not
+// typecheck the independently-built SDK source under a second, incompatible compiler policy.
+const sdkModulePath = "../sdk/javascript/src/index";
+const { Gapwise } = (await import(sdkModulePath)) as GapwiseModule;
 const client = new Gapwise({ fetch: fixtureFetch });
 await client.info();
 await client.buildings.list();
@@ -116,8 +140,8 @@ for (const [resource, method] of runtimeCases) {
   if (
     !response.ok ||
     !("data" in payload) ||
-    payload.meta?.apiVersion !== "v1" ||
-    !payload.meta?.requestId
+    payload["meta"]?.apiVersion !== "v1" ||
+    !payload["meta"]?.requestId
   )
     fail(
       `HTTP implementation does not satisfy the success envelope for ${method} ${resource}: ${response.status}`,
@@ -130,14 +154,14 @@ const errorResponse = await fetchV1(
 const errorPayload = (await errorResponse.json()) as Json;
 if (
   errorResponse.status !== 404 ||
-  typeof errorPayload.error?.code !== "string" ||
-  typeof errorPayload.error?.message !== "string" ||
-  errorPayload.meta?.apiVersion !== "v1" ||
-  !errorPayload.meta?.requestId
+  typeof errorPayload["error"]?.code !== "string" ||
+  typeof errorPayload["error"]?.message !== "string" ||
+  errorPayload["meta"]?.apiVersion !== "v1" ||
+  !errorPayload["meta"]?.requestId
 )
   fail("HTTP implementation drifted from the OpenAPI error envelope.");
 
-const source = await Bun.file("sdk/javascript/src/types.ts").text();
+const source = await readFile("sdk/javascript/src/types.ts", "utf8");
 const tree = ts.createSourceFile(
   "types.ts",
   source,
@@ -168,7 +192,11 @@ for (const [sdkName, schemaName] of Object.entries({
   AvailabilityState: "PlaceAvailability.state",
 })) {
   const [name, property] = schemaName.split(".");
-  const schema = spec.components.schemas[name];
+  if (!name) {
+    fail(`Missing OpenAPI schema name for TypeScript ${sdkName}.`);
+    continue;
+  }
+  const schema = spec["components"].schemas[name];
   const expected = (property ? schema.properties[property].enum : schema.enum) as string[];
   const actual = aliases.get(sdkName) ?? [];
   if (JSON.stringify(actual) !== JSON.stringify(expected))
@@ -185,7 +213,7 @@ const maintainedDocs = [
   "sdk/python/README.md",
 ];
 const docs = await Promise.all(
-  maintainedDocs.map(async (path) => [path, await Bun.file(path).text()] as const),
+  maintainedDocs.map(async (path) => [path, await readFile(path, "utf8")] as const),
 );
 for (const [path, text] of docs) {
   if (/v1-preview|https:\/\/gapwise\.ca\/sdk\/gapwise-utm|public v1-preview/i.test(text))
