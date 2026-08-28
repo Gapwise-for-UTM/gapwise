@@ -23,7 +23,9 @@ export function StatePanel({
   className,
 }: StatePanelProps) {
   return (
-    <section className={cn("surface flex flex-col items-center p-7 text-center sm:p-10", className)}>
+    <section
+      className={cn("surface flex flex-col items-center p-7 text-center sm:p-10", className)}
+    >
       {icon ? (
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8 text-accent">
           {icon}
