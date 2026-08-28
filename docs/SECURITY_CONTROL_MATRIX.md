@@ -60,9 +60,9 @@ Private cloud is encrypted-only, plaintext schedule/preference tables were retir
 
 User identity comes from verified tokens, owner-scoped RLS is database-tested, cross-user isolation is included in the private-cloud security proof, and AI state is caller-scoped. Keep cross-user, relationship, and RLS tests in the required CI gate.
 
-### 50. Unreviewed code — Review required
+### 50. Unreviewed code — Partially enforced
 
-CI covers quality, browser journeys, DB security, and SDKs. CODEOWNERS declares repository ownership and the PR checklist requires a security review. GitHub must enforce required checks/review on `main`; repository source alone cannot guarantee that branch-rule setting.
+GitHub's active `Protect main` repository ruleset requires pull requests, blocks non-fast-forward updates and deletion, and strictly requires the `verify` and `database-security` status checks on the default branch with no bypass actors. CODEOWNERS declares repository ownership and the PR checklist requires a security review. The ruleset currently requires zero approving reviews and does not require code-owner approval or review-thread resolution, so human/agent review remains a release-process requirement rather than a GitHub-enforced merge prerequisite.
 
 ### 51. Mass assignment — Enforced
 
@@ -82,10 +82,10 @@ Production origins are exact, the AI base URL is canonical and HTTPS, client ide
 
 ## Platform findings to keep visible
 
-As of 2026-08-28, production verification found two platform-level items that source code cannot close by itself:
+As of 2026-08-28, production verification found these platform-level items that source code cannot close by itself:
 
 1. Supabase Auth leaked-password protection is disabled and should be enabled in the production project.
-2. GitHub required status-check/review enforcement on the protected production branch must be verified/enabled so CI and review controls cannot be bypassed by a direct push.
+2. GitHub default-branch required status checks are verified active: the repository ruleset strictly requires `verify` and `database-security`, requires PRs, prevents deletion/non-fast-forward updates, and has no bypass actors. Approving reviews, code-owner review, and review-thread resolution are not currently required by the ruleset; strengthen those account-level settings if repository-enforced human review is desired.
 
 Supabase also reports that several friendship/key-rotation `SECURITY DEFINER` RPCs are callable by the `authenticated` role. This exposure is intentional: the current implementations derive the caller from `auth.uid()`, reject non-direct/OAuth sessions through `private.is_direct_user_session()`, scope friendship operations to the caller, validate bounded arguments/key material, and keep OAuth isolation under database tests. Treat future advisor warnings as review triggers anyway; do not blanket-suppress them or broaden the grants casually.
 
