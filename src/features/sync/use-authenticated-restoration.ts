@@ -148,7 +148,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
       setRestoration(authError ? "failed" : choice.state);
       if (authError) {
         setRestorationMessage(
-          "We couldn't restore your signed-in session. Cloud restore is unavailable.",
+          "Your signed-in session could not be restored. Any local timetable is safe; sign in again to retry cloud restore.",
         );
       } else if (returningFromAccount) {
         setRestorationMessage(null);
@@ -263,7 +263,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
         restoredSource.current = choice.source;
         setRestoration("failed");
         setRestorationMessage(
-          "We couldn't restore your cloud timetable. Your local timetable is unchanged.",
+          "Encrypted cloud restore failed. Your local timetable is safe and unchanged; use Load private data to try again.",
         );
       });
   }, [

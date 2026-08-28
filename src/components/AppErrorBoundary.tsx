@@ -32,7 +32,8 @@ export class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorB
                 Sorry, something went wrong.
               </h1>
               <p className="mt-3 text-sm leading-7 text-muted-foreground">
-                An unexpected rendering error occurred. Reload the page to continue.
+                This screen stopped rendering. Timetable data saved in this browser is safe and has
+                not been reset. Reload Gapwise to try again.
               </p>
               <button
                 type="button"

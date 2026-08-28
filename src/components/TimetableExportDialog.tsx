@@ -75,7 +75,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") return;
       setError(
-        cause instanceof Error ? cause.message : "Export could not be completed. Try again.",
+        "The timetable export could not be created. Your timetable is safe and unchanged — try exporting again.",
       );
     } finally {
       setExporting(false);

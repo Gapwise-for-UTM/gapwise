@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppErrorBoundary } from "@/components/AppErrorBoundary";
+import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
 
 function NotFoundComponent() {
   return (
@@ -48,7 +49,8 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
           This page didn't load
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          This screen could not be opened. Timetable data saved in this browser is safe and has not
+          been reset. Try loading the screen again.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -116,6 +118,7 @@ function RootComponent() {
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
       </AppErrorBoundary>
+      <AppUpdatePrompt />
     </QueryClientProvider>
   );
 }

@@ -8,6 +8,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react";
 import { getRouter } from "./router";
 import { registerSW } from "virtual:pwa-register";
 import { removeBareHash } from "./lib/url";
+import { announceAppUpdate } from "./features/pwa/update-events";
 
 const container = document.getElementById("root");
 if (!container) throw new Error("Application root element is missing.");
@@ -20,7 +21,11 @@ if (import.meta.hot) {
 }
 
 const router = getRouter();
-registerSW();
+const updateServiceWorker = registerSW({
+  onNeedRefresh() {
+    announceAppUpdate(() => updateServiceWorker(true));
+  },
+});
 
 createRoot(container).render(
   <StrictMode>

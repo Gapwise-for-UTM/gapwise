@@ -42,4 +42,20 @@ describe("AND-66 first-run upload surface", () => {
     expect(visibleText).not.toMatch(/\b\d+%\b/);
     expect(html).not.toContain('role="progressbar"');
   });
+
+  test("explains import failure, state safety, and the best recovery action", () => {
+    const html = renderToStaticMarkup(
+      <UploadPanel
+        {...baseProps}
+        loading={false}
+        error="That file type isn't supported. Please choose a .ics calendar file."
+        variant="hero"
+      />,
+    );
+    const visibleText = textContent(html);
+
+    expect(visibleText).toContain("The calendar could not be imported.");
+    expect(visibleText).toContain("Any timetable already in this browser is safe.");
+    expect(visibleText).toContain("Choose another ACORN .ics file to try again.");
+  });
 });

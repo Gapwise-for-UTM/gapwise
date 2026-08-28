@@ -62,5 +62,6 @@ test("AppErrorBoundary renders a friendly fallback when a child throws", () => {
   console.error = originalConsoleError;
 
   expect(container.textContent).toContain("Sorry, something went wrong.");
+  expect(container.textContent).toContain("Timetable data saved in this browser is safe");
   expect(container.textContent).toContain("Reload");
 });

@@ -98,7 +98,9 @@ export function useTimetableCommands(input: TimetableCommandInput) {
       } catch (error) {
         const message = timetableImportError(error);
         if (previousMeetings?.length) {
-          input.setRestorationMessage(`Update failed · ${message}`);
+          input.setRestorationMessage(
+            `Timetable update failed · Your current timetable is safe and unchanged. ${message}`,
+          );
         } else {
           input.setMeetings(null);
           input.latestMeetings.current = null;
