@@ -1,8 +1,6 @@
-import { Bot, CreditCard, Link2, UserRound } from "lucide-react";
+import { Bot, Link2, UserRound } from "lucide-react";
 import { AiIntegrationControls } from "@/features/ai/AiIntegrationControls";
 import type { AiDelegationController } from "@/features/ai/use-ai-delegation";
-import { BillingPanel, type BillingReturnStatus } from "@/features/billing/BillingPanel";
-import { useEntitlement } from "@/features/entitlements/use-entitlement";
 import {
   Dialog,
   DialogContent,
@@ -13,36 +11,30 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const GAPWISE_MCP_URL = "https://ai.gapwise.ca/api/mcp";
-export type AccountSettingsTab = "account" | "billing" | "ai";
+export type AccountSettingsTab = "account" | "ai";
 
 export function AccountSettingsDialog({
   open,
   onOpenChange,
   identity,
-  userId,
   tab,
   onTabChange,
-  billingReturnStatus,
   aiController,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   identity: string;
-  userId: string;
   tab: AccountSettingsTab;
   onTabChange: (tab: AccountSettingsTab) => void;
-  billingReturnStatus: BillingReturnStatus;
   aiController: AiDelegationController | null;
 }) {
-  const entitlement = useEntitlement(userId);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[88vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl p-0">
         <DialogHeader className="border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
           <DialogTitle>Account settings</DialogTitle>
           <DialogDescription>
-            Manage your Gapwise account, Pro access, and exactly what authorized AI connectors may
-            access.
+            Manage your Gapwise account and exactly what authorized AI connectors may access.
           </DialogDescription>
         </DialogHeader>
 
@@ -51,14 +43,10 @@ export function AccountSettingsDialog({
           onValueChange={(value) => onTabChange(value as AccountSettingsTab)}
           className="px-5 pb-5 sm:px-6 sm:pb-6"
         >
-          <TabsList className="mt-4 grid h-auto w-full grid-cols-3 sm:w-fit sm:min-w-[28rem]">
+          <TabsList className="mt-4 grid h-auto w-full grid-cols-2 sm:w-fit sm:min-w-[20rem]">
             <TabsTrigger value="account" className="min-h-9 gap-2">
               <UserRound className="h-4 w-4" aria-hidden="true" />
               Account
-            </TabsTrigger>
-            <TabsTrigger value="billing" className="min-h-9 gap-2">
-              <CreditCard className="h-4 w-4" aria-hidden="true" />
-              Plan & billing
             </TabsTrigger>
             <TabsTrigger value="ai" className="min-h-9 gap-2">
               <Bot className="h-4 w-4" aria-hidden="true" />
@@ -75,14 +63,6 @@ export function AccountSettingsDialog({
                 authorization. Your original ACORN .ics file is not stored in your account.
               </p>
             </section>
-          </TabsContent>
-
-          <TabsContent value="billing" className="mt-4">
-            <BillingPanel
-              userId={userId}
-              entitlement={entitlement}
-              returnStatus={billingReturnStatus}
-            />
           </TabsContent>
 
           <TabsContent value="ai" className="mt-4 space-y-4">
