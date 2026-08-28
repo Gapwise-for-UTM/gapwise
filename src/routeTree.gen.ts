@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -26,6 +27,11 @@ import { Route as AppRouteIndexRouteImport } from './routes/_app/route/index'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccessibilityRoute = AccessibilityRouteImport.update({
+  id: '/accessibility',
+  path: '/accessibility',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevelopersRoute = DevelopersRouteImport.update({
@@ -96,6 +102,7 @@ const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/route/': typeof AppRouteIndexRoute
 }
 export interface FileRoutesByTo {
+  '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
@@ -127,6 +135,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accessibility'
     | '/developers'
     | '/places'
     | '/privacy'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/route/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/accessibility'
     | '/developers'
     | '/places'
     | '/privacy'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/accessibility'
     | '/developers'
     | '/places'
     | '/privacy'
@@ -192,6 +204,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  AccessibilityRoute: typeof AccessibilityRoute
   DevelopersRoute: typeof DevelopersRoute
   PlacesRoute: typeof PlacesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
@@ -208,6 +221,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accessibility': {
+      id: '/accessibility'
+      path: '/accessibility'
+      fullPath: '/accessibility'
+      preLoaderRoute: typeof AccessibilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/developers': {
@@ -335,6 +355,7 @@ const PlacesRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  AccessibilityRoute: AccessibilityRoute,
   DevelopersRoute: DevelopersRoute,
   PlacesRoute: PlacesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
