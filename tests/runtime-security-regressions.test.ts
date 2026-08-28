@@ -61,7 +61,11 @@ describe("runtime security regressions", () => {
 
   test("Vercel/server code cannot consume browser-exposed privileged credentials", async () => {
     const files = await readSources(["api", "src/server"]);
-    expectNoMatch(files, /VITE_SUPABASE_SERVICE_ROLE_KEY/u, "browser-exposed Supabase service role");
+    expectNoMatch(
+      files,
+      /VITE_SUPABASE_SERVICE_ROLE_KEY/u,
+      "browser-exposed Supabase service role",
+    );
     expectNoMatch(
       files,
       /VITE_[A-Z0-9_]*(?:SECRET|PASSWORD|PRIVATE_KEY|ACCESS_TOKEN|KEK)/u,
