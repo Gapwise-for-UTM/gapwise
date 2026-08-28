@@ -56,13 +56,7 @@ function isRequestType(type: ts.TypeNode | undefined, file: ts.SourceFile): bool
 }
 
 function directRequestJsonCalls(path: string, source: string): string[] {
-  const file = ts.createSourceFile(
-    path,
-    source,
-    ts.ScriptTarget.Latest,
-    true,
-    scriptKind(path),
-  );
+  const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, scriptKind(path));
   const offenders: string[] = [];
 
   function visit(node: ts.Node, inheritedAliases: Set<string>): void {
