@@ -16,24 +16,23 @@ import {
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 
-describe("trusted Pro capabilities", () => {
-  test("absence and expiration resolve to free", () => {
+describe("free product capabilities", () => {
+  test("historical billing-era rows never gate current capabilities", () => {
     expect(resolveEntitlement(null)).toEqual(FREE_ENTITLEMENT);
-    expect(resolveEntitlement({ tier: "pro", expires_at: "2020-01-01T00:00:00Z" }).tier).toBe(
-      "free",
+    expect(resolveEntitlement({ tier: "pro", expires_at: "2020-01-01T00:00:00Z" })).toEqual(
+      FREE_ENTITLEMENT,
     );
-  });
-  test("pro and permanent founder receive every current capability", () => {
+    expect(resolveEntitlement({ tier: "founder", expires_at: "2020-01-01" })).toEqual(
+      FREE_ENTITLEMENT,
+    );
+
     for (const capability of [
       "academic_planner",
       "coursework_management",
       "planned_work_blocks",
     ] as const) {
-      expect(canUseFeature({ tier: "pro", expiresAt: null }, capability)).toBe(true);
-      expect(canUseFeature({ tier: "founder", expiresAt: null }, capability)).toBe(true);
-      expect(canUseFeature(FREE_ENTITLEMENT, capability)).toBe(false);
+      expect(canUseFeature(FREE_ENTITLEMENT, capability)).toBe(true);
     }
-    expect(resolveEntitlement({ tier: "founder", expires_at: "2020-01-01" }).expiresAt).toBeNull();
   });
 });
 
