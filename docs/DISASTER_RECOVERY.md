@@ -177,3 +177,5 @@ It must **not** contain connection strings, database passwords, user data, token
 ## Recovery status
 
 Having this runbook in the repository means the procedure is defined, not that disaster recovery is proven. Checklist item 44 remains **Review required** until an actual backup has been produced, encrypted/stored off-site, restored into a disposable target, verified, and recorded without secrets.
+
+Linear issue **AND-154** is the authority for the actual backup/restore exercise state. Before making any internal or public recovery claim, reconcile it with AND-154 and its approved evidence; do not infer completion from this runbook, the backup-helper test, or an incident tabletop. Cross-service continuity assumptions, incident recovery gates, and explicit operational gaps are maintained in [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md).
