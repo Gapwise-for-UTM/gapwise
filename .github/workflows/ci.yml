@@ -60,7 +60,19 @@ jobs:
       - if: needs.changes.outputs.runtime == 'true'
         run: bun run typecheck
       - if: needs.changes.outputs.runtime == 'true'
-        run: bun run lint
+        name: Run lint with temporary diagnostics
+        shell: bash
+        run: |
+          set -o pipefail
+          bun run lint 2>&1 | tee lint.log
+      - name: Upload lint diagnostics on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: web-lint-diagnostics
+          path: lint.log
+          if-no-files-found: ignore
+          retention-days: 1
       - if: needs.changes.outputs.runtime == 'true'
         run: bun test
       - if: needs.changes.outputs.runtime == 'true'
