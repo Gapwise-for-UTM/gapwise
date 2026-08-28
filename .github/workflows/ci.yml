@@ -57,6 +57,8 @@ jobs:
         with:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile
+      - name: Audit production dependencies
+        run: bun run security:audit
       - if: needs.changes.outputs.runtime == 'true'
         run: bun run typecheck
       - if: needs.changes.outputs.runtime == 'true'

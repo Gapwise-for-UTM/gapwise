@@ -8,7 +8,7 @@
   "type": "module",
   "overrides": {
     "js-yaml": "4.3.1",
-    "nanoid": "3.3.17"
+    "nanoid": "3.3.18"
   },
   "scripts": {
     "dev": "vite dev",
@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "security:audit": "bun audit --prod --audit-level=high",
     "survey:import": "bun scripts/import-campus-survey.ts",
     "survey:dry-run": "bun scripts/import-campus-survey.ts --dry-run",
     "routing:refresh": "bun scripts/generate-outdoor-routing.ts",
