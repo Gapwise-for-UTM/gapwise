@@ -3,7 +3,8 @@
 Official dependency-free TypeScript client for the unauthenticated Gapwise Public Campus API v1. It works in modern browsers and Node 20+ and defaults to `https://api.gapwise.ca/v1`.
 
 ```bash
-npm install @gapwise/sdk
+# Not published to npm yet. From a checkout of this repository:
+npm install ./sdk/javascript
 ```
 
 ```ts

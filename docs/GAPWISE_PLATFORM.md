@@ -5,36 +5,43 @@ Gapwise exposes a small public campus-intelligence surface for University of Tor
 ## Public resources
 
 - Developer page: `https://gapwise.ca/developers`
-- OpenAPI 3.1: `https://gapwise.ca/openapi.json`
+- API base URL: `https://api.gapwise.ca/v1`
+- OpenAPI 3.1: `https://api.gapwise.ca/openapi.json`
 - Open UTM building snapshot: `https://gapwise.ca/data/utm-campus-v1.json`
-- Zero-dependency browser/TypeScript client: `https://gapwise.ca/sdk/gapwise-utm.js`
-- Type declarations: `https://gapwise.ca/sdk/gapwise-utm.d.ts`
+- JavaScript/TypeScript SDK source: [`../sdk/javascript`](../sdk/javascript)
+- Python SDK source: [`../sdk/python`](../sdk/python)
 - Visual Day Replay: `https://gapwise.ca/replay`
 
 ## API
 
-The public v1-preview surface intentionally stays small:
+The canonical public v1 surface intentionally stays small:
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/api/utm-buildings` | Canonical UTM building inventory, routing coverage, accessibility status, and provenance |
-| `GET` | `/api/utm-building?q=MN` | Resolve a canonical building by code/name/recognized alias |
-| `POST` | `/api/utm-route` | Deterministic building-to-building campus routing |
-| `POST` | `/api/utm-gap-plan` | Deterministic route-aware gap assessment |
+| `GET` | `/v1` | API/data versions, capabilities, and privacy metadata |
+| `GET` | `/v1/buildings` | Canonical UTM building inventory, routing coverage, accessibility status, and provenance |
+| `GET` | `/v1/buildings/MN` | Resolve a canonical building by code/name/recognized alias |
+| `GET` | `/v1/places` | Discover source-backed campus places and availability |
+| `GET` | `/v1/places/utm-library` | Resolve a canonical campus place |
+| `POST` | `/v1/routes` | Deterministic building-to-building campus routing |
+| `POST` | `/v1/gaps/plan` | Deterministic route-aware gap assessment |
 
 No API key is required for these public campus-data endpoints. They do not expose private timetable, friend, account, credential, or live-location data.
 
 ## JavaScript / TypeScript quick start
 
-```js
-import { gapwise } from "https://gapwise.ca/sdk/gapwise-utm.js";
+The package names below are release targets and are **not yet published** to npm or PyPI. Run the JavaScript SDK from its repository source until the human registry-release gates complete.
 
-const route = await gapwise.route({ from: "MN", to: "IB" });
-console.log(route.route.status, route.route.estimatedSeconds);
+```ts
+import { Gapwise } from "@gapwise/sdk";
+
+const gapwise = new Gapwise();
+const route = await gapwise.routes.calculate({ from: "MN", to: "IB" });
+console.log(route.status, route.estimatedSeconds);
 ```
 
 ```js
-const plan = await gapwise.planGap({
+const plan = await gapwise.gaps.plan({
   from: "MN",
   to: "IB",
   term: "Fall",
@@ -43,7 +50,7 @@ const plan = await gapwise.planGap({
   endTime: 780,
 });
 
-console.log(plan.gapPlan.assessment.primary);
+console.log(plan.assessment.primary);
 ```
 
 The client is deliberately a thin wrapper around standard `fetch`. Projects that prefer generated clients can use the OpenAPI document instead.
@@ -68,7 +75,7 @@ Some campus records are derived from OpenStreetMap and require OpenStreetMap att
 
 The platform is intentionally static-first and bounded:
 
-- OpenAPI, SDK files, and the dataset snapshot are static assets.
+- OpenAPI, SDK source, and the dataset snapshot are versioned repository artifacts.
 - The live playground only calls an API after a user explicitly runs an example.
 - Day Replay performs calendar parsing, schedule simulation, routing, and gap calculations in the browser.
 - No new database table, storage bucket, polling worker, cron job, or hosted model is required for this release.

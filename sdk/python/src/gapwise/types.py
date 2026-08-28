@@ -88,7 +88,6 @@ RouteResult = TypedDict(
         "warnings": list[str],
         "routeVerification": Literal["verified", "mixed", "inferred", "unavailable"],
     },
-    total=False,
 )
 
 
@@ -160,6 +159,13 @@ class GapPlanResult(TypedDict):
     assessment: GapAssessment
 
 
+class ApiCapabilities(TypedDict):
+    buildingSearch: bool
+    placeSearch: bool
+    placeAvailability: Literal["source-dependent"]
+    routingModes: list[RouteMode]
+
+
 class ApiInfo(TypedDict):
     name: str
     apiVersion: ApiVersion
@@ -168,6 +174,7 @@ class ApiInfo(TypedDict):
     authentication: Literal["none"]
     documentationUrl: str
     openapiUrl: str
+    capabilities: ApiCapabilities
     privacy: str
 
 
