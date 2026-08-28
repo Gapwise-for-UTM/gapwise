@@ -30,9 +30,11 @@ AI access is explicitly delegated. Private reads require a valid user token, MCP
 
 Browser and server clients are caller-scoped, RLS and restrictive grants are database-tested, and Vercel private-cloud functions do not receive a Supabase service-role credential. Review Supabase Security Advisor after migrations and justify every intentionally exposed `SECURITY DEFINER` RPC.
 
-### 42. Missing audit logs — Review required
+### 42. Missing audit logs — Enforced + operational
 
-Operational policy forbids sensitive payload logging, and Gapwise AI's intended audit posture is metadata-only (`who/when/which tool`). Verify the deployed metadata audit path and retention before treating this as fully operational. Never log timetable content, decrypted private data, prompts, tokens, or keys.
+Gapwise AI now wraps every registered private MCP tool with a metadata-only audit boundary and emits a structured `gapwise.mcp.tool` event to server-side Vercel logs. The allowlisted event contains only tool name, a stable pseudonymous caller reference, OAuth client ID when authenticated, and a coarse outcome; the platform supplies time. Regression tests deliberately inject tool arguments, timetable/course/date content, responses, prompts, raw user IDs, bearer tokens, error payloads, and rejected audit sinks to verify that sensitive values are not retained and logging failure cannot break the user operation.
+
+The exact audit implementation is deployed on the production `ai.gapwise.ca` service. Vercel log retention, availability, export, and immutability are operational/provider properties rather than guarantees made by Gapwise source code; re-verify those properties for any institutional retention requirement and do not describe this as WORM/immutable logging without separate evidence.
 
 ### 43. No security monitoring — Operational
 
@@ -91,6 +93,7 @@ As of 2026-08-28, production verification found these platform-level items that 
 1. Supabase Auth leaked-password protection is disabled, but the production organization is on the Free plan and Supabase documents this control as Pro-only. The current database contains OAuth identities only (Google/GitHub), and the web repository has no password sign-in/sign-up code path. Do not upgrade the service merely to clear a generic warning; instead verify that unused password authentication remains disabled or otherwise unreachable. Revisit leaked-password protection if Gapwise intentionally adds password authentication or moves to a paid Supabase plan.
 2. GitHub default-branch required status checks are verified active: the repository ruleset strictly requires `verify` and `database-security`, requires PRs, prevents deletion/non-fast-forward updates, and has no bypass actors. Approving reviews, code-owner review, and review-thread resolution are not currently required by the ruleset; strengthen those account-level settings if repository-enforced human review is desired.
 3. The production Supabase organization is on the Free plan, so provider-managed daily database backups are not available. A safe logical-backup helper, secret-handling rules, checksum/evidence generation, and disposable-target restore procedure are now implemented and regression-tested in the repository. This is preparation, not proof: keep disaster recovery incomplete until a real encrypted off-site backup is successfully restored and verified against a disposable non-production target.
+4. Gapwise AI's metadata-only tool audit path is deployed and regression-tested. Vercel remains the operational log store, so retention duration, export/archival policy, and immutability must be separately verified if a future institutional requirement demands specific guarantees.
 
 Supabase also reports that several friendship/key-rotation `SECURITY DEFINER` RPCs are callable by the `authenticated` role. This exposure is intentional: the current implementations derive the caller from `auth.uid()`, reject non-direct/OAuth sessions through `private.is_direct_user_session()`, scope friendship operations to the caller, validate bounded arguments/key material, and keep OAuth isolation under database tests. Treat future advisor warnings as review triggers anyway; do not blanket-suppress them or broaden the grants casually.
 
