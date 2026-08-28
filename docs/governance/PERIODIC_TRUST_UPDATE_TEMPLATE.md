@@ -4,14 +4,14 @@
 
 ## Update control
 
-| Field | Required entry |
-| --- | --- |
-| Period | `[start date, inclusive]` to `[end date, inclusive]` |
-| Published | `[date after approval]` |
-| Scope and exclusions | `[services/environments covered and omitted]` |
-| Evidence cut-off | `[date/time/time zone]` |
-| Owner and approver | `[roles and approval record]` |
-| Related annual report | `[canonical link or “Not yet published”]` |
+Record all of the following before publication:
+
+- **Period:** `[start date, inclusive]` to `[end date, inclusive]`
+- **Published:** `[date after approval]`
+- **Scope and exclusions:** `[services/environments covered and omitted]`
+- **Evidence cut-off:** `[date/time/time zone]`
+- **Owner and approver:** `[roles and approval record]`
+- **Related annual report:** `[canonical link or “Not yet published”]`
 
 ## Reader note
 
@@ -27,29 +27,27 @@ This update is not an audit, certification, legal conclusion, or statement of Un
 
 ## Events and response
 
-Retain a non-numeric reporting state when readers could otherwise mistake silence for zero.
+Retain a non-numeric reporting state when readers could otherwise mistake silence for zero. For each topic, record the result or reporting state, the definition and coverage, the evidence source, and a safe response or user-impact summary.
 
-| Topic | Result or reporting state | Definition, coverage, evidence | Response / user impact |
-| --- | --- | --- | --- |
-| Security incidents | `[value or state]` | `[register, definition, dates, reconciliation]` | `[safe summary]` |
-| Privacy incidents | `[value or state]` | `[register, taxonomy, dates, review]` | `[safe summary; no unsupported legal conclusion]` |
-| Responsibly disclosed vulnerabilities | `[value or state]` | `[intake register, unique/duplicate and validation rules]` | `[themes/remediation without risky detail]` |
-| Availability / outages | `[value or state]` | `[telemetry, service boundary, formula, exclusions]` | `[impact and recovery]` |
-| Account/data deletion requests | `[value or state]` | `[request register, channels, deduplication, scope]` | `[completion information if reliably tracked]` |
-| Legal/government requests | `[value or state]` | `[complete register plus publication approval]` | `[reviewed aggregate or high-level reason not publishable]` |
+- **Security incidents:** `[value or state; incident register, definition, dates, reconciliation]`
+- **Privacy incidents:** `[value or state; taxonomy, dates, review; no unsupported legal conclusion]`
+- **Responsibly disclosed vulnerabilities:** `[value or state; intake register, unique/duplicate and validation rules]`
+- **Availability or outages:** `[value or state; telemetry, service boundary, formula, exclusions]`
+- **Account or data deletion requests:** `[value or state; request register, channels, deduplication, scope]`
+- **Legal or government requests:** `[value or state; complete register plus publication approval]`
 
 Do not add remediation-time statistics unless timestamped records, lifecycle rules, and a defined statistic cover the reported population. If included, state sample size, units, clock rules, and whether the result is a median, percentile, or another measure.
 
 ## Trust-related changes
 
-| Area | Completed change | Effective date | Evidence | Limitation / user action |
-| --- | --- | --- | --- | --- |
-| Subprocessors | `[addition, removal, or material change]` | `[date]` | `[inventory/change record]` | `[impact]` |
-| Security/privacy/accessibility | `[shipped improvement]` | `[date/version]` | `[implementation/test/review]` | `[remaining limitation]` |
-| AI/MCP permissions | `[added, removed, or narrowed capability]` | `[date/version]` | `[contract/code/test]` | `[consent/revocation/action]` |
-| Major policies | `[effective revision]` | `[date]` | `[canonical policy/history]` | `[action]` |
+Record only completed, evidence-backed changes. For each item include the effective date or version, evidence source, limitation, and any user action.
 
-If the authoritative inventory or change history does not cover the whole period, say so; do not report “no changes.” Planned work belongs below, not in this table.
+- **Subprocessors:** `[addition, removal, or material change]`
+- **Security, privacy, or accessibility:** `[shipped improvement]`
+- **AI/MCP permissions:** `[added, removed, or narrowed capability]`
+- **Major policies:** `[effective revision and canonical history]`
+
+If the authoritative inventory or change history does not cover the whole period, say so; do not report “no changes.” Planned work belongs under commitments instead.
 
 ## Independent assessments
 
@@ -57,9 +55,13 @@ Use **None claimed** unless an assessment was actually performed and its indepen
 
 ## Next-period commitments
 
-| Commitment (target, not guarantee) | Owner | Target window | Success evidence | Dependency / risk |
-| --- | --- | --- | --- | --- |
-| `[bounded commitment]` | `[role]` | `[window]` | `[observable evidence]` | `[dependency]` |
+For each commitment record:
+
+- the bounded target, explicitly described as a target rather than a guarantee;
+- accountable owner;
+- target window;
+- observable success evidence; and
+- dependency or risk.
 
 ## Measurement gaps and corrections
 
@@ -70,7 +72,7 @@ Use **None claimed** unless an assessment was actually performed and its indepen
 ## Release checklist
 
 - [ ] Scope, dates, cut-off, exclusions, owner, and approver are clear.
-- [ ] Each number—including each zero—has a definition, reliable source, complete coverage, deduplication rule, and reviewer.
+- [ ] Each number, including each zero, has a definition, reliable source, complete coverage, deduplication rule, and reviewer.
 - [ ] Partial or absent measurement is labelled without extrapolation.
 - [ ] Legal-request publication and legal characterizations received appropriate human/legal review.
 - [ ] No personal, privileged, secret, or exploit-enabling detail is disclosed.
