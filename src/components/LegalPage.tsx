@@ -41,7 +41,7 @@ export function LegalPage({
         <article className="mt-10 space-y-8 text-sm leading-7 text-muted-foreground [&_h2]:mb-2 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
           {children}
         </article>
-        <footer className="mt-12 flex gap-4 border-t border-border pt-6 text-sm">
+        <footer className="mt-12 flex flex-wrap gap-4 border-t border-border pt-6 text-sm">
           <Link to="/privacy" className="text-accent hover:underline">
             Privacy
           </Link>
@@ -50,6 +50,9 @@ export function LegalPage({
           </Link>
           <Link to="/security" className="text-accent hover:underline">
             Security
+          </Link>
+          <Link to="/accessibility" className="text-accent hover:underline">
+            Accessibility
           </Link>
           <a
             href="https://github.com/andrewmuratov/gapwise"
