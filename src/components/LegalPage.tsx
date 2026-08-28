@@ -3,10 +3,14 @@ import { Link } from "@tanstack/react-router";
 export function LegalPage({
   eyebrow,
   title,
+  dateLabel = "Effective",
+  date = "August 21, 2026",
   children,
 }: {
   eyebrow: string;
   title: string;
+  dateLabel?: string;
+  date?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -31,7 +35,9 @@ export function LegalPage({
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
           {title}
         </h1>
-        <p className="mt-3 text-sm text-muted-foreground">Effective August 21, 2026</p>
+        <p className="mt-3 text-sm text-muted-foreground">
+          {dateLabel} {date}
+        </p>
         <article className="mt-10 space-y-8 text-sm leading-7 text-muted-foreground [&_h2]:mb-2 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
           {children}
         </article>
@@ -41,6 +47,9 @@ export function LegalPage({
           </Link>
           <Link to="/terms" className="text-accent hover:underline">
             Terms
+          </Link>
+          <Link to="/security" className="text-accent hover:underline">
+            Security
           </Link>
           <a
             href="https://github.com/andrewmuratov/gapwise"
