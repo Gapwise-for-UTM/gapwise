@@ -261,7 +261,7 @@ describe("route-level encrypted timetable restoration", () => {
     await waitFor(() => pageText().includes("SAFE101H5"), "the guest timetable");
     await setAuth({ user: authenticatedUser, loading: false, error: null });
     await waitFor(
-      () => pageText().includes("We couldn't restore your cloud timetable"),
+      () => pageText().includes("Encrypted cloud restore failed"),
       "the interrupted restore warning",
     );
 
@@ -380,7 +380,7 @@ describe("route-level encrypted timetable restoration", () => {
 
     await mountRoute();
     await waitFor(
-      () => pageText().includes("We couldn't restore your cloud timetable."),
+      () => pageText().includes("Encrypted cloud restore failed."),
       "the restore error",
     );
     expect(pageText()).toContain("Import ACORN");
@@ -395,7 +395,7 @@ describe("route-level encrypted timetable restoration", () => {
 
     await mountRoute();
     await waitFor(
-      () => pageText().includes("We couldn't restore your signed-in session."),
+      () => pageText().includes("Your signed-in session could not be restored."),
       "the auth initialization error",
     );
     expect(loadCalls).toHaveLength(0);
@@ -410,7 +410,7 @@ describe("route-level encrypted timetable restoration", () => {
     expect(pageText()).not.toContain("Import ACORN");
     query.resolve(null);
     await waitFor(() => pageText().includes("Import ACORN"), "the empty state");
-    expect(pageText()).not.toContain("We couldn't restore your cloud timetable.");
+    expect(pageText()).not.toContain("Encrypted cloud restore failed.");
   });
 
   test("ignores and removes legacy plaintext remembered timetable state", async () => {

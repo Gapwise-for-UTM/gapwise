@@ -149,12 +149,16 @@ export function UploadPanel({
   );
 
   const errorMessage = error ? (
-    <p
+    <div
       role="alert"
       className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
     >
-      {error}
-    </p>
+      <p className="font-semibold">The calendar could not be imported.</p>
+      <p className="mt-1 leading-6">{error}</p>
+      <p className="mt-1 leading-6">
+        Any timetable already in this browser is safe. Choose another ACORN .ics file to try again.
+      </p>
+    </div>
   ) : null;
 
   if (hero) {
