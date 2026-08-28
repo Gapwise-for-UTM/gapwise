@@ -4,6 +4,7 @@ import {
   isEncryptedSyncOptedIn,
   saveEncryptedPrivateState,
 } from "@/features/sync/encrypted-sync-service";
+import { chooseAutosaveTarget } from "@/features/sync/autosave-reconnect";
 import type { GapPreferences } from "@/features/gaps/types";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
@@ -36,6 +37,9 @@ export function useEncryptedAutosave({
   onFailure,
 }: AutosaveInput) {
   const failureHandler = useRef(onFailure);
+  const activeUserId = useRef<string | null>(null);
+  const lastCloudFingerprint = useRef<string | null>(null);
+  const pendingOfflineFingerprint = useRef<string | null>(null);
   failureHandler.current = onFailure;
 
   useEffect(() => {
@@ -48,16 +52,66 @@ export function useEncryptedAutosave({
     ) {
       return;
     }
+
+    if (activeUserId.current !== userId) {
+      activeUserId.current = userId;
+      lastCloudFingerprint.current = null;
+      pendingOfflineFingerprint.current = null;
+    }
+
     const input = { schedule: meetings, personalItems, preferences, gapPreferences, academic };
     const fingerprint = JSON.stringify({ schemaVersion: 2, ...input });
-    if (fingerprint === restoredFingerprint.current) return;
+
+    // A restoration fingerprint is a valid cloud baseline only while online.
+    // Offline secure-local restoration may contain work that still needs a
+    // cloud flush after connectivity returns.
+    if (
+      isOnline &&
+      lastCloudFingerprint.current === null &&
+      pendingOfflineFingerprint.current === null &&
+      restoredFingerprint.current !== null
+    ) {
+      lastCloudFingerprint.current = restoredFingerprint.current;
+    }
+
+    const target = chooseAutosaveTarget({
+      fingerprint,
+      lastCloudFingerprint: lastCloudFingerprint.current,
+      pendingOfflineFingerprint: pendingOfflineFingerprint.current,
+      isOnline,
+    });
+    if (target === "skip") return;
+
     const timeout = window.setTimeout(() => {
+      if (target === "local") {
+        pendingOfflineFingerprint.current = fingerprint;
+        void saveEncryptedPrivateState(userId, input, {
+          requireExistingOptIn: true,
+          localOnly: true,
+        }).catch(() => {
+          if (pendingOfflineFingerprint.current === fingerprint) {
+            pendingOfflineFingerprint.current = null;
+          }
+          failureHandler.current();
+        });
+        return;
+      }
+
+      const previousCloudFingerprint = lastCloudFingerprint.current;
+      lastCloudFingerprint.current = fingerprint;
+      pendingOfflineFingerprint.current = null;
       restoredFingerprint.current = fingerprint;
       void saveEncryptedPrivateState(userId, input, {
         requireExistingOptIn: true,
-        localOnly: !isOnline,
+        localOnly: false,
       }).catch(() => {
-        if (restoredFingerprint.current === fingerprint) restoredFingerprint.current = null;
+        if (lastCloudFingerprint.current === fingerprint) {
+          lastCloudFingerprint.current = previousCloudFingerprint;
+          pendingOfflineFingerprint.current = fingerprint;
+        }
+        if (restoredFingerprint.current === fingerprint) {
+          restoredFingerprint.current = previousCloudFingerprint;
+        }
         failureHandler.current();
       });
     }, 750);
