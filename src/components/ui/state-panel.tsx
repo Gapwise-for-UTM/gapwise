@@ -23,12 +23,7 @@ export function StatePanel({
   className,
 }: StatePanelProps) {
   return (
-    <section
-      className={cn(
-        "surface flex flex-col items-center p-7 text-center sm:p-10",
-        className,
-      )}
-    >
+    <section className={cn("surface flex flex-col items-center p-7 text-center sm:p-10", className)}>
       {icon ? (
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8 text-accent">
           {icon}
@@ -47,7 +42,9 @@ export function StatePanel({
         <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">{description}</p>
       ) : null}
       {children}
-      {actions ? <div className="mt-6 flex w-full flex-col justify-center gap-2 sm:flex-row">{actions}</div> : null}
+      {actions ? (
+        <div className="mt-6 flex w-full flex-col justify-center gap-2 sm:flex-row">{actions}</div>
+      ) : null}
     </section>
   );
 }
@@ -59,7 +56,12 @@ type LoadingPanelProps = {
   compact?: boolean;
 };
 
-export function LoadingPanel({ title, description, className, compact = false }: LoadingPanelProps) {
+export function LoadingPanel({
+  title,
+  description,
+  className,
+  compact = false,
+}: LoadingPanelProps) {
   return (
     <section
       className={cn(
