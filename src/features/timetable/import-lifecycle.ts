@@ -1,7 +1,8 @@
-import { IcsParseError, MAX_ICS_FILE_BYTES, parseIcs } from "@/lib/ics-parser";
 import type { Meeting } from "@/lib/timetable-types";
 
-export type TimetableImportResult = ReturnType<typeof parseIcs>;
+export const MAX_ICS_FILE_BYTES = 2 * 1024 * 1024;
+
+export type TimetableImportResult = Awaited<ReturnType<typeof parseTimetableText>>;
 
 export function validateTimetableFile(file: Pick<File, "name" | "type" | "size">): string | null {
   if (!/\.ics$/i.test(file.name) && file.type !== "text/calendar") {
@@ -13,12 +14,15 @@ export function validateTimetableFile(file: Pick<File, "name" | "type" | "size">
   return null;
 }
 
-export function parseTimetableText(text: string): TimetableImportResult {
+export async function parseTimetableText(text: string) {
+  // Calendar parsing and its location metadata are only needed after the student
+  // chooses a file. Keep them off the critical app-shell path on ordinary visits.
+  const { parseIcs } = await import("@/lib/ics-parser");
   return parseIcs(text);
 }
 
 export function timetableImportError(error: unknown): string {
-  return error instanceof IcsParseError
+  return error instanceof Error && error.name === "IcsParseError"
     ? error.message
     : "Something went wrong while reading that calendar. Try exporting it from ACORN again.";
 }

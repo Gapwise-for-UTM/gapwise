@@ -41,7 +41,9 @@ export function UtmMonumentViewer({
           preloadObserver.disconnect();
         }
       },
-      { rootMargin: "320px 0px" },
+      // Do not start the 3D runtime and 7 MB model while the landmark is still
+      // below the mobile viewport; the static shell remains immediately usable.
+      { rootMargin: "0px" },
     );
     const visibilityObserver = new IntersectionObserver(
       ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),

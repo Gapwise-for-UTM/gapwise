@@ -12,7 +12,9 @@ import {
 } from "./timetable-types";
 import { resolveAcornLocation } from "@/features/routing/location-resolver";
 
-export class IcsParseError extends Error {}
+export class IcsParseError extends Error {
+  override name = "IcsParseError";
+}
 
 export const MAX_ICS_FILE_BYTES = 2 * 1024 * 1024;
 export const MAX_ICS_EVENTS = 2_000;
