@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReplayRouteImport } from './routes/replay'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TrustRouteImport } from './routes/trust'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppGapsRouteImport } from './routes/_app.gaps'
 import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
@@ -26,6 +28,11 @@ import { Route as AppRouteIndexRouteImport } from './routes/_app/route/index'
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccessibilityRoute = AccessibilityRouteImport.update({
+  id: '/accessibility',
+  path: '/accessibility',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevelopersRoute = DevelopersRouteImport.update({
@@ -56,6 +63,11 @@ const SecurityRoute = SecurityRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrustRoute = TrustRouteImport.update({
+  id: '/trust',
+  path: '/trust',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -96,12 +108,14 @@ const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
+  '/trust': typeof TrustRoute
   '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
@@ -110,12 +124,14 @@ export interface FileRoutesByFullPath {
   '/route/': typeof AppRouteIndexRoute
 }
 export interface FileRoutesByTo {
+  '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
+  '/trust': typeof TrustRoute
   '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
@@ -127,12 +143,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
+  '/trust': typeof TrustRoute
   '/_app/gaps': typeof AppGapsRoute
   '/_app/timetable': typeof AppTimetableRoute
   '/_app/today': typeof AppTodayRoute
@@ -145,12 +163,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/accessibility'
     | '/developers'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
     | '/terms'
+    | '/trust'
     | '/gaps'
     | '/timetable'
     | '/today'
@@ -159,12 +179,14 @@ export interface FileRouteTypes {
     | '/route/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/accessibility'
     | '/developers'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
     | '/terms'
+    | '/trust'
     | '/gaps'
     | '/timetable'
     | '/today'
@@ -175,12 +197,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/accessibility'
     | '/developers'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
     | '/terms'
+    | '/trust'
     | '/_app/gaps'
     | '/_app/timetable'
     | '/_app/today'
@@ -192,12 +216,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  AccessibilityRoute: typeof AccessibilityRoute
   DevelopersRoute: typeof DevelopersRoute
   PlacesRoute: typeof PlacesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ReplayRoute: typeof ReplayRoute
   SecurityRoute: typeof SecurityRoute
   TermsRoute: typeof TermsRoute
+  TrustRoute: typeof TrustRoute
   OauthConsentRoute: typeof OauthConsentRoute
 }
 
@@ -208,6 +234,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accessibility': {
+      id: '/accessibility'
+      path: '/accessibility'
+      fullPath: '/accessibility'
+      preLoaderRoute: typeof AccessibilityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/developers': {
@@ -250,6 +283,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trust': {
+      id: '/trust'
+      path: '/trust'
+      fullPath: '/trust'
+      preLoaderRoute: typeof TrustRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -335,12 +375,14 @@ const PlacesRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  AccessibilityRoute: AccessibilityRoute,
   DevelopersRoute: DevelopersRoute,
   PlacesRoute: PlacesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ReplayRoute: ReplayRoute,
   SecurityRoute: SecurityRoute,
   TermsRoute: TermsRoute,
+  TrustRoute: TrustRoute,
   OauthConsentRoute: OauthConsentRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import { isMobileProject, watchForAppFailures } from "./helpers";
 
@@ -13,6 +14,51 @@ test("privacy and terms are public, responsive, and independent of an account", 
   await expect(page).toHaveTitle("Terms — Gapwise for UTM");
   await expect(page.getByRole("heading", { name: "A practical student utility." })).toBeVisible();
   guard.assertClean();
+});
+
+test("accessibility statement publishes scoped evidence and limitations", async ({ page }) => {
+  await page.goto("/accessibility");
+
+  await expect(page.getByRole("heading", { name: "Access is an ongoing practice." })).toBeVisible();
+  await expect(page.getByText(/process commitment, not a claim/)).toBeVisible();
+  await expect(page.getByText(/No documented, repeatable manual screen-reader/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Gapwise GitHub repository" })).toHaveAttribute(
+    "href",
+    "https://github.com/andrewmuratov/gapwise/issues",
+  );
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(
+    results.violations.filter(
+      (violation) => violation.impact === "serious" || violation.impact === "critical",
+    ),
+  ).toEqual([]);
+});
+
+test("trust center exposes evidence-backed boundaries and limitations", async ({ page }) => {
+  await page.goto("/trust");
+  await expect(page).toHaveTitle("Trust Center — Gapwise for UTM");
+  await expect(page.getByRole("heading", { name: "Evidence before promises." })).toBeVisible();
+  await expect(page.getByText("Gapwise does not ask for your ACORN password.")).toBeVisible();
+  await expect(page.getByText(/does not call the design end-to-end encrypted or zero knowledge/)).toBeVisible();
+  await expect(page.getByText(/No repository-verified dedicated public status service/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Report a vulnerability" })).toHaveAttribute(
+    "href",
+    "/security",
+  );
+  await expect(page.getByRole("link", { name: "Accessibility Statement" })).toHaveAttribute(
+    "href",
+    "/accessibility",
+  );
+  await expect(page.getByRole("link", { name: "Data and trust inventory" })).toHaveAttribute(
+    "href",
+    "https://github.com/andrewmuratov/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md",
+  );
+  const results = await new AxeBuilder({ page }).analyze();
+  expect(
+    results.violations.filter(
+      (violation) => violation.impact === "serious" || violation.impact === "critical",
+    ),
+  ).toEqual([]);
 });
 
 test("vulnerability policy and canonical security contact are public", async ({ page }) => {
