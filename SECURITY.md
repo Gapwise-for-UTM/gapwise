@@ -6,6 +6,10 @@ Security fixes target the current production deployment and the `main` branch. P
 
 ## Reporting a vulnerability
 
+The public Vulnerability Disclosure Policy and canonical contact details are at
+<https://gapwise.ca/security>. Machine-readable contact details are published at
+<https://gapwise.ca/.well-known/security.txt>.
+
 Please do not publish exploitable security details, credentials, authentication tokens, private timetable data, or cryptographic key material in a public issue or pull request.
 
 Use GitHub private vulnerability reporting for this repository when it is available. If that option is unavailable, contact the repository owner through the GitHub profile and request a private reporting channel before sending exploit details.

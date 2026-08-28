@@ -1,0 +1,6 @@
+Contact: https://github.com/andrewmuratov/gapwise/security/advisories/new
+Contact: https://gapwise.ca/security
+Expires: 2027-08-28T23:59:59Z
+Preferred-Languages: en
+Canonical: https://gapwise.ca/.well-known/security.txt
+Policy: https://gapwise.ca/security

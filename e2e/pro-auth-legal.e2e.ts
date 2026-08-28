@@ -15,6 +15,28 @@ test("privacy and terms are public, responsive, and independent of an account", 
   guard.assertClean();
 });
 
+test("vulnerability policy and canonical security contact are public", async ({ page }) => {
+  await page.goto("/security");
+  await expect(page).toHaveTitle("Vulnerability Disclosure — Gapwise for UTM");
+  await expect(
+    page.getByRole("heading", { name: "Vulnerability Disclosure Policy" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "private vulnerability reporting form" }),
+  ).toHaveAttribute("href", "https://github.com/andrewmuratov/gapwise/security/advisories/new");
+  await expect(page.getByText("operational goals, not guaranteed")).toBeVisible();
+
+  const response = await page.request.get("/.well-known/security.txt");
+  expect(response.ok()).toBe(true);
+  expect(response.headers()["content-type"]).toContain("text/plain");
+  const securityTxt = await response.text();
+  expect(securityTxt).toContain("Canonical: https://gapwise.ca/.well-known/security.txt");
+  expect(securityTxt).toContain("Policy: https://gapwise.ca/security");
+  expect(securityTxt).toContain(
+    "Contact: https://github.com/andrewmuratov/gapwise/security/advisories/new",
+  );
+});
+
 test("visible Pro planning journey accepts work and exposes safe block actions", async ({
   page,
 }, testInfo) => {
