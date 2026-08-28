@@ -1,12 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import {
-  ChevronDown,
-  GitBranch,
-  LogOut,
-  Settings2,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { ChevronDown, GitBranch, LogOut, Settings2, Trash2, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   AlertDialog,
