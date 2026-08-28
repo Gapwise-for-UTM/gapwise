@@ -14,6 +14,7 @@ import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReplayRouteImport } from './routes/replay'
+import { Route as SecurityRouteImport } from './routes/security'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppGapsRouteImport } from './routes/_app.gaps'
@@ -45,6 +46,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const ReplayRoute = ReplayRouteImport.update({
   id: '/replay',
   path: '/replay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SecurityRoute = SecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -94,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
+  '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
+  '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
+  '/security': typeof SecurityRoute
   '/terms': typeof TermsRoute
   '/_app/gaps': typeof AppGapsRoute
   '/_app/timetable': typeof AppTimetableRoute
@@ -140,6 +149,7 @@ export interface FileRouteTypes {
     | '/places'
     | '/privacy'
     | '/replay'
+    | '/security'
     | '/terms'
     | '/gaps'
     | '/timetable'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/places'
     | '/privacy'
     | '/replay'
+    | '/security'
     | '/terms'
     | '/gaps'
     | '/timetable'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/places'
     | '/privacy'
     | '/replay'
+    | '/security'
     | '/terms'
     | '/_app/gaps'
     | '/_app/timetable'
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   PlacesRoute: typeof PlacesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ReplayRoute: typeof ReplayRoute
+  SecurityRoute: typeof SecurityRoute
   TermsRoute: typeof TermsRoute
   OauthConsentRoute: typeof OauthConsentRoute
 }
@@ -223,6 +236,13 @@ declare module '@tanstack/react-router' {
       path: '/replay'
       fullPath: '/replay'
       preLoaderRoute: typeof ReplayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/security': {
+      id: '/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof SecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -319,6 +339,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlacesRoute: PlacesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ReplayRoute: ReplayRoute,
+  SecurityRoute: SecurityRoute,
   TermsRoute: TermsRoute,
   OauthConsentRoute: OauthConsentRoute,
 }
