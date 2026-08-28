@@ -42,12 +42,12 @@ Provider status, affected records, log retention, exact deployed configuration, 
 
 ## Severity classification
 
-| Level | Classification guide | Examples are hypothetical | Minimum process |
-| --- | --- | --- | --- |
+| Level              | Classification guide                                                                                                                                                                             | Examples are hypothetical                                          | Minimum process                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
 | **SEV-1 Critical** | Active or credible widespread compromise; exposed auth/signing/KEK capability with a path to private data; destructive loss with no known recovery; major integrity failure affecting many users | malicious production code, broad confirmed private-data disclosure | incident lead, immediate containment review, security + privacy tracks, owner/provider escalation, communication/legal decisions logged |
-| **SEV-2 High** | Confirmed material compromise with bounded/unknown scope; unauthorized personal-data access; prolonged core-service loss without safe workaround; high-risk credential exposure | cross-account access, stolen production credential | prioritized containment, provider escalation, privacy triage, notification decision recorded |
-| **SEV-3 Moderate** | Limited control failure or material degradation with low demonstrated data risk and a safe workaround | repeated function failures, bounded config drift | named owner, contain/fix, assess escalation/communication, retain decision record |
-| **SEV-4 Low** | Benign event, false positive, or low-impact defect with no reasonable confidentiality/integrity risk | scanner noise, short non-core degradation | record disposition and evidence; route ordinary defects to normal maintenance |
+| **SEV-2 High**     | Confirmed material compromise with bounded/unknown scope; unauthorized personal-data access; prolonged core-service loss without safe workaround; high-risk credential exposure                  | cross-account access, stolen production credential                 | prioritized containment, provider escalation, privacy triage, notification decision recorded                                            |
+| **SEV-3 Moderate** | Limited control failure or material degradation with low demonstrated data risk and a safe workaround                                                                                            | repeated function failures, bounded config drift                   | named owner, contain/fix, assess escalation/communication, retain decision record                                                       |
+| **SEV-4 Low**      | Benign event, false positive, or low-impact defect with no reasonable confidentiality/integrity risk                                                                                             | scanner noise, short non-core degradation                          | record disposition and evidence; route ordinary defects to normal maintenance                                                           |
 
 Severity remains provisional until scope is known. Do not lower severity solely because payloads are encrypted; determine whether keys, sessions, same-origin code, decrypted browser memory, metadata, or the key-broker boundary were affected.
 
@@ -87,17 +87,17 @@ Never turn an unknown count into zero. Avoid inspecting decrypted user content w
 
 Choose the narrowest control that stops harm while preserving evidence and local/guest utility where safe.
 
-| Signal | Consider now | Never do | Exit evidence |
-| --- | --- | --- | --- |
-| Malicious/faulty deployment | pause or roll back to a known-good commit; restrict affected function; verify domains/headers | rewrite history or ship an unreviewed broad fix | known-good SHA deployed; behavior/runtime errors checked |
-| Session/token exposure | revoke affected sessions through supported Auth controls; fix redirect/config weakness | log tokens or broadly invalidate users without assessing harm | revocation/config action and post-change auth test recorded |
-| OAuth client secret compromise | rotate/revoke at provider; verify exact redirect allowlists; update server-only config | place OAuth secrets in `VITE_*`, source, screenshots, or tickets | old credential rejected; approved flow works |
-| Supabase admin/database credential exposure | revoke/rotate; inspect events; verify RLS and grants | give service-role/database credentials to browser or private-cloud code | old credential rejected; expected services healthy |
-| Vercel deploy/API credential exposure | revoke/rotate in Vercel/GitHub as applicable; inspect deployments/environment changes | print environment values or copy production secrets into preview | unauthorized access removed; deployment/config audit recorded |
-| Suspected KEK exposure | follow `PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`; establish replacement/recovery first; rewrap and retire safely | delete the only working KEK, store it in Supabase, or claim ciphertext is safe without boundary analysis | replacement envelopes verified and old version safely retired |
-| Suspected DEK/private plaintext exposure | contain session/device/origin path; assess affected ciphertext/future access; obtain specialist review | assume KEK rotation alone remediates a captured DEK/plaintext | affected scope and new protection verified |
-| Database/RLS integrity concern | restrict affected writes/feature; compare migrations, grants, and policies; use disposable accounts | disable RLS or restore production without validation | forced RLS/grants/functions and representative checks pass |
-| Provider outage without compromise | preserve local-first behavior and fail cloud actions non-destructively | introduce plaintext fallback or weaken authorization | provider and Gapwise recovery observed |
+| Signal                                      | Consider now                                                                                                | Never do                                                                                                 | Exit evidence                                                 |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| Malicious/faulty deployment                 | pause or roll back to a known-good commit; restrict affected function; verify domains/headers               | rewrite history or ship an unreviewed broad fix                                                          | known-good SHA deployed; behavior/runtime errors checked      |
+| Session/token exposure                      | revoke affected sessions through supported Auth controls; fix redirect/config weakness                      | log tokens or broadly invalidate users without assessing harm                                            | revocation/config action and post-change auth test recorded   |
+| OAuth client secret compromise              | rotate/revoke at provider; verify exact redirect allowlists; update server-only config                      | place OAuth secrets in `VITE_*`, source, screenshots, or tickets                                         | old credential rejected; approved flow works                  |
+| Supabase admin/database credential exposure | revoke/rotate; inspect events; verify RLS and grants                                                        | give service-role/database credentials to browser or private-cloud code                                  | old credential rejected; expected services healthy            |
+| Vercel deploy/API credential exposure       | revoke/rotate in Vercel/GitHub as applicable; inspect deployments/environment changes                       | print environment values or copy production secrets into preview                                         | unauthorized access removed; deployment/config audit recorded |
+| Suspected KEK exposure                      | follow `PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`; establish replacement/recovery first; rewrap and retire safely | delete the only working KEK, store it in Supabase, or claim ciphertext is safe without boundary analysis | replacement envelopes verified and old version safely retired |
+| Suspected DEK/private plaintext exposure    | contain session/device/origin path; assess affected ciphertext/future access; obtain specialist review      | assume KEK rotation alone remediates a captured DEK/plaintext                                            | affected scope and new protection verified                    |
+| Database/RLS integrity concern              | restrict affected writes/feature; compare migrations, grants, and policies; use disposable accounts         | disable RLS or restore production without validation                                                     | forced RLS/grants/functions and representative checks pass    |
+| Provider outage without compromise          | preserve local-first behavior and fail cloud actions non-destructively                                      | introduce plaintext fallback or weaken authorization                                                     | provider and Gapwise recovery observed                        |
 
 Treat any secret published in source, logs, chat, screenshots, or tickets as compromised. Rotation order should normally be: establish replacement access/recovery material, update consumers, verify, then revoke the old credential. Active attacker access may require immediate revocation; record the availability tradeoff.
 
@@ -221,27 +221,35 @@ Hold a blameless review for SEV-1/SEV-2 and lower-severity events with reusable 
 **Published/updated:** [UTC]
 
 ## Summary
+
 [Plain-language verified impact.]
 
 ## What users experienced
+
 [Affected features/population; do not turn an estimate into fact.]
 
 ## Timeline
+
 [Material public-safe events in UTC.]
 
 ## Technical explanation
+
 [Evidence-backed cause and contributing conditions at a non-exploit-enabling level.]
 
 ## Data and privacy
+
 [Reviewed facts, affected categories/protections, and user action.]
 
 ## Response and recovery
+
 [Containment, restoration, and validation actually completed.]
 
 ## Improvements
+
 [Committed versus completed actions, each labelled.]
 
 ## Remaining limits
+
 [Unknowns, provider dependencies, or validation still open.]
 ```
 
@@ -260,17 +268,17 @@ Do not include fabricated incident counts, uptime, SLA performance, or unsupport
 
 ### Explicit gaps requiring confirmation
 
-| Item | Current statement | Required evidence/owner action |
-| --- | --- | --- |
-| Production backup/restore | **Unverified here. AND-154 is authoritative.** A procedure/helper exists, but this file does not claim a real backup, off-site copy, successful restore, or readiness. | Check AND-154 and restricted evidence; run authorized drill. |
-| RTO/RPO | No approved/measured targets established by the repository. | Owner/institutional risk decision informed by measured drills/provider capabilities. |
-| Provider backups/SLAs | No provider recovery/response promise asserted here. | Re-verify plan/dashboard/contract before publication. |
-| Status channel | No dedicated status surface verified. | Owner selects, secures, and tests an appropriately independent channel. |
-| Incident contacts/on-call | No named 24/7 contact matrix verified. | Owner assigns roles, alternates, secure contact methods, and expectations. |
-| Configuration inventory | Required categories are documented, but no complete restorable export of DNS/OAuth/provider config is evidenced. | Maintain a secret-safe inventory and test reconstruction. |
-| KEK recovery exercise | Runbook requirements exist; current recoverability must be checked rather than inferred. | Owner verifies offline copies and runs authorized non-production recovery exercise. |
-| Cross-provider failure | No alternate hosting/database region or automatic failover is verified. | Decide whether risk justifies complexity/cost and test before claiming resilience. |
-| Communications/legal support | No counsel, regulator workflow, notification vendor, or institutional contact is verified. | Owner establishes relationships if needed. |
+| Item                         | Current statement                                                                                                                                                      | Required evidence/owner action                                                       |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Production backup/restore    | **Unverified here. AND-154 is authoritative.** A procedure/helper exists, but this file does not claim a real backup, off-site copy, successful restore, or readiness. | Check AND-154 and restricted evidence; run authorized drill.                         |
+| RTO/RPO                      | No approved/measured targets established by the repository.                                                                                                            | Owner/institutional risk decision informed by measured drills/provider capabilities. |
+| Provider backups/SLAs        | No provider recovery/response promise asserted here.                                                                                                                   | Re-verify plan/dashboard/contract before publication.                                |
+| Status channel               | No dedicated status surface verified.                                                                                                                                  | Owner selects, secures, and tests an appropriately independent channel.              |
+| Incident contacts/on-call    | No named 24/7 contact matrix verified.                                                                                                                                 | Owner assigns roles, alternates, secure contact methods, and expectations.           |
+| Configuration inventory      | Required categories are documented, but no complete restorable export of DNS/OAuth/provider config is evidenced.                                                       | Maintain a secret-safe inventory and test reconstruction.                            |
+| KEK recovery exercise        | Runbook requirements exist; current recoverability must be checked rather than inferred.                                                                               | Owner verifies offline copies and runs authorized non-production recovery exercise.  |
+| Cross-provider failure       | No alternate hosting/database region or automatic failover is verified.                                                                                                | Decide whether risk justifies complexity/cost and test before claiming resilience.   |
+| Communications/legal support | No counsel, regulator workflow, notification vendor, or institutional contact is verified.                                                                             | Owner establishes relationships if needed.                                           |
 
 ### Continuity decision sequence
 
