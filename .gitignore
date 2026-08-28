@@ -40,6 +40,9 @@ blob-report/
 *.sw?
 .vercel
 
+# Sensitive operator-created database backups
+backups/
+
 # SDK build artifacts
 sdk/javascript/dist/
 sdk/python/dist/
