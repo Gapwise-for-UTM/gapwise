@@ -1,8 +1,6 @@
 export type EntitlementTier = string;
 export type FeatureCapability =
-  | "academic_planner"
-  | "coursework_management"
-  | "planned_work_blocks";
+  "academic_planner" | "coursework_management" | "planned_work_blocks";
 
 export interface Entitlement {
   tier: EntitlementTier;
@@ -21,9 +19,6 @@ export function resolveEntitlement(
   return FREE_ENTITLEMENT;
 }
 
-export function canUseFeature(
-  _entitlement: Entitlement,
-  _capability: FeatureCapability,
-): boolean {
+export function canUseFeature(_entitlement: Entitlement, _capability: FeatureCapability): boolean {
   return true;
 }
