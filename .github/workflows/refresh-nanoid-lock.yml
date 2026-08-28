@@ -1,0 +1,53 @@
+name: Refresh NanoID lockfile
+
+on:
+  push:
+    branches:
+      - security/reel-hardening-2026-08-28
+    paths:
+      - .github/workflows/refresh-nanoid-lock.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: security/reel-hardening-2026-08-28
+      - name: Patch only the audited NanoID lock entry
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("bun.lock")
+          text = path.read_text()
+          replacements = {
+              '"nanoid": "3.3.17"': '"nanoid": "3.3.18"',
+              '"nanoid": ["nanoid@3.3.17", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-xQLf0A3HOMlgHq0n247/LRuAOYmB7dXJ/DvAxGvsSBij45XtBSmQycu+F8ODbHwns/XyFZagyL1+J0Offw1E0g=="]':
+                  '"nanoid": ["nanoid@3.3.18", "", { "bin": { "nanoid": "bin/nanoid.cjs" } }, "sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w=="]',
+          }
+
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"Expected exactly one lockfile match for {old[:40]!r}; found {count}")
+              text = text.replace(old, new)
+
+          path.write_text(text)
+          PY
+          git diff --check
+          git diff -- bun.lock
+      - name: Commit the lockfile-only update
+        shell: bash
+        run: |
+          test -n "$(git status --short bun.lock)"
+          test "$(git status --short | awk '{print $2}' | grep -vc '^bun.lock$' || true)" -eq 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bun.lock
+          git commit -m "security: lock nanoid 3.3.18"
+          git push origin HEAD:security/reel-hardening-2026-08-28
