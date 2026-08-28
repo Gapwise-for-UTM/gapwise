@@ -42,13 +42,10 @@ function TermsPage() {
         </p>
       </section>
       <section>
-        <h2>Gapwise Pro purchases</h2>
+        <h2>Free access</h2>
         <p>
-          Gapwise Pro may be offered as a term-specific one-time pass. The current price, covered
-          access period, and any applicable charges are shown before checkout. Stripe processes the
-          payment. A one-time pass does not automatically renew unless a future offer explicitly
-          says otherwise. A refund, payment reversal, or unresolved dispute can remove access that
-          was granted by that purchase.
+          Gapwise is provided without paid feature tiers or a product checkout. Features available
+          in the hosted product are not gated behind a Gapwise subscription or one-time purchase.
         </p>
       </section>
       <section>

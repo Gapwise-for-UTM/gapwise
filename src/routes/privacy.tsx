@@ -7,7 +7,7 @@ export const Route = createFileRoute("/privacy")({
       { title: "Privacy — Gapwise for UTM" },
       {
         name: "description",
-        content: "How Gapwise handles timetable, account, planning, payment, and location data.",
+        content: "How Gapwise handles timetable, account, planning, AI, and location data.",
       },
     ],
   }),
@@ -30,19 +30,7 @@ function PrivacyPage() {
         <p>
           You may sign in with Google, Microsoft, or GitHub. Supabase provides authentication and
           stores the account identity returned by that provider. When private sync is enabled,
-          normalized timetable, preferences, personal items, coursework, and academic plans are
-          encrypted in the browser before cloud storage. Gapwise does not describe this design as
-          end-to-end encryption or zero knowledge.
-        </p>
-      </section>
-      <section>
-        <h2>Payments</h2>
-        <p>
-          If you purchase Gapwise Pro, Stripe processes checkout and payment details. Gapwise does
-          not receive or store your full card number. Gapwise may store Stripe transaction or
-          customer identifiers, payment status, amount and currency, and the resulting Pro access
-          period so it can confirm access and handle billing support, refunds, reversals, or
-          disputes.
+          supported private state is encrypted on the client before cloud storage.
         </p>
       </section>
       <section>
@@ -54,11 +42,10 @@ function PrivacyPage() {
         </p>
       </section>
       <section>
-        <h2>AI and Quercus</h2>
+        <h2>AI</h2>
         <p>
           AI features are opt-in and disclose the specific schedule and planning categories they may
           use. Coursework and academic-work details are not currently shared with Gapwise AI.
-          Gapwise does not currently connect to live Quercus or collect UTORid credentials.
         </p>
       </section>
       <section>
