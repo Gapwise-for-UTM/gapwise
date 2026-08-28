@@ -7,13 +7,19 @@ from typing import Generic, Literal, NotRequired, TypedDict, TypeVar
 
 ApiVersion = Literal["v1"]
 VerificationStatus = Literal["verified", "inferred", "unknown"]
-FactStatus = Literal["verified", "stale", "inferred", "user-reported", "unavailable", "unknown"]
+FactStatus = Literal[
+    "verified", "stale", "inferred", "user-reported", "unavailable", "unknown"
+]
 RouteMode = Literal["fastest", "prefer-indoor", "step-free"]
 Term = Literal["Fall", "Winter", "Summer"]
-Weekday = Literal["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+Weekday = Literal[
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+]
 RiskTolerance = Literal["low", "medium", "high"]
 BuildingCategory = Literal["academic", "residence", "facility"]
-PlaceKind = Literal["dining", "study", "library", "service", "recreation", "amenity", "facility"]
+PlaceKind = Literal[
+    "dining", "study", "library", "service", "recreation", "amenity", "facility"
+]
 AvailabilityState = Literal["open", "closed", "unknown"]
 
 
@@ -88,7 +94,6 @@ RouteResult = TypedDict(
         "warnings": list[str],
         "routeVerification": Literal["verified", "mixed", "inferred", "unavailable"],
     },
-    total=False,
 )
 
 
@@ -160,6 +165,13 @@ class GapPlanResult(TypedDict):
     assessment: GapAssessment
 
 
+class ApiCapabilities(TypedDict):
+    buildingSearch: bool
+    placeSearch: bool
+    placeAvailability: Literal["source-dependent"]
+    routingModes: list[RouteMode]
+
+
 class ApiInfo(TypedDict):
     name: str
     apiVersion: ApiVersion
@@ -168,6 +180,7 @@ class ApiInfo(TypedDict):
     authentication: Literal["none"]
     documentationUrl: str
     openapiUrl: str
+    capabilities: ApiCapabilities
     privacy: str
 
 
