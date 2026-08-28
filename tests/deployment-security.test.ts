@@ -6,7 +6,9 @@ type Header = { key: string; value: string };
 function globalHeaders() {
   const rule = config.headers.find((entry) => entry.source === "/(.*)");
   if (!rule) throw new Error("global Vercel header rule is missing");
-  return new Map((rule.headers as Header[]).map(({ key, value }) => [key, value]));
+  return new Map(
+    (rule.headers as Header[]).map(({ key, value }) => [key, value]),
+  );
 }
 
 describe("deployment security headers", () => {
@@ -16,7 +18,9 @@ describe("deployment security headers", () => {
     expect(headers.get("Strict-Transport-Security")).toBe(
       "max-age=63072000; includeSubDomains",
     );
-    expect(headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+    expect(headers.get("Referrer-Policy")).toBe(
+      "strict-origin-when-cross-origin",
+    );
     expect(headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(headers.get("X-Frame-Options")).toBe("DENY");
     expect(headers.get("X-Permitted-Cross-Domain-Policies")).toBe("none");
