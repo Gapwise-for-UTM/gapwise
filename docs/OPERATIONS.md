@@ -47,6 +47,8 @@ Review generated type changes before committing. Keep JWT verification enabled f
 
 The completed private-cloud migration and KEK recovery/rotation procedures are documented in [`PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`](PRIVATE_CLOUD_MIGRATION_RUNBOOK.md).
 
+Security, privacy, and availability event handling—including severity, containment and credential decisions, provider escalation, notification decision support, communications, post-incident review, and continuity gaps—is documented in [`INCIDENT_RESPONSE.md`](INCIDENT_RESPONSE.md). It is a process runbook rather than evidence of an incident, response SLA, or completed recovery exercise.
+
 ## Verification
 
 Run the same application gates as CI:
