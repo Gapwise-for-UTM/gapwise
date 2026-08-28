@@ -89,10 +89,12 @@ describe("large timetable regressions", () => {
   });
 
   test("keeps Day Route and MapLibre out of the initial bundle path", async () => {
-    const [entry, route, map] = await Promise.all([
+    const [entry, route, map, importLifecycle, monument] = await Promise.all([
       readFile("src/main.tsx", "utf8"),
       readFile("src/routes/_app.tsx", "utf8"),
       readFile("src/components/CampusMap.tsx", "utf8"),
+      readFile("src/features/timetable/import-lifecycle.ts", "utf8"),
+      readFile("src/components/UtmMonumentViewer.tsx", "utf8"),
     ]);
 
     expect(entry).not.toContain("maplibre-gl");
@@ -102,5 +104,9 @@ describe("large timetable regressions", () => {
     expect(map).toContain('import "maplibre-gl/dist/maplibre-gl.css"');
     expect(map).toContain("maplibre-gl-worker.mjs?worker&url");
     expect(map).toContain("setWorkerUrl(mapLibreWorkerUrl)");
+    expect(importLifecycle).toContain('await import("@/lib/ics-parser")');
+    expect(importLifecycle).not.toContain("import { IcsParseError");
+    expect(monument).toContain('{ rootMargin: "0px" }');
+    expect(monument).toContain('loading="lazy"');
   });
 });

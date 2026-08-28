@@ -12,7 +12,8 @@
   },
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "vite build && bun scripts/check-bundle-budget.ts",
+    "bundle:check": "bun scripts/check-bundle-budget.ts",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "test": "bun test",

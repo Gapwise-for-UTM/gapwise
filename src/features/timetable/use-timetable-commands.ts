@@ -67,7 +67,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
       input.setRestorationMessage(null);
       input.setLoading(true);
       try {
-        const result = parseTimetableText(await file.text());
+        const result = await parseTimetableText(await file.text());
         let persistenceWarning: string | null = null;
         if (input.remember && !input.userId) {
           try {
