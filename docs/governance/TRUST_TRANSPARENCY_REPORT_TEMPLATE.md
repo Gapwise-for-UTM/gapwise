@@ -15,13 +15,19 @@ Record the reporting period, publication date, report owner, evidence cut-off, i
 5. Corrections must retain the earlier value, reason, approver, and correction date.
 6. Complete the publication checklist before release.
 
-Permitted reporting states are:
+Metric reporting states are:
 
 - **Measured** — complete, tested records cover the stated period and scope. Publish the definition, source, coverage, and result.
 - **Partial coverage** — reliable records cover only part. State exact coverage and omissions and do not extrapolate.
 - **Not measured** — no reliable counting process existed. State the missing prerequisite and proposed owner.
 - **Not publishable** — a count exists but disclosure is restricted or unsafe. Give an approved high-level reason.
 - **Not applicable** — the category genuinely cannot apply. Record the rationale and reviewer.
+
+Section-specific non-metric outcomes may also be required where a numeric metric state would be misleading:
+
+- **No reliably reportable conclusion** — the authoritative inventory/change record does not cover the full period, so neither a positive claim nor “no changes” is supported.
+- **Performed and verified** — an independent assessment actually occurred and its independence, assessor, scope, dates, method, result, limitations, and publication permission were verified.
+- **None claimed** — no independent assessment is being represented as performed for the period.
 
 ## Executive summary
 
@@ -34,7 +40,7 @@ Permitted reporting states are:
 
 Describe product surfaces, production/support systems, user/geographic scope, dates, exclusions, and ownership changes.
 
-For every evidence set record its system of record, coverage, quality or reconciliation check, owner, and internal reference. For every metric record its definition and inclusion rules, period-assignment rule, data source, coverage, deduplication/validation method, result or reporting state, and reviewer.
+For every evidence set record its system of record, coverage, quality or reconciliation check, owner, and internal reference. Internal references are for restricted preparation only and must not be published in the public report. When a public statement requires an external citation, release only with a reviewed canonical public source that supports the exact claim. For every metric record its definition and inclusion rules, period-assignment rule, data source, coverage, deduplication/validation method, result or reporting state, and reviewer.
 
 ## Security incidents
 
@@ -94,7 +100,7 @@ For every addition, removal, or material change record the service, effective da
 
 ## Security, privacy, and accessibility improvements
 
-List only shipped or completed work linked to implementation, configuration, test, or review evidence. For every item record the area, specific improvement, completion or release date, evidence, and remaining limitation or follow-up.
+List only shipped or completed work linked to implementation, configuration, test, review, or execution evidence appropriate to the claim. A runbook, checklist, template, plan, issue, or policy alone is not evidence that a drill, restore, notification, review, external process, or other operational activity was completed. For every item record the area, specific improvement, completion or release date, evidence, and remaining limitation or follow-up.
 
 Accessibility testing is not certification. State methods, scope, and limitations.
 
@@ -136,6 +142,7 @@ For every correction retain the publication and correction dates, affected state
 - [ ] Legal or government-request wording received appropriate human/legal review.
 - [ ] Independent-assessment and certification statements match actual evidence and scope.
 - [ ] Improvements are complete; unfinished work appears only as a commitment.
+- [ ] Any claimed drill, restore, notification, review, external process, or other completed operational action has retained execution evidence rather than only a runbook, checklist, template, plan, issue, or policy.
 - [ ] Subprocessor and AI/MCP changes were reconciled against authoritative inventories and change records.
 - [ ] Accessibility claims identify methods, scope, and limitations.
 - [ ] Policy links, dates, and revision histories were checked.
