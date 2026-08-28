@@ -32,9 +32,11 @@ export default defineConfig({
           },
           {
             urlPattern: /\/models\/.*\.(?:glb|png)$/,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate",
             options: {
               cacheName: "models-assets",
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 6 },
             },
           },
         ],
