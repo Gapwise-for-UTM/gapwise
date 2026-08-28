@@ -30,53 +30,51 @@ async function openStableDemo(page: Page) {
   await expect(page.getByRole("button", { name: "Update timetable" })).toBeEnabled();
 }
 
-test(
-  "timetable export dialog is keyboard operable and restores trigger focus",
-  async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== "chromium", "keyboard focus gate runs once");
-    const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+test("timetable export dialog is keyboard operable and restores trigger focus", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "keyboard focus gate runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
-    await openStableDemo(page);
+  await openStableDemo(page);
 
-    const exportTrigger = page.getByRole("button", { name: "Export timetable" });
-    await exportTrigger.focus();
-    await expect(exportTrigger).toBeFocused();
-    await exportTrigger.press("Enter");
+  const exportTrigger = page.getByRole("button", { name: "Export timetable" });
+  await exportTrigger.focus();
+  await expect(exportTrigger).toBeFocused();
+  await exportTrigger.press("Enter");
 
-    const dialog = page.getByRole("dialog", { name: "Export timetable image" });
-    await expect(dialog).toBeVisible();
-    await expectNoSeriousAccessibilityViolations(page);
+  const dialog = page.getByRole("dialog", { name: "Export timetable image" });
+  await expect(dialog).toBeVisible();
+  await expectNoSeriousAccessibilityViolations(page);
 
-    await page.keyboard.press("Escape");
-    await expect(dialog).toBeHidden();
-    await expect(exportTrigger).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(exportTrigger).toBeFocused();
 
-    guard.assertClean();
-  },
-);
+  guard.assertClean();
+});
 
-test(
-  "export format controls expose deterministic radio state to assistive technology",
-  async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== "chromium", "export semantics gate runs once");
-    const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+test("export format controls expose deterministic radio state to assistive technology", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium", "export semantics gate runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
-    await openStableDemo(page);
-    await page.getByRole("button", { name: "Export timetable" }).click();
+  await openStableDemo(page);
+  await page.getByRole("button", { name: "Export timetable" }).click();
 
-    const formatGroup = page.getByRole("radiogroup", { name: "Export format" });
-    const image = formatGroup.getByRole("radio", { name: /Share image/ });
-    const print = formatGroup.getByRole("radio", { name: /Print-ready B&W/ });
+  const formatGroup = page.getByRole("radiogroup", { name: "Export format" });
+  const image = formatGroup.getByRole("radio", { name: /Share image/ });
+  const print = formatGroup.getByRole("radio", { name: /Print-ready B&W/ });
 
-    await expect(image).toHaveAttribute("aria-checked", "true");
-    await expect(print).toHaveAttribute("aria-checked", "false");
-    await print.focus();
-    await print.press("Space");
-    await expect(print).toHaveAttribute("aria-checked", "true");
-    await expect(image).toHaveAttribute("aria-checked", "false");
-    await expect(page.getByRole("dialog", { name: "Print timetable" })).toBeVisible();
-    await expectNoSeriousAccessibilityViolations(page);
+  await expect(image).toHaveAttribute("aria-checked", "true");
+  await expect(print).toHaveAttribute("aria-checked", "false");
+  await print.focus();
+  await print.press("Space");
+  await expect(print).toHaveAttribute("aria-checked", "true");
+  await expect(image).toHaveAttribute("aria-checked", "false");
+  await expect(page.getByRole("dialog", { name: "Print timetable" })).toBeVisible();
+  await expectNoSeriousAccessibilityViolations(page);
 
-    guard.assertClean();
-  },
-);
+  guard.assertClean();
+});
