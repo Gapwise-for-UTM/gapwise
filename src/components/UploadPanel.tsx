@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FileUp, LogIn, ShieldCheck, Sparkles } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingPanel } from "@/components/ui/state-panel";
 import { requestGapwiseSignIn } from "@/features/auth/sign-in-trigger";
 import { clearFirstValuePending, markFirstValuePending } from "@/features/onboarding/first-value";
 import { emitClickSpark } from "@/lib/micro-interactions";
@@ -9,32 +9,12 @@ import "./onboarding/first-run.css";
 
 function ScheduleSkeleton() {
   return (
-    <div
-      className="and66-skeleton mt-5 rounded-xl border border-border bg-surface-low/45 p-4"
-      role="status"
-      aria-live="polite"
-      aria-busy="true"
-    >
-      <p className="font-display text-base font-semibold tracking-tight">
-        Reading your ACORN schedule…
-      </p>
-      <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-        The original .ics file is parsed locally and never uploaded.
-      </p>
-      <div className="mt-5 grid grid-cols-[4.25rem_minmax(0,1fr)] gap-3" aria-hidden="true">
-        <div className="space-y-3 pt-1">
-          <Skeleton className="h-3 w-12 motion-reduce:animate-none" />
-          <Skeleton className="h-3 w-14 motion-reduce:animate-none" />
-          <Skeleton className="h-3 w-10 motion-reduce:animate-none" />
-        </div>
-        <div className="space-y-2.5">
-          <Skeleton className="h-10 w-[72%] motion-reduce:animate-none" />
-          <Skeleton className="ml-[18%] h-14 w-[78%] motion-reduce:animate-none" />
-          <Skeleton className="h-9 w-[58%] motion-reduce:animate-none" />
-        </div>
-      </div>
-      <span className="sr-only">Reading the selected calendar locally.</span>
-    </div>
+    <LoadingPanel
+      className="and66-skeleton mt-5"
+      compact
+      title="Reading your ACORN schedule…"
+      description="The original .ics file is parsed locally and never uploaded."
+    />
   );
 }
 

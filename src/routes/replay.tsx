@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DayReplay } from "@/components/DayReplay";
 import { BubbleTabs } from "@/components/BubbleTabs";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { StatePanel } from "@/components/ui/state-panel";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import { createScheduleTransitionPlanner } from "@/features/routing/transition";
@@ -182,41 +183,39 @@ function ReplayPage() {
         />
 
         {!meetings ? (
-          <section className="surface rise-in mx-auto max-w-3xl p-7 text-center sm:p-10">
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8 text-accent">
-              <Play className="h-5 w-5" aria-hidden="true" />
-            </span>
-            <h2 className="mt-5 font-display text-2xl font-semibold tracking-tight">
-              Pick a timetable to replay
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-              Import an ACORN calendar for a private local replay, or use Gapwise's synthetic demo
-              timetable. The original file is not uploaded by this page.
-            </p>
-            <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
-              <button
-                type="button"
-                disabled={loading}
-                onClick={() => inputRef.current?.click()}
-                className="button-primary inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
-              >
-                <FileUp className="h-4 w-4" aria-hidden="true" />
-                {loading ? "Reading…" : "Import ACORN .ics"}
-              </button>
-              <button
-                type="button"
-                onClick={loadDemo}
-                className="button-secondary min-h-11 px-4 text-sm font-semibold"
-              >
-                Use demo timetable
-              </button>
-            </div>
+          <StatePanel
+            className="rise-in mx-auto max-w-3xl"
+            icon={<Play className="h-5 w-5" aria-hidden="true" />}
+            title="Pick a timetable to replay"
+            description="Import an ACORN calendar for a private local replay, or use Gapwise's synthetic demo timetable. The original file is not uploaded by this page."
+            actions={
+              <>
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => inputRef.current?.click()}
+                  className="button-primary inline-flex min-h-11 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
+                >
+                  <FileUp className="h-4 w-4" aria-hidden="true" />
+                  {loading ? "Reading…" : "Import ACORN .ics"}
+                </button>
+                <button
+                  type="button"
+                  onClick={loadDemo}
+                  disabled={loading}
+                  className="button-secondary min-h-11 px-4 text-sm font-semibold disabled:opacity-60"
+                >
+                  Use demo timetable
+                </button>
+              </>
+            }
+          >
             {error ? (
               <p className="mt-4 text-sm text-destructive" role="alert">
                 {error}
               </p>
             ) : null}
-          </section>
+          </StatePanel>
         ) : (
           <div className="space-y-4">
             <section className="surface flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
