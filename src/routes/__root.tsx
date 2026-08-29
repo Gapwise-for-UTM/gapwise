@@ -83,6 +83,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-title", content: "Gapwise" },
       { name: "apple-mobile-web-app-status-bar-style", content: "default" },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Gapwise UTM" },
+      { name: "twitter:card", content: "summary" },
     ],
     links: [
       { rel: "icon", href: "/logo-mark.svg", type: "image/svg+xml" },
