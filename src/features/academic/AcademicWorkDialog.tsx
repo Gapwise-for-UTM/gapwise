@@ -17,8 +17,6 @@ import {
 } from "./state";
 import type { AcademicPlanningContext, CourseworkKind } from "./types";
 import type { Meeting } from "@/lib/timetable-types";
-import type { Entitlement } from "@/features/entitlements/entitlements";
-import { canUseFeature } from "@/features/entitlements/entitlements";
 import { addDate, torontoLocalDateTimeInstant } from "./windows";
 import { DEFAULT_ROUTE_PREFERENCES } from "@/config/routing";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
@@ -37,7 +35,6 @@ export function AcademicWorkDialog({
   state,
   onChange,
   meetings,
-  entitlement,
   routeMinutes,
   routingRevision,
 }: {
@@ -46,7 +43,6 @@ export function AcademicWorkDialog({
   state: AcademicState;
   onChange: (state: AcademicState) => void;
   meetings: Meeting[];
-  entitlement: Entitlement;
   routeMinutes?: ((from: Meeting, to: Meeting) => number | null) | undefined;
   routingRevision?: string | undefined;
 }) {
@@ -59,7 +55,6 @@ export function AcademicWorkDialog({
   const [priority, setPriority] = useState<"normal" | "high">("normal");
   const [rescheduling, setRescheduling] = useState<string | null>(null);
   const [rescheduleStart, setRescheduleStart] = useState("");
-  const allowed = canUseFeature(entitlement, "academic_planner");
   const fallbackRouteMinutes = useMemo(() => {
     const planner = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings);
     return (from: Meeting, to: Meeting) => {
@@ -201,19 +196,7 @@ export function AcademicWorkDialog({
             Fit coursework into your real timetable. Details stay in your encrypted private data.
           </DialogDescription>
         </DialogHeader>
-        {!allowed ? (
-          <div className="rounded-xl border border-accent/25 bg-accent/5 p-5">
-            <p className="font-semibold">Gapwise Pro</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Automatically fit coursework into your real week.
-            </p>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              Fall 2026 Pro is CA$9.99 one-time with no automatic renewal. Upgrade from Account →
-              Plan & billing.
-            </p>
-          </div>
-        ) : (
-          <>
+        <>
             <form
               onSubmit={addItem}
               className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2"
@@ -485,8 +468,7 @@ export function AcademicWorkDialog({
                   </div>
                 );
               })}
-          </>
-        )}
+        </>
         {message ? (
           <p role="alert" className="text-sm text-destructive">
             {message}
