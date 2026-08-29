@@ -15,9 +15,27 @@ import {
   type ExportSelection,
 } from "@/lib/timetable-export";
 import { generateTimetablePrintSvg } from "@/lib/timetable-print-export";
+import { canDeliverGeneratedExportImmediately } from "@/lib/timetable-export-delivery";
 import type { Meeting } from "@/lib/timetable-types";
 
 type ExportOutput = "image" | "print";
+
+interface PreparedExport {
+  output: ExportOutput;
+  blob: Blob;
+  filename: string;
+}
+
+function isAbortError(cause: unknown) {
+  return cause instanceof DOMException && cause.name === "AbortError";
+}
+
+function isActivationError(cause: unknown) {
+  return (
+    cause instanceof DOMException &&
+    (cause.name === "NotAllowedError" || cause.name === "InvalidStateError")
+  );
+}
 
 export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
   const terms = useMemo(() => availableExportTerms(meetings), [meetings]);
@@ -28,52 +46,111 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
   const [error, setError] = useState<string | null>(null);
   const [appearance, setAppearance] = useState<ExportAppearance>("match");
   const [output, setOutput] = useState<ExportOutput>("image");
-  const supportsShare = typeof navigator !== "undefined" && "share" in navigator;
+  const [preparedExport, setPreparedExport] = useState<PreparedExport | null>(null);
+  const supportsShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function";
+
+  const clearPreparedExport = () => {
+    setPreparedExport(null);
+    setError(null);
+  };
 
   const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
     anchor.download = filename;
-    anchor.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    anchor.rel = "noopener";
+    anchor.style.display = "none";
+    document.body.appendChild(anchor);
+    try {
+      anchor.click();
+    } finally {
+      anchor.remove();
+      // Safari may resolve the blob URL after the synthetic click has returned.
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    }
   };
 
   const openExport = () => {
     setSelection(terms.length === 1 ? terms[0]! : "all");
     setOutput("image");
+    setPreparedExport(null);
     setError(null);
     setOpen(true);
   };
 
-  const exportTimetable = async () => {
-    setExporting(true);
-    setError(null);
-    try {
-      if (output === "print") {
-        const { blob, filename } = await generateTimetablePrintSvg(meetings, selection);
-        downloadBlob(blob, filename);
-        setOpen(false);
-        return;
-      }
-
-      const resolvedGapwiseTheme = document.documentElement.classList.contains("dark")
-        ? "dark"
-        : "light";
-      const { blob, filename } = await generateTimetablePng(
-        meetings,
-        selection,
-        resolveExportTheme(appearance, resolvedGapwiseTheme),
-      );
-      const file = new File([blob], filename, { type: "image/png" });
+  const deliverPreparedExport = async (prepared: PreparedExport) => {
+    if (prepared.output === "image") {
+      const file = new File([prepared.blob], prepared.filename, { type: "image/png" });
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({ files: [file], title: "My timetable" });
       } else {
-        downloadBlob(blob, filename);
+        downloadBlob(prepared.blob, prepared.filename);
       }
-      setOpen(false);
+    } else {
+      downloadBlob(prepared.blob, prepared.filename);
+    }
+    setPreparedExport(null);
+    setOpen(false);
+  };
+
+  const reportDeliveryError = (cause: unknown) => {
+    if (isAbortError(cause)) return;
+    if (isActivationError(cause)) {
+      setError("Your export is ready. Tap the button below once more to share or download it.");
+      return;
+    }
+    setError("Your export is ready, but this browser could not share or download it. Try again.");
+  };
+
+  const exportTimetable = async () => {
+    setError(null);
+
+    if (preparedExport) {
+      try {
+        await deliverPreparedExport(preparedExport);
+      } catch (cause) {
+        reportDeliveryError(cause);
+      }
+      return;
+    }
+
+    setExporting(true);
+    try {
+      let prepared: PreparedExport;
+      if (output === "print") {
+        const { blob, filename } = await generateTimetablePrintSvg(meetings, selection);
+        prepared = { output, blob, filename };
+      } else {
+        const resolvedGapwiseTheme = document.documentElement.classList.contains("dark")
+          ? "dark"
+          : "light";
+        const { blob, filename } = await generateTimetablePng(
+          meetings,
+          selection,
+          resolveExportTheme(appearance, resolvedGapwiseTheme),
+        );
+        prepared = { output, blob, filename };
+      }
+
+      // Keep the artifact in memory until delivery succeeds. Safari can expire the
+      // originating user activation while the image/SVG is being generated; in that
+      // case a fresh explicit tap is required for Web Share or <a download>.
+      setPreparedExport(prepared);
+
+      if (canDeliverGeneratedExportImmediately()) {
+        try {
+          await deliverPreparedExport(prepared);
+        } catch (cause) {
+          reportDeliveryError(cause);
+        }
+      }
     } catch (cause) {
-      if (cause instanceof DOMException && cause.name === "AbortError") return;
+      if (isAbortError(cause)) return;
+      setPreparedExport(null);
       setError(
         "The timetable export could not be created. Your timetable is safe and unchanged — try exporting again.",
       );
@@ -81,6 +158,13 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
       setExporting(false);
     }
   };
+
+  const readyMessage =
+    preparedExport?.output === "print"
+      ? "Print-ready SVG is ready. Tap below to download it."
+      : preparedExport
+        ? "Image is ready. Tap below to share or download it."
+        : null;
 
   return (
     <>
@@ -94,7 +178,14 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
         <Download className="h-4 w-4" aria-hidden="true" />
         Export
       </button>
-      <Dialog open={open} onOpenChange={(next) => !exporting && setOpen(next)}>
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          if (exporting) return;
+          if (!next) clearPreparedExport();
+          setOpen(next);
+        }}
+      >
         <DialogContent
           className="glass-panel max-w-md bg-card/95"
           onCloseAutoFocus={(event) => {
@@ -126,7 +217,10 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                     type="button"
                     role="radio"
                     aria-checked={selection === option}
-                    onClick={() => setSelection(option)}
+                    onClick={() => {
+                      setSelection(option);
+                      clearPreparedExport();
+                    }}
                     className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${selection === option ? "border-accent bg-accent/10 text-accent" : "border-border text-muted-foreground"}`}
                   >
                     {option === "all" ? "All available terms" : option}
@@ -146,7 +240,10 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                 type="button"
                 role="radio"
                 aria-checked={output === "image"}
-                onClick={() => setOutput("image")}
+                onClick={() => {
+                  setOutput("image");
+                  clearPreparedExport();
+                }}
                 className={`min-h-20 rounded-xl border p-3 text-left transition-colors ${output === "image" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold">
@@ -161,7 +258,10 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                 type="button"
                 role="radio"
                 aria-checked={output === "print"}
-                onClick={() => setOutput("print")}
+                onClick={() => {
+                  setOutput("print");
+                  clearPreparedExport();
+                }}
                 className={`min-h-20 rounded-xl border p-3 text-left transition-colors ${output === "print" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold">
@@ -194,7 +294,10 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                     type="button"
                     role="radio"
                     aria-checked={appearance === value}
-                    onClick={() => setAppearance(value)}
+                    onClick={() => {
+                      setAppearance(value);
+                      clearPreparedExport();
+                    }}
                     className={`min-h-10 rounded-lg px-2 text-xs font-semibold transition-colors ${appearance === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     {label}
@@ -215,6 +318,14 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
               </p>
             </div>
           )}
+          {readyMessage ? (
+            <p
+              role="status"
+              className="rounded-xl border border-accent/35 bg-accent/10 p-3 text-sm text-foreground"
+            >
+              {readyMessage}
+            </p>
+          ) : null}
           {error ? (
             <p
               role="alert"
@@ -231,6 +342,14 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
           >
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : preparedExport?.output === "print" ? (
+              <Download className="h-4 w-4" aria-hidden="true" />
+            ) : preparedExport ? (
+              supportsShare ? (
+                <Share2 className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Download className="h-4 w-4" aria-hidden="true" />
+              )
             ) : output === "print" ? (
               <Printer className="h-4 w-4" aria-hidden="true" />
             ) : supportsShare ? (
@@ -242,16 +361,22 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
               ? output === "print"
                 ? "Preparing print-ready vector…"
                 : "Generating high-resolution PNG…"
-              : output === "print"
+              : preparedExport?.output === "print"
                 ? "Download print-ready SVG"
-                : "Generate image"}
+                : preparedExport
+                  ? supportsShare
+                    ? "Share image"
+                    : "Download image"
+                  : output === "print"
+                    ? "Prepare print-ready SVG"
+                    : "Generate image"}
           </button>
           <p aria-live="polite" className="sr-only">
             {exporting
               ? output === "print"
                 ? "Preparing print-ready timetable"
                 : "Generating timetable image"
-              : (error ?? "")}
+              : (error ?? readyMessage ?? "")}
           </p>
         </DialogContent>
       </Dialog>
