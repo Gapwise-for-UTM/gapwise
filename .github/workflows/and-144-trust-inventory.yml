@@ -1,0 +1,112 @@
+name: AND-144 trust inventory reconciliation
+
+on:
+  push:
+    branches:
+      - cleanup/and-144-retire-legacy-entitlements
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: cleanup/and-144-retire-legacy-entitlements
+          fetch-depth: 0
+
+      - name: Reconcile current trust inventory
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("docs/TRUST_DATA_INVENTORY.md")
+          text = path.read_text()
+
+          text, count = re.subn(
+              r"^\*\*Evidence snapshot:\*\*.*$",
+              "**Evidence snapshot:** core implementation candidate `1e2500784c9e4203e3eebfbe598e8f8ec95d2134`  ",
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          if count != 1:
+              raise SystemExit(f"evidence snapshot replacement count: {count}")
+
+          text, count = re.subn(
+              r"^\*\*Reviewed:\*\*.*$",
+              "**Reviewed:** 2026-08-29  ",
+              text,
+              count=1,
+              flags=re.MULTILINE,
+          )
+          if count != 1:
+              raise SystemExit(f"review date replacement count: {count}")
+
+          lines = text.splitlines()
+          row_prefix = "| V     | Onboarding and entitlement metadata"
+          row_hits = [i for i, line in enumerate(lines) if line.startswith(row_prefix)]
+          if len(row_hits) != 1:
+              raise SystemExit(f"onboarding/entitlement row count: {len(row_hits)}")
+          lines[row_hits[0]] = (
+              "| V     | Account onboarding metadata                                    | Record account first-run completion                                                             | Supabase `user_onboarding` plus authenticated onboarding endpoint                                                                                              | RLS/grants; Supabase/Vercel                                                                                                                                                     | Cascades with auth user; no separate time limit in current schema                                                                                        | Complete onboarding; account deletion                                                          | `api/onboarding.ts`; `supabase/tests/database/onboarding_security.test.sql`; current schema migrations                                                                               | Provider backup/log deletion lag and verified production configuration                                                                                        |"
+          )
+          text = "\n".join(lines) + "\n"
+
+          old = re.compile(
+              r"No active advertising service, Stripe runtime, Sentry, PostHog, or direct OpenAI\n"
+              r"SDK/integration was found in the core runtime at this snapshot\. This is a bounded\n"
+              r"code observation, \*\*not\*\* a claim that provider dashboards or the separately\n"
+              r"deployed AI repository contain no additional integration\. Historical Stripe-named\n"
+              r"database tables remain in migrations and require the explicit follow-up recorded\n"
+              r"below; they must not be silently represented as an active payment processor\.\n"
+          )
+          replacement = (
+              "No active advertising or payment service, Sentry, PostHog, or direct OpenAI\n"
+              "SDK/integration was found in the core runtime at this snapshot. This is a bounded\n"
+              "code observation, **not** a claim that provider dashboards or the separately\n"
+              "deployed AI repository contain no additional integration. Historical payment-era\n"
+              "schema files remain in migration history for replay provenance, while the current\n"
+              "forward retirement migration removes their live ledger and entitlement objects.\n"
+              "Production was checked before retirement: payment ledgers were already absent and\n"
+              "the legacy entitlement table was empty. This is schema-history context, not an\n"
+              "active payment processor.\n"
+          )
+          text, count = old.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f"payment-runtime paragraph replacement count: {count}")
+
+          lines = text.splitlines()
+          hc_prefix = "| HC-09 | Confirm whether legacy Stripe-named tables"
+          hc_hits = [i for i, line in enumerate(lines) if line.startswith(hc_prefix)]
+          if len(hc_hits) != 1:
+              raise SystemExit(f"HC-09 row count: {len(hc_hits)}")
+          lines[hc_hits[0]] = (
+              "| HC-09 | Confirm whether retired payment-era database objects ever received production data before removal; approve any separate archival/retention handling if evidence is found                                             | Owner + database operator       | Accurate historical processor/data register |"
+          )
+          text = "\n".join(lines) + "\n"
+
+          if "Stripe" in text:
+              raise SystemExit("unexpected Stripe reference remains in current trust inventory")
+          if "Onboarding and entitlement metadata" in text:
+              raise SystemExit("stale entitlement-category row remains")
+
+          path.write_text(text)
+          PY
+
+          git diff --check
+
+      - name: Commit reconciliation and remove temporary workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/and-144-trust-inventory.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/TRUST_DATA_INVENTORY.md
+          git commit -m "docs: reconcile retired payment-era trust inventory"
+          git push origin HEAD:cleanup/and-144-retire-legacy-entitlements
