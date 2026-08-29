@@ -1,6 +1,6 @@
 # Administrative and legal readiness checklist
 
-> **INTERNAL — HUMAN-ONLY / NOT VERIFIED**
+> **INTERNAL — NOT VERIFIED**
 >
 > This is an evidence and handoff checklist for administrative, legal, tax, insurance, provider, and university work that cannot be completed from the repository. It is not legal, tax, accounting, insurance, or procurement advice. Nothing here establishes that an external action has been completed.
 
@@ -26,7 +26,7 @@ The owner must explicitly assign and obtain acceptance for business/corporate ad
 
 ## 1. Ontario registration status
 
-- [ ] **HUMAN-ONLY / NOT VERIFIED:** the owner and an appropriate Ontario legal/registration professional identify the actual operating structure and determine whether business-name registration, incorporation, extra-provincial registration, or another registration is required.
+- [ ] **HUMAN-ONLY — ACTION REQUIRED:** the owner and an appropriate Ontario legal/registration professional identify the actual operating structure and determine whether business-name registration, incorporation, extra-provincial registration, or another registration is required.
 - [ ] Record only the narrow reviewed conclusion, jurisdictions, effective or expiry dates, renewal owner, and evidence IDs.
 - [ ] Re-review before changing operating name, ownership, legal structure, home jurisdiction, or jurisdictions served.
 

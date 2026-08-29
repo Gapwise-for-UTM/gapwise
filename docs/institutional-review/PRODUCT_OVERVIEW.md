@@ -22,8 +22,8 @@ The browser hosts timetable parsing, user interaction, local state, routing, and
 ## Reviewer-relevant safeguards
 
 - Browser-local timetable import and data minimization are core design boundaries.
-- Authorization, tenant isolation, runtime, dependency, deployment, and private-cloud controls have repository tests/configuration evidence; those artifacts are not an independent audit.
-- A public vulnerability-disclosure policy, private GitHub advisory intake, and canonical `security.txt` are implemented in the core repository.
+- Repository safeguards are traceable by category: authorization in `../../tests/private-cloud-api.test.ts`; tenant isolation/RLS in `../../tests/friend-overlap.test.ts` and `../../tests/security.test.ts`; runtime hardening in `../../tests/runtime-security-regressions.test.ts`; dependency and supply-chain controls in `../../tests/security.test.ts` plus the CI production-dependency audit; deployment headers in `../../tests/deployment-security.test.ts`; and private-cloud cryptography/sync in `../../tests/crypto.test.ts`, `../../tests/encrypted-sync-service.test.ts`, and `../../tests/private-cloud-api.test.ts`. The higher-level control map is `../SECURITY_CONTROL_MATRIX.md`. These are repository and CI evidence, not an independent audit or proof of production-only configuration.
+- A public vulnerability-disclosure policy and canonical `security.txt` are implemented. GitHub private vulnerability reporting is the preferred private intake when it is available; if it is unavailable, the policy directs reporters to contact the repository owner through the GitHub profile and request a private channel before sending exploit details.
 - Incident-response and operational-trust procedures are maintained in `../INCIDENT_RESPONSE.md`; a runbook does not prove a response exercise, uptime level, RTO/RPO, or successful recovery.
 - A public `/accessibility` statement and internal accessibility evidence worksheet distinguish current automated evidence from unperformed manual/independent assessment.
 - A public `/trust` surface summarizes evidence-backed trust boundaries and links to canonical source material.

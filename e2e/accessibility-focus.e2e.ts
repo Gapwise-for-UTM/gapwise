@@ -45,6 +45,7 @@ test("timetable export dialog is keyboard operable and restores trigger focus", 
 
   const dialog = page.getByRole("dialog", { name: "Export timetable image" });
   await expect(dialog).toBeVisible();
+  await expect(dialog).toHaveCSS("opacity", "1");
   await expectNoSeriousAccessibilityViolations(page);
 
   await page.keyboard.press("Escape");
