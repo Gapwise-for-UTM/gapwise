@@ -72,11 +72,7 @@ describe("Gapwise AI OAuth consent finalization", () => {
       }),
     ).rejects.toThrow("binding failed");
 
-    expect(events).toEqual([
-      "oauth-approved",
-      "client-binding-failed",
-      "grant-revoked:client-3",
-    ]);
+    expect(events).toEqual(["oauth-approved", "client-binding-failed", "grant-revoked:client-3"]);
   });
 
   test("still fails closed when rollback itself is unavailable", async () => {
