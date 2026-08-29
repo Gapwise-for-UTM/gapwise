@@ -45,7 +45,7 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
   await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 
   await dialog.getByRole("button", { name: "Friend gaps", exact: true }).click();
-  await expect(dialog.getByRole("heading", { name: "Friend gaps" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Friend gaps", exact: true })).toBeVisible();
   const friendStyles = await content.evaluate((element) => {
     const style = getComputedStyle(element);
     return { overflowY: style.overflowY, touchAction: style.touchAction };
