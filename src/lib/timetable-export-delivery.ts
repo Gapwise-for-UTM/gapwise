@@ -9,8 +9,9 @@ export interface ExportNavigatorLike {
  * Browsers without the User Activation API keep the historical one-tap path.
  */
 export function canDeliverGeneratedExportImmediately(
-  browserNavigator: ExportNavigatorLike | undefined =
-    typeof navigator === "undefined" ? undefined : (navigator as ExportNavigatorLike),
+  browserNavigator: ExportNavigatorLike | undefined = typeof navigator === "undefined"
+    ? undefined
+    : (navigator as ExportNavigatorLike),
 ) {
   return browserNavigator?.userActivation?.isActive ?? true;
 }
