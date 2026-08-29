@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import {
-  normalizeCanvasAssignment,
+  normalizeProviderAssignment,
   reconcileCoursework,
-  type CanvasAssignmentSnapshot,
-} from "@/features/academic/canvas-adapter";
+  type ProviderAssignmentSnapshot,
+} from "@/features/academic/provider-adapter";
 import { createStudyPlan, transitionBlock } from "@/features/academic/planner";
 import type { AcademicPlanningContext, CourseworkItem } from "@/features/academic/types";
 import { needsScheduledWork } from "@/features/academic/types";
@@ -11,7 +11,7 @@ import { resolveWorkEstimate } from "@/features/academic/workload";
 import { buildWorkWindows, torontoInstant } from "@/features/academic/windows";
 import { meeting } from "./fixtures";
 
-const raw: CanvasAssignmentSnapshot = {
+const raw: ProviderAssignmentSnapshot = {
   id: 4,
   courseId: 10,
   courseCode: "DEM101H5",
@@ -23,7 +23,7 @@ const raw: CanvasAssignmentSnapshot = {
   submission: { workflowState: "unsubmitted" },
 };
 const item = (overrides: Partial<CourseworkItem> = {}): CourseworkItem => ({
-  ...normalizeCanvasAssignment(raw),
+  ...normalizeProviderAssignment(raw),
   ...overrides,
 });
 const context = (overrides: Partial<AcademicPlanningContext> = {}): AcademicPlanningContext => ({
@@ -63,19 +63,21 @@ const context = (overrides: Partial<AcademicPlanningContext> = {}): AcademicPlan
 
 describe("provider-neutral coursework", () => {
   test("normalizes safe content, missing deadlines, and distinct submission states", () => {
-    expect(normalizeCanvasAssignment(raw)).toMatchObject({
-      id: "canvas:10:4",
+    expect(normalizeProviderAssignment(raw)).toMatchObject({
+      id: "provider:10:4",
       dueAt: raw.dueAt,
       submissionState: "unsubmitted",
       content: { plainTextSummary: "Two proofs" },
     });
-    expect(normalizeCanvasAssignment({ ...raw, dueAt: null }).dueAt).toBeNull();
+    expect(normalizeProviderAssignment({ ...raw, dueAt: null }).dueAt).toBeNull();
     expect(
-      normalizeCanvasAssignment({ ...raw, submission: { workflowState: "submitted", late: true } })
-        .submissionState,
+      normalizeProviderAssignment({
+        ...raw,
+        submission: { workflowState: "submitted", late: true },
+      }).submissionState,
     ).toBe("late");
     expect(
-      normalizeCanvasAssignment({ ...raw, submission: { workflowState: "graded" } })
+      normalizeProviderAssignment({ ...raw, submission: { workflowState: "graded" } })
         .submissionState,
     ).toBe("graded");
   });

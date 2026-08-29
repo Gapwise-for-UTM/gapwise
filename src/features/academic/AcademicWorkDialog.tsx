@@ -17,8 +17,6 @@ import {
 } from "./state";
 import type { AcademicPlanningContext, CourseworkKind } from "./types";
 import type { Meeting } from "@/lib/timetable-types";
-import type { Entitlement } from "@/features/entitlements/entitlements";
-import { canUseFeature } from "@/features/entitlements/entitlements";
 import { addDate, torontoLocalDateTimeInstant } from "./windows";
 import { DEFAULT_ROUTE_PREFERENCES } from "@/config/routing";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
@@ -37,7 +35,6 @@ export function AcademicWorkDialog({
   state,
   onChange,
   meetings,
-  entitlement,
   routeMinutes,
   routingRevision,
 }: {
@@ -46,7 +43,6 @@ export function AcademicWorkDialog({
   state: AcademicState;
   onChange: (state: AcademicState) => void;
   meetings: Meeting[];
-  entitlement: Entitlement;
   routeMinutes?: ((from: Meeting, to: Meeting) => number | null) | undefined;
   routingRevision?: string | undefined;
 }) {
@@ -59,7 +55,6 @@ export function AcademicWorkDialog({
   const [priority, setPriority] = useState<"normal" | "high">("normal");
   const [rescheduling, setRescheduling] = useState<string | null>(null);
   const [rescheduleStart, setRescheduleStart] = useState("");
-  const allowed = canUseFeature(entitlement, "academic_planner");
   const fallbackRouteMinutes = useMemo(() => {
     const planner = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, meetings);
     return (from: Meeting, to: Meeting) => {
@@ -201,292 +196,279 @@ export function AcademicWorkDialog({
             Fit coursework into your real timetable. Details stay in your encrypted private data.
           </DialogDescription>
         </DialogHeader>
-        {!allowed ? (
-          <div className="rounded-xl border border-accent/25 bg-accent/5 p-5">
-            <p className="font-semibold">Gapwise Pro</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Automatically fit coursework into your real week.
-            </p>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              Fall 2026 Pro is CA$9.99 one-time with no automatic renewal. Upgrade from Account →
-              Plan & billing.
-            </p>
-          </div>
-        ) : (
-          <>
-            <form
-              onSubmit={addItem}
-              className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2"
+        <>
+          <form
+            onSubmit={addItem}
+            className="grid gap-3 rounded-xl border border-border p-4 sm:grid-cols-2"
+          >
+            <input
+              aria-label="Course"
+              required
+              value={course}
+              onChange={(event) => setCourse(event.target.value)}
+              placeholder="Course · MAT157"
+              className="h-11 rounded-lg border bg-background px-3"
+            />
+            <input
+              aria-label="Title"
+              required
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Title · Problem Set 4"
+              className="h-11 rounded-lg border bg-background px-3"
+            />
+            <label className="text-xs text-muted-foreground">
+              Due (Toronto time, optional)
+              <input
+                aria-label="Due"
+                type="datetime-local"
+                value={due}
+                onChange={(event) => setDue(event.target.value)}
+                className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-foreground"
+              />
+            </label>
+            <label className="text-xs text-muted-foreground">
+              Estimated hours
+              <input
+                aria-label="Estimated hours"
+                required
+                type="number"
+                min="0.25"
+                max="168"
+                step="0.25"
+                value={hours}
+                onChange={(event) => setHours(event.target.value)}
+                className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-foreground"
+              />
+            </label>
+            <select
+              aria-label="Priority"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value as "normal" | "high")}
+              className="h-11 rounded-lg border bg-background px-3"
             >
-              <input
-                aria-label="Course"
-                required
-                value={course}
-                onChange={(event) => setCourse(event.target.value)}
-                placeholder="Course · MAT157"
-                className="h-11 rounded-lg border bg-background px-3"
-              />
-              <input
-                aria-label="Title"
-                required
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="Title · Problem Set 4"
-                className="h-11 rounded-lg border bg-background px-3"
-              />
-              <label className="text-xs text-muted-foreground">
-                Due (Toronto time, optional)
-                <input
-                  aria-label="Due"
-                  type="datetime-local"
-                  value={due}
-                  onChange={(event) => setDue(event.target.value)}
-                  className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-foreground"
-                />
-              </label>
-              <label className="text-xs text-muted-foreground">
-                Estimated hours
-                <input
-                  aria-label="Estimated hours"
-                  required
-                  type="number"
-                  min="0.25"
-                  max="168"
-                  step="0.25"
-                  value={hours}
-                  onChange={(event) => setHours(event.target.value)}
-                  className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-foreground"
-                />
-              </label>
-              <select
-                aria-label="Priority"
-                value={priority}
-                onChange={(event) => setPriority(event.target.value as "normal" | "high")}
-                className="h-11 rounded-lg border bg-background px-3"
-              >
-                <option value="normal">Normal priority</option>
-                <option value="high">High priority</option>
-              </select>
-              <button className="button-primary h-11 px-4 font-semibold">Add coursework</button>
-            </form>
-            <div className="space-y-2">
-              {state.coursework.map((item) => (
-                <article key={item.id} className="rounded-xl border border-border p-4">
-                  <div className="flex justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-bold text-accent">{item.courseCode}</p>
-                      <h3 className="font-semibold">{item.title}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {item.localProgress === "completed_manually"
-                          ? "Completed"
-                          : `${item.dueAt ? `Due ${format.format(new Date(item.dueAt))} · ` : ""}~${Math.ceil(item.workEstimate.remainingMinutes / 10) * 10}m remaining`}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        aria-label={
-                          item.localProgress === "completed_manually" ? "Reopen" : "Mark complete"
-                        }
-                        className="button-secondary h-9 w-9"
-                        onClick={() =>
-                          onChange(
-                            setManualCourseworkCompletion(
-                              state,
-                              item.id,
-                              item.localProgress !== "completed_manually",
-                            ),
-                          )
-                        }
-                      >
-                        {item.localProgress === "completed_manually" ? (
-                          <RotateCcw className="mx-auto h-4 w-4" />
-                        ) : (
-                          <Check className="mx-auto h-4 w-4" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Delete coursework"
-                        className="button-secondary h-9 w-9 text-destructive"
-                        onClick={() =>
-                          onChange({
-                            ...state,
-                            coursework: state.coursework.filter(
-                              (candidate) => candidate.id !== item.id,
-                            ),
-                            blocks: state.blocks.filter((block) => block.courseworkId !== item.id),
-                            proposalRevision: null,
-                          })
-                        }
-                      >
-                        <Trash2 className="mx-auto h-4 w-4" />
-                      </button>
-                    </div>
+              <option value="normal">Normal priority</option>
+              <option value="high">High priority</option>
+            </select>
+            <button className="button-primary h-11 px-4 font-semibold">Add coursework</button>
+          </form>
+          <div className="space-y-2">
+            {state.coursework.map((item) => (
+              <article key={item.id} className="rounded-xl border border-border p-4">
+                <div className="flex justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-accent">{item.courseCode}</p>
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {item.localProgress === "completed_manually"
+                        ? "Completed"
+                        : `${item.dueAt ? `Due ${format.format(new Date(item.dueAt))} · ` : ""}~${Math.ceil(item.workEstimate.remainingMinutes / 10) * 10}m remaining`}
+                    </p>
                   </div>
-                  <div className="mt-3 flex gap-2">
+                  <div className="flex gap-1">
                     <button
                       type="button"
-                      className="button-secondary px-3 py-1 text-xs"
+                      aria-label={
+                        item.localProgress === "completed_manually" ? "Reopen" : "Mark complete"
+                      }
+                      className="button-secondary h-9 w-9"
+                      onClick={() =>
+                        onChange(
+                          setManualCourseworkCompletion(
+                            state,
+                            item.id,
+                            item.localProgress !== "completed_manually",
+                          ),
+                        )
+                      }
+                    >
+                      {item.localProgress === "completed_manually" ? (
+                        <RotateCcw className="mx-auto h-4 w-4" />
+                      ) : (
+                        <Check className="mx-auto h-4 w-4" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Delete coursework"
+                      className="button-secondary h-9 w-9 text-destructive"
                       onClick={() =>
                         onChange({
                           ...state,
-                          coursework: state.coursework.map((candidate) =>
-                            candidate.id === item.id
-                              ? {
-                                  ...candidate,
-                                  priority: candidate.priority === "high" ? "normal" : "high",
-                                }
-                              : candidate,
+                          coursework: state.coursework.filter(
+                            (candidate) => candidate.id !== item.id,
                           ),
+                          blocks: state.blocks.filter((block) => block.courseworkId !== item.id),
                           proposalRevision: null,
                         })
                       }
                     >
-                      {item.priority === "high" ? "High priority" : "Make high priority"}
+                      <Trash2 className="mx-auto h-4 w-4" />
                     </button>
                   </div>
-                </article>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={build}
-              disabled={!state.coursework.length}
-              className="button-primary inline-flex h-11 items-center justify-center gap-2 px-5 font-semibold"
-            >
-              <Clock3 className="h-4 w-4" />
-              {state.blocks.some((block) => block.status === "missed")
-                ? "Update plan"
-                : "Build my plan"}
-            </button>
-            {proposal ? (
-              <section className="rounded-xl border border-accent/30 bg-accent/5 p-4">
-                <h3 className="font-semibold">Proposed study plan</h3>
-                <div className="mt-3 space-y-2">
-                  {proposal.blocks.map((block) => {
-                    const item = state.coursework.find(
-                      (candidate) => candidate.id === block.courseworkId,
-                    );
-                    return (
-                      <div key={block.id} className="rounded-lg bg-background/75 p-3 text-sm">
-                        <b>{format.format(new Date(block.start))}</b>
-                        <br />
-                        {item?.courseCode} · {item?.title} · {block.allocatedMinutes}m
-                      </div>
-                    );
-                  })}
                 </div>
-                {Object.values(proposal.unscheduledMinutes).reduce((a, b) => a + b, 0) > 0 ? (
-                  <p className="mt-3 text-sm font-medium text-destructive">
-                    {Object.values(proposal.unscheduledMinutes).reduce((a, b) => a + b, 0)}m still
-                    needs a place.
-                  </p>
-                ) : null}
-                <div className="mt-4 flex gap-2">
+                <div className="mt-3 flex gap-2">
                   <button
                     type="button"
-                    onClick={accept}
-                    className="button-primary px-4 py-2 font-semibold"
+                    className="button-secondary px-3 py-1 text-xs"
+                    onClick={() =>
+                      onChange({
+                        ...state,
+                        coursework: state.coursework.map((candidate) =>
+                          candidate.id === item.id
+                            ? {
+                                ...candidate,
+                                priority: candidate.priority === "high" ? "normal" : "high",
+                              }
+                            : candidate,
+                        ),
+                        proposalRevision: null,
+                      })
+                    }
                   >
-                    Add to timetable
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setProposal(null)}
-                    className="button-secondary inline-flex items-center gap-1 px-4 py-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Reject
+                    {item.priority === "high" ? "High priority" : "Make high priority"}
                   </button>
                 </div>
-              </section>
-            ) : null}
-            {state.blocks
-              .filter((block) => ["accepted", "missed"].includes(block.status))
-              .map((block) => {
-                const item = state.coursework.find(
-                  (candidate) => candidate.id === block.courseworkId,
-                );
-                return (
-                  <div
-                    key={block.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3 text-sm"
-                  >
-                    <span>
-                      <b>
-                        {item?.courseCode} · {item?.title}
-                      </b>
+              </article>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={build}
+            disabled={!state.coursework.length}
+            className="button-primary inline-flex h-11 items-center justify-center gap-2 px-5 font-semibold"
+          >
+            <Clock3 className="h-4 w-4" />
+            {state.blocks.some((block) => block.status === "missed")
+              ? "Update plan"
+              : "Build my plan"}
+          </button>
+          {proposal ? (
+            <section className="rounded-xl border border-accent/30 bg-accent/5 p-4">
+              <h3 className="font-semibold">Proposed study plan</h3>
+              <div className="mt-3 space-y-2">
+                {proposal.blocks.map((block) => {
+                  const item = state.coursework.find(
+                    (candidate) => candidate.id === block.courseworkId,
+                  );
+                  return (
+                    <div key={block.id} className="rounded-lg bg-background/75 p-3 text-sm">
+                      <b>{format.format(new Date(block.start))}</b>
                       <br />
-                      <span className="text-muted-foreground">
-                        {format.format(new Date(block.start))} · {block.allocatedMinutes}m ·{" "}
-                        {block.status}
-                      </span>
+                      {item?.courseCode} · {item?.title} · {block.allocatedMinutes}m
+                    </div>
+                  );
+                })}
+              </div>
+              {Object.values(proposal.unscheduledMinutes).reduce((a, b) => a + b, 0) > 0 ? (
+                <p className="mt-3 text-sm font-medium text-destructive">
+                  {Object.values(proposal.unscheduledMinutes).reduce((a, b) => a + b, 0)}m still
+                  needs a place.
+                </p>
+              ) : null}
+              <div className="mt-4 flex gap-2">
+                <button
+                  type="button"
+                  onClick={accept}
+                  className="button-primary px-4 py-2 font-semibold"
+                >
+                  Add to timetable
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setProposal(null)}
+                  className="button-secondary inline-flex items-center gap-1 px-4 py-2"
+                >
+                  <X className="h-4 w-4" />
+                  Reject
+                </button>
+              </div>
+            </section>
+          ) : null}
+          {state.blocks
+            .filter((block) => ["accepted", "missed"].includes(block.status))
+            .map((block) => {
+              const item = state.coursework.find(
+                (candidate) => candidate.id === block.courseworkId,
+              );
+              return (
+                <div
+                  key={block.id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border p-3 text-sm"
+                >
+                  <span>
+                    <b>
+                      {item?.courseCode} · {item?.title}
+                    </b>
+                    <br />
+                    <span className="text-muted-foreground">
+                      {format.format(new Date(block.start))} · {block.allocatedMinutes}m ·{" "}
+                      {block.status}
                     </span>
-                    {block.status === "accepted" ? (
-                      <span className="flex gap-1">
-                        <button
-                          type="button"
-                          aria-label={`Reschedule ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
-                          className="button-secondary px-3 py-2"
-                          onClick={() => {
-                            setRescheduling(block.id);
-                            setMessage(null);
-                          }}
-                        >
-                          Reschedule
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Complete ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
-                          className="button-secondary px-3 py-2"
-                          onClick={() => onChange(completeBlock(state, block.id))}
-                        >
-                          Complete
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Mark ${item?.courseCode ?? "study"} ${item?.title ?? "work"} missed`}
-                          className="button-secondary px-3 py-2"
-                          onClick={() =>
-                            onChange({
-                              ...state,
-                              blocks: state.blocks.map((candidate) =>
-                                candidate.id === block.id
-                                  ? transitionBlock(candidate, "missed")
-                                  : candidate,
-                              ),
-                              proposalRevision: null,
-                            })
-                          }
-                        >
-                          Missed
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Cancel ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
-                          className="button-secondary px-3 py-2"
-                          onClick={() =>
-                            onChange({
-                              ...state,
-                              blocks: state.blocks.map((candidate) =>
-                                candidate.id === block.id
-                                  ? transitionBlock(candidate, "cancelled")
-                                  : candidate,
-                              ),
-                              proposalRevision: null,
-                            })
-                          }
-                        >
-                          Cancel
-                        </button>
-                      </span>
-                    ) : null}
-                  </div>
-                );
-              })}
-          </>
-        )}
+                  </span>
+                  {block.status === "accepted" ? (
+                    <span className="flex gap-1">
+                      <button
+                        type="button"
+                        aria-label={`Reschedule ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
+                        className="button-secondary px-3 py-2"
+                        onClick={() => {
+                          setRescheduling(block.id);
+                          setMessage(null);
+                        }}
+                      >
+                        Reschedule
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Complete ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
+                        className="button-secondary px-3 py-2"
+                        onClick={() => onChange(completeBlock(state, block.id))}
+                      >
+                        Complete
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Mark ${item?.courseCode ?? "study"} ${item?.title ?? "work"} missed`}
+                        className="button-secondary px-3 py-2"
+                        onClick={() =>
+                          onChange({
+                            ...state,
+                            blocks: state.blocks.map((candidate) =>
+                              candidate.id === block.id
+                                ? transitionBlock(candidate, "missed")
+                                : candidate,
+                            ),
+                            proposalRevision: null,
+                          })
+                        }
+                      >
+                        Missed
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Cancel ${item?.courseCode ?? "study"} ${item?.title ?? "work"}`}
+                        className="button-secondary px-3 py-2"
+                        onClick={() =>
+                          onChange({
+                            ...state,
+                            blocks: state.blocks.map((candidate) =>
+                              candidate.id === block.id
+                                ? transitionBlock(candidate, "cancelled")
+                                : candidate,
+                            ),
+                            proposalRevision: null,
+                          })
+                        }
+                      >
+                        Cancel
+                      </button>
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
+        </>
         {message ? (
           <p role="alert" className="text-sm text-destructive">
             {message}

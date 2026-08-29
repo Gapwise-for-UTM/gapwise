@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
-  normalizeCanvasAssignment,
+  normalizeProviderAssignment,
   reconcileCoursework,
-  type CanvasAssignmentSnapshot,
-} from "@/features/academic/canvas-adapter";
+  type ProviderAssignmentSnapshot,
+} from "@/features/academic/provider-adapter";
 import { createStudyPlan } from "@/features/academic/planner";
 import type { AcademicPlanningContext } from "@/features/academic/types";
 import { needsScheduledWork } from "@/features/academic/types";
 
-const base: CanvasAssignmentSnapshot = {
+const base: ProviderAssignmentSnapshot = {
   id: 12,
   courseId: 34,
   courseCode: "DEM101H5",
@@ -20,7 +20,7 @@ const base: CanvasAssignmentSnapshot = {
 
 describe("provider submission completion semantics", () => {
   test("late-but-submitted coursework is complete for scheduling", () => {
-    const coursework = normalizeCanvasAssignment({
+    const coursework = normalizeProviderAssignment({
       ...base,
       submission: {
         workflowState: "submitted",
@@ -58,7 +58,7 @@ describe("provider submission completion semantics", () => {
   });
 
   test("a new unsubmitted attempt after a late submission is detected as reopened", () => {
-    const prior = normalizeCanvasAssignment({
+    const prior = normalizeProviderAssignment({
       ...base,
       submission: {
         workflowState: "submitted",

@@ -69,7 +69,6 @@ import {
 } from "@/features/academic/state";
 import { plannedWorkMeetings } from "@/features/academic/integration";
 import { composeSchedule } from "@/lib/personal-scheduler";
-import { useEntitlement } from "@/features/entitlements/use-entitlement";
 import { getCampusAccessPoint } from "@/data/utm/campus-access-points";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 
@@ -194,7 +193,6 @@ function AppLayout() {
   const [arrivalSettingsRequest, setArrivalSettingsRequest] = useState(0);
   const replacementInputRef = useRef<HTMLInputElement>(null);
   const authenticatedUserId = user?.id ?? null;
-  const entitlement = useEntitlement(authenticatedUserId, isDemo);
   const arrivalLabel =
     UTM_RESIDENCES.find((building) => building.code === preferences.residenceBuildingCode)?.code ??
     getCampusAccessPoint(preferences.campusAccessPointId)?.label ??
@@ -530,13 +528,6 @@ function AppLayout() {
           >
             Academic work
           </button>
-          <span className="rounded-full border border-border px-3 py-2 text-xs font-semibold">
-            {entitlement.tier === "founder"
-              ? "Gapwise Pro · Founder access"
-              : entitlement.tier === "pro"
-                ? "Gapwise Pro"
-                : "Gapwise Free"}
-          </span>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
           <ResidenceSettings
             user={user}
@@ -558,7 +549,6 @@ function AppLayout() {
           state={academic}
           onChange={setAcademic}
           meetings={timetableWithWork}
-          entitlement={entitlement}
         />
         <PersonalItemForm
           open={personalCommands.formOpen}
@@ -1113,7 +1103,6 @@ function AppLayout() {
         state={academic}
         onChange={setAcademic}
         meetings={termMeetings}
-        entitlement={entitlement}
       />
 
       <footer className="mt-4 border-t border-border bg-card/30">

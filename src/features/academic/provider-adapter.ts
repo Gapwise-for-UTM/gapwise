@@ -1,8 +1,9 @@
 import type { CourseworkItem, CourseworkKind, SubmissionState } from "./types";
 import { isProviderSubmissionComplete } from "./types";
 import { resolveWorkEstimate } from "./workload";
-export const MAX_CANVAS_DESCRIPTION_LENGTH = 4_000;
-const MAX_CANVAS_HTML_INPUT_LENGTH = 64_000;
+
+export const MAX_PROVIDER_DESCRIPTION_LENGTH = 4_000;
+const MAX_PROVIDER_HTML_INPUT_LENGTH = 64_000;
 
 function decodeTextEntities(value: string): string {
   const named: Record<string, string> = {
@@ -44,7 +45,7 @@ function decodeTextEntities(value: string): string {
   return result;
 }
 
-export interface CanvasAssignmentSnapshot {
+export interface ProviderAssignmentSnapshot {
   id: number;
   courseId: number;
   courseCode: string;
@@ -68,12 +69,12 @@ export interface CanvasAssignmentSnapshot {
 }
 
 /**
- * Converts provider HTML to bounded inert text without ever constructing or rendering a DOM.
+ * Converts provider-shaped HTML to bounded inert text without constructing or rendering a DOM.
  * The scanner deliberately decodes each text node exactly once, so encoded markup stays text.
  */
-export function normalizeCanvasDescription(html?: string | null): string | undefined {
+export function normalizeProviderDescription(html?: string | null): string | undefined {
   if (!html) return undefined;
-  const source = html.slice(0, MAX_CANVAS_HTML_INPUT_LENGTH);
+  const source = html.slice(0, MAX_PROVIDER_HTML_INPUT_LENGTH);
   const blockElements = new Set([
     "br",
     "div",
@@ -97,11 +98,11 @@ export function normalizeCanvasDescription(html?: string | null): string | undef
   let cursor = 0;
   let ignored: "script" | "style" | null = null;
   const append = (value: string) => {
-    if (output.length >= MAX_CANVAS_DESCRIPTION_LENGTH) return;
-    output += value.slice(0, MAX_CANVAS_DESCRIPTION_LENGTH - output.length);
+    if (output.length >= MAX_PROVIDER_DESCRIPTION_LENGTH) return;
+    output += value.slice(0, MAX_PROVIDER_DESCRIPTION_LENGTH - output.length);
   };
 
-  while (cursor < source.length && output.length < MAX_CANVAS_DESCRIPTION_LENGTH) {
+  while (cursor < source.length && output.length < MAX_PROVIDER_DESCRIPTION_LENGTH) {
     const tagStart = source.indexOf("<", cursor);
     if (tagStart < 0) {
       if (!ignored) append(decodeTextEntities(source.slice(cursor)));
@@ -138,7 +139,7 @@ export function normalizeCanvasDescription(html?: string | null): string | undef
   return text || undefined;
 }
 
-function submissionState(value: CanvasAssignmentSnapshot["submission"]): SubmissionState {
+function submissionState(value: ProviderAssignmentSnapshot["submission"]): SubmissionState {
   if (!value) return "unknown";
   if (value.workflowState === "graded" || value.gradedAt) return "graded";
   if (value.workflowState === "submitted" || value.submittedAt)
@@ -147,14 +148,14 @@ function submissionState(value: CanvasAssignmentSnapshot["submission"]): Submiss
   return "unsubmitted";
 }
 
-export function normalizeCanvasAssignment(raw: CanvasAssignmentSnapshot): CourseworkItem {
-  const summary = normalizeCanvasDescription(raw.description);
+export function normalizeProviderAssignment(raw: ProviderAssignmentSnapshot): CourseworkItem {
+  const summary = normalizeProviderDescription(raw.description);
   const content: CourseworkItem["content"] = {};
   if (summary !== undefined) content.plainTextSummary = summary;
   if (raw.submissionTypes !== undefined) content.submissionTypes = raw.submissionTypes;
   return {
-    id: `canvas:${raw.courseId}:${raw.id}`,
-    provider: { provider: "canvas", courseRef: String(raw.courseId), itemRef: String(raw.id) },
+    id: `provider:${raw.courseId}:${raw.id}`,
+    provider: { provider: "other", courseRef: String(raw.courseId), itemRef: String(raw.id) },
     courseId: String(raw.courseId),
     courseCode: raw.courseCode,
     title: raw.name.trim(),
@@ -169,7 +170,7 @@ export function normalizeCanvasAssignment(raw: CanvasAssignmentSnapshot): Course
     priority: "normal",
     submissionState: submissionState(raw.submission),
     localProgress: "not_started",
-    provenance: { source: "canvas_fixture", confidence: "high" },
+    provenance: { source: "provider_fixture", confidence: "high" },
   };
 }
 
@@ -186,15 +187,16 @@ export type CourseworkChange = {
   from?: string | null;
   to?: string | null;
 };
+
 export function reconcileCoursework(
   previous: readonly CourseworkItem[],
-  snapshots: readonly CanvasAssignmentSnapshot[],
+  snapshots: readonly ProviderAssignmentSnapshot[],
   now: string,
 ) {
   const old = new Map(previous.map((item) => [item.id, item]));
   const changes: CourseworkChange[] = [];
   const coursework = snapshots.map((snapshot) => {
-    const fresh = normalizeCanvasAssignment(snapshot);
+    const fresh = normalizeProviderAssignment(snapshot);
     const prior = old.get(fresh.id);
     if (!prior) changes.push({ courseworkId: fresh.id, type: "new" });
     else {

@@ -87,7 +87,7 @@ test("vulnerability policy and canonical security contact are public", async ({ 
   );
 });
 
-test("visible Pro planning journey accepts work and exposes safe block actions", async ({
+test("academic planning journey accepts work and exposes safe block actions", async ({
   page,
 }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
