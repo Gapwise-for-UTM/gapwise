@@ -71,8 +71,10 @@ describe("provider-neutral coursework", () => {
     });
     expect(normalizeProviderAssignment({ ...raw, dueAt: null }).dueAt).toBeNull();
     expect(
-      normalizeProviderAssignment({ ...raw, submission: { workflowState: "submitted", late: true } })
-        .submissionState,
+      normalizeProviderAssignment({
+        ...raw,
+        submission: { workflowState: "submitted", late: true },
+      }).submissionState,
     ).toBe("late");
     expect(
       normalizeProviderAssignment({ ...raw, submission: { workflowState: "graded" } })
