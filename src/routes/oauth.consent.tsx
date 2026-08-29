@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bot, GitBranch, ShieldCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { approveAiOAuthClient, isGapwiseAiConfigured } from "@/features/ai/client";
+import { finalizeOAuthApproval } from "@/features/ai/oauth-consent";
 import { useAuth } from "@/features/auth/use-auth";
 import {
   assertCanPersistAuthRedirect,
@@ -147,14 +148,19 @@ function OAuthConsentPage() {
     try {
       const supabase = requireSupabaseClient();
       if (decision === "approve") {
-        // Bind this exact OAuth client ID to the current Gapwise user before a token can
-        // ever reach the AI rows. Primary private-cloud/friend data reject OAuth tokens.
-        await approveAiOAuthClient(details.clientId, details.clientName);
+        const redirectUrl = await finalizeOAuthApproval({
+          authorizationId: details.authorizationId,
+          clientId: details.clientId,
+          clientName: details.clientName,
+          approveAuthorization: (id) => supabase.auth.oauth.approveAuthorization(id),
+          approveClient: approveAiOAuthClient,
+          revokeGrant: (input) => supabase.auth.oauth.revokeGrant(input),
+        });
+        window.location.assign(redirectUrl);
+        return;
       }
-      const response =
-        decision === "approve"
-          ? await supabase.auth.oauth.approveAuthorization(details.authorizationId)
-          : await supabase.auth.oauth.denyAuthorization(details.authorizationId);
+
+      const response = await supabase.auth.oauth.denyAuthorization(details.authorizationId);
       if (response.error || !response.data?.redirect_url) {
         throw response.error ?? new Error("OAuth redirect was missing.");
       }
@@ -162,7 +168,7 @@ function OAuthConsentPage() {
     } catch {
       setMessage(
         decision === "approve"
-          ? "Gapwise could not approve this connector. No OAuth access token was granted."
+          ? "Gapwise could not approve this connector. No authorization code was sent to the client. Start the connection again."
           : "Gapwise could not finish denying this request. Close this tab and cancel from the AI client.",
       );
       setLoading(false);
