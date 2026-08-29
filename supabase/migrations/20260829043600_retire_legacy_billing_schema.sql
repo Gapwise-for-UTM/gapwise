@@ -1,7 +1,7 @@
 -- Gapwise is fully free. Billing-era entitlement and Stripe ledger objects are
 -- no longer used by any runtime path. Production already has no Stripe ledger
--- tables and the remaining entitlement table contains no rows, but fresh
--- migration replays must reach the same fully-free schema.
+-- tables and the remaining entitlement table contains no rows; this migration
+-- makes a clean replay of historical migrations converge on that current schema.
 --
 -- Keep historical migrations intact and retire their live objects through this
 -- forward migration. Intentionally do not use CASCADE: if a future or divergent
