@@ -2,17 +2,13 @@
 
 Gapwise is approved for public use under the production-hardening standard below. This document records the launch baseline and the current operating posture; it does not claim that any internet-facing application can be made perfectly secure.
 
-## Current production posture — 2026-08-15
+## Current production posture — 2026-08-29
 
-Status: **READY / ON TRACK**.
+Status: **PRODUCTION HEALTHY / FINAL RELEASE EVIDENCE IN PROGRESS**.
 
-The canonical production domain is `https://gapwise.ca`, built from GitHub `main` by Vercel.
+The canonical production domain is `https://gapwise.ca`, built from GitHub `main` by Vercel. The current core production deployment matches `main` at `b92ae236b3ed8b4a0f8af4e77c829221af66e857` and is `READY`.
 
-The original encrypted-only launch sign-off completed on 2026-08-12. Subsequent production work remained narrow and reviewed:
-
-- PR #103 made `gapwise.ca` the canonical production domain across documentation, tests, GitHub links, and account-deletion CORS configuration.
-- PR #104 polished timetable/map controls, added visible GitHub/MIT links in the app footer, and updated the affected browser-level regression.
-- At the start of the Aug 15 documentation synchronization, the current **application-behavior baseline** was `f25fdd5d6b3b4c5e0e1ed57eac53e05740b0db75` (PR #104). A documentation-only merge may advance `main` without changing that application behavior baseline.
+The original encrypted-only launch sign-off completed on 2026-08-12. Since then, the product has continued through focused production hardening, fully-free product cleanup, Trust Center/governance work, SEO/searchability work, mobile implementation, and AI/MCP release preparation. Current release work is evidence-driven rather than feature-expansion-driven.
 
 Private cloud remains encrypted-only in source; the legacy plaintext timetable/settings tables and plaintext overlap implementation remain retired.
 
@@ -30,23 +26,38 @@ Private cloud remains encrypted-only in source; the legacy plaintext timetable/s
 - Live location is opt-in and not background-tracked.
 - Campus route/accessibility claims remain conservative when evidence is not verified.
 - The app states that it is an independent student project and not affiliated with or endorsed by the University of Toronto.
+- Gapwise remains fully free for students; paid tiers, billing, Stripe, Canvas/Quercus/LTI, and institutional entitlement gates are not part of the active product.
 
-## Launch/security gates — completed
+## Verified production/security properties
 
-- [x] Typecheck, lint, tests, production build, generated assets/format checks, and isolated database-security checks were green at launch.
-- [x] Production Vercel deployment was `READY` and matched the intended `main` commit at the release checks.
-- [x] Production runtime errors were reviewed during release observation windows.
-- [x] Restrictive CSP/HSTS/nosniff/referrer/permissions/frame protections were verified.
-- [x] Supabase Security and Performance Advisor findings were reviewed.
-- [x] Production database migration state matched the encrypted-only repository architecture.
-- [x] Legacy plaintext timetable/settings storage and plaintext overlap helpers were removed.
-- [x] Fresh-device encrypted restore and same-device local restore were exercised/covered.
-- [x] Sign-out cleanup, account deletion, user isolation, and bounded friend-overlap authorization were exercised/covered.
+- [x] Typecheck, lint, tests, production build, generated assets/format checks, and isolated database-security checks have been exercised through release hardening.
+- [x] Current core production Vercel deployment is `READY` and matches the intended `main` commit.
+- [x] Production runtime errors have been reviewed during release observation windows; the latest 24-hour aggregate check found no grouped runtime-error clusters for core Gapwise or Gapwise AI.
+- [x] Restrictive CSP/HSTS/nosniff/referrer/permissions/frame protections have been verified and regression-tested.
+- [x] Supabase Security and Performance Advisor findings have been reviewed against the current architecture rather than silenced mechanically.
+- [x] Production database migration state matches the encrypted-only repository architecture.
+- [x] Legacy plaintext timetable/settings storage and plaintext overlap helpers are removed.
+- [x] Sign-out cleanup, account deletion, user isolation, and bounded friend-overlap authorization have automated/security coverage.
 - [x] Security review found no production KEK/DEK, service-role key, token, private timetable fixture, or ciphertext dump in public source/log/analytics paths.
 - [x] Privacy/security docs describe browser-side encryption and the trusted Vercel key-broker boundary without E2EE/zero-knowledge claims.
 - [x] Recovery and incident procedures are documented.
+- [x] Trust Center, privacy-governance, incident-response, vulnerability-disclosure, security architecture, transparency, accessibility-governance, and institutional-review scaffolding are published without claiming independent certification or university endorsement.
 
-## Release verification for future behavior changes
+## Remaining evidence gates
+
+The following are deliberately **not** represented as completed until fresh evidence exists:
+
+- [ ] Complete production Google account-continuity validation, including a clean-browser/device encrypted restore path and relevant negative/recovery behavior.
+- [ ] Complete the real Gapwise AI OAuth 2.1 allow, deny/cancel, failure/recovery, redirect/state, and client-identity boundary validation.
+- [ ] Complete real Claude and ChatGPT OAuth/read/write/revoke matrices plus no-delegation, read-only, write-disabled, stale-write, revoke, and re-auth scenarios.
+- [ ] Run the final Gapwise AI repository/history secret scan and exact-final-head CI/deployment verification after the real-client matrices are complete.
+- [ ] Exercise the documented Free-plan logical database backup and restore procedure against a disposable non-production target; documentation alone is not evidence of a completed restore drill.
+- [ ] Reconcile the final ecosystem READMEs/docs with the exact release state and ensure `docs.gapwise.ca` production is deployed from the final docs head rather than an older Vercel production deployment.
+- [ ] Complete required real-device/student evidence and physical UTM entrance/barrier-free field verification without fabricating campus facts.
+
+Automated coverage may support these gates, but it does not replace the explicitly required real production/device/provider evidence.
+
+## Release verification for behavior changes
 
 Before a major release/announcement or after a meaningful production behavior change:
 
@@ -58,7 +69,7 @@ Before a major release/announcement or after a meaningful production behavior ch
 6. Exercise destructive auth/data paths only with disposable accounts/data when the change affects them.
 7. Reconcile Linear and documentation with what is actually deployed.
 
-Documentation-only changes should not trigger unrelated feature work. They may advance the production SHA while leaving the application behavior baseline unchanged.
+Documentation-only changes should not trigger unrelated feature work. They may advance a repository SHA, but any exact-head evidence claim must be re-established for the new final head rather than copied forward.
 
 ## Free-plan operating limits
 
@@ -67,6 +78,7 @@ Gapwise remains local-first and conservative with server work so it can stay fre
 - Do not poll Supabase/Vercel for timetable state.
 - Do not add background location tracking.
 - Do not add a paid map API when reviewed bundled/open routing data satisfies the product need.
+- Do not introduce paid auth-domain, billing, entitlement, or institutional-integration infrastructure merely for cosmetic parity.
 - Cache/deduplicate bounded social work.
 - Monitor Vercel invocation/transfer and Supabase size/egress before raising backend-heavy caps.
 - Prefer aggregate operational metrics; never send timetable/relationship contents to analytics.
@@ -82,7 +94,8 @@ Correctness gates stay strict, but remote churn should stay low:
 - avoid push-based formatting/test debugging loops;
 - rerun failed jobs/runs instead of no-op commits when appropriate;
 - use focused PRs and squash-merge to `main`;
-- never bypass a real required-check failure merely to save CI time.
+- never bypass a real required-check failure merely to save CI time;
+- do not create no-op commits solely to consume another Vercel Hobby deployment when a quota/rate limit is the only blocker.
 
 ## Safe public wording
 
@@ -94,8 +107,8 @@ Safe claims include:
 - “Friend overlap shares only a few rounded common windows, not your timetable.”
 - “Gapwise is independently built and is not affiliated with or endorsed by the University of Toronto.”
 
-Do not claim end-to-end encryption, zero knowledge, server-inability to decrypt, unhackability, perfect security, or official U of T affiliation.
+Do not claim end-to-end encryption, zero knowledge, server-inability to decrypt, unhackability, perfect security, certification, independent audit, guaranteed data residency, or official U of T affiliation without current evidence.
 
 ## Current roadmap gate
 
-The pre-vacation hardening milestone is complete. After the Aug 15 domain/UI/doc sync, no further planned feature expansion is required before the Sep 3 re-entry verification unless a critical production issue appears. On Sep 3, verify the actual GitHub/Vercel/Supabase state before beginning the remaining evidence-driven roadmap.
+The large implementation, hardening, fully-free cleanup, Trust Center, SEO, and mobile campaigns are complete. The remaining roadmap is dominated by release evidence and externally constrained validation: real production OAuth/client matrices, encrypted account-continuity restore, database restore-drill evidence, SDK registry publication/clean-install verification, real-device/student sessions, and physical UTM entrance/accessibility verification. Final ecosystem documentation should close only after those dependent claims can be reconciled against the exact shipped heads.
