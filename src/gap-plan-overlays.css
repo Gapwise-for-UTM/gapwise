@@ -1,5 +1,6 @@
 .gap-auxiliary-sheet {
   grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .gap-sheet-content {
@@ -13,11 +14,28 @@
 
 @media (max-width: 47.999rem) {
   .gap-auxiliary-sheet {
+    display: flex;
+    flex-direction: column;
     height: min(68dvh, 38rem);
     max-height: min(68dvh, 38rem);
+    overflow: hidden;
+  }
+
+  .gap-sheet-handle,
+  .gap-sheet-tabs {
+    flex: 0 0 auto;
   }
 
   .gap-sheet-content {
+    flex: 1 1 0;
+    width: 100%;
+    min-height: 0;
+    max-height: none;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   }
 }
