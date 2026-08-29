@@ -69,7 +69,7 @@ function context(
   };
 }
 
-describe("Pro planning release regressions", () => {
+describe("Academic planning release regressions", () => {
   test("interprets datetime-local coursework deadlines in Toronto, not the device timezone", () => {
     expect(torontoLocalDateTimeInstant("2026-09-11T23:59")).toBe("2026-09-12T03:59:00.000Z");
     expect(torontoLocalDateTimeInstant("2026-01-12T09:00")).toBe("2026-01-12T14:00:00.000Z");

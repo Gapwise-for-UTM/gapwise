@@ -44,7 +44,7 @@ export interface CourseWorkloadProfile {
 
 export interface CourseworkItem {
   id: string;
-  provider: { provider: "canvas" | "quercus" | "other"; courseRef: string; itemRef: string };
+  provider: { provider: "other"; courseRef: string; itemRef: string };
   courseId: string;
   courseCode: string;
   title: string;
@@ -65,8 +65,8 @@ export interface CourseworkItem {
 
 /**
  * Provider-confirmed states that mean the current attempt no longer needs work scheduled.
- * `late` is intentionally complete here: Canvas reports it only for an already-submitted
- * attempt that happened after the due time. A reopened/new attempt is represented separately.
+ * `late` is complete only when it represents an already-submitted attempt after the due time.
+ * A reopened or new attempt is represented separately.
  */
 export function isProviderSubmissionComplete(state: SubmissionState): boolean {
   return state === "submitted" || state === "graded" || state === "late";

@@ -11,6 +11,7 @@ const RETIRED_PATTERNS = [
   /features\/entitlements/u,
   /STRIPE_(?:SECRET|WEBHOOK|PRICE)/u,
   /VITE_STRIPE/u,
+  /\bCanvas\b/u,
   /\bQuercus\b/u,
   /\bLTI\b/u,
 ] as const;

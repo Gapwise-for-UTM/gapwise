@@ -1,0 +1,23 @@
+.gap-auxiliary-sheet {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.gap-sheet-content {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 47.999rem) {
+  .gap-auxiliary-sheet {
+    height: min(68dvh, 38rem);
+    max-height: min(68dvh, 38rem);
+  }
+
+  .gap-sheet-content {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
