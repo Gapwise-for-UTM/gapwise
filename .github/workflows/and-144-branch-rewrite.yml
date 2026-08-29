@@ -1,0 +1,113 @@
+name: AND-144 branch rewrite
+
+on:
+  push:
+    branches:
+      - cleanup/and-144-retire-legacy-entitlements
+
+permissions:
+  contents: write
+
+jobs:
+  rewrite:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: cleanup/and-144-retire-legacy-entitlements
+          fetch-depth: 0
+
+      - name: Remove retired entitlement UI and gating
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(text: str, old: str, new: str, expected: int, label: str) -> str:
+              actual = text.count(old)
+              if actual != expected:
+                  raise SystemExit(f"{label}: expected {expected} occurrence(s), found {actual}")
+              return text.replace(old, new)
+
+          app_path = Path("src/routes/_app.tsx")
+          app = app_path.read_text()
+          app = replace_exact(
+              app,
+              'import { useEntitlement } from "@/features/entitlements/use-entitlement";\n',
+              '',
+              1,
+              'useEntitlement import',
+          )
+          app = replace_exact(
+              app,
+              '  const entitlement = useEntitlement(authenticatedUserId, isDemo);\n',
+              '',
+              1,
+              'entitlement hook call',
+          )
+          app = replace_exact(
+              app,
+              '''          <span className="rounded-full border border-border px-3 py-2 text-xs font-semibold">\n            {entitlement.tier === "founder"\n              ? "Gapwise Pro · Founder access"\n              : entitlement.tier === "pro"\n                ? "Gapwise Pro"\n                : "Gapwise Free"}\n          </span>\n''',
+              '',
+              1,
+              'mobile plan badge',
+          )
+          app = replace_exact(
+              app,
+              '        entitlement={entitlement}\n',
+              '',
+              2,
+              'AcademicWorkDialog entitlement props',
+          )
+          app_path.write_text(app)
+
+          dialog_path = Path("src/features/academic/AcademicWorkDialog.tsx")
+          dialog = dialog_path.read_text()
+          dialog = replace_exact(
+              dialog,
+              'import type { Entitlement } from "@/features/entitlements/entitlements";\n',
+              '',
+              1,
+              'Entitlement type import',
+          )
+          dialog = replace_exact(
+              dialog,
+              'import { canUseFeature } from "@/features/entitlements/entitlements";\n',
+              '',
+              1,
+              'canUseFeature import',
+          )
+          dialog = replace_exact(dialog, '  entitlement,\n', '', 1, 'entitlement destructuring')
+          dialog = replace_exact(dialog, '  entitlement: Entitlement;\n', '', 1, 'entitlement prop type')
+          dialog = replace_exact(
+              dialog,
+              '  const allowed = canUseFeature(entitlement, "academic_planner");\n',
+              '',
+              1,
+              'allowed gate',
+          )
+          dialog = replace_exact(
+              dialog,
+              '''        {!allowed ? (\n          <div className="rounded-xl border border-accent/25 bg-accent/5 p-5">\n            <p className="font-semibold">Gapwise Pro</p>\n            <p className="mt-1 text-sm text-muted-foreground">\n              Automatically fit coursework into your real week.\n            </p>\n            <p className="mt-3 text-xs leading-5 text-muted-foreground">\n              Fall 2026 Pro is CA$9.99 one-time with no automatic renewal. Upgrade from Account →\n              Plan & billing.\n            </p>\n          </div>\n        ) : (\n          <>\n''',
+              '        <>\n',
+              1,
+              'paid-plan conditional opening',
+          )
+          dialog = replace_exact(
+              dialog,
+              '          </>\n        )}\n        {message ? (\n',
+              '        </>\n        {message ? (\n',
+              1,
+              'paid-plan conditional closing',
+          )
+          dialog_path.write_text(dialog)
+          PY
+
+          git diff --check
+          git rm .github/workflows/and-144-branch-rewrite.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/_app.tsx src/features/academic/AcademicWorkDialog.tsx
+          git commit -m "cleanup: remove final entitlement UI gates"
+          git push origin HEAD:cleanup/and-144-retire-legacy-entitlements
