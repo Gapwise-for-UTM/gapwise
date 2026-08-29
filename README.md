@@ -200,7 +200,7 @@ Academic meetings are always **read-only** to AI. Personal-item and gap-preferen
 
 Gapwise AI is **not** zero-knowledge: authorized plaintext exists transiently in the service when a private tool needs to answer an authorized request. Its delegated data is encrypted at rest with a separate key domain, and the MCP runtime does not require a Supabase service-role key.
 
-> **External-client status:** the production MCP service is live and the private Claude OAuth/delegation path has previously been exercised with real Gapwise timetable/gap data. Fresh public-campus composition regression and full ChatGPT compatibility/read-write-revoke validation remain release gates before representing universal client support or making the separate AI repository public.
+> **External-client status:** the production MCP service and public `gapwise-ai` repository are live, but broad-client release readiness remains evidence-gated. Fresh production OAuth consent-boundary validation plus the real Claude and ChatGPT read/write/revoke and negative-path matrices remain required before representing universal external-client support.
 
 ---
 
@@ -341,18 +341,18 @@ Regression coverage includes ACORN parsing/restoration, onboarding, Today/gap pl
 
 ---
 
-## Current release — August 20, 2026
+## Current release — August 29, 2026
 
 The current production release includes:
 
 - Gapwise Platform and the public UTM campus API;
-- OpenAPI 3.1, the zero-dependency JS/TS client, and the versioned 30-building snapshot;
+- OpenAPI 3.1, the zero-dependency JS/TS client source, and the versioned 30-building snapshot;
 - browser-side Day Replay;
 - deterministic “Can I go there?” destination feasibility on Today, including the mobile surface;
 - the permissioned Gapwise AI integration surface and provider-neutral MCP service;
-- explicit AI grounding provenance so Gapwise-supplied facts remain distinguishable from assistant advice/inference.
+- the fully-free product cleanup, public Trust Center/governance material, searchability/SEO pass, and production-hardening campaign.
 
-The immediate focus is **release validation, not feature expansion**: real-device student onboarding/usage, better field-verified routing coverage, and completion of the remaining external AI-client compatibility/revocation matrix.
+The immediate focus is **release validation, not feature expansion**: clean-device account continuity/encrypted restore, SDK registry publication and clean-install verification, physical UTM entrance/accessibility evidence, and completion of the remaining external AI-client OAuth/compatibility/revocation matrices.
 
 ---
 
