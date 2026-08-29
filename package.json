@@ -12,7 +12,7 @@
   },
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && bun scripts/check-bundle-budget.ts",
+    "build": "vite build && bun scripts/build-seo-pages.ts && bun scripts/check-bundle-budget.ts",
     "bundle:check": "bun scripts/check-bundle-budget.ts",
     "contract:check": "bun scripts/check-public-contract.ts && python3 scripts/check-python-contract.py",
     "build:dev": "vite build --mode development",

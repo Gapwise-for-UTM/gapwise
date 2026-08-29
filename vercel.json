@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
+  "trailingSlash": false,
   "installCommand": "bun install --frozen-lockfile",
   "buildCommand": "bun run build",
   "outputDirectory": "dist",
@@ -41,11 +42,63 @@
       "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }]
     },
     {
-      "source": "/(favicon.svg|favicon-16x16.png|favicon-32x32.png|apple-touch-icon.png|icon-192.png|icon-512.png|site.webmanifest)",
+      "source": "/(favicon.svg|favicon-16x16.png|favicon-32x32.png|apple-touch-icon.png|icon-192.png|icon-512.png|site.webmanifest|robots.txt|sitemap.xml)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }]
+    },
+    {
+      "source": "/today",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/timetable",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/gaps",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/route/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/oauth/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/v1",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/v1/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+    },
+    {
+      "source": "/_seo/(.*)",
+      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     }
   ],
   "rewrites": [
+    { "source": "/places", "destination": "/_seo/places.html" },
+    {
+      "source": "/places/davis-food-court",
+      "destination": "/_seo/places--davis-food-court.html"
+    },
+    {
+      "source": "/places/utm-library",
+      "destination": "/_seo/places--utm-library.html"
+    },
+    { "source": "/places/rawc", "destination": "/_seo/places--rawc.html" },
+    { "source": "/developers", "destination": "/_seo/developers.html" },
+    { "source": "/trust", "destination": "/_seo/trust.html" },
+    { "source": "/privacy", "destination": "/_seo/privacy.html" },
+    { "source": "/security", "destination": "/_seo/security.html" },
+    { "source": "/accessibility", "destination": "/_seo/accessibility.html" },
+    { "source": "/terms", "destination": "/_seo/terms.html" },
     { "source": "/v1", "destination": "/api/v1?resource=root" },
     { "source": "/v1/buildings", "destination": "/api/v1?resource=buildings" },
     {
