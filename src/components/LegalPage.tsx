@@ -21,9 +21,7 @@ export function LegalPage({
             <span className="brand-mark-shell">
               <img src="/logo-mark.svg" alt="" />
             </span>
-            <span className="font-display font-semibold">
-              Gapwise <span className="brand-utm-pill">UTM</span>
-            </span>
+            <span className="font-display font-semibold">Gapwise UTM</span>
           </Link>
           <Link to="/" className="button-secondary px-3 py-2 text-sm font-semibold">
             Open Gapwise
@@ -38,10 +36,13 @@ export function LegalPage({
         <p className="mt-3 text-sm text-muted-foreground">
           {dateLabel} {date}
         </p>
-        <article className="mt-10 space-y-8 text-sm leading-7 text-muted-foreground [&_h2]:mb-2 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
+        <article className="mt-10 space-y-8 text-sm leading-7 text-muted-foreground [&_a]:underline [&_a]:underline-offset-2 [&_h2]:mb-2 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
           {children}
         </article>
-        <footer className="mt-12 flex gap-4 border-t border-border pt-6 text-sm">
+        <footer className="mt-12 flex flex-wrap gap-4 border-t border-border pt-6 text-sm">
+          <Link to="/trust" className="text-accent hover:underline">
+            Trust Center
+          </Link>
           <Link to="/privacy" className="text-accent hover:underline">
             Privacy
           </Link>
@@ -50,6 +51,9 @@ export function LegalPage({
           </Link>
           <Link to="/security" className="text-accent hover:underline">
             Security
+          </Link>
+          <Link to="/accessibility" className="text-accent hover:underline">
+            Accessibility
           </Link>
           <a
             href="https://github.com/andrewmuratov/gapwise"

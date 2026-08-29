@@ -11,8 +11,9 @@ This document records what Gapwise verifies in code and automated browser tests.
 - **Campus explorer:** keyboard-completable search with retained input focus, serious/critical axe gating, and an explicit reduced-motion browser test. Physical accessibility truth still depends on separately verified campus data.
 - **Timetable export dialog:** keyboard-openable trigger, Escape-to-close focus restoration, serious/critical axe gating in the open dialog, semantic radio-state regression coverage, and global reduced-motion CSS. Export remains browser-local.
 - **Theme switching:** native button interaction plus dark- and light-theme axe gates. Motion preference is independent of theme.
-- **Account / settings / onboarding:** existing E2E coverage where flows are available and Radix/native focus behavior. Phase 4 will expand concrete gaps as they are identified. Production identity-provider behavior is outside automated local proof.
-- **Loading / empty / error / recovery states:** flow-specific role/status coverage with global reduced-motion CSS. Broader failure and recovery UX remains a later AND-130 phase.
+- **Account / settings / onboarding:** existing E2E coverage where flows are available and Radix/native focus behavior. Production identity-provider behavior is outside automated local proof.
+- **Loading / empty / error / recovery states:** flow-specific role/status coverage with global reduced-motion CSS and shared semantic state panels.
+- **Public Accessibility Statement:** public-route content assertions plus a serious/critical axe gate. The statement distinguishes the target from tested evidence and records current manual-testing gaps.
 
 ## Regression rules
 
@@ -28,3 +29,4 @@ This document records what Gapwise verifies in code and automated browser tests.
 
 - `e2e/accessibility.e2e.ts` — landing, timetable, gap plan, Day Route, theme, reduced motion, and campus explorer checks.
 - `e2e/accessibility-focus.e2e.ts` — export-dialog keyboard operation, focus restoration, semantic radio state, and dialog axe checks.
+- `e2e/pro-auth-legal.e2e.ts` — public Accessibility Statement content, contact-path, and axe checks.
