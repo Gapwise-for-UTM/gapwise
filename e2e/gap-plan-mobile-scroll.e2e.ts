@@ -27,15 +27,18 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
 
   const tuneMetrics = await content.evaluate((element) => {
     const style = getComputedStyle(element);
+    const dialogStyle = getComputedStyle(element.closest('[role="dialog"]') as HTMLElement);
     return {
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight,
       overflowY: style.overflowY,
       touchAction: style.touchAction,
+      dialogDisplay: dialogStyle.display,
     };
   });
 
-  expect(tuneMetrics.overflowY).toBe("auto");
+  expect(tuneMetrics.dialogDisplay).toBe("flex");
+  expect(["auto", "scroll"]).toContain(tuneMetrics.overflowY);
   expect(tuneMetrics.touchAction).toContain("pan-y");
   expect(tuneMetrics.scrollHeight).toBeGreaterThan(tuneMetrics.clientHeight);
 
@@ -50,7 +53,7 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
     const style = getComputedStyle(element);
     return { overflowY: style.overflowY, touchAction: style.touchAction };
   });
-  expect(friendStyles.overflowY).toBe("auto");
+  expect(["auto", "scroll"]).toContain(friendStyles.overflowY);
   expect(friendStyles.touchAction).toContain("pan-y");
 
   guard.assertClean();
