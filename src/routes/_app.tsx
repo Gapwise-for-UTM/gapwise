@@ -549,7 +549,7 @@ function AppLayout() {
           state={academic}
           onChange={setAcademic}
           meetings={timetableWithWork}
-          />
+        />
         <PersonalItemForm
           open={personalCommands.formOpen}
           onOpenChange={personalCommands.setOpen}
