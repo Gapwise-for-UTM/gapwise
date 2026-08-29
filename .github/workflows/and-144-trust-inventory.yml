@@ -30,7 +30,7 @@ jobs:
 
           text, count = re.subn(
               r"^\*\*Evidence snapshot:\*\*.*$",
-              "**Evidence snapshot:** core implementation candidate `1e2500784c9e4203e3eebfbe598e8f8ec95d2134`  ",
+              "**Evidence snapshot:** core implementation candidate `1e2500784c9e4203e3eebfbe598e8f8ec95d2134`",
               text,
               count=1,
               flags=re.MULTILINE,
@@ -40,7 +40,7 @@ jobs:
 
           text, count = re.subn(
               r"^\*\*Reviewed:\*\*.*$",
-              "**Reviewed:** 2026-08-29  ",
+              "**Reviewed:** 2026-08-29",
               text,
               count=1,
               flags=re.MULTILINE,
