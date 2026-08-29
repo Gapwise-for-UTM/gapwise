@@ -3,9 +3,9 @@ import { canDeliverGeneratedExportImmediately } from "@/lib/timetable-export-del
 
 describe("export delivery activation", () => {
   test("returns false when transient activation is inactive", () => {
-    expect(
-      canDeliverGeneratedExportImmediately({ userActivation: { isActive: false } }),
-    ).toBe(false);
+    expect(canDeliverGeneratedExportImmediately({ userActivation: { isActive: false } })).toBe(
+      false,
+    );
   });
 
   test("returns true when transient activation is active", () => {
