@@ -1,0 +1,70 @@
+name: Cleanup merged branches
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Delete safely merged branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' --prune
+
+          mapfile -t branches < <(
+            gh api --paginate "repos/$REPO/branches?per_page=100" \
+              --jq '.[] | select(.name != "main" and (.protected | not)) | .name'
+          )
+
+          for branch in "${branches[@]}"; do
+            open_prs=$(gh api -X GET "repos/$REPO/pulls" \
+              -f state=open \
+              -f head="$OWNER:$branch" \
+              --jq 'length')
+            if [[ "$open_prs" != "0" ]]; then
+              echo "Keeping $branch: open pull request"
+              continue
+            fi
+
+            safe=false
+            if git show-ref --verify --quiet "refs/remotes/origin/$branch" && \
+               git merge-base --is-ancestor "refs/remotes/origin/$branch" "refs/remotes/origin/main"; then
+              safe=true
+            fi
+
+            if [[ "$safe" != "true" ]]; then
+              branch_sha=$(gh api "repos/$REPO/git/ref/heads/$branch" --jq '.object.sha')
+              merged_tip_matches=$(gh api --paginate -X GET "repos/$REPO/pulls" \
+                -f state=closed \
+                -f head="$OWNER:$branch" \
+                --jq "[.[] | select(.merged_at != null and .head.sha == \"$branch_sha\")] | length" \
+                | awk '{sum += $1} END {print sum + 0}')
+              if [[ "$merged_tip_matches" -gt 0 ]]; then
+                safe=true
+              fi
+            fi
+
+            if [[ "$safe" == "true" ]]; then
+              echo "Deleting merged branch $branch"
+              if ! gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"; then
+                echo "Warning: GitHub refused to delete $branch; leaving it in place"
+              fi
+            else
+              echo "Keeping $branch: not proven fully merged"
+            fi
+          done
