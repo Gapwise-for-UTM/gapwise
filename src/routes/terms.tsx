@@ -113,8 +113,8 @@ function TermsPage() {
         <p>
           The service is provided without a promise of uninterrupted availability and may change as
           the project evolves. Features may be corrected, removed, or replaced. Do not rely on
-          Gapwise as the only copy of important academic information. Material changes to these terms
-          should be published before they govern new use where notice or renewed agreement is
+          Gapwise as the only copy of important academic information. Material changes to these
+          terms should be published before they govern new use where notice or renewed agreement is
           required by applicable law.
         </p>
       </section>
@@ -123,10 +123,10 @@ function TermsPage() {
         <h2>Suspension and termination</h2>
         <p>
           Access may be limited or suspended when reasonably necessary to protect users, investigate
-          abuse, comply with law, or preserve the security and integrity of the service. You may stop
-          using Gapwise at any time and signed-in users can permanently delete their Gapwise account
-          and associated cloud data from account settings, subject to provider-side logs and backups
-          described in the Privacy Policy.
+          abuse, comply with law, or preserve the security and integrity of the service. You may
+          stop using Gapwise at any time and signed-in users can permanently delete their Gapwise
+          account and associated cloud data from account settings, subject to provider-side logs and
+          backups described in the Privacy Policy.
         </p>
       </section>
 
@@ -161,8 +161,9 @@ function TermsPage() {
           For non-sensitive questions about these terms, use the{" "}
           <a href="https://github.com/andrewmuratov/gapwise">Gapwise repository</a>. Do not post
           private account data, credentials, legal documents, or vulnerability details in a public
-          issue. Legal notices or requests that require a private channel should first be directed to
-          the repository owner through the <a href="https://github.com/andrewmuratov">GitHub profile</a>.
+          issue. Legal notices or requests that require a private channel should first be directed
+          to the repository owner through the{" "}
+          <a href="https://github.com/andrewmuratov">GitHub profile</a>.
         </p>
       </section>
     </LegalPage>
