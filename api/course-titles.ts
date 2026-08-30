@@ -1,16 +1,30 @@
 const TTB_REFERENCE_URL = "https://api.easi.utoronto.ca/ttb/reference-data";
 const TTB_COURSES_URL = "https://api.easi.utoronto.ca/ttb/getPageableCourses";
-const PAGE_SIZE = 100;
-const MAX_PAGES = 25;
-const UPSTREAM_TIMEOUT_MS = 7_500;
+const REQUESTED_PAGE_SIZE = 100;
+const UPSTREAM_TIMEOUT_MS = 8_500;
 const REFERENCE_CACHE_MS = 6 * 60 * 60 * 1_000;
+const MAX_CACHED_PAGES = 64;
+const MAX_PREFIX_PAGES = 20;
 
 type Facets = {
   sessions: string[];
   divisions: string[];
 };
 
+type CourseRow = {
+  code: string;
+  name: string;
+};
+
+type CoursePage = {
+  courses: CourseRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
 let referenceCache: { expiresAt: number; facets: Facets } | null = null;
+const pageCache = new Map<string, Promise<CoursePage>>();
 
 function json(data: unknown, status = 200, cacheControl?: string): Response {
   const headers = new Headers({
@@ -76,10 +90,13 @@ async function getReferenceFacets(fetchImpl: typeof fetch, signal: AbortSignal):
   return facets;
 }
 
-function searchBody(prefix: string, page: number, facets: Facets) {
+function searchBody(page: number, facets: Facets) {
   return {
+    // TTB's course-code field is an exact-code search, not a prefix search. We
+    // therefore page the alphabetically sorted catalog and locate the requested
+    // subject prefix without ever receiving the student's exact course codes.
     courseCodeAndTitleProps: {
-      courseCode: prefix,
+      courseCode: "",
       courseTitle: "",
       courseSectionCode: "",
     },
@@ -97,39 +114,114 @@ function searchBody(prefix: string, page: number, facets: Facets) {
     availableSpace: false,
     waitListable: false,
     page,
-    pageSize: PAGE_SIZE,
+    pageSize: REQUESTED_PAGE_SIZE,
     direction: "asc",
   };
 }
 
-function pageableCourse(value: unknown): { courses: unknown[]; total: number } | null {
+function normalizePage(value: unknown, requestedPage: number): CoursePage | null {
   if (!value || typeof value !== "object") return null;
   const payload = (value as { payload?: unknown }).payload;
   if (!payload || typeof payload !== "object") return null;
   const pageable = (payload as { pageableCourse?: unknown }).pageableCourse;
   if (!pageable || typeof pageable !== "object") return null;
 
-  const courses = (pageable as { courses?: unknown }).courses;
+  const rawCourses = (pageable as { courses?: unknown }).courses;
   const total = (pageable as { total?: unknown }).total;
-  if (!Array.isArray(courses) || typeof total !== "number") return null;
-  return { courses, total };
+  const rawPage = (pageable as { page?: unknown }).page;
+  const rawPageSize = (pageable as { pageSize?: unknown }).pageSize;
+  if (!Array.isArray(rawCourses) || typeof total !== "number") return null;
+
+  const courses = rawCourses
+    .map((course): CourseRow | null => {
+      if (!course || typeof course !== "object") return null;
+      const rawCode = (course as { code?: unknown }).code;
+      const rawName = (course as { name?: unknown }).name;
+      if (typeof rawCode !== "string" || typeof rawName !== "string") return null;
+      const code = rawCode.trim().toUpperCase();
+      const name = rawName.trim();
+      return code && name ? { code, name } : null;
+    })
+    .filter((course): course is CourseRow => course !== null);
+
+  const page = Number.isInteger(rawPage) && Number(rawPage) >= 1 ? Number(rawPage) : requestedPage;
+  const pageSize =
+    Number.isInteger(rawPageSize) && Number(rawPageSize) >= 1
+      ? Number(rawPageSize)
+      : Math.max(courses.length, 1);
+
+  for (let index = 1; index < courses.length; index += 1) {
+    if (courses[index - 1]!.code.localeCompare(courses[index]!.code) > 0) {
+      throw new Error("Timetable Builder course ordering changed unexpectedly.");
+    }
+  }
+
+  return { courses, total, page, pageSize };
 }
 
-function addTitles(
+function pageCacheKey(page: number, facets: Facets): string {
+  return `${facets.sessions.join(",")}|${facets.divisions.join(",")}|${page}`;
+}
+
+function rememberPage(key: string, value: Promise<CoursePage>): void {
+  pageCache.set(key, value);
+  while (pageCache.size > MAX_CACHED_PAGES) {
+    const oldest = pageCache.keys().next().value as string | undefined;
+    if (!oldest) break;
+    pageCache.delete(oldest);
+  }
+}
+
+async function requestPage(
+  page: number,
+  facets: Facets,
+  fetchImpl: typeof fetch,
+  signal: AbortSignal,
+): Promise<CoursePage> {
+  const response = await fetchImpl(TTB_COURSES_URL, {
+    method: "POST",
+    headers: upstreamHeaders(true),
+    body: JSON.stringify(searchBody(page, facets)),
+    signal,
+  });
+  if (!response.ok) throw new Error(`Timetable Builder returned ${response.status} for page ${page}.`);
+
+  const parsed = normalizePage(await response.json(), page);
+  if (!parsed) throw new Error("Timetable Builder returned an unexpected course payload.");
+  return parsed;
+}
+
+async function getPage(
+  page: number,
+  facets: Facets,
+  fetchImpl: typeof fetch,
+  signal: AbortSignal,
+): Promise<CoursePage> {
+  if (fetchImpl !== globalThis.fetch) return requestPage(page, facets, fetchImpl, signal);
+
+  const key = pageCacheKey(page, facets);
+  const cached = pageCache.get(key);
+  if (cached) return cached;
+
+  const pending = requestPage(page, facets, fetchImpl, signal).catch((error) => {
+    pageCache.delete(key);
+    throw error;
+  });
+  rememberPage(key, pending);
+  return pending;
+}
+
+function maxCode(page: CoursePage): string | null {
+  return page.courses.at(-1)?.code ?? null;
+}
+
+function addMatchingTitles(
   prefix: string,
-  courses: readonly unknown[],
+  courses: readonly CourseRow[],
   titles: Record<string, string>,
 ): void {
-  for (const rawCourse of courses) {
-    if (!rawCourse || typeof rawCourse !== "object") continue;
-    const rawCode = (rawCourse as { code?: unknown }).code;
-    const rawName = (rawCourse as { name?: unknown }).name;
-    if (typeof rawCode !== "string" || typeof rawName !== "string") continue;
-
-    const code = rawCode.trim().toUpperCase();
-    const name = rawName.trim();
-    if (!code.startsWith(prefix) || !name || titles[code]) continue;
-    titles[code] = name;
+  for (const course of courses) {
+    if (course.code.startsWith(prefix) && !titles[course.code]) titles[course.code] = course.name;
   }
 }
 
@@ -145,31 +237,44 @@ export async function fetchCourseTitlesByPrefix(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
   const titles: Record<string, string> = {};
+  const prefixUpperBound = `${normalizedPrefix}\uffff`;
 
   try {
     const facets = await getReferenceFacets(fetchImpl, controller.signal);
-    let seen = 0;
-    for (let page = 1; page <= MAX_PAGES; page += 1) {
-      const response = await fetchImpl(TTB_COURSES_URL, {
-        method: "POST",
-        headers: upstreamHeaders(true),
-        body: JSON.stringify(searchBody(normalizedPrefix, page, facets)),
-        signal: controller.signal,
-      });
+    const firstPage = await getPage(1, facets, fetchImpl, controller.signal);
+    if (firstPage.total <= 0 || firstPage.courses.length === 0) return titles;
 
-      // The TTB API returns 404 for a valid search with no matches.
-      if (response.status === 404 && page === 1) return {};
-      if (!response.ok) throw new Error(`Timetable Builder returned ${response.status}.`);
+    const effectivePageSize = firstPage.pageSize;
+    const totalPages = Math.max(1, Math.ceil(firstPage.total / effectivePageSize));
 
-      const parsed = pageableCourse(await response.json());
-      if (!parsed) throw new Error("Timetable Builder returned an unexpected payload.");
-
-      addTitles(normalizedPrefix, parsed.courses, titles);
-      seen += parsed.courses.length;
-      if (parsed.courses.length === 0 || seen >= parsed.total) return titles;
+    // Find the first page whose final course code is not lexicographically before
+    // the requested prefix. TTB sorts course results ascending by course code.
+    let low = 1;
+    let high = totalPages;
+    while (low < high) {
+      const middle = Math.floor((low + high) / 2);
+      const page = middle === 1 ? firstPage : await getPage(middle, facets, fetchImpl, controller.signal);
+      const last = maxCode(page);
+      if (!last) throw new Error(`Timetable Builder returned an empty page ${middle}.`);
+      if (last.localeCompare(normalizedPrefix) < 0) low = middle + 1;
+      else high = middle;
     }
 
-    throw new Error("Timetable Builder pagination exceeded the safety limit.");
+    let pagesRead = 0;
+    for (let pageNumber = low; pageNumber <= totalPages; pageNumber += 1) {
+      pagesRead += 1;
+      if (pagesRead > MAX_PREFIX_PAGES) {
+        throw new Error(`Course prefix ${normalizedPrefix} exceeded the page safety limit.`);
+      }
+
+      const page = pageNumber === 1 ? firstPage : await getPage(pageNumber, facets, fetchImpl, controller.signal);
+      addMatchingTitles(normalizedPrefix, page.courses, titles);
+
+      const last = maxCode(page);
+      if (!last || last.localeCompare(prefixUpperBound) > 0) break;
+    }
+
+    return titles;
   } finally {
     clearTimeout(timer);
   }
