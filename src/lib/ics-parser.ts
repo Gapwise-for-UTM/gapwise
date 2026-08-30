@@ -129,7 +129,10 @@ function recurrenceMetadata(
   } else if (rules.some((rule) => rule.until === null)) {
     endDate = null;
   } else {
-    const suppliedEnds = [...rules.map((rule) => calendarDate(rule.until!)), ...recurrenceDates].sort();
+    const suppliedEnds = [
+      ...rules.map((rule) => calendarDate(rule.until!)),
+      ...recurrenceDates,
+    ].sort();
     endDate = suppliedEnds.at(-1) ?? null;
   }
   return {
