@@ -100,11 +100,7 @@ export async function enrichCourseTitles(
   // A plain Vite preview has no Vercel /api runtime. Avoid a guaranteed first-party
   // 404 there and keep the already-parsed ACORN title as the documented fallback.
   // Injected transports still exercise the catalog normally in unit tests.
-  if (
-    prefixes.length === 0 ||
-    typeof fetchImpl !== "function" ||
-    localStaticPreview(fetchImpl)
-  ) {
+  if (prefixes.length === 0 || typeof fetchImpl !== "function" || localStaticPreview(fetchImpl)) {
     return [...meetings];
   }
 
