@@ -141,7 +141,11 @@ The public API is campus-only. It does **not** expose student timetables, accoun
 
 ### Official SDKs
 
-The TypeScript-first [`@gapwise/sdk`](sdk/javascript) and typed synchronous/asynchronous Python [`gapwise`](sdk/python) clients share the canonical v1 semantics. Neither package is published yet. Both support building/place discovery, routing, explicit free-interval planning, typed errors, timeouts, custom endpoints, and deterministic mocked tests.
+The TypeScript-first [`@gapwise/sdk`](sdk/javascript) and typed synchronous/asynchronous Python [`gapwise`](sdk/python) clients share the canonical v1 semantics. `@gapwise/sdk@0.1.0` is published on npm with provenance; the Python package is still awaiting its first verified PyPI release. Both support building/place discovery, routing, explicit free-interval planning, typed errors, timeouts, custom endpoints, and deterministic mocked tests.
+
+```bash
+npm install @gapwise/sdk@0.1.0
+```
 
 ```ts
 import { Gapwise } from "@gapwise/sdk";
@@ -347,14 +351,14 @@ Regression coverage includes ACORN parsing/restoration, onboarding, Today/gap pl
 The current production release includes:
 
 - Gapwise Platform and the public UTM campus API;
-- OpenAPI 3.1, the zero-dependency JS/TS client source, and the versioned 30-building snapshot;
+- OpenAPI 3.1, the published `@gapwise/sdk@0.1.0` npm client, Python SDK source, and the versioned 30-building snapshot;
 - browser-side Day Replay;
 - deterministic “Can I go there?” destination feasibility on Today, including the mobile surface;
 - privacy-preserving canonical U of T course-title enrichment with local ACORN-title fallback;
 - the permissioned Gapwise AI integration surface and provider-neutral MCP service, with the production OAuth consent/resource boundary validated;
 - the fully-free product cleanup, public Trust Center/governance material, searchability/SEO pass, production-hardening campaign, and hosted-log credential-redaction hardening.
 
-The immediate focus is **release validation, not feature expansion**: clean-device account continuity/encrypted restore, SDK registry publication and clean-install verification, physical UTM entrance/accessibility evidence, the database restore drill, real-device/student validation, and completion of the remaining external AI-client read/write/revoke and negative-path matrices.
+The immediate focus is **release validation, not feature expansion**: clean-device account continuity/encrypted restore, first PyPI publication and clean-install verification, physical UTM entrance/accessibility evidence, the database restore drill, real-device/student validation, and completion of the remaining external AI-client read/write/revoke and negative-path matrices.
 
 ---
 
