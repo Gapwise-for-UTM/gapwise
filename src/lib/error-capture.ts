@@ -1,6 +1,8 @@
 // Captures the original Error out-of-band so server.ts can recover the stack
 // when h3 has already swallowed the throw into a generic 500 Response.
 
+import { redactSensitiveLogText } from "./log-redaction";
+
 let lastCapturedError: { error: unknown; at: number } | undefined;
 const TTL_MS = 5_000;
 
@@ -11,7 +13,8 @@ function record(error: unknown) {
 // h3's HTTPError serializes to {"status":500,"unhandled":true,"message":"HTTPError"} —
 // no stack, no cause — so a plain console.error(error) reaches the log pipeline with
 // the failure detail stripped. Expand Error-like args into a string that keeps the
-// message, stack, and the full cause chain.
+// message, stack, and the full cause chain. The final diagnostic string is redacted
+// before it reaches hosted logs so credentials embedded in errors cannot leak.
 const CAUSE_DEPTH_LIMIT = 5;
 const DESCRIPTION_LENGTH_LIMIT = 8_000;
 
@@ -28,7 +31,7 @@ export function describeError(error: unknown): string {
     parts.push(`${label}${current.stack ?? `${current.name}: ${current.message}`}${status}`);
     current = current.cause;
   }
-  return parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT);
+  return redactSensitiveLogText(parts.join("\n").slice(0, DESCRIPTION_LENGTH_LIMIT));
 }
 
 function describeStatus(error: Error): string {
@@ -49,17 +52,21 @@ function isErrorLike(value: unknown): value is Error {
   return value instanceof Error;
 }
 
+function sanitizeLogArgument(value: unknown): unknown {
+  if (typeof value === "string") return redactSensitiveLogText(value);
+  if (isErrorLike(value)) {
+    record(value);
+    return describeError(value);
+  }
+  return value;
+}
+
 // Wrap console.error so errors logged by any layer — including h3's internal
 // unhandled-error logging, which this file cannot hook directly — are both
-// recorded for consumeLastCapturedError and expanded before serialization.
+// recorded for consumeLastCapturedError and sanitized before serialization.
 const originalConsoleError = console.error.bind(console);
 console.error = (...args: unknown[]) => {
-  const expanded = args.map((arg) => {
-    if (!isErrorLike(arg)) return arg;
-    record(arg);
-    return describeError(arg);
-  });
-  originalConsoleError(...expanded);
+  originalConsoleError(...args.map(sanitizeLogArgument));
 };
 
 if (typeof globalThis.addEventListener === "function") {
