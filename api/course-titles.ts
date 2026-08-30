@@ -71,10 +71,7 @@ function referenceFacets(value: unknown): Facets | null {
   return { sessions, divisions };
 }
 
-async function getReferenceFacets(
-  fetchImpl: typeof fetch,
-  signal: AbortSignal,
-): Promise<Facets> {
+async function getReferenceFacets(fetchImpl: typeof fetch, signal: AbortSignal): Promise<Facets> {
   const canUseSharedCache = fetchImpl === globalThis.fetch;
   if (canUseSharedCache && referenceCache && referenceCache.expiresAt > Date.now()) {
     return referenceCache.facets;
@@ -85,7 +82,9 @@ async function getReferenceFacets(
     headers: upstreamHeaders(),
     signal,
   });
-  if (!response.ok) throw new Error(`Timetable Builder reference data returned ${response.status}.`);
+  if (!response.ok) {
+    throw new Error(`Timetable Builder reference data returned ${response.status}.`);
+  }
 
   const facets = referenceFacets(await response.json());
   if (!facets) throw new Error("Timetable Builder reference data had an unexpected payload.");
@@ -150,8 +149,7 @@ function normalizePage(value: unknown, requestedPage: number): CoursePage | null
     })
     .filter((course): course is CourseRow => course !== null);
 
-  const page =
-    Number.isInteger(rawPage) && Number(rawPage) >= 1 ? Number(rawPage) : requestedPage;
+  const page = Number.isInteger(rawPage) && Number(rawPage) >= 1 ? Number(rawPage) : requestedPage;
   const pageSize =
     Number.isInteger(rawPageSize) && Number(rawPageSize) >= 1
       ? Number(rawPageSize)
@@ -262,9 +260,7 @@ export async function fetchCourseTitlesByPrefix(
     while (low < high) {
       const middle = Math.floor((low + high) / 2);
       const page =
-        middle === 1
-          ? firstPage
-          : await getPage(middle, facets, fetchImpl, controller.signal);
+        middle === 1 ? firstPage : await getPage(middle, facets, fetchImpl, controller.signal);
       const last = maxCode(page);
       if (!last) throw new Error(`Timetable Builder returned an empty page ${middle}.`);
       if (last.localeCompare(normalizedPrefix) < 0) low = middle + 1;
