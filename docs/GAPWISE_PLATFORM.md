@@ -30,7 +30,11 @@ No API key is required for these public campus-data endpoints. They do not expos
 
 ## JavaScript / TypeScript quick start
 
-The package names below are release targets and are **not yet published** to npm or PyPI. Run the JavaScript SDK from its repository source until the human registry-release gates complete.
+`@gapwise/sdk@0.1.0` is published on npm with provenance. The Python `gapwise` package is still awaiting its first verified PyPI release, so do not advertise `pip install gapwise` yet.
+
+```bash
+npm install @gapwise/sdk@0.1.0
+```
 
 ```ts
 import { Gapwise } from "@gapwise/sdk";
