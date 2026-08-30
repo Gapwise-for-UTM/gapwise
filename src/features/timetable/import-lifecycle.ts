@@ -18,10 +18,8 @@ export async function parseTimetableText(text: string) {
   // Calendar parsing and location metadata remain browser-local. Canonical title
   // enrichment only sends three-letter subject prefixes (for example CSC/MAT)
   // to Gapwise, never the raw .ics file or the student's exact course list.
-  const [{ parseIcs }, { enrichCourseTitles }] = await Promise.all([
-    import("@/lib/ics-parser"),
-    import("@/lib/course-title-catalog"),
-  ]);
+  const { parseIcs } = await import("@/lib/ics-parser");
+  const { enrichCourseTitles } = await import("@/lib/course-title-catalog");
   const parsed = parseIcs(text);
   const meetings = await enrichCourseTitles(parsed.meetings);
   return { ...parsed, meetings };
