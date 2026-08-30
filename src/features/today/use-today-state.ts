@@ -13,6 +13,11 @@ export type UseTodayStateArgs = {
   planTransition: TransitionPlanner;
 };
 
+export function millisecondsUntilNextMinute(now = Date.now()): number {
+  const remainder = now % 60_000;
+  return remainder === 0 ? 60_000 : 60_000 - remainder;
+}
+
 /** Owns the ticking clock so every Today presentation shares one evaluation. */
 export function useTodayState({
   meetings,
@@ -24,8 +29,41 @@ export function useTodayState({
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60_000);
-    return () => window.clearInterval(timer);
+    let timer: number | null = null;
+
+    const clearTimer = () => {
+      if (timer === null) return;
+      window.clearTimeout(timer);
+      timer = null;
+    };
+
+    const scheduleNextMinute = () => {
+      clearTimer();
+      if (document.visibilityState === "hidden") return;
+      timer = window.setTimeout(() => {
+        timer = null;
+        setNow(new Date());
+        scheduleNextMinute();
+      }, millisecondsUntilNextMinute());
+    };
+
+    const refreshVisibleClock = () => {
+      if (document.visibilityState === "hidden") {
+        clearTimer();
+        return;
+      }
+      setNow(new Date());
+      scheduleNextMinute();
+    };
+
+    scheduleNextMinute();
+    document.addEventListener("visibilitychange", refreshVisibleClock);
+    window.addEventListener("focus", refreshVisibleClock);
+    return () => {
+      clearTimer();
+      document.removeEventListener("visibilitychange", refreshVisibleClock);
+      window.removeEventListener("focus", refreshVisibleClock);
+    };
   }, []);
 
   const state = useMemo(
