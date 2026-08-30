@@ -49,6 +49,7 @@ The architectural rule is simple: **Gapwise owns the facts and deterministic cal
 
 - Import a UTM ACORN `.ics` export directly in the browser.
 - The raw calendar file is never uploaded to Gapwise.
+- Canonical course-title enrichment sends only three-letter subject prefixes such as `CSC` or `MAT` to Gapwise; the raw `.ics` and exact course list remain local, and ACORN's exported title remains the fallback if lookup is unavailable.
 - Guest mode is first-class; an account is not required for the core app.
 - A synthetic demo timetable is available for trying the product without personal data.
 
@@ -200,7 +201,7 @@ Academic meetings are always **read-only** to AI. Personal-item and gap-preferen
 
 Gapwise AI is **not** zero-knowledge: authorized plaintext exists transiently in the service when a private tool needs to answer an authorized request. Its delegated data is encrypted at rest with a separate key domain, and the MCP runtime does not require a Supabase service-role key.
 
-> **External-client status:** the production MCP service and public `gapwise-ai` repository are live, but broad-client release readiness remains evidence-gated. Fresh production OAuth consent-boundary validation plus the real Claude and ChatGPT read/write/revoke and negative-path matrices remain required before representing universal external-client support.
+> **External-client status:** the production MCP service and public `gapwise-ai` repository are live, and the production OAuth 2.1 consent/resource boundary has been validated. Broad-client release readiness remains evidence-gated on the real Claude and ChatGPT read/write/revoke matrices, production-equivalent negative/re-auth cases, and the final post-matrix exact-head verification. Do not represent universal external-client support before those gates pass.
 
 ---
 
@@ -341,7 +342,7 @@ Regression coverage includes ACORN parsing/restoration, onboarding, Today/gap pl
 
 ---
 
-## Current release — August 29, 2026
+## Current release — August 30, 2026
 
 The current production release includes:
 
@@ -349,10 +350,11 @@ The current production release includes:
 - OpenAPI 3.1, the zero-dependency JS/TS client source, and the versioned 30-building snapshot;
 - browser-side Day Replay;
 - deterministic “Can I go there?” destination feasibility on Today, including the mobile surface;
-- the permissioned Gapwise AI integration surface and provider-neutral MCP service;
-- the fully-free product cleanup, public Trust Center/governance material, searchability/SEO pass, and production-hardening campaign.
+- privacy-preserving canonical U of T course-title enrichment with local ACORN-title fallback;
+- the permissioned Gapwise AI integration surface and provider-neutral MCP service, with the production OAuth consent/resource boundary validated;
+- the fully-free product cleanup, public Trust Center/governance material, searchability/SEO pass, production-hardening campaign, and hosted-log credential-redaction hardening.
 
-The immediate focus is **release validation, not feature expansion**: clean-device account continuity/encrypted restore, SDK registry publication and clean-install verification, physical UTM entrance/accessibility evidence, and completion of the remaining external AI-client OAuth/compatibility/revocation matrices.
+The immediate focus is **release validation, not feature expansion**: clean-device account continuity/encrypted restore, SDK registry publication and clean-install verification, physical UTM entrance/accessibility evidence, the database restore drill, real-device/student validation, and completion of the remaining external AI-client read/write/revoke and negative-path matrices.
 
 ---
 
