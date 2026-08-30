@@ -49,7 +49,10 @@ function optionValues(value: unknown): string[] {
   return [
     ...new Set(
       value
-        .filter((item) => item && typeof item === "object" && (item as { header?: unknown }).header !== true)
+        .filter(
+          (item) =>
+            item && typeof item === "object" && (item as { header?: unknown }).header !== true,
+        )
         .map((item) => (item as { value?: unknown }).value)
         .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
         .map((item) => item.trim()),
@@ -68,7 +71,10 @@ function referenceFacets(value: unknown): Facets | null {
   return { sessions, divisions };
 }
 
-async function getReferenceFacets(fetchImpl: typeof fetch, signal: AbortSignal): Promise<Facets> {
+async function getReferenceFacets(
+  fetchImpl: typeof fetch,
+  signal: AbortSignal,
+): Promise<Facets> {
   const canUseSharedCache = fetchImpl === globalThis.fetch;
   if (canUseSharedCache && referenceCache && referenceCache.expiresAt > Date.now()) {
     return referenceCache.facets;
@@ -144,7 +150,8 @@ function normalizePage(value: unknown, requestedPage: number): CoursePage | null
     })
     .filter((course): course is CourseRow => course !== null);
 
-  const page = Number.isInteger(rawPage) && Number(rawPage) >= 1 ? Number(rawPage) : requestedPage;
+  const page =
+    Number.isInteger(rawPage) && Number(rawPage) >= 1 ? Number(rawPage) : requestedPage;
   const pageSize =
     Number.isInteger(rawPageSize) && Number(rawPageSize) >= 1
       ? Number(rawPageSize)
@@ -184,7 +191,8 @@ async function requestPage(
     body: JSON.stringify(searchBody(page, facets)),
     signal,
   });
-  if (!response.ok) throw new Error(`Timetable Builder returned ${response.status} for page ${page}.`);
+  if (!response.ok)
+    throw new Error(`Timetable Builder returned ${response.status} for page ${page}.`);
 
   const parsed = normalizePage(await response.json(), page);
   if (!parsed) throw new Error("Timetable Builder returned an unexpected course payload.");
@@ -253,7 +261,10 @@ export async function fetchCourseTitlesByPrefix(
     let high = totalPages;
     while (low < high) {
       const middle = Math.floor((low + high) / 2);
-      const page = middle === 1 ? firstPage : await getPage(middle, facets, fetchImpl, controller.signal);
+      const page =
+        middle === 1
+          ? firstPage
+          : await getPage(middle, facets, fetchImpl, controller.signal);
       const last = maxCode(page);
       if (!last) throw new Error(`Timetable Builder returned an empty page ${middle}.`);
       if (last.localeCompare(normalizedPrefix) < 0) low = middle + 1;
@@ -267,7 +278,10 @@ export async function fetchCourseTitlesByPrefix(
         throw new Error(`Course prefix ${normalizedPrefix} exceeded the page safety limit.`);
       }
 
-      const page = pageNumber === 1 ? firstPage : await getPage(pageNumber, facets, fetchImpl, controller.signal);
+      const page =
+        pageNumber === 1
+          ? firstPage
+          : await getPage(pageNumber, facets, fetchImpl, controller.signal);
       addMatchingTitles(normalizedPrefix, page.courses, titles);
 
       const last = maxCode(page);
