@@ -13,6 +13,8 @@ test("privacy and terms are public, responsive, and independent of an account", 
   await expect(
     page.getByText(/does not describe this design as zero-knowledge or end-to-end encryption/),
   ).toBeVisible();
+  await expect(page.getByText(/OpenFreeMap for map style and tile delivery/)).toBeVisible();
+  await expect(page.getByText(/Web Analytics as cookie-free and anonymized/)).toBeVisible();
   await expect(
     page.getByText(/Delete your account and associated application cloud data/),
   ).toBeVisible();
