@@ -66,24 +66,28 @@ function PrivacyPage() {
         <h2>Service providers and transfers</h2>
         <p>
           Gapwise relies on Vercel for hosting and operational measurements, Supabase for
-          authentication and cloud data, and the identity provider you select for sign-in. If you
-          connect an external AI provider, authorized tool output is also sent to that provider.
-          These providers may process technical or account information in countries outside your
-          own. Their own terms, locations, safeguards, and retention practices can apply. Gapwise
-          does not claim a particular international-transfer mechanism here without provider and
-          legal verification.
+          authentication and cloud data, OpenFreeMap for map style and tile delivery, and the
+          identity provider you select for sign-in. Opening a map can therefore create a direct
+          browser request to OpenFreeMap even though Gapwise does not send your private timetable
+          payload to the map provider. If you connect an external AI provider, authorized tool
+          output is also sent to that provider. These providers may process technical or account
+          information in countries outside your own. Their own terms, locations, safeguards, and
+          retention practices can apply. Gapwise does not claim a particular international-transfer
+          mechanism here without provider and legal verification.
         </p>
       </section>
       <section>
         <h2>Analytics, cookies, and local storage</h2>
         <p>
           Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and
-          performance measurements. It does not intentionally send raw timetable entries, rooms,
-          coursework details, friend data, authentication tokens, or precise location as analytics
-          events. Gapwise also uses browser storage needed for guest data, preferences, sessions,
-          encrypted records, and device keys. Gapwise does not add a consent banner merely for
-          appearance; if non-essential tracking or advertising technology is introduced, its consent
-          requirements must be reassessed before deployment.
+          performance measurements. Vercel currently describes Web Analytics as cookie-free and
+          anonymized, but ordinary hosting and provider logs can still contain technical network
+          metadata. Gapwise does not intentionally send raw timetable entries, rooms, coursework
+          details, friend data, authentication tokens, or precise location as analytics events.
+          Gapwise also uses browser storage needed for guest data, preferences, sessions, encrypted
+          records, and device keys. Gapwise does not add a consent banner merely for appearance; if
+          non-essential tracking or advertising technology is introduced, its consent requirements
+          must be reassessed before deployment.
         </p>
       </section>
       <section>
