@@ -20,7 +20,9 @@ test("privacy and terms are public, responsive, and independent of an account", 
   await expect(page).toHaveTitle("Terms — Gapwise for UTM");
   await expect(page.getByRole("heading", { name: "A practical student utility." })).toBeVisible();
   await expect(page.getByText(/without paid feature tiers or a product checkout/)).toBeVisible();
-  await expect(page.getByText(/Nothing here limits rights that cannot lawfully be waived/)).toBeVisible();
+  await expect(
+    page.getByText(/Nothing here limits rights that cannot lawfully be waived/),
+  ).toBeVisible();
   guard.assertClean();
 });
 
