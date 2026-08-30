@@ -69,9 +69,6 @@ jobs:
         run: bun test
       - if: needs.changes.outputs.runtime == 'true'
         run: bun run build
-      - if: needs.changes.outputs.runtime == 'true'
-        name: Verify generated icons
-        run: bun test tests/icons.test.ts
       - run: bunx prettier --check .
 
   e2e:
