@@ -247,7 +247,16 @@ export async function fetchCourseTitlesByPrefix(
 
   try {
     const facets = await getReferenceFacets(fetchImpl, controller.signal);
-    const firstPage = await getPage(1, facets, fetchImpl, controller.signal);
+    const pages = new Map<number, CoursePage>();
+    const loadPage = async (pageNumber: number): Promise<CoursePage> => {
+      const cached = pages.get(pageNumber);
+      if (cached) return cached;
+      const page = await getPage(pageNumber, facets, fetchImpl, controller.signal);
+      pages.set(pageNumber, page);
+      return page;
+    };
+
+    const firstPage = await loadPage(1);
     if (firstPage.total <= 0 || firstPage.courses.length === 0) return titles;
 
     const effectivePageSize = firstPage.pageSize;
@@ -259,8 +268,7 @@ export async function fetchCourseTitlesByPrefix(
     let high = totalPages;
     while (low < high) {
       const middle = Math.floor((low + high) / 2);
-      const page =
-        middle === 1 ? firstPage : await getPage(middle, facets, fetchImpl, controller.signal);
+      const page = await loadPage(middle);
       const last = maxCode(page);
       if (!last) throw new Error(`Timetable Builder returned an empty page ${middle}.`);
       if (last.localeCompare(normalizedPrefix) < 0) low = middle + 1;
@@ -274,10 +282,7 @@ export async function fetchCourseTitlesByPrefix(
         throw new Error(`Course prefix ${normalizedPrefix} exceeded the page safety limit.`);
       }
 
-      const page =
-        pageNumber === 1
-          ? firstPage
-          : await getPage(pageNumber, facets, fetchImpl, controller.signal);
+      const page = await loadPage(pageNumber);
       addMatchingTitles(normalizedPrefix, page.courses, titles);
 
       const last = maxCode(page);
