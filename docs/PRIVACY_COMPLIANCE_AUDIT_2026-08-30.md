@@ -33,14 +33,29 @@ Authoritative references used for legal/provider framing:
 
 ## Social-media claims: audited result
 
-| Claim | Result for Gapwise |
-| --- | --- |
-| “No privacy policy means you get sued.” | **Not the Gapwise state.** A public policy already existed. The issue was completeness and alignment with the much richer technical data inventory, so the public notice was expanded. Whether a particular notice is legally required, and exactly what it must contain, depends on applicable law and processing facts. |
-| “You need Terms or users can hold you responsible for anything.” | **Overstated.** Gapwise already had public terms. The pass strengthened them with data/content, acceptable-use, third-party/AI, termination, payment, warranty/liability, and statutory-rights language. A checkbox or clickwrap is evidence of assent; it does not erase non-waivable legal rights or automatically defeat disputes. |
-| “Any European user makes you subject to GDPR.” | **Incorrect as a universal rule.** The European Commission explains that a non-EU entity is in scope when, among other things, it offers goods/services to people in the EU or monitors their behavior there. It gives the counterexample of a non-EU service whose existing customers merely use it while travelling in the EU when the service does not target EU individuals. Gapwise therefore does not claim GDPR applicability solely from an EU visitor. |
-| “GDPR means add a cookie banner.” | **Not automatically.** The current telemetry does not justify adding a generic banner: Vercel documents Web Analytics as cookie-free and anonymized. Consent requirements must be reassessed if Gapwise later introduces non-essential cookies, advertising, profiling, or other tracking. |
-| “You must have breach notification.” | **Partly true but jurisdiction/risk specific.** Gapwise already has an incident and notification-decision runbook. If PIPEDA applies to an activity, its breach regime requires records of all breaches and reporting/individual notification when the real-risk-of-significant-harm threshold is met; OPC guidance says breach records must be kept for at least two years. Other regimes have different thresholds and timelines. The runbook correctly avoids inventing one universal deadline. |
-| “Charging without clear consent creates lawsuit risk.” | **Not currently applicable to the product.** No Gapwise checkout or paid plan exists. No fake payment-consent UI was added. The terms now require clear price, timing, renewal, cancellation, and consent treatment before a paid feature ships. |
+### “No privacy policy means you get sued.”
+
+**Not the Gapwise state.** A public policy already existed. The issue was completeness and alignment with the much richer technical data inventory, so the public notice was expanded. Whether a particular notice is legally required, and exactly what it must contain, depends on applicable law and processing facts.
+
+### “You need Terms or users can hold you responsible for anything.”
+
+**Overstated.** Gapwise already had public terms. The pass strengthened them with data/content, acceptable-use, third-party/AI, termination, payment, warranty/liability, and statutory-rights language. A checkbox or clickwrap is evidence of assent; it does not erase non-waivable legal rights or automatically defeat disputes.
+
+### “Any European user makes you subject to GDPR.”
+
+**Incorrect as a universal rule.** The European Commission explains that a non-EU entity is in scope when, among other things, it offers goods/services to people in the EU or monitors their behavior there. It gives the counterexample of a non-EU service whose existing customers merely use it while travelling in the EU when the service does not target EU individuals. Gapwise therefore does not claim GDPR applicability solely from an EU visitor.
+
+### “GDPR means add a cookie banner.”
+
+**Not automatically.** The current telemetry does not justify adding a generic banner: Vercel documents Web Analytics as cookie-free and anonymized. Consent requirements must be reassessed if Gapwise later introduces non-essential cookies, advertising, profiling, or other tracking.
+
+### “You must have breach notification.”
+
+**Partly true but jurisdiction/risk specific.** Gapwise already has an incident and notification-decision runbook. If PIPEDA applies to an activity, its breach regime requires records of all breaches and reporting/individual notification when the real-risk-of-significant-harm threshold is met; OPC guidance says breach records must be kept for at least two years. Other regimes have different thresholds and timelines. The runbook correctly avoids inventing one universal deadline.
+
+### “Charging without clear consent creates lawsuit risk.”
+
+**Not currently applicable to the product.** No Gapwise checkout or paid plan exists. No fake payment-consent UI was added. The terms now require clear price, timing, renewal, cancellation, and consent treatment before a paid feature ships.
 
 ## Changes made by this pass
 
