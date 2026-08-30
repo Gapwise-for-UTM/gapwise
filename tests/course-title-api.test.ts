@@ -4,7 +4,28 @@ import { fetchCourseTitlesByPrefix } from "../api/course-titles";
 describe("course-title API source adapter", () => {
   test("queries the U of T timetable by subject prefix and returns canonical names", async () => {
     const bodies: unknown[] = [];
-    const fakeFetch: typeof fetch = async (_input, init) => {
+    const fakeFetch: typeof fetch = async (input, init) => {
+      const url = String(input);
+      if (url.endsWith("/reference-data")) {
+        return new Response(
+          JSON.stringify({
+            payload: {
+              currentSessions: [
+                { value: "Fall", header: true },
+                { value: "20269", header: false },
+                { value: "20271", header: false },
+              ],
+              divisions: [
+                { value: "ARTSC", header: false },
+                { value: "ERIN", header: false },
+                { value: "SCAR", header: false },
+              ],
+            },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
       bodies.push(JSON.parse(String(init?.body ?? "{}")));
       return new Response(
         JSON.stringify({
@@ -32,8 +53,8 @@ describe("course-title API source adapter", () => {
     expect(bodies).toHaveLength(1);
     expect(bodies[0]).toMatchObject({
       courseCodeAndTitleProps: { courseCode: "CSC" },
-      sessions: [],
-      divisions: [],
+      sessions: ["20269", "20271"],
+      divisions: ["ARTSC", "ERIN", "SCAR"],
       page: 1,
       pageSize: 100,
     });
