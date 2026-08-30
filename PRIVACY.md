@@ -1,10 +1,10 @@
 # Gapwise Privacy Notice
 
-_Last updated: 2026-08-18_
+_Last updated: 2026-08-30_
 
 Gapwise for UTM is an independent student project. It is not affiliated with, endorsed by, or an official service of the University of Toronto.
 
-This notice describes the data handling of the public Gapwise application at `gapwise.ca` and the optional Gapwise AI integration service.
+This notice describes the data handling of the public Gapwise application at `gapwise.ca` and the optional Gapwise AI integration service. It records implementation-backed behavior and known limits; it is not a legal opinion about which privacy law applies to every user or circumstance.
 
 ## What stays in your browser
 
@@ -43,17 +43,23 @@ Gapwise uses browser-side AES-256-GCM application-layer encryption. Per-user dat
 
 This means Supabase does not receive readable timetable payloads, but Vercel is inside the cryptographic trust boundary. The optional Gapwise AI service is also inside the trust boundary for the separate, explicitly delegated AI copy when that feature is enabled. Gapwise therefore does **not** claim end-to-end encryption, zero-knowledge encryption, or that only the user can ever decrypt cloud data.
 
-## Friend availability
+## Friend availability and community state
 
 Friend overlap uses a separate encrypted, deliberately lossy availability capsule. It excludes course names, room numbers, buildings, activity labels, and the full timetable. A successful common-gap request requires a mutually accepted friendship and returns at most three rounded common free windows for the selected term.
 
-## Operational analytics
+Optional community features may also store account-linked crowd reports, rate-limit metadata, publisher state, and audit metadata needed to operate and protect those features. Crowd reports are treated as time-bounded signals; exact provider backup and log retention is not established by the repository.
 
-Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and performance measurements. Timetable contents, AI delegated snapshot plaintext, AI action plaintext, and authentication tokens are not intentionally sent to those analytics products.
+## Operational analytics, diagnostics, and cookies
 
-Vercel, Supabase, Microsoft, Google, GitHub, and any AI provider a user chooses to connect may process technical or account information as independent service providers when their respective hosting, authentication, operational, or AI services are used.
+Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and performance measurements. Timetable contents, AI delegated snapshot plaintext, AI action plaintext, friend data, precise live location, and authentication tokens are not intentionally sent to those analytics products.
 
-Gapwise does not sell personal data and does not contain advertising.
+The current Gapwise application does not add advertising or cross-site tracking cookies, and it does not contain advertising. Vercel documents Web Analytics as cookie-free and privacy-focused. A cookie banner is therefore not added merely because these current telemetry components are present. If telemetry changes to use non-essential cookies, identifiable profiling, advertising, or other tracking that requires consent in an applicable jurisdiction, Gapwise must reassess notice and consent before that change ships.
+
+Server diagnostics can include operational request/error information. Credential-shaped data is redacted from expanded catastrophic-error diagnostics before it reaches application logging. Hosting and other providers can independently retain ordinary infrastructure logs under their own settings and policies.
+
+Vercel, Supabase, Microsoft, Google, GitHub, OpenFreeMap-related infrastructure, and any AI provider a user chooses to connect may process technical or account information when their respective hosting, authentication, mapping, operational, or AI services are used.
+
+Gapwise does not sell personal data.
 
 ## Retention and deletion
 
@@ -65,9 +71,35 @@ A signed-in user can choose **Delete account and cloud data** from the account m
 
 Clearing browser/site data removes locally stored Gapwise data from that browser but does not by itself delete an existing cloud account or revoke an external AI provider connection.
 
-## Security
+Provider logs and backups may have separate retention and deletion behavior that the application cannot truthfully infer from source code. Production settings and contractual retention commitments require provider-level verification.
 
-The primary private-cloud security design and trust boundaries are documented in [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md). The separate AI bridge's architecture, privacy rules, and threat model are maintained in the private `gapwise-ai` repository while the integration is under development. Security reports should follow [`SECURITY.md`](SECURITY.md).
+## Access, correction, portability, objections, and privacy requests
+
+Privacy rights depend on the law and facts that apply to the service and user; presence in a particular country does not by itself establish territorial scope. Where applicable, a person may be entitled to ask what personal information Gapwise holds about them, request access or correction, request deletion or portability, object to certain processing, or withdraw consent for optional processing.
+
+Gapwise provides self-service controls for local data, optional cloud/AI features, AI delegation revocation, and account/cloud-data deletion. No general-purpose self-service account-data export is currently represented as a shipped feature.
+
+For a privacy request that cannot be completed with product controls, contact the repository owner through <https://github.com/andrewmuratov> and ask for a private privacy-request channel. **Do not put personal information, identity evidence, account data, or legal documents in a public GitHub issue.** A dedicated monitored privacy contact, accountable privacy role, identity-verification procedure, and response workflow remain administrative items requiring owner confirmation and, where appropriate, qualified legal review.
+
+## Security and privacy incidents
+
+The primary private-cloud security design and trust boundaries are documented in [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md). Gapwise also maintains [`docs/INCIDENT_RESPONSE.md`](docs/INCIDENT_RESPONSE.md), which requires privacy triage when personal information may have been accessed, lost, changed, disclosed, or made unavailable without authorization.
+
+The runbook deliberately does not promise a universal breach-notification deadline. Reporting, notification, recordkeeping, and preservation duties depend on the applicable law, contracts, risk assessment, affected data, and incident facts. For example, if Canada's PIPEDA applies to the activity, its breach regime includes breach recordkeeping and reporting/notification when the statutory real-risk-of-significant-harm threshold is met. Applicable duties must be confirmed for the actual incident rather than copied from a generic checklist.
+
+Security reports should follow [`SECURITY.md`](SECURITY.md).
+
+## Accountability and provider verification
+
+The implementation/data inventory is maintained in [`docs/TRUST_DATA_INVENTORY.md`](docs/TRUST_DATA_INVENTORY.md). It intentionally separates repository-verified behavior from provider, operator, and legal facts that require human evidence.
+
+Before making stronger public claims, the owner still needs to verify or assign, as applicable:
+
+- the accountable privacy role and monitored privacy-request channel;
+- the operator's legal/business structure and the privacy laws that apply to its actual activities;
+- production provider regions, retention/log settings, contractual terms, and privacy/data-processing commitments;
+- any jurisdiction-specific request response, breach record, regulator, representative, or transfer obligations; and
+- changed analytics, marketing, payment, or profiling behavior before those features are introduced.
 
 ## Changes
 
