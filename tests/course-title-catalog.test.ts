@@ -55,7 +55,9 @@ describe("canonical course title enrichment", () => {
   });
 
   test("supports UTSC identifiers while still looking up only the three-letter subject family", async () => {
-    const parsed = parseIcs(courseIcs({ code: "CSCA08H3", description: "Introduction to Computer" }));
+    const parsed = parseIcs(
+      courseIcs({ code: "CSCA08H3", description: "Introduction to Computer" }),
+    );
     expect(parsed.meetings[0]?.courseCode).toBe("CSCA08H3");
 
     const requests: string[] = [];
