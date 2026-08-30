@@ -48,6 +48,16 @@ jobs:
 
           echo "runtime=$runtime" >> "$GITHUB_OUTPUT"
 
+  security-exposure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan reachable history and production exposure boundaries
+        run: node scripts/scan-security-exposure.mjs
+
   quality:
     runs-on: ubuntu-latest
     needs: changes
@@ -165,17 +175,19 @@ jobs:
 
   verify:
     runs-on: ubuntu-latest
-    needs: [changes, quality, e2e, database-security, sdks]
+    needs: [changes, security-exposure, quality, e2e, database-security, sdks]
     if: always()
     steps:
       - name: Require the appropriate validation gates
         env:
           RUNTIME_CHANGED: ${{ needs.changes.outputs.runtime }}
+          SECURITY_EXPOSURE_RESULT: ${{ needs.security-exposure.result }}
           QUALITY_RESULT: ${{ needs.quality.result }}
           E2E_RESULT: ${{ needs.e2e.result }}
           DATABASE_RESULT: ${{ needs.database-security.result }}
           SDKS_RESULT: ${{ needs.sdks.result }}
         run: |
+          test "$SECURITY_EXPOSURE_RESULT" = "success"
           test "$QUALITY_RESULT" = "success"
 
           if [ "$RUNTIME_CHANGED" = "true" ]; then
