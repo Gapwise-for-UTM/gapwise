@@ -115,7 +115,10 @@ function PrivacyPage() {
           <li>Turn optional sync and AI permissions off or revoke them.</li>
           <li>Remove a locally remembered timetable.</li>
           <li>Delete your account and associated application cloud data from the account menu.</li>
-          <li>Ask about access, correction, deletion, restriction, objection, or portability where applicable.</li>
+          <li>
+            Ask about access, correction, deletion, restriction, objection, or portability where
+            applicable.
+          </li>
         </ul>
         <p>
           Some rights depend on the law that applies to the request. Gapwise may need to verify the
