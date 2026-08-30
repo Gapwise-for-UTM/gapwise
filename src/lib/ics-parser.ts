@@ -45,9 +45,7 @@ function parseSummary(summary: string): {
   const cleaned = unescapeText(summary).replace(/\s+/g, " ").trim();
   // Standard UTM/St. George codes look like CSC110Y5, while UTSC uses the
   // fourth position as a letter in identifiers such as CSCA08H3.
-  const match = cleaned.match(
-    /^([A-Z]{3}[A-Z0-9]\d{2}[A-Z]\d?)\s*(LEC|TUT|PRA)?\s*(\d{3,4})?/i,
-  );
+  const match = cleaned.match(/^([A-Z]{3}[A-Z0-9]\d{2}[A-Z]\d?)\s*(LEC|TUT|PRA)?\s*(\d{3,4})?/i);
   if (!match) {
     return { courseCode: cleaned || "Unknown", activityType: "OTHER", sectionCode: "" };
   }
@@ -131,10 +129,7 @@ function recurrenceMetadata(
   } else if (rules.some((rule) => rule.until === null)) {
     endDate = null;
   } else {
-    const suppliedEnds = [
-      ...rules.map((rule) => calendarDate(rule.until!)),
-      ...recurrenceDates,
-    ].sort();
+    const suppliedEnds = [...rules.map((rule) => calendarDate(rule.until!)), ...recurrenceDates].sort();
     endDate = suppliedEnds.at(-1) ?? null;
   }
   return {
