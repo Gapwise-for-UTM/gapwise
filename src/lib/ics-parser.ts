@@ -1,5 +1,4 @@
 import ICAL from "ical.js";
-import { resolveCourseTitle } from "@/data/utm/course-titles";
 import {
   type ActivityType,
   type Meeting,
@@ -44,7 +43,9 @@ function parseSummary(summary: string): {
   sectionCode: string;
 } {
   const cleaned = unescapeText(summary).replace(/\s+/g, " ").trim();
-  const match = cleaned.match(/^([A-Z]{3}\d{3}[A-Z]\d?)\s*(LEC|TUT|PRA)?\s*(\d{3,4})?/i);
+  // Standard UTM/St. George codes look like CSC110Y5, while UTSC uses the
+  // fourth position as a letter in identifiers such as CSCA08H3.
+  const match = cleaned.match(/^([A-Z]{3}[A-Z0-9]\d{2}[A-Z]\d?)\s*(LEC|TUT|PRA)?\s*(\d{3,4})?/i);
   if (!match) {
     return { courseCode: cleaned || "Unknown", activityType: "OTHER", sectionCode: "" };
   }
@@ -239,7 +240,7 @@ export function parseIcs(text: string): ParsedTimetable {
 
     const summary = event.summary ?? "";
     const { courseCode, activityType, sectionCode } = parseSummary(summary);
-    if (!/^[A-Z]{3}\d{3}/.test(courseCode)) {
+    if (!/^[A-Z]{3}[A-Z0-9]\d{2}[A-Z]\d?$/.test(courseCode)) {
       warnings.add(
         `"${summary || "Untitled event"}" was skipped because it isn't a course meeting.`,
       );
@@ -247,8 +248,7 @@ export function parseIcs(text: string): ParsedTimetable {
     }
 
     const description = unescapeText(event.description ?? "");
-    const exportedCourseName = description.split("\n")[0]?.trim() || courseCode;
-    const courseName = resolveCourseTitle(courseCode, exportedCourseName);
+    const courseName = description.split("\n")[0]?.trim() || courseCode;
 
     const location = parseLocation(vevent.getFirstPropertyValue("location") as string | null);
     if (location.warning) {

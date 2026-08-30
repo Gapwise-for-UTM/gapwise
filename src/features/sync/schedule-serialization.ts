@@ -1,4 +1,3 @@
-import { resolveCourseTitle } from "@/data/utm/course-titles";
 import type {
   ActivityType,
   Meeting,
@@ -95,7 +94,7 @@ function deserializeMeeting(value: unknown): Meeting | null {
     courseCode,
     activityType,
     sectionCode,
-    courseName: resolveCourseTitle(courseCode, courseName),
+    courseName,
     startTime,
     endTime,
     weekday,
@@ -135,7 +134,7 @@ export function serializeSchedule(meetings: Meeting[]): Meeting[] {
       courseCode: meeting.courseCode,
       activityType: meeting.activityType,
       sectionCode: meeting.sectionCode,
-      courseName: resolveCourseTitle(meeting.courseCode, meeting.courseName),
+      courseName: meeting.courseName,
       startTime: meeting.startTime,
       endTime: meeting.endTime,
       weekday: meeting.weekday,

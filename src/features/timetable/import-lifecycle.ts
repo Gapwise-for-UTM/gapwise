@@ -15,10 +15,14 @@ export function validateTimetableFile(file: Pick<File, "name" | "type" | "size">
 }
 
 export async function parseTimetableText(text: string) {
-  // Calendar parsing and its location metadata are only needed after the student
-  // chooses a file. Keep them off the critical app-shell path on ordinary visits.
+  // Calendar parsing and location metadata remain browser-local. Canonical title
+  // enrichment only sends three-letter subject prefixes (for example CSC/MAT)
+  // to Gapwise, never the raw .ics file or the student's exact course list.
   const { parseIcs } = await import("@/lib/ics-parser");
-  return parseIcs(text);
+  const { enrichCourseTitles } = await import("@/lib/course-title-catalog");
+  const parsed = parseIcs(text);
+  const meetings = await enrichCourseTitles(parsed.meetings);
+  return { ...parsed, meetings };
 }
 
 export function timetableImportError(error: unknown): string {
