@@ -7,7 +7,9 @@ type CourseTitleShard = {
 
 type FetchLike = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-const PREFIX_PATTERN = /^([A-Z]{3})\d{3}/;
+// U of T course identifiers use a three-letter subject family, but the next
+// character is not always numeric: UTSC uses codes such as CSCA08H3 and MATA31H3.
+const PREFIX_PATTERN = /^([A-Z]{3})[A-Z0-9]\d{2}[A-Z]\d?$/;
 const REQUEST_TIMEOUT_MS = 2_500;
 const shardCache = new Map<string, Promise<Readonly<Record<string, string>>>>();
 
@@ -92,7 +94,9 @@ export async function enrichCourseTitles(
 
   if (prefixes.length === 0 || typeof fetchImpl !== "function") return [...meetings];
 
-  const shards = await Promise.all(prefixes.map(async (prefix) => [prefix, await loadShard(prefix, fetchImpl)] as const));
+  const shards = await Promise.all(
+    prefixes.map(async (prefix) => [prefix, await loadShard(prefix, fetchImpl)] as const),
+  );
   const byPrefix = new Map(shards);
 
   return meetings.map((meeting) => {
