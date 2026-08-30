@@ -7,17 +7,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  availableExportTerms,
-  generateTimetablePng,
-  resolveExportTheme,
-  type ExportAppearance,
-  type ExportSelection,
-} from "@/lib/timetable-export";
-import { generateTimetablePrintSvg } from "@/lib/timetable-print-export";
-import type { Meeting } from "@/lib/timetable-types";
+import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
 
 type ExportOutput = "image" | "print";
+type ExportSelection = Term | "all";
+type ExportAppearance = "match" | "light" | "dark";
+
+function availableExportTerms(meetings: readonly Meeting[]): Term[] {
+  return TERMS.filter((term) => meetings.some((meeting) => meeting.term === term));
+}
+
+function resolveExportTheme(
+  appearance: ExportAppearance,
+  resolvedTheme: "light" | "dark",
+): "light" | "dark" {
+  return appearance === "match" ? resolvedTheme : appearance;
+}
 
 export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
   const terms = useMemo(() => availableExportTerms(meetings), [meetings]);
@@ -51,6 +56,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
     setError(null);
     try {
       if (output === "print") {
+        const { generateTimetablePrintSvg } = await import("@/lib/timetable-print-export");
         const { blob, filename } = await generateTimetablePrintSvg(meetings, selection);
         downloadBlob(blob, filename);
         setOpen(false);
@@ -60,6 +66,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
       const resolvedGapwiseTheme = document.documentElement.classList.contains("dark")
         ? "dark"
         : "light";
+      const { generateTimetablePng } = await import("@/lib/timetable-export");
       const { blob, filename } = await generateTimetablePng(
         meetings,
         selection,
