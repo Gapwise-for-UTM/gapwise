@@ -31,6 +31,11 @@ function normalizeTitles(value: unknown): Readonly<Record<string, string>> {
   return titles;
 }
 
+function localStaticPreview(fetchImpl: FetchLike): boolean {
+  if (fetchImpl !== globalThis.fetch || typeof window === "undefined") return false;
+  return ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+}
+
 async function requestShard(
   prefix: string,
   fetchImpl: FetchLike,
@@ -92,7 +97,16 @@ export async function enrichCourseTitles(
     ...new Set(meetings.map((meeting) => coursePrefix(meeting.courseCode)).filter(Boolean)),
   ] as string[];
 
-  if (prefixes.length === 0 || typeof fetchImpl !== "function") return [...meetings];
+  // A plain Vite preview has no Vercel /api runtime. Avoid a guaranteed first-party
+  // 404 there and keep the already-parsed ACORN title as the documented fallback.
+  // Injected transports still exercise the catalog normally in unit tests.
+  if (
+    prefixes.length === 0 ||
+    typeof fetchImpl !== "function" ||
+    localStaticPreview(fetchImpl)
+  ) {
+    return [...meetings];
+  }
 
   const shards = await Promise.all(
     prefixes.map(async (prefix) => [prefix, await loadShard(prefix, fetchImpl)] as const),
