@@ -49,11 +49,15 @@ Friend overlap uses a separate encrypted, deliberately lossy availability capsul
 
 Optional community features may also store account-linked crowd reports, rate-limit metadata, publisher state, and audit metadata needed to operate and protect those features. Crowd reports are treated as time-bounded signals; exact provider backup and log retention is not established by the repository.
 
-## Operational analytics, diagnostics, and cookies
+## Operational analytics, diagnostics, maps, and cookies
 
-Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and performance measurements. Timetable contents, AI delegated snapshot plaintext, AI action plaintext, friend data, precise live location, and authentication tokens are not intentionally sent to those analytics products.
+Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and performance measurements. Timetable contents, AI-delegated snapshot plaintext, AI action plaintext, friend data, precise live location, and authentication tokens are not intentionally sent to those analytics products.
 
-The current Gapwise application does not add advertising or cross-site tracking cookies, and it does not contain advertising. Vercel documents Web Analytics as cookie-free and privacy-focused. A cookie banner is therefore not added merely because these current telemetry components are present. If telemetry changes to use non-essential cookies, identifiable profiling, advertising, or other tracking that requires consent in an applicable jurisdiction, Gapwise must reassess notice and consent before that change ships.
+Vercel currently documents Web Analytics as cookie-free and anonymized. Ordinary Vercel hosting/runtime logs are a separate provider surface and can still contain technical request metadata. The connected production account is currently on Vercel's Hobby plan; the project does not claim that Vercel's Pro/Enterprise Data Processing Addendum applies to that Hobby account.
+
+Gapwise uses OpenFreeMap for map style/tile delivery. Opening a map can create a direct browser request to `tiles.openfreemap.org`; Gapwise does not attach the user's private timetable payload to that map request. OpenFreeMap's published privacy policy says ordinary logs are anonymized and omit IP addresses by default, while temporary IP logging may be enabled during security incidents for up to 30 days and Cloudflare may participate in delivery.
+
+The current Gapwise application does not add advertising or cross-site tracking cookies, and it does not contain advertising. A cookie banner is therefore not added merely because the current telemetry components are present. If telemetry changes to use non-essential cookies, identifiable profiling, advertising, or other tracking that requires consent in an applicable jurisdiction, Gapwise must reassess notice and consent before that change ships.
 
 Server diagnostics can include operational request/error information. Credential-shaped data is redacted from expanded catastrophic-error diagnostics before it reaches application logging. Hosting and other providers can independently retain ordinary infrastructure logs under their own settings and policies.
 
@@ -71,7 +75,7 @@ A signed-in user can choose **Delete account and cloud data** from the account m
 
 Clearing browser/site data removes locally stored Gapwise data from that browser but does not by itself delete an existing cloud account or revoke an external AI provider connection.
 
-Provider logs and backups may have separate retention and deletion behavior that the application cannot truthfully infer from source code. Production settings and contractual retention commitments require provider-level verification.
+Provider logs and backups may have separate retention and deletion behavior that the application cannot truthfully infer from source code. The current Supabase organization is on the Free plan in `ca-central-1`; Supabase recommends Free projects maintain their own off-site logical backups rather than relying on paid-plan downloadable backup access. Exact provider log retention and contractual deletion commitments remain provider/account evidence rather than source-code facts.
 
 ## Access, correction, portability, objections, and privacy requests
 
@@ -91,13 +95,17 @@ Security reports should follow [`SECURITY.md`](SECURITY.md).
 
 ## Accountability and provider verification
 
-The implementation/data inventory is maintained in [`docs/TRUST_DATA_INVENTORY.md`](docs/TRUST_DATA_INVENTORY.md). It intentionally separates repository-verified behavior from provider, operator, and legal facts that require human evidence.
+The implementation/data inventory is maintained in [`docs/TRUST_DATA_INVENTORY.md`](docs/TRUST_DATA_INVENTORY.md). The dated production-provider verification for this notice is recorded in [`docs/PROVIDER_PRIVACY_AUDIT_2026-08-30.md`](docs/PROVIDER_PRIVACY_AUDIT_2026-08-30.md). Together they intentionally separate repository/live-provider evidence from operator and legal facts that still require human confirmation.
+
+Current verified production facts include the Supabase Free-plan project in Canada Central, the Vercel Hobby hosting plan, the absence of Supabase Storage buckets, the protected account-deletion Edge Function, reviewed database privilege boundaries, the identity-only OAuth implementation, and the OpenFreeMap runtime map-delivery boundary. Those point-in-time facts can change independently of the repository and must be rechecked after provider/account changes.
 
 Before making stronger public claims, the owner still needs to verify or assign, as applicable:
 
 - the accountable privacy role and monitored privacy-request channel;
 - the operator's legal/business structure and the privacy laws that apply to its actual activities;
-- production provider regions, retention/log settings, contractual terms, and privacy/data-processing commitments;
+- Vercel team Data Preferences, provider/team access ownership, and any dashboard-only privacy/security settings not exposed by the connected APIs;
+- any required processor agreement or international-transfer mechanism, including the fact that current Vercel DPA terms state processor coverage for Pro/Enterprise rather than the connected Hobby plan;
+- the separate encrypted off-site database backup and restore drill appropriate to the current Supabase Free-plan posture;
 - any jurisdiction-specific request response, breach record, regulator, representative, or transfer obligations; and
 - changed analytics, marketing, payment, or profiling behavior before those features are introduced.
 
