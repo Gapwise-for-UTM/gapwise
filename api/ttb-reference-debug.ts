@@ -8,9 +8,9 @@ const headers = {
   "User-Agent": "Gapwise/1.0 (+https://gapwise.ca)",
 };
 
-function body(courseCode: string) {
+function body(divisions: string[], pageSize: number) {
   return {
-    courseCodeAndTitleProps: { courseCode, courseTitle: "", courseSectionCode: "" },
+    courseCodeAndTitleProps: { courseCode: "", courseTitle: "", courseSectionCode: "" },
     departmentProps: [],
     campuses: [],
     sessions: ["20269"],
@@ -20,43 +20,33 @@ function body(courseCode: string) {
     deliveryModes: [],
     dayPreferences: [],
     timePreferences: [],
-    divisions: ["ERIN"],
+    divisions,
     creditWeights: [],
     availableSpace: false,
     waitListable: false,
     page: 1,
-    pageSize: 10,
+    pageSize,
     direction: "asc",
   };
 }
 
-async function probe(courseCode: string) {
+async function probe(label: string, divisions: string[], pageSize: number) {
+  const started = Date.now();
   const response = await fetch(COURSES, {
     method: "POST",
     headers,
-    body: JSON.stringify(body(courseCode)),
+    body: JSON.stringify(body(divisions, pageSize)),
   });
-  let data: unknown = null;
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
-  const pageable =
-    data && typeof data === "object"
-      ? (data as { payload?: { pageableCourse?: { total?: unknown; courses?: unknown[] } } }).payload
-          ?.pageableCourse
-      : undefined;
+  const data = (await response.json()) as {
+    payload?: { pageableCourse?: { total?: unknown; courses?: unknown[] } };
+  };
+  const pageable = data.payload?.pageableCourse;
   return {
-    query: courseCode,
+    label,
     status: response.status,
+    elapsedMs: Date.now() - started,
     total: pageable?.total ?? null,
-    courses: Array.isArray(pageable?.courses)
-      ? pageable.courses.slice(0, 5).map((course) => {
-          const row = course as { code?: unknown; name?: unknown };
-          return { code: row.code, name: row.name };
-        })
-      : [],
+    returned: Array.isArray(pageable?.courses) ? pageable.courses.length : null,
   };
 }
 
@@ -65,8 +55,23 @@ export default {
     const reference = await fetch(REFERENCE, {
       headers: { Accept: "application/json", Referer: "https://ttb.utoronto.ca/" },
     });
-    const probes = await Promise.all(["CSC", "CSC*", "CSC%", "CSC110Y5", ""].map(probe));
-    return new Response(JSON.stringify({ referenceStatus: reference.status, probes }), {
+    const ref = (await reference.json()) as {
+      payload?: { divisions?: Array<{ value?: string; header?: boolean }> };
+    };
+    const divisions = [
+      ...new Set(
+        (ref.payload?.divisions ?? [])
+          .filter((item) => item.header !== true && typeof item.value === "string")
+          .map((item) => item.value!),
+      ),
+    ];
+    const probes = await Promise.all([
+      probe("ERIN-100", ["ERIN"], 100),
+      probe("ERIN-1000", ["ERIN"], 1000),
+      probe("ALL-1000", divisions, 1000),
+      probe("ALL-10000", divisions, 10000),
+    ]);
+    return new Response(JSON.stringify({ divisions, probes }), {
       headers: { "Content-Type": "application/json" },
     });
   },
