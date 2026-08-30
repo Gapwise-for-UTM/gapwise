@@ -1,0 +1,51 @@
+name: Prune obsolete branches once
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete explicitly retired branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=(
+            'ci/cleanup-merged-branches'
+            'ci/cleanup-merged-branches-v2'
+            'codex/and-149-routing-golden-corpus'
+            'fix/and-167-ios-safari-timetable-export'
+            'fix/ios-timetable-export'
+            'seo/gapwise-utm-searchability'
+            'tmp/and145-files'
+            'tmp/and145-test'
+            'tmp/and-145-recover'
+            'trust/and-158-incident-response'
+            'trust/and-159-institutional-review'
+            'trust/and-160-transparency-reporting'
+            'trust/and-161-admin-legal-readiness'
+            'trust/and-162-accessibility-governance'
+          )
+
+          for branch in "${branches[@]}"; do
+            if ! gh api "repos/$REPO/git/ref/heads/$branch" >/dev/null 2>&1; then
+              echo "Already absent: $branch"
+              continue
+            fi
+            open_prs=$(gh api -X GET "repos/$REPO/pulls" -f state=open -f head="$OWNER:$branch" --jq 'length')
+            if [[ "$open_prs" != "0" ]]; then
+              echo "Refusing to delete $branch: open pull request exists" >&2
+              exit 1
+            fi
+            echo "Deleting retired branch $branch"
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$branch"
+          done
