@@ -1,7 +1,16 @@
+const TTB_REFERENCE_URL = "https://api.easi.utoronto.ca/ttb/reference-data";
 const TTB_COURSES_URL = "https://api.easi.utoronto.ca/ttb/getPageableCourses";
 const PAGE_SIZE = 100;
 const MAX_PAGES = 25;
 const UPSTREAM_TIMEOUT_MS = 7_500;
+const REFERENCE_CACHE_MS = 6 * 60 * 60 * 1_000;
+
+type Facets = {
+  sessions: string[];
+  divisions: string[];
+};
+
+let referenceCache: { expiresAt: number; facets: Facets } | null = null;
 
 function json(data: unknown, status = 200, cacheControl?: string): Response {
   const headers = new Headers({
@@ -12,24 +21,78 @@ function json(data: unknown, status = 200, cacheControl?: string): Response {
   return new Response(JSON.stringify(data), { status, headers });
 }
 
-function searchBody(prefix: string, page: number) {
+function upstreamHeaders(jsonBody = false): HeadersInit {
+  return {
+    Accept: "application/json",
+    ...(jsonBody ? { "Content-Type": "application/json" } : {}),
+    Referer: "https://ttb.utoronto.ca/",
+    "User-Agent": "Gapwise/1.0 (+https://gapwise.ca)",
+  };
+}
+
+function optionValues(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [
+    ...new Set(
+      value
+        .filter((item) => item && typeof item === "object" && (item as { header?: unknown }).header !== true)
+        .map((item) => (item as { value?: unknown }).value)
+        .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+        .map((item) => item.trim()),
+    ),
+  ];
+}
+
+function referenceFacets(value: unknown): Facets | null {
+  if (!value || typeof value !== "object") return null;
+  const payload = (value as { payload?: unknown }).payload;
+  if (!payload || typeof payload !== "object") return null;
+
+  const sessions = optionValues((payload as { currentSessions?: unknown }).currentSessions);
+  const divisions = optionValues((payload as { divisions?: unknown }).divisions);
+  if (sessions.length === 0 || divisions.length === 0) return null;
+  return { sessions, divisions };
+}
+
+async function getReferenceFacets(fetchImpl: typeof fetch, signal: AbortSignal): Promise<Facets> {
+  const canUseSharedCache = fetchImpl === globalThis.fetch;
+  if (canUseSharedCache && referenceCache && referenceCache.expiresAt > Date.now()) {
+    return referenceCache.facets;
+  }
+
+  const response = await fetchImpl(TTB_REFERENCE_URL, {
+    method: "GET",
+    headers: upstreamHeaders(),
+    signal,
+  });
+  if (!response.ok) throw new Error(`Timetable Builder reference data returned ${response.status}.`);
+
+  const facets = referenceFacets(await response.json());
+  if (!facets) throw new Error("Timetable Builder reference data had an unexpected payload.");
+
+  if (canUseSharedCache) {
+    referenceCache = { expiresAt: Date.now() + REFERENCE_CACHE_MS, facets };
+  }
+  return facets;
+}
+
+function searchBody(prefix: string, page: number, facets: Facets) {
   return {
     courseCodeAndTitleProps: {
       courseCode: prefix,
       courseTitle: "",
       courseSectionCode: "",
-      searchCourseDescription: false,
     },
     departmentProps: [],
     campuses: [],
-    sessions: [],
+    sessions: facets.sessions,
     requirementProps: [],
     instructor: "",
     courseLevels: [],
     deliveryModes: [],
     dayPreferences: [],
     timePreferences: [],
-    divisions: [],
+    divisions: facets.divisions,
     creditWeights: [],
     availableSpace: false,
     waitListable: false,
@@ -84,17 +147,13 @@ export async function fetchCourseTitlesByPrefix(
   const titles: Record<string, string> = {};
 
   try {
+    const facets = await getReferenceFacets(fetchImpl, controller.signal);
     let seen = 0;
     for (let page = 1; page <= MAX_PAGES; page += 1) {
       const response = await fetchImpl(TTB_COURSES_URL, {
         method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Referer: "https://ttb.utoronto.ca/",
-          "User-Agent": "Gapwise/1.0 (+https://gapwise.ca)",
-        },
-        body: JSON.stringify(searchBody(normalizedPrefix, page)),
+        headers: upstreamHeaders(true),
+        body: JSON.stringify(searchBody(normalizedPrefix, page, facets)),
         signal: controller.signal,
       });
 
