@@ -10,9 +10,14 @@ test("privacy and terms are public, responsive, and independent of an account", 
   await expect(page).toHaveTitle("Privacy — Gapwise for UTM");
   await expect(page.getByRole("heading", { name: "Your schedule stays yours." })).toBeVisible();
   await expect(page.getByText("The original file is not uploaded")).toBeVisible();
+  await expect(page.getByText(/Delete your account and associated Gapwise cloud records/)).toBeVisible();
+  await expect(page.getByText(/does not by itself determine which law applies/)).toBeVisible();
+  await expect(page.getByText(/rather than a universal fixed deadline/)).toBeVisible();
   await page.getByRole("link", { name: "Terms" }).click();
   await expect(page).toHaveTitle("Terms — Gapwise for UTM");
   await expect(page.getByRole("heading", { name: "A practical student utility." })).toBeVisible();
+  await expect(page.getByText(/without paid feature tiers, subscriptions/)).toBeVisible();
+  await expect(page.getByText(/Nothing in these terms excludes or limits rights/)).toBeVisible();
   guard.assertClean();
 });
 
