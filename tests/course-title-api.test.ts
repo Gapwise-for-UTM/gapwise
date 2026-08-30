@@ -1,9 +1,26 @@
 import { describe, expect, test } from "bun:test";
 import { fetchCourseTitlesByPrefix } from "../api/course-titles";
 
+type MockCourse = { code: string; name: string };
+
+const MOCK_PAGES: Record<number, MockCourse[]> = {
+  1: [
+    { code: "ANT100H1", name: "Introduction to Anthropology" },
+    { code: "BIO120H1", name: "Adaptation and Biodiversity" },
+  ],
+  2: [
+    { code: "CSC110Y5", name: "Foundations of Computer Science 1" },
+    { code: "CSC111H5", name: "Foundations of Computer Science 2" },
+  ],
+  3: [
+    { code: "MAT157H5", name: "Analysis I" },
+    { code: "PSY100H5", name: "Introduction to Psychology" },
+  ],
+};
+
 describe("course-title API source adapter", () => {
-  test("queries the U of T timetable by subject prefix and returns canonical names", async () => {
-    const bodies: unknown[] = [];
+  test("locates a subject prefix without sending exact course codes upstream", async () => {
+    const bodies: Array<Record<string, unknown>> = [];
     const fakeFetch: typeof fetch = async (input, init) => {
       const url = String(input);
       if (url.endsWith("/reference-data")) {
@@ -26,17 +43,17 @@ describe("course-title API source adapter", () => {
         );
       }
 
-      bodies.push(JSON.parse(String(init?.body ?? "{}")));
+      const requestBody = JSON.parse(String(init?.body ?? "{}")) as Record<string, unknown>;
+      bodies.push(requestBody);
+      const page = Number(requestBody["page"] ?? 1);
       return new Response(
         JSON.stringify({
           payload: {
             pageableCourse: {
-              courses: [
-                { code: "CSC110Y5", name: "Foundations of Computer Science 1" },
-                { code: "CSC111H5", name: "Foundations of Computer Science 2" },
-                { code: "MAT157H5", name: "Analysis I" },
-              ],
-              total: 3,
+              courses: MOCK_PAGES[page] ?? [],
+              total: 6,
+              page,
+              pageSize: 2,
             },
           },
         }),
@@ -50,14 +67,49 @@ describe("course-title API source adapter", () => {
       CSC110Y5: "Foundations of Computer Science 1",
       CSC111H5: "Foundations of Computer Science 2",
     });
-    expect(bodies).toHaveLength(1);
-    expect(bodies[0]).toMatchObject({
-      courseCodeAndTitleProps: { courseCode: "CSC" },
-      sessions: ["20269", "20271"],
-      divisions: ["ARTSC", "ERIN", "SCAR"],
-      page: 1,
-      pageSize: 100,
-    });
+    expect(bodies.map((body) => body["page"])).toEqual([1, 2, 3]);
+    for (const body of bodies) {
+      expect(body).toMatchObject({
+        courseCodeAndTitleProps: { courseCode: "" },
+        sessions: ["20269", "20271"],
+        divisions: ["ARTSC", "ERIN", "SCAR"],
+        pageSize: 100,
+      });
+      expect(JSON.stringify(body)).not.toContain("CSC110Y5");
+    }
+  });
+
+  test("returns an empty map when the prefix falls between catalog ranges", async () => {
+    const fakeFetch: typeof fetch = async (input, init) => {
+      if (String(input).endsWith("/reference-data")) {
+        return new Response(
+          JSON.stringify({
+            payload: {
+              currentSessions: [{ value: "20269", header: false }],
+              divisions: [{ value: "ERIN", header: false }],
+            },
+          }),
+          { status: 200 },
+        );
+      }
+      const requestBody = JSON.parse(String(init?.body ?? "{}")) as { page?: number };
+      const page = Number(requestBody.page ?? 1);
+      return new Response(
+        JSON.stringify({
+          payload: {
+            pageableCourse: {
+              courses: MOCK_PAGES[page] ?? [],
+              total: 6,
+              page,
+              pageSize: 2,
+            },
+          },
+        }),
+        { status: 200 },
+      );
+    };
+
+    await expect(fetchCourseTitlesByPrefix("ECO", fakeFetch)).resolves.toEqual({});
   });
 
   test("rejects arbitrary lookup keys before contacting the upstream service", async () => {
