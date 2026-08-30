@@ -9,7 +9,10 @@ import {
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
-import type { GuestTimetableRestoration } from "@/features/security/guest-timetable";
+import {
+  saveGuestTimetable,
+  type GuestTimetableRestoration,
+} from "@/features/security/guest-timetable";
 import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
 import {
@@ -21,6 +24,7 @@ import {
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
 import { isCloudRestoreSuppressed } from "@/features/sync/restore-preference";
 import type { GapPreferences } from "@/features/gaps/types";
+import { enrichCourseTitles } from "@/lib/course-title-catalog";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 import type { AcademicState } from "@/features/academic/state";
@@ -107,6 +111,36 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
       mounted.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!meetings?.length) return;
+
+    let cancelled = false;
+    const sourceMeetings = meetings;
+    void enrichCourseTitles(sourceMeetings).then((enriched) => {
+      if (cancelled) return;
+      const changed = enriched.some(
+        (meeting, index) => meeting.courseName !== sourceMeetings[index]?.courseName,
+      );
+      if (!changed) return;
+
+      // PR #211 enriched only the import path, which left already-restored encrypted
+      // timetables displaying ACORN's abbreviated DESCRIPTION text. Canonicalize the
+      // active browser schedule too so existing users receive the same full titles.
+      latestMeetings.current = enriched;
+      setMeetings(enriched);
+
+      // Signed-in schedules flow through encrypted autosave after this state update.
+      // Keep remembered guest schedules upgraded as well so they stay canonical offline.
+      if (!userId && guest?.remember) {
+        void saveGuestTimetable(enriched).catch(() => undefined);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [guest?.remember, meetings, setMeetings, userId]);
 
   useEffect(() => {
     if (authLoading || guest === null) {
