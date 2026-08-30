@@ -51,7 +51,7 @@ Optional community features may also store account-linked crowd reports, rate-li
 
 ## Operational analytics, diagnostics, maps, and cookies
 
-Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and performance measurements. Timetable contents, AI delegated snapshot plaintext, AI action plaintext, friend data, precise live location, and authentication tokens are not intentionally sent to those analytics products.
+Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and performance measurements. Timetable contents, AI-delegated snapshot plaintext, AI action plaintext, friend data, precise live location, and authentication tokens are not intentionally sent to those analytics products.
 
 Vercel currently documents Web Analytics as cookie-free and anonymized. Ordinary Vercel hosting/runtime logs are a separate provider surface and can still contain technical request metadata. The connected production account is currently on Vercel's Hobby plan; the project does not claim that Vercel's Pro/Enterprise Data Processing Addendum applies to that Hobby account.
 
