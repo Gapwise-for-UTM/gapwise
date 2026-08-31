@@ -22,22 +22,21 @@ function SecurityPage() {
       eyebrow="Security"
       title="Vulnerability Disclosure Policy"
       dateLabel="Last reviewed"
-      date="August 28, 2026"
+      date="September 1, 2026"
     >
       <section>
         <h2>Report privately</h2>
         <p>
-          Please use the repository&apos;s{" "}
+          Email{" "}
+          <a className="text-accent underline" href="mailto:security@gapwise.ca">
+            security@gapwise.ca
+          </a>{" "}
+          or use the repository&apos;s{" "}
           <a className="text-accent underline" href={PRIVATE_REPORT_URL}>
             private vulnerability reporting form
           </a>
           . Do not put vulnerability details, credentials, tokens, private student data, or key
-          material in a public issue or pull request. If the private form is unavailable, contact
-          the repository owner through the{" "}
-          <a className="text-accent underline" href="https://github.com/andrewmuratov">
-            owner&apos;s GitHub profile
-          </a>{" "}
-          and ask for a private channel before sharing details.
+          material in a public issue or pull request.
         </p>
       </section>
 
