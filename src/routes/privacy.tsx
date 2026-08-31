@@ -23,9 +23,12 @@ function PrivacyPage() {
           This notice describes the hosted Gapwise application at gapwise.ca. Gapwise is an
           independent student project, not an official University of Toronto service. The project
           operator determines how the hosted service processes account and application data. For
-          privacy questions or requests, use the contact method published on the Gapwise repository
-          or security page. A qualified legal review is still required to confirm the operator's
-          formal controller identity, mailing address, and any jurisdiction-specific representative
+          privacy questions or requests, email{" "}
+          <a className="text-accent underline" href="mailto:support@gapwise.ca">
+            support@gapwise.ca
+          </a>
+          . A qualified legal review is still required to confirm the operator&apos;s formal
+          controller identity, mailing address, and any jurisdiction-specific representative
           requirements before making broader compliance claims.
         </p>
       </section>
@@ -135,9 +138,11 @@ function PrivacyPage() {
         <p>
           Gapwise maintains an incident-response process and a security-reporting channel. A privacy
           incident is assessed against the notification and recordkeeping rules that actually apply;
-          not every incident has the same reporting threshold. Security reports should use the
-          instructions on the Gapwise security page rather than placing secrets or personal data in
-          a public issue.
+          not every incident has the same reporting threshold. Security reports should be sent to{" "}
+          <a className="text-accent underline" href="mailto:security@gapwise.ca">
+            security@gapwise.ca
+          </a>{" "}
+          rather than placed in a public issue.
         </p>
       </section>
       <section>
@@ -145,7 +150,7 @@ function PrivacyPage() {
         <p>
           This notice is updated when material data handling changes. Material new uses or providers
           should be assessed and reflected here before they are promoted to users. Last materially
-          reviewed: August 30, 2026.
+          reviewed: September 1, 2026.
         </p>
       </section>
     </LegalPage>
