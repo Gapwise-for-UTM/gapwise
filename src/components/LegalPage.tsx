@@ -55,6 +55,9 @@ export function LegalPage({
           <Link to="/accessibility" className="text-accent hover:underline">
             Accessibility
           </Link>
+          <a href="https://status.gapwise.ca/" className="text-accent hover:underline">
+            Status
+          </a>
           <a
             href="https://github.com/andrewmuratov/gapwise"
             className="text-accent hover:underline"

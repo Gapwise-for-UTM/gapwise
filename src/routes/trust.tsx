@@ -24,7 +24,7 @@ function TrustPage() {
       eyebrow="Trust Center"
       title="Evidence before promises."
       dateLabel="Last reviewed"
-      date="August 28, 2026"
+      date="September 1, 2026"
     >
       <section>
         <p>
@@ -56,6 +56,12 @@ function TrustPage() {
           <a href="https://docs.gapwise.ca/platform/security/" className={cardClass}>
             <strong className="block text-foreground">Security architecture</strong>
             <span className="mt-1 block">Trust boundaries, data flows, and validation limits.</span>
+          </a>
+          <a href="https://status.gapwise.ca/" className={cardClass}>
+            <strong className="block text-foreground">Service status</strong>
+            <span className="mt-1 block">
+              Current operational status and incident-reporting information.
+            </span>
           </a>
         </div>
       </section>
@@ -176,14 +182,18 @@ function TrustPage() {
           triage, notification decisions, recovery, and public postmortem preparation.
         </p>
         <p>
-          No repository-verified dedicated public status service, uptime percentage, response-time
-          SLA, RTO, RPO, or incident-history statistic is claimed here. Those statements require
-          actual measured or externally confirmed evidence.
+          Gapwise publishes a dedicated public service-status surface at status.gapwise.ca. It
+          reports current operational state and provides incident-reporting paths, but it does not
+          claim an uptime percentage, response-time SLA, RTO, RPO, or historical incident statistic
+          without measured evidence.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link to="/security" className="text-accent hover:underline">
             Report a vulnerability
           </Link>
+          <a href="https://status.gapwise.ca/" className="text-accent hover:underline">
+            Service status
+          </a>
           <a
             href="https://github.com/andrewmuratov/gapwise/blob/main/docs/INCIDENT_RESPONSE.md"
             className="text-accent hover:underline"

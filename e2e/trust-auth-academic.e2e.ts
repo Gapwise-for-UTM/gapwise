@@ -14,6 +14,10 @@ test("privacy and terms are public, responsive, and independent of an account", 
     page.getByText(/does not describe this design as zero-knowledge or end-to-end encryption/),
   ).toBeVisible();
   await expect(page.getByText(/OpenFreeMap for map style and tile delivery/)).toBeVisible();
+  await expect(
+    page.getByText(/Resend for configured transactional authentication email/),
+  ).toBeVisible();
+  await expect(page.getByText(/Cloudflare for DNS, inbound Gapwise email routing/)).toBeVisible();
   await expect(page.getByText(/Web Analytics as cookie-free and anonymized/)).toBeVisible();
   await expect(
     page.getByText(/Delete your account and associated application cloud data/),
@@ -55,8 +59,12 @@ test("trust center exposes evidence-backed boundaries and limitations", async ({
     page.getByText(/does not call the design end-to-end encrypted or zero knowledge/),
   ).toBeVisible();
   await expect(
-    page.getByText(/No repository-verified dedicated public status service/),
+    page.getByText(/dedicated public service-status surface at status\.gapwise\.ca/),
   ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Service status" }).first()).toHaveAttribute(
+    "href",
+    "https://status.gapwise.ca/",
+  );
   await expect(page.getByRole("link", { name: "Report a vulnerability" })).toHaveAttribute(
     "href",
     "/security",
