@@ -69,14 +69,17 @@ function PrivacyPage() {
         <h2>Service providers and transfers</h2>
         <p>
           Gapwise relies on Vercel for hosting and operational measurements, Supabase for
-          authentication and cloud data, OpenFreeMap for map style and tile delivery, and the
-          identity provider you select for sign-in. Opening a map can therefore create a direct
-          browser request to OpenFreeMap even though Gapwise does not send your private timetable
-          payload to the map provider. If you connect an external AI provider, authorized tool
-          output is also sent to that provider. These providers may process technical or account
-          information in countries outside your own. Their own terms, locations, safeguards, and
-          retention practices can apply. Gapwise does not claim a particular international-transfer
-          mechanism here without provider and legal verification.
+          authentication and cloud data, Resend for configured transactional authentication email,
+          Cloudflare for DNS, inbound Gapwise email routing, and Turnstile bot-abuse protection,
+          OpenFreeMap for map style and tile delivery, and the identity provider you select for
+          sign-in. Opening a map can therefore create a direct browser request to OpenFreeMap even
+          though Gapwise does not send your private timetable payload to the map provider. Messages
+          sent to a Gapwise support or security alias pass through Cloudflare&apos;s email-routing
+          service before reaching the project mailbox. If you connect an external AI provider,
+          authorized tool output is also sent to that provider. These providers may process
+          technical, account, or message information in countries outside your own. Their own terms,
+          locations, safeguards, and retention practices can apply. Gapwise does not claim a
+          particular international-transfer mechanism here without provider and legal verification.
         </p>
       </section>
       <section>
