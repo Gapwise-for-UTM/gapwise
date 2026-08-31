@@ -10,9 +10,9 @@ The public Vulnerability Disclosure Policy and canonical contact details are at
 <https://gapwise.ca/security>. Machine-readable contact details are published at
 <https://gapwise.ca/.well-known/security.txt>.
 
-Please do not publish exploitable security details, credentials, authentication tokens, private timetable data, or cryptographic key material in a public issue or pull request.
+To report a vulnerability privately, email `security@gapwise.ca` or use GitHub private vulnerability reporting for this repository when it is available.
 
-Use GitHub private vulnerability reporting for this repository when it is available. If that option is unavailable, contact the repository owner through the GitHub profile and request a private reporting channel before sending exploit details.
+Please do not publish exploitable security details, credentials, authentication tokens, private timetable data, or cryptographic key material in a public issue or pull request.
 
 A useful report includes:
 
