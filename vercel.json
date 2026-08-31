@@ -11,6 +11,20 @@
       "includeFiles": "src/data/utm/**"
     }
   },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.gapwise.ca" }],
+      "destination": "https://gapwise.ca/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "gapwise-utm.vercel.app" }],
+      "destination": "https://gapwise.ca/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
