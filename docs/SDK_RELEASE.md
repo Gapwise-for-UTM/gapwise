@@ -7,22 +7,20 @@ Gapwise ships two public SDKs from this repository:
 
 The release workflow is `.github/workflows/release-sdks.yml`. It is intentionally manual and uses short-lived OIDC credentials rather than repository secrets once each registry supports the package's trusted publisher. Registry publish jobs are also restricted to runs dispatched from the `main` branch.
 
-## npm bootstrap and Trusted Publishing
+## npm Trusted Publishing
 
-First confirm that the npm account or organization that owns the `@gapwise` scope is under Gapwise control. Scoped packages can only be published by the user or organization that owns the scope.
+`@gapwise/sdk@0.1.0` has already been published to npm. The one-time initial-package bootstrap is complete and must not be repeated.
 
-npm Trusted Publishing is configured from an existing package's settings. If `@gapwise/sdk` has never been published before, npm currently cannot use OIDC for that initial package creation. Bootstrap version `0.1.0` once from a trusted maintainer workstation using interactive npm authentication or a narrowly scoped temporary granular token, then revoke any temporary publish token immediately after the package exists.
-
-After the package exists, configure its GitHub Actions Trusted Publisher with:
+The package's GitHub Actions Trusted Publisher should remain configured with:
 
 - repository owner: `andrewmuratov`
 - repository: `gapwise`
 - workflow filename: `release-sdks.yml`
 - allowed action: `npm publish`
 
-The workflow uses a GitHub-hosted runner, Node 24, npm 11.6.2+, and job-scoped `id-token: write`. It intentionally does not inject an npm publish token. Subsequent releases should use OIDC Trusted Publishing.
+The workflow uses a GitHub-hosted runner, Node 24, npm 11.6.2+, and job-scoped `id-token: write`. It intentionally does not inject an npm publish token. Future npm releases should use OIDC Trusted Publishing rather than recreating a bootstrap credential.
 
-After Trusted Publishing is verified, prefer npm's strongest publishing-access setting that keeps OIDC enabled while disallowing traditional automation tokens.
+Prefer npm's strongest publishing-access setting that keeps OIDC enabled while disallowing traditional automation tokens.
 
 ## PyPI Trusted Publishing
 
@@ -46,7 +44,7 @@ No PyPI API token belongs in GitHub secrets. The pending publisher creates the p
 3. Open **Actions → Release SDKs**, select the `main` branch, and run target `verify`.
 4. Inspect the verification run.
 5. For Python, run target `pypi` after the pending/normal PyPI Trusted Publisher is configured.
-6. For JavaScript, use target `npm` only after `@gapwise/sdk` already exists and its npm Trusted Publisher is configured. For the initial `0.1.0` package creation, use the one-time bootstrap procedure above instead.
+6. For JavaScript, use target `npm` only when publishing a new version after its npm Trusted Publisher is confirmed.
 7. Verify the registry package pages and install each package into a clean environment.
 8. Update developer documentation and the changelog for the published version.
 
@@ -57,4 +55,4 @@ No PyPI API token belongs in GitHub secrets. The pending publisher creates the p
 - Registry publish jobs refuse to run unless the workflow was dispatched from `main`.
 - External GitHub Actions are pinned to immutable commit SHAs.
 - Publishing remains a deliberate manual action rather than occurring on every push to `main`.
-- Any one-time npm bootstrap credential should be narrowly scoped and revoked immediately after the initial package exists.
+- Do not recreate or introduce an npm bootstrap credential now that the package exists.
