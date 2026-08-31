@@ -27,9 +27,9 @@ function PrivacyPage() {
           <a className="text-accent underline" href="mailto:support@gapwise.ca">
             support@gapwise.ca
           </a>
-          . A qualified legal review is still required to confirm the operator&apos;s formal controller
-          identity, mailing address, and any jurisdiction-specific representative requirements before
-          making broader compliance claims.
+          . A qualified legal review is still required to confirm the operator&apos;s formal
+          controller identity, mailing address, and any jurisdiction-specific representative
+          requirements before making broader compliance claims.
         </p>
       </section>
       <section>
