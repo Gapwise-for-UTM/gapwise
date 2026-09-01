@@ -23,6 +23,12 @@
       "has": [{ "type": "host", "value": "gapwise-utm.vercel.app" }],
       "destination": "https://gapwise.ca/:path*",
       "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "api.gapwise.ca" }],
+      "destination": "https://api.gapwise.ca/v1",
+      "permanent": false
     }
   ],
   "headers": [
