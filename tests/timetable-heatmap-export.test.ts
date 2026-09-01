@@ -86,7 +86,7 @@ describe("timetable heatmap export", () => {
     expect(data.routes).toHaveLength(2);
   });
 
-  test("renders a shareable map without course codes or room numbers", () => {
+  test("renders a text-free campus map without schedule identifiers", () => {
     const data = createTimetableHeatmapData({
       meetings: schedule,
       selection: "Fall",
@@ -95,10 +95,12 @@ describe("timetable heatmap export", () => {
     });
     const svg = renderTimetableHeatmapSvg(data);
 
-    expect(svg).toContain("My timetable heatmap");
-    expect(svg).toContain("MN");
-    expect(svg).toContain("3× / week");
-    expect(svg).toContain("no course codes or room numbers included");
+    expect(svg).toContain('viewBox="0 0 1080 1350"');
+    expect(svg).toContain("<path");
+    expect(svg).not.toContain("<text");
+    expect(svg).not.toContain("My timetable heatmap");
+    expect(svg).not.toContain("MN");
+    expect(svg).not.toContain("IB");
     expect(svg).not.toContain("PRIVATE101");
     expect(svg).not.toContain("SECRET202");
     expect(svg).not.toContain("ROOM-ALPHA");
@@ -134,6 +136,6 @@ describe("timetable heatmap export", () => {
       { buildingCode: "IB", count: 2 },
     ]);
     expect(data.routes).toHaveLength(3);
-    expect(renderTimetableHeatmapSvg(data)).toContain("All terms");
+    expect(renderTimetableHeatmapSvg(data)).not.toContain("<text");
   });
 });
