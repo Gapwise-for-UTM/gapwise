@@ -15,6 +15,11 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
     .click();
   await expect(page).toHaveURL(/\/timetable$/);
 
+  // Keep this regression independent of the calendar day on which CI runs. The demo
+  // timetable always has multiple Monday meetings with gaps, while some weekdays have
+  // only one meeting and therefore intentionally render no gap card.
+  await page.getByRole("button", { name: /Mon/ }).click();
+
   const gapCard = page.locator(".mobile-gap-card").first();
   await expect(gapCard).toBeVisible();
   await gapCard.click();
