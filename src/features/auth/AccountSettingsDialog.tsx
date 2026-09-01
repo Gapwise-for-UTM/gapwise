@@ -32,7 +32,7 @@ export function AccountSettingsDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  identity: string;
+  identity: string | null;
   tab: AccountSettingsTab;
   onTabChange: (tab: AccountSettingsTab) => void;
   aiController: AiDelegationController | null;
@@ -74,8 +74,15 @@ export function AccountSettingsDialog({
 
           <TabsContent value="account" className="mt-4">
             <section className="rounded-xl border border-border/70 p-4 sm:p-5">
-              <p className="text-sm font-semibold">Signed in as</p>
-              <p className="mt-1 break-words text-sm text-muted-foreground">{identity}</p>
+              <p className="text-sm font-semibold">{identity ? "Signed in as" : "Guest mode"}</p>
+              {identity ? (
+                <p className="mt-1 break-words text-sm text-muted-foreground">{identity}</p>
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Sign in from the app header when you want encrypted sync. Exports remain available
+                  locally without an account.
+                </p>
+              )}
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
                 Your account is used for optional encrypted sync, private friend features, and AI
                 authorization. Your original ACORN .ics file is not stored in your account.

@@ -262,19 +262,6 @@ export function AccountStatus({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <AccountSettingsDialog
-            open={settingsOpen}
-            onOpenChange={(open) => !busy && setSettingsOpen(open)}
-            identity={getAccountIdentity(user)}
-            tab={settingsTab}
-            onTabChange={setSettingsTab}
-            aiController={aiController}
-            meetings={meetings}
-            term={term}
-            preferences={preferences}
-            planTransition={planTransition}
-          />
-
           <AlertDialog open={deleteOpen} onOpenChange={(open) => !busy && setDeleteOpen(open)}>
             <AlertDialogContent className="mx-4 w-[calc(100%-2rem)] rounded-xl">
               <AlertDialogHeader>
@@ -317,16 +304,41 @@ export function AccountStatus({
           </AlertDialog>
         </>
       ) : (
-        <button
-          type="button"
-          onClick={() => setSignInOpen((open) => !open)}
-          disabled={!isSupabaseConfigured}
-          className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-          aria-expanded={signInOpen}
-        >
-          <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => setSignInOpen((open) => !open)}
+            disabled={!isSupabaseConfigured}
+            className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+            aria-expanded={signInOpen}
+          >
+            <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSettingsTab("exports");
+              setSettingsOpen(true);
+            }}
+            className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium"
+          >
+            <Settings2 className="h-4 w-4" aria-hidden="true" /> Account settings
+          </button>
+        </>
       )}
+
+      <AccountSettingsDialog
+        open={settingsOpen}
+        onOpenChange={(open) => !busy && setSettingsOpen(open)}
+        identity={user ? getAccountIdentity(user) : null}
+        tab={settingsTab}
+        onTabChange={setSettingsTab}
+        aiController={aiController}
+        meetings={meetings}
+        term={term}
+        preferences={preferences}
+        planTransition={planTransition}
+      />
 
       <Dialog
         open={!loading && !user && signInOpen}
