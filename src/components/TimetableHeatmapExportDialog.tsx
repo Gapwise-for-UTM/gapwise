@@ -57,9 +57,8 @@ export function TimetableHeatmapExportDialog({
     setExporting(true);
     setError(null);
     try {
-      const { createTimetableHeatmapData, generateTimetableHeatmapPng } = await import(
-        "@/lib/timetable-heatmap-export"
-      );
+      const { createTimetableHeatmapData, generateTimetableHeatmapPng } =
+        await import("@/lib/timetable-heatmap-export");
       const data = createTimetableHeatmapData({
         meetings,
         term,
@@ -174,7 +173,11 @@ export function TimetableHeatmapExportDialog({
             ) : (
               <Download className="h-4 w-4" aria-hidden="true" />
             )}
-            {exporting ? "Generating campus heatmap…" : supportsShare ? "Generate and share" : "Generate image"}
+            {exporting
+              ? "Generating campus heatmap…"
+              : supportsShare
+                ? "Generate and share"
+                : "Generate image"}
           </button>
           <p aria-live="polite" className="sr-only">
             {exporting ? "Generating timetable heatmap image" : (error ?? "")}
