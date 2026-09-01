@@ -1,5 +1,8 @@
 import geistFontUrl from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
-import { CAMPUS_BUILDING_FOOTPRINTS, representativePointForFootprint } from "@/data/utm/building-footprints";
+import {
+  CAMPUS_BUILDING_FOOTPRINTS,
+  representativePointForFootprint,
+} from "@/data/utm/building-footprints";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { createCampusDayRouteStops } from "@/features/routing/campus-day";
 import type { TransitionPlanner } from "@/features/routing/transition";
@@ -42,9 +45,7 @@ const escapeXml = (value: string) =>
   value.replace(
     /[&<>"']/g,
     (character) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[
-        character
-      ]!,
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[character]!,
   );
 
 function mercator([longitude, latitude]: Coordinate): Projected {
@@ -81,7 +82,10 @@ function createProjection(): Projection {
   const maxY = Math.max(...projected.map(([, y]) => y));
   const innerWidth = MAP_WIDTH - MAP_INSET * 2;
   const innerHeight = MAP_HEIGHT - MAP_INSET * 2;
-  const scale = Math.min(innerWidth / Math.max(1e-9, maxX - minX), innerHeight / Math.max(1e-9, maxY - minY));
+  const scale = Math.min(
+    innerWidth / Math.max(1e-9, maxX - minX),
+    innerHeight / Math.max(1e-9, maxY - minY),
+  );
   const usedWidth = (maxX - minX) * scale;
   const usedHeight = (maxY - minY) * scale;
   const offsetX = MAP_X + (MAP_WIDTH - usedWidth) / 2;
@@ -92,7 +96,11 @@ function createProjection(): Projection {
   };
 }
 
-function pathForCoordinates(coordinates: readonly Coordinate[], project: Projection, close = false) {
+function pathForCoordinates(
+  coordinates: readonly Coordinate[],
+  project: Projection,
+  close = false,
+) {
   if (coordinates.length === 0) return "";
   const commands = coordinates.map((coordinate, index) => {
     const [x, y] = project(coordinate);
@@ -159,7 +167,11 @@ export function createTimetableHeatmapData({
   for (const meeting of selected) {
     if (!meeting.buildingCode) continue;
     const code = meeting.buildingCode.toUpperCase();
-    if (!CAMPUS_BUILDING_FOOTPRINTS.features.some((feature) => feature.properties.buildingCode === code)) {
+    if (
+      !CAMPUS_BUILDING_FOOTPRINTS.features.some(
+        (feature) => feature.properties.buildingCode === code,
+      )
+    ) {
       continue;
     }
     visitCounts.set(code, (visitCounts.get(code) ?? 0) + 1);
@@ -249,7 +261,9 @@ export function renderTimetableHeatmapSvg(data: TimetableHeatmapData, fontDataUr
 
   const busiest = data.visits[0];
   const summary = `${data.totalStops} weekly ${data.totalStops === 1 ? "stop" : "stops"} · ${data.uniqueBuildings} ${data.uniqueBuildings === 1 ? "building" : "buildings"}`;
-  const busiestText = busiest ? `Most visited: ${busiest.buildingCode} · ${busiest.count}× / week` : "No mapped campus stops in this term";
+  const busiestText = busiest
+    ? `Most visited: ${busiest.buildingCode} · ${busiest.count}× / week`
+    : "No mapped campus stops in this term";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${EXPORT_WIDTH}" height="${EXPORT_HEIGHT}" viewBox="0 0 ${EXPORT_WIDTH} ${EXPORT_HEIGHT}"><style>${fontFace}text{font-family:HeatmapGeist,'Geist Variable',system-ui,sans-serif}</style><defs><radialGradient id="page-glow" cx="84%" cy="2%" r="72%"><stop offset="0" stop-color="#13284b"/><stop offset="0.46" stop-color="#09111f"/><stop offset="1" stop-color="#05080e"/></radialGradient><linearGradient id="heat-legend" x1="0" x2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="0.52" stop-color="#60a5fa"/><stop offset="1" stop-color="#e0f2fe"/></linearGradient><filter id="panel-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#00000088"/></filter><filter id="building-glow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#60a5fa" flood-opacity="0.62"/></filter><clipPath id="map-clip"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" rx="34"/></clipPath></defs><rect width="100%" height="100%" fill="url(#page-glow)"/><text x="54" y="72" font-size="16" font-weight="800" letter-spacing="3.4" fill="#7dd3fc">GAPWISE · UTM</text><text x="54" y="122" font-size="39" font-weight="810" letter-spacing="-1.3" fill="#f8fafc">My timetable heatmap</text><text x="54" y="157" font-size="16" font-weight="590" fill="#9fb0c7">${escapeXml(data.term)} · ${escapeXml(summary)}</text><g filter="url(#panel-shadow)"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" rx="34" fill="#08101b" stroke="#27364c" stroke-width="2"/></g><g clip-path="url(#map-clip)"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="#08101b"/><path d="${routingNetworkPath(project)}" fill="none" stroke="#26364b" stroke-opacity="0.72" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>${buildings}${routeUnderlay}${routeLines}${labels}</g><g transform="translate(54 1204)"><text x="0" y="0" font-size="13" font-weight="720" fill="#dbeafe">Building brightness = weekly visits</text><rect x="0" y="18" width="270" height="13" rx="6.5" fill="url(#heat-legend)"/><text x="0" y="51" font-size="11.5" font-weight="560" fill="#8090a8">Fewer visits</text><text x="270" y="51" text-anchor="end" font-size="11.5" font-weight="560" fill="#8090a8">More visits</text><text x="360" y="0" font-size="13" font-weight="720" fill="#dbeafe">${escapeXml(busiestText)}</text><text x="360" y="28" font-size="11.5" font-weight="560" fill="#8090a8">Brighter overlapping lines = repeated timetable routes</text></g><line x1="54" y1="1283" x2="1026" y2="1283" stroke="#233147"/><text x="54" y="1318" font-size="11.5" font-weight="560" fill="#718096">Generated locally from your timetable · no course codes or room numbers included</text><text x="1026" y="1318" text-anchor="end" font-size="11.5" font-weight="650" fill="#718096">Campus geometry © OpenStreetMap contributors · Gapwise</text></svg>`;
 }
@@ -278,7 +292,8 @@ async function embeddedGeistDataUrl() {
 
 export async function generateTimetableHeatmapPng(
   data: TimetableHeatmapData,
-  ratio = typeof window === "undefined" ? 2 : Math.min(2.5, Math.max(1.5, window.devicePixelRatio)),
+  ratio =
+    typeof window === "undefined" ? 2 : Math.min(2.5, Math.max(1.5, window.devicePixelRatio)),
   imageFactory: () => HTMLImageElement = () => new Image(),
   objectUrls: Pick<typeof URL, "createObjectURL" | "revokeObjectURL"> = URL,
   fontDataUrl?: string,
@@ -297,7 +312,10 @@ export async function generateTimetableHeatmapPng(
       image.src = url;
     });
     const requestedPixels = EXPORT_WIDTH * EXPORT_HEIGHT * ratio * ratio;
-    const safeRatio = requestedPixels > MAX_PIXELS ? Math.sqrt(MAX_PIXELS / (EXPORT_WIDTH * EXPORT_HEIGHT)) : ratio;
+    const safeRatio =
+      requestedPixels > MAX_PIXELS
+        ? Math.sqrt(MAX_PIXELS / (EXPORT_WIDTH * EXPORT_HEIGHT))
+        : ratio;
     canvas = document.createElement("canvas");
     canvas.width = Math.round(EXPORT_WIDTH * safeRatio);
     canvas.height = Math.round(EXPORT_HEIGHT * safeRatio);
