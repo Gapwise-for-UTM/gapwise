@@ -120,6 +120,15 @@ export function AccountStatus({
   }, [user]);
 
   useEffect(() => {
+    const openSettings = () => {
+      setSettingsTab(user ? "account" : "exports");
+      setSettingsOpen(true);
+    };
+    window.addEventListener("gapwise:open-account-settings", openSettings);
+    return () => window.removeEventListener("gapwise:open-account-settings", openSettings);
+  }, [user]);
+
+  useEffect(() => {
     if (settingsRequest > 0) {
       setSettingsTab(user ? "account" : "exports");
       setSettingsOpen(true);
