@@ -292,8 +292,7 @@ async function embeddedGeistDataUrl() {
 
 export async function generateTimetableHeatmapPng(
   data: TimetableHeatmapData,
-  ratio =
-    typeof window === "undefined" ? 2 : Math.min(2.5, Math.max(1.5, window.devicePixelRatio)),
+  ratio = typeof window === "undefined" ? 2 : Math.min(2.5, Math.max(1.5, window.devicePixelRatio)),
   imageFactory: () => HTMLImageElement = () => new Image(),
   objectUrls: Pick<typeof URL, "createObjectURL" | "revokeObjectURL"> = URL,
   fontDataUrl?: string,
@@ -313,9 +312,7 @@ export async function generateTimetableHeatmapPng(
     });
     const requestedPixels = EXPORT_WIDTH * EXPORT_HEIGHT * ratio * ratio;
     const safeRatio =
-      requestedPixels > MAX_PIXELS
-        ? Math.sqrt(MAX_PIXELS / (EXPORT_WIDTH * EXPORT_HEIGHT))
-        : ratio;
+      requestedPixels > MAX_PIXELS ? Math.sqrt(MAX_PIXELS / (EXPORT_WIDTH * EXPORT_HEIGHT)) : ratio;
     canvas = document.createElement("canvas");
     canvas.width = Math.round(EXPORT_WIDTH * safeRatio);
     canvas.height = Math.round(EXPORT_HEIGHT * safeRatio);
