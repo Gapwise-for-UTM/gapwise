@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusExplorer } from "@/components/CampusExplorer";
 import { DayRouteSequence } from "@/components/DayRouteSequence";
 import { IndoorFloorViewer } from "@/components/IndoorFloorViewer";
+import { TimetableHeatmapExportDialog } from "@/components/TimetableHeatmapExportDialog";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
   Drawer,
@@ -468,14 +469,23 @@ export function MobileDayRoute({
               map
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setOptionsOpen(true)}
-            className="button-secondary inline-flex min-h-11 shrink-0 items-center gap-2 px-3 text-xs font-semibold"
-          >
-            <Settings2 className="h-4 w-4" aria-hidden="true" />
-            Options
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <TimetableHeatmapExportDialog
+              meetings={meetings}
+              term={term}
+              preferences={preferences}
+              planTransition={planTransition}
+              triggerVariant="icon"
+            />
+            <button
+              type="button"
+              onClick={() => setOptionsOpen(true)}
+              className="button-secondary inline-flex min-h-11 shrink-0 items-center gap-2 px-3 text-xs font-semibold"
+            >
+              <Settings2 className="h-4 w-4" aria-hidden="true" />
+              Options
+            </button>
+          </div>
         </div>
 
         {availableTerms.length > 1 ? (
