@@ -105,7 +105,9 @@ function createProjection(data: TimetableHeatmapData): Projection {
   const focusCoordinates = CAMPUS_BUILDING_FOOTPRINTS.features
     .filter((feature) => visitedCodes.has(feature.properties.buildingCode))
     .flatMap(featureCoordinates);
-  const focus = boundsFor((focusCoordinates.length ? focusCoordinates : campusBuildingCoordinates()).map(mercator));
+  const focus = boundsFor(
+    (focusCoordinates.length ? focusCoordinates : campusBuildingCoordinates()).map(mercator),
+  );
 
   const campusSpanX = campus.maxX - campus.minX;
   const campusSpanY = campus.maxY - campus.minY;
