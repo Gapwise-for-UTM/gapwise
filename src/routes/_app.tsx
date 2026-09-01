@@ -22,7 +22,6 @@ import { useAppNavigation, type AppDestination } from "@/features/navigation/use
 import { useSelectedScheduleContext } from "@/features/schedule/use-selected-schedule-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
-import { TimetableExportDialog } from "@/components/TimetableExportDialog";
 import { TodaySummary } from "@/components/TodaySummary";
 import { UploadPanel } from "@/components/UploadPanel";
 import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
@@ -451,7 +450,7 @@ function AppLayout() {
               }}
               onEditPersonal={personalCommands.openEdit}
               onDeletePersonal={personalCommands.remove}
-              exportAction={<TimetableExportDialog meetings={exportMeetings} />}
+              exportAction={null}
             />
           ) : null}
           {meetings && mobileTab === "gaps" ? (
@@ -541,6 +540,10 @@ function AppLayout() {
             hasTimetable={Boolean(meetings?.length)}
             onOnboardingContinue={navigateToday}
             onOnboardingImport={() => replacementInputRef.current?.click()}
+            meetings={exportMeetings}
+            term={term}
+            preferences={preferences}
+            planTransition={planTransition}
           />
         </MobileMoreSheet>
         <AcademicWorkDialog
@@ -615,6 +618,10 @@ function AppLayout() {
               onOnboardingContinue={navigateToday}
               onOnboardingImport={() => replacementInputRef.current?.click()}
               settingsRequest={accountSettingsRequest}
+              meetings={exportMeetings}
+              term={term}
+              preferences={preferences}
+              planTransition={planTransition}
             />
           </div>
         </div>
@@ -972,7 +979,6 @@ function AppLayout() {
                       gaps={gaps}
                       headerAction={
                         <div className="flex gap-2">
-                          <TimetableExportDialog meetings={exportMeetings} />
                           <button
                             type="button"
                             onClick={() => setAcademicOpen(true)}

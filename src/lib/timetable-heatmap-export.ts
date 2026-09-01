@@ -9,6 +9,8 @@ import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { WEEKDAYS, type Meeting, type Term, type Weekday } from "@/lib/timetable-types";
 
+export type TimetableHeatmapSelection = Term | "all";
+
 export type TimetableHeatmapRoute = {
   weekday: Weekday;
   coordinates: [number, number][];
@@ -20,7 +22,7 @@ export type TimetableHeatmapVisit = {
 };
 
 export type TimetableHeatmapData = {
-  term: Term;
+  selection: TimetableHeatmapSelection;
   visits: TimetableHeatmapVisit[];
   routes: TimetableHeatmapRoute[];
   totalStops: number;
@@ -62,20 +64,17 @@ function footprintPolygons(
   return geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
 }
 
-function campusCoordinates(): Coordinate[] {
-  const footprintCoordinates = CAMPUS_BUILDING_FOOTPRINTS.features.flatMap((feature) =>
+function campusBuildingCoordinates(): Coordinate[] {
+  return CAMPUS_BUILDING_FOOTPRINTS.features.flatMap((feature) =>
     footprintPolygons(feature.geometry).flat(2),
   );
-  const graphCoordinates = UTM_ROUTING_GRAPH.nodes.flatMap((node) =>
-    node.longitude !== undefined && node.latitude !== undefined
-      ? ([[node.longitude, node.latitude]] as Coordinate[])
-      : [],
-  );
-  return [...footprintCoordinates, ...graphCoordinates];
 }
 
 function createProjection(): Projection {
-  const projected = campusCoordinates().map(mercator);
+  // Export framing is intentionally based on UTM's canonical building envelope.
+  // The routing graph contains approach and off-campus nodes that otherwise make
+  // the actual campus buildings appear tiny in the finished artwork.
+  const projected = campusBuildingCoordinates().map(mercator);
   const minX = Math.min(...projected.map(([x]) => x));
   const maxX = Math.max(...projected.map(([x]) => x));
   const minY = Math.min(...projected.map(([, y]) => y));
@@ -153,16 +152,16 @@ function heatColor(intensity: number) {
 
 export function createTimetableHeatmapData({
   meetings,
-  term,
+  selection,
   preferences,
   planTransition,
 }: {
   meetings: readonly Meeting[];
-  term: Term;
+  selection: TimetableHeatmapSelection;
   preferences: UserPreferences;
   planTransition: TransitionPlanner;
 }): TimetableHeatmapData {
-  const selected = meetings.filter((meeting) => meeting.term === term);
+  const selected = meetings.filter((meeting) => selection === "all" || meeting.term === selection);
   const visitCounts = new Map<string, number>();
   for (const meeting of selected) {
     if (!meeting.buildingCode) continue;
@@ -178,17 +177,20 @@ export function createTimetableHeatmapData({
   }
 
   const routes: TimetableHeatmapRoute[] = [];
-  for (const weekday of WEEKDAYS) {
-    const dayMeetings = selected
-      .filter((meeting) => meeting.weekday === weekday)
-      .sort((a, b) => a.startTime - b.startTime);
-    const stops = createCampusDayRouteStops(dayMeetings, preferences, term, weekday);
-    for (let index = 0; index < stops.length - 1; index += 1) {
-      const from = stops[index]!;
-      const to = stops[index + 1]!;
-      const route = planTransition(from, to, preferences);
-      if (route.displayCoordinates.length < 2) continue;
-      routes.push({ weekday, coordinates: route.displayCoordinates });
+  const selectedTerms = [...new Set(selected.map((meeting) => meeting.term))];
+  for (const routeTerm of selectedTerms) {
+    for (const weekday of WEEKDAYS) {
+      const dayMeetings = selected
+        .filter((meeting) => meeting.term === routeTerm && meeting.weekday === weekday)
+        .sort((a, b) => a.startTime - b.startTime);
+      const stops = createCampusDayRouteStops(dayMeetings, preferences, routeTerm, weekday);
+      for (let index = 0; index < stops.length - 1; index += 1) {
+        const from = stops[index]!;
+        const to = stops[index + 1]!;
+        const route = planTransition(from, to, preferences);
+        if (route.displayCoordinates.length < 2) continue;
+        routes.push({ weekday, coordinates: route.displayCoordinates });
+      }
     }
   }
 
@@ -196,7 +198,7 @@ export function createTimetableHeatmapData({
     .map(([buildingCode, count]) => ({ buildingCode, count }))
     .sort((a, b) => b.count - a.count || a.buildingCode.localeCompare(b.buildingCode));
   return {
-    term,
+    selection,
     visits,
     routes,
     totalStops: visits.reduce((total, visit) => total + visit.count, 0),
@@ -265,11 +267,12 @@ export function renderTimetableHeatmapSvg(data: TimetableHeatmapData, fontDataUr
     ? `Most visited: ${busiest.buildingCode} · ${busiest.count}× / week`
     : "No mapped campus stops in this term";
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${EXPORT_WIDTH}" height="${EXPORT_HEIGHT}" viewBox="0 0 ${EXPORT_WIDTH} ${EXPORT_HEIGHT}"><style>${fontFace}text{font-family:HeatmapGeist,'Geist Variable',system-ui,sans-serif}</style><defs><radialGradient id="page-glow" cx="84%" cy="2%" r="72%"><stop offset="0" stop-color="#13284b"/><stop offset="0.46" stop-color="#09111f"/><stop offset="1" stop-color="#05080e"/></radialGradient><linearGradient id="heat-legend" x1="0" x2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="0.52" stop-color="#60a5fa"/><stop offset="1" stop-color="#e0f2fe"/></linearGradient><filter id="panel-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#00000088"/></filter><filter id="building-glow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#60a5fa" flood-opacity="0.62"/></filter><clipPath id="map-clip"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" rx="34"/></clipPath></defs><rect width="100%" height="100%" fill="url(#page-glow)"/><text x="54" y="72" font-size="16" font-weight="800" letter-spacing="3.4" fill="#7dd3fc">GAPWISE · UTM</text><text x="54" y="122" font-size="39" font-weight="810" letter-spacing="-1.3" fill="#f8fafc">My timetable heatmap</text><text x="54" y="157" font-size="16" font-weight="590" fill="#9fb0c7">${escapeXml(data.term)} · ${escapeXml(summary)}</text><g filter="url(#panel-shadow)"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" rx="34" fill="#08101b" stroke="#27364c" stroke-width="2"/></g><g clip-path="url(#map-clip)"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="#08101b"/><path d="${routingNetworkPath(project)}" fill="none" stroke="#26364b" stroke-opacity="0.72" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>${buildings}${routeUnderlay}${routeLines}${labels}</g><g transform="translate(54 1204)"><text x="0" y="0" font-size="13" font-weight="720" fill="#dbeafe">Building brightness = weekly visits</text><rect x="0" y="18" width="270" height="13" rx="6.5" fill="url(#heat-legend)"/><text x="0" y="51" font-size="11.5" font-weight="560" fill="#8090a8">Fewer visits</text><text x="270" y="51" text-anchor="end" font-size="11.5" font-weight="560" fill="#8090a8">More visits</text><text x="360" y="0" font-size="13" font-weight="720" fill="#dbeafe">${escapeXml(busiestText)}</text><text x="360" y="28" font-size="11.5" font-weight="560" fill="#8090a8">Brighter overlapping lines = repeated timetable routes</text></g><line x1="54" y1="1283" x2="1026" y2="1283" stroke="#233147"/><text x="54" y="1318" font-size="11.5" font-weight="560" fill="#718096">Generated locally from your timetable · no course codes or room numbers included</text><text x="1026" y="1318" text-anchor="end" font-size="11.5" font-weight="650" fill="#718096">Campus geometry © OpenStreetMap contributors · Gapwise</text></svg>`;
+  const selectionLabel = data.selection === "all" ? "All terms" : data.selection;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${EXPORT_WIDTH}" height="${EXPORT_HEIGHT}" viewBox="0 0 ${EXPORT_WIDTH} ${EXPORT_HEIGHT}"><style>${fontFace}text{font-family:HeatmapGeist,'Geist Variable',system-ui,sans-serif}</style><defs><radialGradient id="page-glow" cx="84%" cy="2%" r="72%"><stop offset="0" stop-color="#13284b"/><stop offset="0.46" stop-color="#09111f"/><stop offset="1" stop-color="#05080e"/></radialGradient><linearGradient id="heat-legend" x1="0" x2="1"><stop offset="0" stop-color="#2563eb"/><stop offset="0.52" stop-color="#60a5fa"/><stop offset="1" stop-color="#e0f2fe"/></linearGradient><filter id="panel-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#00000088"/></filter><filter id="building-glow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#60a5fa" flood-opacity="0.62"/></filter><clipPath id="map-clip"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" rx="34"/></clipPath></defs><rect width="100%" height="100%" fill="url(#page-glow)"/><text x="54" y="72" font-size="16" font-weight="800" letter-spacing="3.4" fill="#7dd3fc">GAPWISE · UTM</text><text x="54" y="122" font-size="39" font-weight="810" letter-spacing="-1.3" fill="#f8fafc">My timetable heatmap</text><text x="54" y="157" font-size="16" font-weight="590" fill="#9fb0c7">${escapeXml(selectionLabel)} · ${escapeXml(summary)}</text><g filter="url(#panel-shadow)"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" rx="34" fill="#08101b" stroke="#27364c" stroke-width="2"/></g><g clip-path="url(#map-clip)"><rect x="${MAP_X}" y="${MAP_Y}" width="${MAP_WIDTH}" height="${MAP_HEIGHT}" fill="#08101b"/><path d="${routingNetworkPath(project)}" fill="none" stroke="#26364b" stroke-opacity="0.72" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>${buildings}${routeUnderlay}${routeLines}${labels}</g><g transform="translate(54 1204)"><text x="0" y="0" font-size="13" font-weight="720" fill="#dbeafe">Building brightness = weekly visits</text><rect x="0" y="18" width="270" height="13" rx="6.5" fill="url(#heat-legend)"/><text x="0" y="51" font-size="11.5" font-weight="560" fill="#8090a8">Fewer visits</text><text x="270" y="51" text-anchor="end" font-size="11.5" font-weight="560" fill="#8090a8">More visits</text><text x="360" y="0" font-size="13" font-weight="720" fill="#dbeafe">${escapeXml(busiestText)}</text><text x="360" y="28" font-size="11.5" font-weight="560" fill="#8090a8">Brighter overlapping lines = repeated timetable routes</text></g><line x1="54" y1="1283" x2="1026" y2="1283" stroke="#233147"/><text x="54" y="1318" font-size="11.5" font-weight="560" fill="#718096">Generated locally from your timetable · no course codes or room numbers included</text><text x="1026" y="1318" text-anchor="end" font-size="11.5" font-weight="650" fill="#718096">Campus geometry © OpenStreetMap contributors · Gapwise</text></svg>`;
 }
 
-export function timetableHeatmapFilename(term: Term) {
-  return `${term.toLowerCase()}-utm-timetable-heatmap.png`;
+export function timetableHeatmapFilename(selection: TimetableHeatmapSelection) {
+  return `${selection === "all" ? "all-terms" : selection.toLowerCase()}-utm-timetable-heatmap.png`;
 }
 
 let geistDataPromise: Promise<string> | null = null;
@@ -322,7 +325,7 @@ export async function generateTimetableHeatmapPng(
     context.drawImage(image, 0, 0, EXPORT_WIDTH, EXPORT_HEIGHT);
     const blob = await new Promise<Blob | null>((resolve) => canvas!.toBlob(resolve, "image/png"));
     if (!blob) throw new Error("The heatmap PNG could not be created.");
-    return { blob, filename: timetableHeatmapFilename(data.term) };
+    return { blob, filename: timetableHeatmapFilename(data.selection) };
   } finally {
     if (canvas) {
       canvas.width = 1;

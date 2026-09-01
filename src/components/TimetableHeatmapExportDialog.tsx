@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
-import type { Meeting, Term } from "@/lib/timetable-types";
+import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
+import type { TimetableHeatmapSelection } from "@/lib/timetable-heatmap-export";
 
 type TriggerVariant = "button" | "icon";
 
@@ -39,16 +40,25 @@ export function TimetableHeatmapExportDialog({
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const terms = useMemo(
+    () => TERMS.filter((candidate) => meetings.some((meeting) => meeting.term === candidate)),
+    [meetings],
+  );
+  const [selection, setSelection] = useState<TimetableHeatmapSelection>(term);
   const mappedStops = useMemo(
     () =>
       meetings.filter(
-        (meeting) => meeting.term === term && meeting.buildingCode && !meeting.locationUnknown,
+        (meeting) =>
+          (selection === "all" || meeting.term === selection) &&
+          meeting.buildingCode &&
+          !meeting.locationUnknown,
       ).length,
-    [meetings, term],
+    [meetings, selection],
   );
   const supportsShare = typeof navigator !== "undefined" && "share" in navigator;
 
   const openExport = () => {
+    setSelection(terms.length > 1 ? "all" : (terms[0] ?? term));
     setError(null);
     setOpen(true);
   };
@@ -61,7 +71,7 @@ export function TimetableHeatmapExportDialog({
         await import("@/lib/timetable-heatmap-export");
       const data = createTimetableHeatmapData({
         meetings,
-        term,
+        selection,
         preferences,
         planTransition,
       });
@@ -70,7 +80,7 @@ export function TimetableHeatmapExportDialog({
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `My ${term} UTM timetable heatmap`,
+          title: `My ${selection === "all" ? "all-terms" : selection} UTM timetable heatmap`,
           text: "My campus routes and most-visited buildings, generated privately by Gapwise.",
         });
       } else {
@@ -81,7 +91,7 @@ export function TimetableHeatmapExportDialog({
       if (cause instanceof DOMException && cause.name === "AbortError") return;
       setError(
         mappedStops === 0
-          ? "This term has no mapped campus buildings to include in a heatmap."
+          ? "This selection has no mapped campus buildings to include in a heatmap."
           : "The heatmap image could not be created. Your timetable is unchanged — try exporting again.",
       );
     } finally {
@@ -119,8 +129,8 @@ export function TimetableHeatmapExportDialog({
           <DialogHeader className="pr-7">
             <DialogTitle className="font-display text-xl">Export timetable heatmap</DialogTitle>
             <DialogDescription className="leading-6">
-              Turn your {term} timetable into a shareable UTM map. Brighter buildings mean more
-              weekly visits; overlapping route lines get brighter when you repeat the same path.
+              Turn your timetable into a shareable UTM map. Brighter buildings mean more weekly
+              visits; overlapping route lines get brighter when you repeat the same path.
             </DialogDescription>
           </DialogHeader>
 
@@ -135,10 +145,36 @@ export function TimetableHeatmapExportDialog({
             </p>
           </div>
 
+          {terms.length > 1 ? (
+            <fieldset>
+              <legend className="mb-2 text-sm font-semibold">Include</legend>
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="radiogroup"
+                aria-label="Terms to export"
+              >
+                {[...terms, "all" as const].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={selection === option}
+                    onClick={() => setSelection(option)}
+                    className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${selection === option ? "border-accent bg-accent/10 text-accent" : "border-border text-muted-foreground"}`}
+                  >
+                    {option === "all" ? "All available terms" : option}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
+
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <div className="rounded-xl border border-border bg-background/45 p-3">
               <dt className="text-xs text-muted-foreground">Term</dt>
-              <dd className="mt-1 font-semibold">{term}</dd>
+              <dd className="mt-1 font-semibold">
+                {selection === "all" ? "All terms" : selection}
+              </dd>
             </div>
             <div className="rounded-xl border border-border bg-background/45 p-3">
               <dt className="text-xs text-muted-foreground">Mapped stops</dt>

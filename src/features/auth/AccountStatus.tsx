@@ -27,9 +27,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useBridgedAiDelegationController } from "@/features/ai/controller-bridge";
+import type { TransitionPlanner } from "@/features/routing/transition";
+import type { UserPreferences } from "@/features/sync/preferences";
 import { AccountOnboarding } from "@/features/onboarding/AccountOnboarding";
 import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import type { Meeting, Term } from "@/lib/timetable-types";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
@@ -69,6 +72,10 @@ export function AccountStatus({
   onOnboardingContinue,
   onOnboardingImport,
   settingsRequest = 0,
+  meetings,
+  term,
+  preferences,
+  planTransition,
 }: {
   user: User | null;
   loading: boolean;
@@ -78,6 +85,10 @@ export function AccountStatus({
   onOnboardingImport: () => void;
   /** Monotonic app-shell action token used to open the single settings dialog directly. */
   settingsRequest?: number;
+  meetings: Meeting[];
+  term: Term;
+  preferences: UserPreferences;
+  planTransition: TransitionPlanner;
 }) {
   const aiController = useBridgedAiDelegationController();
   const [message, setMessage] = useState<string | null>(null);
@@ -258,6 +269,10 @@ export function AccountStatus({
             tab={settingsTab}
             onTabChange={setSettingsTab}
             aiController={aiController}
+            meetings={meetings}
+            term={term}
+            preferences={preferences}
+            planTransition={planTransition}
           />
 
           <AlertDialog open={deleteOpen} onOpenChange={(open) => !busy && setDeleteOpen(open)}>

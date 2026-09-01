@@ -1,4 +1,9 @@
-import { Bot, Link2, UserRound } from "lucide-react";
+import { Bot, Download, Link2, UserRound } from "lucide-react";
+import { TimetableExportDialog } from "@/components/TimetableExportDialog";
+import { TimetableHeatmapExportDialog } from "@/components/TimetableHeatmapExportDialog";
+import type { TransitionPlanner } from "@/features/routing/transition";
+import type { UserPreferences } from "@/features/sync/preferences";
+import type { Meeting, Term } from "@/lib/timetable-types";
 import { AiIntegrationControls } from "@/features/ai/AiIntegrationControls";
 import type { AiDelegationController } from "@/features/ai/use-ai-delegation";
 import {
@@ -11,7 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const GAPWISE_MCP_URL = "https://ai.gapwise.ca/api/mcp";
-export type AccountSettingsTab = "account" | "ai";
+export type AccountSettingsTab = "account" | "exports" | "ai";
 
 export function AccountSettingsDialog({
   open,
@@ -20,6 +25,10 @@ export function AccountSettingsDialog({
   tab,
   onTabChange,
   aiController,
+  meetings,
+  term,
+  preferences,
+  planTransition,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -27,6 +36,10 @@ export function AccountSettingsDialog({
   tab: AccountSettingsTab;
   onTabChange: (tab: AccountSettingsTab) => void;
   aiController: AiDelegationController | null;
+  meetings: Meeting[];
+  term: Term;
+  preferences: UserPreferences;
+  planTransition: TransitionPlanner;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -34,7 +47,8 @@ export function AccountSettingsDialog({
         <DialogHeader className="border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
           <DialogTitle>Account settings</DialogTitle>
           <DialogDescription>
-            Manage your Gapwise account and exactly what authorized AI connectors may access.
+            Manage your account, private exports, and exactly what authorized AI connectors may
+            access.
           </DialogDescription>
         </DialogHeader>
 
@@ -43,10 +57,14 @@ export function AccountSettingsDialog({
           onValueChange={(value) => onTabChange(value as AccountSettingsTab)}
           className="px-5 pb-5 sm:px-6 sm:pb-6"
         >
-          <TabsList className="mt-4 grid h-auto w-full grid-cols-2 sm:w-fit sm:min-w-[20rem]">
+          <TabsList className="mt-4 grid h-auto w-full grid-cols-3 sm:w-fit sm:min-w-[30rem]">
             <TabsTrigger value="account" className="min-h-9 gap-2">
               <UserRound className="h-4 w-4" aria-hidden="true" />
               Account
+            </TabsTrigger>
+            <TabsTrigger value="exports" className="min-h-9 gap-2">
+              <Download className="h-4 w-4" aria-hidden="true" />
+              Exports
             </TabsTrigger>
             <TabsTrigger value="ai" className="min-h-9 gap-2">
               <Bot className="h-4 w-4" aria-hidden="true" />
@@ -62,6 +80,34 @@ export function AccountSettingsDialog({
                 Your account is used for optional encrypted sync, private friend features, and AI
                 authorization. Your original ACORN .ics file is not stored in your account.
               </p>
+            </section>
+          </TabsContent>
+
+          <TabsContent value="exports" className="mt-4 space-y-3">
+            <section className="rounded-xl border border-border/70 p-4 sm:p-5">
+              <p className="text-sm font-semibold">Timetable</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Export any available term or combine every term in one private image or print-ready
+                vector.
+              </p>
+              <div className="mt-4">
+                <TimetableExportDialog meetings={meetings} />
+              </div>
+            </section>
+            <section className="rounded-xl border border-border/70 p-4 sm:p-5">
+              <p className="text-sm font-semibold">UTM map heatmap</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Export a campus-focused building and route heatmap for one term or all terms
+                together.
+              </p>
+              <div className="mt-4">
+                <TimetableHeatmapExportDialog
+                  meetings={meetings}
+                  term={term}
+                  preferences={preferences}
+                  planTransition={planTransition}
+                />
+              </div>
             </section>
           </TabsContent>
 
