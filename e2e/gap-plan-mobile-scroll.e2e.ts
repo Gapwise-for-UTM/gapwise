@@ -9,8 +9,11 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
 
   await expectLanding(page);
   await page.getByRole("button", { name: "Try a demo" }).click();
-  await expect(page.getByText("DEM240H5", { exact: true })).toBeVisible();
-  await page.goto(new URL("/gaps", page.url()).toString());
+  const nav = page.getByRole("navigation", { name: "Main" });
+  await expect(nav).toBeVisible();
+  await nav.getByRole("link", { name: "Timetable" }).click();
+  await expect(page.getByText("Day timetable")).toBeVisible();
+  await page.getByRole("button", { name: /View gap plan/ }).first().click();
   await expect(page).toHaveURL(/\/gaps$/);
 
   await page.getByRole("button", { name: "Tune", exact: true }).first().click();
