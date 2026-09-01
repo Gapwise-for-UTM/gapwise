@@ -6,17 +6,17 @@ Gapwise is a local-first React/Vite application. The browser parses an ACORN cal
 
 Production is built from GitHub `main` by Vercel and served from `https://gapwise.ca`. Private cloud is permanently encrypted-only in source; the legacy plaintext cloud tables and overlap helpers have been retired.
 
-| Concern                                        | Owner                  | Notes                                                                                                                  |
-| ---------------------------------------------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| UI, parsing, gaps, routing, private encryption | Browser                | Guest mode works without Supabase; signed-in private cloud data is encrypted before storage.                           |
+| Concern                                        | Owner                  | Notes                                                                                                                 |
+| ---------------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| UI, parsing, gaps, routing, private encryption | Browser                | Guest mode works without Supabase; signed-in private cloud data is encrypted before storage.                          |
 | Auth, ciphertext, wrapped keys, relationships  | Supabase               | Owner RLS; no Vercel KEK in the database; Auth boundary uses Turnstile abuse protection.                              |
-| Device key broker and common gap               | Vercel Functions       | Verified JWT, caller-scoped Supabase client, KEK; no service role.                                                     |
-| Account deletion                               | Supabase Edge Function | JWT required; identity comes from the verified token.                                                                  |
-| Static build and web domains                   | Vercel                 | SPA fallback, CSP and security headers come from repository configuration.                                             |
+| Device key broker and common gap               | Vercel Functions       | Verified JWT, caller-scoped Supabase client, KEK; no service role.                                                    |
+| Account deletion                               | Supabase Edge Function | JWT required; identity comes from the verified token.                                                                 |
+| Static build and web domains                   | Vercel                 | SPA fallback, CSP and security headers come from repository configuration.                                            |
 | Domain/DNS, inbound mail, CAPTCHA              | Cloudflare             | `gapwise.ca` DNS/domain layer, Email Routing, and Turnstile; no claim that Cloudflare proxies the Vercel application. |
 | Supabase Auth mail delivery                    | Resend                 | Verified `auth.gapwise.ca` sending domain; SMTP credentials live only in provider/dashboard secret configuration.     |
 | Public status communication                    | Gapwise Docs / Vercel  | `status.gapwise.ca`; operator-maintained, separate project, no synthetic-monitoring/uptime/SLA claim.                 |
-| Verification                                   | GitHub Actions         | App checks, browser E2E, accessibility, PWA, and isolated PostgreSQL security checks.                                  |
+| Verification                                   | GitHub Actions         | App checks, browser E2E, accessibility, PWA, and isolated PostgreSQL security checks.                                 |
 
 ### Production hostname map
 
