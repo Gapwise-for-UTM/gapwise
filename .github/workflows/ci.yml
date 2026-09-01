@@ -79,6 +79,12 @@ jobs:
         run: bun test
       - if: needs.changes.outputs.runtime == 'true'
         run: bun run build
+      - name: Show incident-response Prettier diff
+        run: |
+          cp docs/INCIDENT_RESPONSE.md /tmp/INCIDENT_RESPONSE.md
+          bunx prettier --write docs/INCIDENT_RESPONSE.md
+          git diff -- docs/INCIDENT_RESPONSE.md
+          mv /tmp/INCIDENT_RESPONSE.md docs/INCIDENT_RESPONSE.md
       - run: bunx prettier --check .
 
   e2e:
