@@ -20,9 +20,13 @@ The following are repository-backed facts that must still be reconciled with the
 - guest timetable, gap, and route computation is local-first;
 - optional private cloud stores browser-encrypted application state in Supabase with wrapped data keys and server-side versioned KEKs in Vercel;
 - Supabase also processes authentication/account metadata and minimal relationship metadata;
-- Vercel hosts the application and private-cloud/API functions;
+- Vercel hosts the application, public/private API functions, AI/docs deployments, and the separately deployed status surface;
 - Supabase provides Auth, Postgres/PostgREST, and the account-deletion Edge Function;
 - Microsoft, Google, and GitHub are configured OAuth identity providers;
+- Cloudflare provides the `gapwise.ca` domain/DNS layer, inbound Email Routing, and Turnstile abuse protection; this does not imply Cloudflare proxies the Vercel application traffic;
+- Resend provides custom SMTP delivery for Supabase Auth through the verified `auth.gapwise.ca` sending domain;
+- `status.gapwise.ca` is a public operator-maintained status-communication surface on a separate Vercel project; it is not continuous synthetic monitoring, an uptime-history system, an SLA, or independent of a Vercel-wide outage;
+- `security@gapwise.ca` is the canonical vulnerability-reporting email, with `support@gapwise.ca` and `hello@gapwise.ca` available for ordinary inbound communication through Cloudflare Email Routing;
 - GitHub Actions verifies repository changes and production deployment is built from `main` by Vercel;
 - Gapwise must not be described as end-to-end encrypted or zero knowledge: same-origin code, browser/session compromise, or sufficiently broad provider compromise can expose data in use.
 
@@ -33,7 +37,7 @@ Provider status, affected records, log retention, exact deployed configuration, 
 1. **Protect people and access.** If there is active destructive access or an immediate safety threat, contain the affected surface using the least destructive reversible control available.
 2. **Open a restricted incident record.** Record an incident ID, UTC detection/start times, incident lead, recorder, provisional severity, affected surfaces, and report source. If a role is not pre-approved, mark it confirmation required rather than inventing it.
 3. **Preserve evidence safely.** Record commit/deployment IDs, request IDs, timestamps, provider references, and sanitized observations. Keep originals read-only where practical.
-4. **Validate the signal.** Separate observed facts from hypotheses. Check the canonical application, Vercel deployment/runtime state, Supabase Auth/database/Edge Function state, and relevant provider status pages.
+4. **Validate the signal.** Separate observed facts from hypotheses. Check the canonical application, Vercel deployment/runtime state, Supabase Auth/database/Edge Function state, Cloudflare DNS/Turnstile/Email Routing state, Resend delivery state when mail is implicated, `status.gapwise.ca`, and relevant provider status pages.
 5. **Classify the data and scope.** Identify whether the event concerns public campus data, account metadata, ciphertext, wrapped keys/KEKs, private plaintext, relationship metadata, sessions/tokens, precise location in memory, or availability only.
 6. **Assign provisional severity.** Default upward when impact is unclear and record why severity later changes.
 7. **Contain deliberately.** Never weaken RLS, ship privileged browser credentials, add plaintext fallbacks, or destroy evidence to restore service.
@@ -56,10 +60,10 @@ Severity remains provisional until scope is known. Do not lower severity solely 
 Record concise answers and explicitly mark unknowns:
 
 - What was observed, by whom, and at what UTC time? What is the earliest supported occurrence?
-- Which production commit/deployment, API, function, database object, identity provider, domain, or device is implicated?
+- Which production commit/deployment, API, function, database object, identity provider, domain, mail route/sender, or device is implicated?
 - Is access ongoing? Is integrity or availability changing?
 - What capability is demonstrated versus hypothesized?
-- Could a token, OAuth secret, database credential, deployment credential, Supabase administrative credential, KEK, DEK, or authenticated session be exposed?
+- Could a token, OAuth secret, database credential, deployment credential, Supabase administrative credential, Resend/SMTP credential, Cloudflare credential, KEK, DEK, or authenticated session be exposed?
 - Could same-origin code have read decrypted state or intercepted future use?
 - Is there evidence of cross-account access, RLS bypass, unauthorized relationship/overlap access, account takeover, or deletion?
 - Which logs or provider events support the conclusion, and what relevant visibility is missing?
@@ -93,6 +97,8 @@ Choose the narrowest control that stops harm while preserving evidence and local
 | Session/token exposure                      | revoke affected sessions through supported Auth controls; fix redirect/config weakness                      | log tokens or broadly invalidate users without assessing harm                                            | revocation/config action and post-change auth test recorded   |
 | OAuth client secret compromise              | rotate/revoke at provider; verify exact redirect allowlists; update server-only config                      | place OAuth secrets in `VITE_*`, source, screenshots, or tickets                                         | old credential rejected; approved flow works                  |
 | Supabase admin/database credential exposure | revoke/rotate; inspect events; verify RLS and grants                                                        | give service-role/database credentials to browser or private-cloud code                                  | old credential rejected; expected services healthy            |
+| Resend/SMTP credential exposure             | create a replacement restricted sending credential, update Supabase SMTP, verify delivery, then revoke old  | paste the replacement into source, public tickets, chat, screenshots, or browser-exposed configuration   | old credential revoked; Auth mail path verified               |
+| Cloudflare account/API credential exposure  | revoke/rotate; inspect DNS, Email Routing, and Turnstile configuration; preserve provider evidence          | change DNS/security controls without recording the affected production state                             | unauthorized access removed; DNS/routing/Turnstile verified   |
 | Vercel deploy/API credential exposure       | revoke/rotate in Vercel/GitHub as applicable; inspect deployments/environment changes                       | print environment values or copy production secrets into preview                                         | unauthorized access removed; deployment/config audit recorded |
 | Suspected KEK exposure                      | follow `PRIVATE_CLOUD_MIGRATION_RUNBOOK.md`; establish replacement/recovery first; rewrap and retire safely | delete the only working KEK, store it in Supabase, or claim ciphertext is safe without boundary analysis | replacement envelopes verified and old version safely retired |
 | Suspected DEK/private plaintext exposure    | contain session/device/origin path; assess affected ciphertext/future access; obtain specialist review      | assume KEK rotation alone remediates a captured DEK/plaintext                                            | affected scope and new protection verified                    |
@@ -134,7 +140,7 @@ Complete this for every SEV-1/SEV-2 and every possible privacy incident. A “no
 
 ## Service-status communication template
 
-There is no repository-verified dedicated public status service. Until one is selected/configured by the owner, choose an available official Gapwise channel per incident and mark the channel/publisher confirmation required.
+`https://status.gapwise.ca` is the canonical public status-communication surface. It is operator-maintained and must not be represented as continuous synthetic monitoring, historical uptime evidence, or an SLA. Because the status surface is a separate Vercel project but still uses Vercel, a provider-wide Vercel outage can affect both the product and the status page; use another owner-approved official channel when the status surface itself is unavailable.
 
 ```text
 [Investigating | Identified | Monitoring | Resolved] — [service/feature]
@@ -262,23 +268,24 @@ Do not include fabricated incident counts, uptime, SLA performance, or unsupport
 - Guest/local-first timetable, gap, and routing use can remain useful without Supabase, subject to retained local state and static application availability/cache.
 - A Supabase outage does not justify weakening RLS; sync/Auth/social/account-deletion capabilities may be unavailable.
 - A Vercel/key-broker outage can prevent fresh-device cloud decryption and server API use; a device with valid local state may continue locally.
+- The status surface is a separate Vercel project and can remain available through a core-app deployment failure, but it is not a provider-independent fallback for a Vercel-wide outage.
 - Production and preview KEKs are designed to be separate. Loss of every active KEK copy can make corresponding cloud ciphertext unrecoverable.
 - The database recovery procedure is a sensitive operator-created logical dump plus disposable-target restore drill. It does not recover DNS, OAuth configuration, Vercel variables, KEKs, provider logs, deployed functions, or every Supabase project setting.
 - Git and reviewed migrations reconstruct source/schema history, not production user data or provider configuration.
 
 ### Explicit gaps requiring confirmation
 
-| Item                         | Current statement                                                                                                                                                      | Required evidence/owner action                                                       |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Production backup/restore    | **Unverified here. AND-154 is authoritative.** A procedure/helper exists, but this file does not claim a real backup, off-site copy, successful restore, or readiness. | Check AND-154 and restricted evidence; run authorized drill.                         |
-| RTO/RPO                      | No approved/measured targets established by the repository.                                                                                                            | Owner/institutional risk decision informed by measured drills/provider capabilities. |
-| Provider backups/SLAs        | No provider recovery/response promise asserted here.                                                                                                                   | Re-verify plan/dashboard/contract before publication.                                |
-| Status channel               | No dedicated status surface verified.                                                                                                                                  | Owner selects, secures, and tests an appropriately independent channel.              |
-| Incident contacts/on-call    | No named 24/7 contact matrix verified.                                                                                                                                 | Owner assigns roles, alternates, secure contact methods, and expectations.           |
-| Configuration inventory      | Required categories are documented, but no complete restorable export of DNS/OAuth/provider config is evidenced.                                                       | Maintain a secret-safe inventory and test reconstruction.                            |
-| KEK recovery exercise        | Runbook requirements exist; current recoverability must be checked rather than inferred.                                                                               | Owner verifies offline copies and runs authorized non-production recovery exercise.  |
-| Cross-provider failure       | No alternate hosting/database region or automatic failover is verified.                                                                                                | Decide whether risk justifies complexity/cost and test before claiming resilience.   |
-| Communications/legal support | No counsel, regulator workflow, notification vendor, or institutional contact is verified.                                                                             | Owner establishes relationships if needed.                                           |
+| Item                         | Current statement                                                                                                                                                             | Required evidence/owner action                                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Production backup/restore    | **Unverified here. AND-154 is authoritative.** A procedure/helper exists, but this file does not claim a real backup, off-site copy, successful restore, or readiness.        | Check AND-154 and restricted evidence; run authorized drill.                                          |
+| RTO/RPO                      | No approved/measured targets established by the repository.                                                                                                                   | Owner/institutional risk decision informed by measured drills/provider capabilities.                  |
+| Provider backups/SLAs        | No provider recovery/response promise asserted here.                                                                                                                          | Re-verify plan/dashboard/contract before publication.                                                 |
+| Status channel               | `status.gapwise.ca` is verified as an operator-maintained public status surface on a separate Vercel project, but it shares Vercel and has no synthetic-monitoring/SLA claim. | Periodically test publication and retain an owner-approved out-of-band fallback for Vercel-wide loss. |
+| Incident contacts/on-call    | No named 24/7 contact matrix verified.                                                                                                                                        | Owner assigns roles, alternates, secure contact methods, and expectations.                            |
+| Configuration inventory      | Required categories are documented, but no complete restorable export of DNS/OAuth/provider config is evidenced.                                                              | Maintain a secret-safe inventory and test reconstruction.                                             |
+| KEK recovery exercise        | Runbook requirements exist; current recoverability must be checked rather than inferred.                                                                                      | Owner verifies offline copies and runs authorized non-production recovery exercise.                   |
+| Cross-provider failure       | No alternate hosting/database region or automatic failover is verified.                                                                                                       | Decide whether risk justifies complexity/cost and test before claiming resilience.                    |
+| Communications/legal support | No counsel, regulator workflow, notification vendor, or institutional contact is verified.                                                                                    | Owner establishes relationships if needed.                                                            |
 
 ### Continuity decision sequence
 
@@ -293,12 +300,12 @@ Do not include fabricated incident counts, uptime, SLA performance, or unsupport
 
 Exercises must use synthetic/disposable data and must not be reported as real incident or recovery evidence.
 
-- [ ] Tabletop a compromised deployment, OAuth/session exposure, suspected KEK exposure, privacy incident, Supabase outage, and Vercel outage.
+- [ ] Tabletop a compromised deployment, OAuth/session exposure, suspected KEK exposure, privacy incident, Supabase outage, Vercel outage, mail-provider failure, and DNS/Turnstile control failure.
 - [ ] Verify provider escalation paths and role assignments without opening false incidents.
-- [ ] Verify the status template can be published through the selected alternate channel.
+- [ ] Verify an incident update can be published on `status.gapwise.ca` and through the selected out-of-band fallback when the Vercel-hosted status page is unavailable.
 - [ ] Confirm links to `SECURITY.md`, `OPERATIONS.md`, `DISASTER_RECOVERY.md`, and `PRIVATE_CLOUD_MIGRATION_RUNBOOK.md` remain current.
 - [ ] Check AND-154 before changing any backup/restore-state claim.
-- [ ] Review architecture/provider list after Auth, hosting, database, AI, analytics, storage, or monitoring changes.
+- [ ] Review architecture/provider list after Auth, hosting, database, AI, analytics, storage, monitoring, DNS, abuse-protection, or mail-delivery changes.
 - [ ] Record exercise date, participants, synthetic scenario, decisions, gaps, and follow-up issues; label all output **exercise**.
 
 The presence of this runbook is a **process commitment**, not proof that an incident was handled, a drill passed, recovery is possible, notification duties were satisfied, or any service level was achieved.

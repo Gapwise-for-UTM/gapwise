@@ -13,11 +13,11 @@
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://api.gapwise.ca/openapi.json)
 [![MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
 
-<sub>React 19 · TypeScript · TanStack Router/Start · MapLibre · Supabase · Bun · Vercel</sub>
+<sub>React 19 · TypeScript · TanStack Router/Start · MapLibre · Supabase · Bun · Vercel · Cloudflare · Resend</sub>
 
 <br />
 
-**[Live app](https://gapwise.ca)** · **[Today](https://gapwise.ca/today)** · **[Day Replay](https://gapwise.ca/replay)** · **[Developers](https://gapwise.ca/developers)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)** · **[Open UTM data](https://gapwise.ca/data/utm-campus-v1.json)**
+**[Live app](https://gapwise.ca)** · **[Today](https://gapwise.ca/today)** · **[Day Replay](https://gapwise.ca/replay)** · **[Developers](https://gapwise.ca/developers)** · **[Docs](https://docs.gapwise.ca)** · **[Status](https://status.gapwise.ca)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)**
 
 </div>
 
@@ -29,7 +29,7 @@ Gapwise turns a UTM ACORN `.ics` timetable export into a local-first system for 
 
 The original calendar file is parsed entirely in the browser. From that normalized schedule, Gapwise builds timetable views, detects gaps, computes route-aware activity budgets, produces leave-by timing, and renders campus navigation without requiring an account.
 
-The product now spans five connected first-party surfaces:
+The product now spans six connected first-party surfaces:
 
 | Surface | Purpose |
 | --- | --- |
@@ -38,6 +38,7 @@ The product now spans five connected first-party surfaces:
 | **Gapwise Mobile** | Native iOS and Android client consuming canonical Gapwise product and platform semantics |
 | **Gapwise AI** | Optional permissioned MCP access to explicitly delegated student context plus bounded AI-facing actions |
 | **Gapwise Docs** | Public documentation for the API, SDKs, platform behavior, and AI/MCP integration |
+| **Gapwise Status** | Operator-maintained current service-status communication at `status.gapwise.ca`; it is not a continuous synthetic monitor, historical uptime record, or SLA |
 
 The architectural rule is simple: **Gapwise owns the facts and deterministic calculations. Interfaces—including mobile and AI assistants—consume that truth rather than recreating it, while the docs describe released public behavior.**
 
@@ -112,7 +113,7 @@ No replay-specific database, worker, cron job, hosted model, or timetable upload
 
 ## Gapwise Platform
 
-Gapwise exposes a deliberately small public campus-intelligence surface for UTM projects. The canonical base URL is `https://api.gapwise.ca/v1`; existing `/api/utm-*` routes on `gapwise.ca` remain compatibility aliases. It uses the same deterministic building, routing, and gap-planning semantics as the product rather than maintaining a second implementation.
+Gapwise exposes a deliberately small public campus-intelligence surface for UTM projects. The canonical base URL is `https://api.gapwise.ca/v1`; visiting the API hostname root redirects to `/v1`, while existing `/api/utm-*` routes on `gapwise.ca` remain compatibility aliases. It uses the same deterministic building, routing, and gap-planning semantics as the product rather than maintaining a second implementation.
 
 ### Developer resources
 
@@ -272,12 +273,27 @@ Key properties:
 - live location is opt-in and foreground-only;
 - friend overlap is deliberately lossy and separate from raw timetable sharing;
 - AI delegation is explicit, minimized, revocable, and separate from ordinary sign-in;
+- the visible sign-in experience is OAuth-based, while Supabase Auth is protected by Cloudflare Turnstile at the auth-service boundary;
 - no advertising and no raw timetable/location/friend analytics;
 - production and preview environments must never share a key-encryption key.
 
 Gapwise uses defense in depth and documents its trust boundaries precisely. It does **not** claim zero knowledge or end-to-end encryption for every feature.
 
 Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
+
+### Production infrastructure and communications
+
+The public web surfaces are served by Vercel. Cloudflare is used for the `gapwise.ca` domain/DNS layer, inbound Email Routing, and Turnstile abuse protection; this documentation does not imply that Cloudflare proxies the Vercel application traffic.
+
+Production communication boundaries are intentionally separated:
+
+- `security@gapwise.ca` is the canonical vulnerability-reporting email and is published in `/.well-known/security.txt` and [`SECURITY.md`](SECURITY.md);
+- `support@gapwise.ca` and `hello@gapwise.ca` are branded inbound aliases routed through Cloudflare Email Routing;
+- `auth.gapwise.ca` is the verified Resend sending domain used by Supabase custom SMTP for authentication mail;
+- Resend credentials are server/dashboard secrets and are never committed to this repository;
+- [status.gapwise.ca](https://status.gapwise.ca) is hosted separately from the core app inside the docs deployment, so it remains a distinct communication surface; its content is operator-maintained rather than continuous uptime telemetry.
+
+Web product telemetry uses **Vercel Analytics and Speed Insights**. Gapwise does not currently load a second Cloudflare Web Analytics beacon, avoiding duplicate telemetry and an unnecessary expansion of the production Content Security Policy.
 
 ---
 
@@ -292,6 +308,8 @@ Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVAT
 - **Bun 1.3.14**
 - **Playwright** + axe-core browser coverage
 - **Vercel** + Analytics / Speed Insights
+- **Cloudflare** domain/DNS, Email Routing, and Turnstile
+- **Resend** custom SMTP delivery for Supabase Auth
 - **GitHub Actions**
 
 `package.json` and `bun.lock` are the source of truth for exact dependency versions. Node-based tooling targets **Node 24.x**.
@@ -321,7 +339,7 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 ```
 
-Never place a service-role key, OAuth client secret, KEK, private key, or other server secret in a `VITE_` variable.
+Never place a service-role key, OAuth client secret, SMTP/API credential, KEK, private key, or other server secret in a `VITE_` variable.
 
 ---
 
@@ -346,17 +364,21 @@ Regression coverage includes ACORN parsing/restoration, onboarding, Today/gap pl
 
 ---
 
-## Current release — August 30, 2026
+## Current release — September 1, 2026
 
 The current production release includes:
 
-- Gapwise Platform and the public UTM campus API;
+- Gapwise Platform and the public UTM campus API, with `api.gapwise.ca/` routing users to the versioned `/v1` API root;
 - OpenAPI 3.1, the published `@gapwise/sdk@0.1.0` npm client, Python SDK source, and the versioned 30-building snapshot;
 - browser-side Day Replay;
 - deterministic “Can I go there?” destination feasibility on Today, including the mobile surface;
 - privacy-preserving canonical U of T course-title enrichment with local ACORN-title fallback;
 - the permissioned Gapwise AI integration surface and provider-neutral MCP service, with the production OAuth consent/resource boundary validated;
-- the fully-free product cleanup, public Trust Center/governance material, searchability/SEO pass, production-hardening campaign, and hosted-log credential-redaction hardening.
+- canonical `gapwise.ca` routing from `www.gapwise.ca` and the legacy `gapwise-utm.vercel.app` hostname;
+- branded `security@`, `support@`, and `hello@` inbound mail, plus Resend-backed Supabase Auth SMTP on `auth.gapwise.ca`;
+- Cloudflare Turnstile protection at the Supabase Auth boundary and the separate operator-maintained [Gapwise Status](https://status.gapwise.ca) surface;
+- Vercel Analytics/Speed Insights as the active web telemetry implementation, without a duplicate Cloudflare analytics beacon;
+- the public Trust Center/governance material, production-hardening campaign, security contact publication, and hosted-log credential-redaction hardening.
 
 The immediate focus is **release validation, not feature expansion**: clean-device account continuity/encrypted restore, first PyPI publication and clean-install verification, physical UTM entrance/accessibility evidence, the database restore drill, real-device/student validation, and completion of the remaining external AI-client read/write/revoke and negative-path matrices.
 
@@ -386,7 +408,7 @@ The first-party repositories are separate deployment surfaces with one product i
 | **[`gapwise`](https://github.com/andrewmuratov/gapwise)** | Core web/PWA product, canonical student-state behavior, deterministic UTM campus intelligence, public API, OpenAPI contract, and SDK source | [gapwise.ca](https://gapwise.ca) / [api.gapwise.ca](https://api.gapwise.ca/v1) |
 | **[`gapwise-mobile`](https://github.com/andrewmuratov/gapwise-mobile)** | Native iOS and Android client consuming canonical Gapwise contracts and product semantics | Native mobile app |
 | **[`gapwise-ai`](https://github.com/andrewmuratov/gapwise-ai)** | Permissioned OAuth/MCP layer for explicitly delegated student context and bounded AI actions | [ai.gapwise.ca](https://ai.gapwise.ca/api/mcp) |
-| **[`gapwise-docs`](https://github.com/andrewmuratov/gapwise-docs)** | Public developer documentation for the API, SDKs, platform behavior, and AI/MCP integration | [docs.gapwise.ca](https://docs.gapwise.ca) |
+| **[`gapwise-docs`](https://github.com/andrewmuratov/gapwise-docs)** | Public developer documentation plus the separate operator-maintained status communication surface | [docs.gapwise.ca](https://docs.gapwise.ca) / [status.gapwise.ca](https://status.gapwise.ca) |
 
 This repository remains authoritative for deterministic timetable, gap, campus, routing, and primary student-state semantics. Mobile and AI consume its contracts rather than becoming parallel sources of truth; the docs describe released public behavior. All four repositories should keep cross-links, terminology, trust boundaries, and brand presentation consistent.
 
@@ -394,7 +416,7 @@ This repository remains authoritative for deterministic timetable, gap, campus, 
 
 ## Contributing
 
-Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request, and use [`SECURITY.md`](SECURITY.md) for vulnerability reporting rather than a public issue.
+Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Report vulnerabilities privately to `security@gapwise.ca` or through GitHub private vulnerability reporting as described in [`SECURITY.md`](SECURITY.md), rather than in a public issue.
 
 ## Independent student project
 
