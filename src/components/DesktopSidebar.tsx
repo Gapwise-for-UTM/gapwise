@@ -124,7 +124,7 @@ export function DesktopSidebar({
             onClick={onOpenAccount}
           >
             <Settings aria-hidden="true" />
-            <span>Account settings</span>
+            <span>Account &amp; sync</span>
           </button>
           <button
             type="button"
