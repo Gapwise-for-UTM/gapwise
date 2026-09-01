@@ -81,7 +81,7 @@ export function TimetableHeatmapExportDialog({
         await navigator.share({
           files: [file],
           title: `My ${selection === "all" ? "all-terms" : selection} UTM timetable heatmap`,
-          text: "My campus routes and most-visited buildings, generated privately by Gapwise.",
+          text: "UTM campus geometry © OpenStreetMap contributors. Heatmap generated privately by Gapwise.",
         });
       } else {
         downloadBlob(blob, filename);
@@ -129,19 +129,20 @@ export function TimetableHeatmapExportDialog({
           <DialogHeader className="pr-7">
             <DialogTitle className="font-display text-xl">Export timetable heatmap</DialogTitle>
             <DialogDescription className="leading-6">
-              Turn your timetable into a shareable UTM map. Brighter buildings mean more weekly
-              visits; overlapping route lines get brighter when you repeat the same path.
+              Generate a tightly cropped UTM campus map. Brighter buildings mean more weekly visits;
+              overlapping route lines get brighter when you repeat the same path.
             </DialogDescription>
           </DialogHeader>
 
           <div className="rounded-xl border border-accent/25 bg-accent/8 p-4">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
-              Built for sharing, without schedule details
+              Pure map, no schedule text
             </p>
             <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-              The image is generated entirely in this browser from your timetable. Course codes,
-              room numbers, class times, and your name are not included or uploaded.
+              The PNG contains no title, labels, course codes, room numbers, class times, visit
+              counts, or your name. It is generated entirely in this browser and nothing is
+              uploaded.
             </p>
           </div>
 
@@ -183,8 +184,8 @@ export function TimetableHeatmapExportDialog({
           </dl>
 
           <div className="rounded-xl border border-border bg-background/35 p-3 text-xs leading-5 text-muted-foreground">
-            Export format: dark 4:5 PNG · campus path network · timetable routes · building visit
-            intensity · OpenStreetMap attribution.
+            Export format: text-free dark 4:5 PNG · focused campus crop · path network · timetable
+            routes · building visit intensity. Campus geometry © OpenStreetMap contributors.
           </div>
 
           {error ? (
