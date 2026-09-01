@@ -20,7 +20,7 @@ function meeting(overrides: Partial<Meeting>): Meeting {
     endTime: 660,
     weekday: "Monday",
     buildingCode: "MN",
-    room: "1270",
+    room: "ROOM-ALPHA",
     term: "Fall",
     locationUnknown: false,
     ...overrides,
@@ -53,7 +53,7 @@ const schedule: Meeting[] = [
     startTime: 720,
     endTime: 780,
     buildingCode: "IB",
-    room: "210",
+    room: "ROOM-BETA",
   }),
   meeting({ id: "tue-mn-a", courseCode: "HIDDEN303", weekday: "Tuesday", buildingCode: "MN" }),
   meeting({
@@ -63,7 +63,7 @@ const schedule: Meeting[] = [
     startTime: 720,
     endTime: 780,
     buildingCode: "MN",
-    room: "3120",
+    room: "ROOM-GAMMA",
   }),
 ];
 
@@ -101,8 +101,8 @@ describe("timetable heatmap export", () => {
     expect(svg).toContain("no course codes or room numbers included");
     expect(svg).not.toContain("PRIVATE101");
     expect(svg).not.toContain("SECRET202");
-    expect(svg).not.toContain("1270");
-    expect(svg).not.toContain("3120");
+    expect(svg).not.toContain("ROOM-ALPHA");
+    expect(svg).not.toContain("ROOM-GAMMA");
   });
 
   test("uses a stable term-specific PNG filename", () => {
