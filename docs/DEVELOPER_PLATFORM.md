@@ -1,6 +1,6 @@
 # Gapwise developer platform
 
-Gapwise exposes a small, source-backed public campus API for applications serving the University of Toronto Mississauga community. The canonical base URL is `https://api.gapwise.ca/v1`; the machine-readable contract is `https://api.gapwise.ca/openapi.json`. Public v1 requires **no authentication** and never reads a Gapwise user's session.
+Gapwise exposes a small, source-backed public campus API for applications serving the University of Toronto Mississauga community. The canonical base URL is `https://api.gapwise.ca/v1`; the machine-readable contract is `https://api.gapwise.ca/openapi.json`. Visiting `https://api.gapwise.ca/` redirects to the versioned `/v1` discovery root, but clients and SDKs should continue using the explicit `/v1` base URL. Public v1 requires **no authentication** and never reads a Gapwise user's session.
 
 ## Quickstarts
 
@@ -47,7 +47,7 @@ Error codes are stable for programmatic handling; messages are developer-readabl
 
 ## Abuse protection and retries
 
-Gapwise relies on Vercel's platform-level traffic and firewall protections. It deliberately does **not** claim that an in-memory serverless counter is a globally exact rate limit. Platform protection may return HTTP 429. When `Retry-After` is present, wait for that duration; otherwise use bounded exponential backoff with jitter. Do not retry validation errors.
+Gapwise relies on Vercel's platform-level traffic and firewall protections for the public API. Cloudflare Turnstile is configured at the separate Supabase Auth boundary; it is not presented as an API quota or proof that public API requests have passed a CAPTCHA. Gapwise deliberately does **not** claim that an in-memory serverless counter is a globally exact rate limit. Platform protection may return HTTP 429. When `Retry-After` is present, wait for that duration; otherwise use bounded exponential backoff with jitter. Do not retry validation errors.
 
 A durable distributed application quota may be introduced if traffic justifies the operational cost. That would be documented before clients are expected to rely on numeric quota headers.
 
