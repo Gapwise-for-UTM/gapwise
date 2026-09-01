@@ -120,8 +120,8 @@ export function AccountStatus({
   }, [user]);
 
   useEffect(() => {
-    if (settingsRequest > 0 && user) {
-      setSettingsTab("account");
+    if (settingsRequest > 0) {
+      setSettingsTab(user ? "account" : "exports");
       setSettingsOpen(true);
     }
   }, [settingsRequest, user]);
