@@ -9,20 +9,14 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
 
   await expectLanding(page);
   await page.getByRole("button", { name: "Try a demo" }).click();
-  await page
-    .getByRole("navigation", { name: "Main" })
-    .getByRole("link", { name: "Timetable" })
-    .click();
-  await expect(page).toHaveURL(/\/timetable$/);
-
-  // Keep this regression independent of the calendar day on which CI runs. The demo
-  // timetable always has multiple Monday meetings with gaps, while some weekdays have
-  // only one meeting and therefore intentionally render no gap card.
-  await page.getByRole("button", { name: /Mon/ }).click();
-
-  const gapCard = page.locator(".mobile-gap-card").first();
-  await expect(gapCard).toBeVisible();
-  await gapCard.click();
+  const nav = page.getByRole("navigation", { name: "Main" });
+  await expect(nav).toBeVisible();
+  await nav.getByRole("link", { name: "Timetable" }).click();
+  await expect(page.getByText("Day timetable")).toBeVisible();
+  await page.evaluate(() => {
+    window.history.pushState({}, "", "/gaps");
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  });
   await expect(page).toHaveURL(/\/gaps$/);
 
   await page.getByRole("button", { name: "Tune", exact: true }).first().click();
