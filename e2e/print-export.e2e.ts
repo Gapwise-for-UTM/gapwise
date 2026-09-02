@@ -9,6 +9,7 @@ test("unified timetable export exposes the print-ready vector flow", async ({ pa
   await expect(page).toHaveURL(/\/timetable$/);
 
   await expect(page.getByRole("button", { name: "Print-ready" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Account settings" }).click();
   await page.getByRole("button", { name: "Export timetable", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Export timetable image" })).toBeVisible();
 

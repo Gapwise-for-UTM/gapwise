@@ -27,9 +27,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useBridgedAiDelegationController } from "@/features/ai/controller-bridge";
+import type { TransitionPlanner } from "@/features/routing/transition";
+import type { UserPreferences } from "@/features/sync/preferences";
 import { AccountOnboarding } from "@/features/onboarding/AccountOnboarding";
 import { clearRememberedTimetable } from "@/hooks/use-preferences";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import type { Meeting, Term } from "@/lib/timetable-types";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
@@ -69,6 +72,10 @@ export function AccountStatus({
   onOnboardingContinue,
   onOnboardingImport,
   settingsRequest = 0,
+  meetings,
+  term,
+  preferences,
+  planTransition,
 }: {
   user: User | null;
   loading: boolean;
@@ -78,6 +85,10 @@ export function AccountStatus({
   onOnboardingImport: () => void;
   /** Monotonic app-shell action token used to open the single settings dialog directly. */
   settingsRequest?: number;
+  meetings: Meeting[];
+  term: Term;
+  preferences: UserPreferences;
+  planTransition: TransitionPlanner;
 }) {
   const aiController = useBridgedAiDelegationController();
   const [message, setMessage] = useState<string | null>(null);
@@ -109,8 +120,17 @@ export function AccountStatus({
   }, [user]);
 
   useEffect(() => {
-    if (settingsRequest > 0 && user) {
-      setSettingsTab("account");
+    const openSettings = () => {
+      setSettingsTab(user ? "account" : "exports");
+      setSettingsOpen(true);
+    };
+    window.addEventListener("gapwise:open-account-settings", openSettings);
+    return () => window.removeEventListener("gapwise:open-account-settings", openSettings);
+  }, [user]);
+
+  useEffect(() => {
+    if (settingsRequest > 0) {
+      setSettingsTab(user ? "account" : "exports");
       setSettingsOpen(true);
     }
   }, [settingsRequest, user]);
@@ -251,15 +271,6 @@ export function AccountStatus({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <AccountSettingsDialog
-            open={settingsOpen}
-            onOpenChange={(open) => !busy && setSettingsOpen(open)}
-            identity={getAccountIdentity(user)}
-            tab={settingsTab}
-            onTabChange={setSettingsTab}
-            aiController={aiController}
-          />
-
           <AlertDialog open={deleteOpen} onOpenChange={(open) => !busy && setDeleteOpen(open)}>
             <AlertDialogContent className="mx-4 w-[calc(100%-2rem)] rounded-xl">
               <AlertDialogHeader>
@@ -302,16 +313,41 @@ export function AccountStatus({
           </AlertDialog>
         </>
       ) : (
-        <button
-          type="button"
-          onClick={() => setSignInOpen((open) => !open)}
-          disabled={!isSupabaseConfigured}
-          className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
-          aria-expanded={signInOpen}
-        >
-          <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => setSignInOpen((open) => !open)}
+            disabled={!isSupabaseConfigured}
+            className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+            aria-expanded={signInOpen}
+          >
+            <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSettingsTab("exports");
+              setSettingsOpen(true);
+            }}
+            className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium"
+          >
+            <Settings2 className="h-4 w-4" aria-hidden="true" /> Account settings
+          </button>
+        </>
       )}
+
+      <AccountSettingsDialog
+        open={settingsOpen}
+        onOpenChange={(open) => !busy && setSettingsOpen(open)}
+        identity={user ? getAccountIdentity(user) : null}
+        tab={settingsTab}
+        onTabChange={setSettingsTab}
+        aiController={aiController}
+        meetings={meetings}
+        term={term}
+        preferences={preferences}
+        planTransition={planTransition}
+      />
 
       <Dialog
         open={!loading && !user && signInOpen}

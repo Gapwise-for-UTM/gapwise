@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
-import type { Meeting, Term } from "@/lib/timetable-types";
+import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
+import type { TimetableHeatmapSelection } from "@/lib/timetable-heatmap-export";
 
 type TriggerVariant = "button" | "icon";
 
@@ -39,16 +40,25 @@ export function TimetableHeatmapExportDialog({
   const [open, setOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const terms = useMemo(
+    () => TERMS.filter((candidate) => meetings.some((meeting) => meeting.term === candidate)),
+    [meetings],
+  );
+  const [selection, setSelection] = useState<TimetableHeatmapSelection>(term);
   const mappedStops = useMemo(
     () =>
       meetings.filter(
-        (meeting) => meeting.term === term && meeting.buildingCode && !meeting.locationUnknown,
+        (meeting) =>
+          (selection === "all" || meeting.term === selection) &&
+          meeting.buildingCode &&
+          !meeting.locationUnknown,
       ).length,
-    [meetings, term],
+    [meetings, selection],
   );
   const supportsShare = typeof navigator !== "undefined" && "share" in navigator;
 
   const openExport = () => {
+    setSelection(terms.length > 1 ? "all" : (terms[0] ?? term));
     setError(null);
     setOpen(true);
   };
@@ -61,7 +71,7 @@ export function TimetableHeatmapExportDialog({
         await import("@/lib/timetable-heatmap-export");
       const data = createTimetableHeatmapData({
         meetings,
-        term,
+        selection,
         preferences,
         planTransition,
       });
@@ -70,8 +80,8 @@ export function TimetableHeatmapExportDialog({
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `My ${term} UTM timetable heatmap`,
-          text: "My campus routes and most-visited buildings, generated privately by Gapwise.",
+          title: `My ${selection === "all" ? "all-terms" : selection} UTM timetable heatmap`,
+          text: "UTM campus geometry © OpenStreetMap contributors. Heatmap generated privately by Gapwise.",
         });
       } else {
         downloadBlob(blob, filename);
@@ -81,7 +91,7 @@ export function TimetableHeatmapExportDialog({
       if (cause instanceof DOMException && cause.name === "AbortError") return;
       setError(
         mappedStops === 0
-          ? "This term has no mapped campus buildings to include in a heatmap."
+          ? "This selection has no mapped campus buildings to include in a heatmap."
           : "The heatmap image could not be created. Your timetable is unchanged — try exporting again.",
       );
     } finally {
@@ -119,26 +129,53 @@ export function TimetableHeatmapExportDialog({
           <DialogHeader className="pr-7">
             <DialogTitle className="font-display text-xl">Export timetable heatmap</DialogTitle>
             <DialogDescription className="leading-6">
-              Turn your {term} timetable into a shareable UTM map. Brighter buildings mean more
-              weekly visits; overlapping route lines get brighter when you repeat the same path.
+              Generate a tightly cropped UTM campus map. Brighter buildings mean more weekly visits;
+              overlapping route lines get brighter when you repeat the same path.
             </DialogDescription>
           </DialogHeader>
 
           <div className="rounded-xl border border-accent/25 bg-accent/8 p-4">
             <p className="flex items-center gap-2 text-sm font-semibold">
               <Sparkles className="h-4 w-4 text-accent" aria-hidden="true" />
-              Built for sharing, without schedule details
+              Pure map, no schedule text
             </p>
             <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-              The image is generated entirely in this browser from your timetable. Course codes,
-              room numbers, class times, and your name are not included or uploaded.
+              The PNG contains no title, labels, course codes, room numbers, class times, visit
+              counts, or your name. It is generated entirely in this browser and nothing is
+              uploaded.
             </p>
           </div>
+
+          {terms.length > 1 ? (
+            <fieldset>
+              <legend className="mb-2 text-sm font-semibold">Include</legend>
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="radiogroup"
+                aria-label="Terms to export"
+              >
+                {[...terms, "all" as const].map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    role="radio"
+                    aria-checked={selection === option}
+                    onClick={() => setSelection(option)}
+                    className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${selection === option ? "border-accent bg-accent text-accent-foreground" : "border-border text-muted-foreground"}`}
+                  >
+                    {option === "all" ? "All available terms" : option}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+          ) : null}
 
           <dl className="grid grid-cols-2 gap-2 text-sm">
             <div className="rounded-xl border border-border bg-background/45 p-3">
               <dt className="text-xs text-muted-foreground">Term</dt>
-              <dd className="mt-1 font-semibold">{term}</dd>
+              <dd className="mt-1 font-semibold">
+                {selection === "all" ? "All terms" : selection}
+              </dd>
             </div>
             <div className="rounded-xl border border-border bg-background/45 p-3">
               <dt className="text-xs text-muted-foreground">Mapped stops</dt>
@@ -147,8 +184,8 @@ export function TimetableHeatmapExportDialog({
           </dl>
 
           <div className="rounded-xl border border-border bg-background/35 p-3 text-xs leading-5 text-muted-foreground">
-            Export format: dark 4:5 PNG · campus path network · timetable routes · building visit
-            intensity · OpenStreetMap attribution.
+            Export format: text-free dark 4:5 PNG · focused campus crop · path network · timetable
+            routes · building visit intensity. Campus geometry © OpenStreetMap contributors.
           </div>
 
           {error ? (
