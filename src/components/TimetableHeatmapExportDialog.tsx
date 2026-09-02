@@ -161,7 +161,7 @@ export function TimetableHeatmapExportDialog({
                     role="radio"
                     aria-checked={selection === option}
                     onClick={() => setSelection(option)}
-                    className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${selection === option ? "border-accent bg-accent/10 text-accent" : "border-border text-muted-foreground"}`}
+                    className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${selection === option ? "border-accent bg-accent text-accent-foreground" : "border-border text-muted-foreground"}`}
                   >
                     {option === "all" ? "All available terms" : option}
                   </button>
