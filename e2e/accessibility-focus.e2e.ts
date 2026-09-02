@@ -30,6 +30,11 @@ async function openStableDemo(page: Page) {
   await expect(page.getByRole("button", { name: "Update timetable" })).toBeEnabled();
 }
 
+async function openTimetableExport(page: Page) {
+  await page.getByRole("button", { name: "Account settings" }).click();
+  await page.getByRole("button", { name: "Export timetable", exact: true }).click();
+}
+
 test("timetable export dialog is keyboard operable and restores trigger focus", async ({
   page,
 }, testInfo) => {
@@ -38,7 +43,8 @@ test("timetable export dialog is keyboard operable and restores trigger focus", 
 
   await openStableDemo(page);
 
-  const exportTrigger = page.getByRole("button", { name: "Export timetable" });
+  await page.getByRole("button", { name: "Account settings" }).click();
+  const exportTrigger = page.getByRole("button", { name: "Export timetable", exact: true });
   await exportTrigger.focus();
   await expect(exportTrigger).toBeFocused();
   await exportTrigger.press("Enter");
@@ -62,7 +68,7 @@ test("export format controls expose deterministic radio state to assistive techn
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
   await openStableDemo(page);
-  await page.getByRole("button", { name: "Export timetable" }).click();
+  await openTimetableExport(page);
 
   const formatGroup = page.getByRole("radiogroup", { name: "Export format" });
   const image = formatGroup.getByRole("radio", { name: /Share image/ });

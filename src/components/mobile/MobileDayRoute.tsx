@@ -10,7 +10,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusExplorer } from "@/components/CampusExplorer";
 import { DayRouteSequence } from "@/components/DayRouteSequence";
 import { IndoorFloorViewer } from "@/components/IndoorFloorViewer";
-import { TimetableHeatmapExportDialog } from "@/components/TimetableHeatmapExportDialog";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
   Drawer,
@@ -470,13 +469,6 @@ export function MobileDayRoute({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <TimetableHeatmapExportDialog
-              meetings={meetings}
-              term={term}
-              preferences={preferences}
-              planTransition={planTransition}
-              triggerVariant="icon"
-            />
             <button
               type="button"
               onClick={() => setOptionsOpen(true)}

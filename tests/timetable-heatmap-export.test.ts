@@ -71,7 +71,7 @@ describe("timetable heatmap export", () => {
   test("aggregates weekly building visits and routes for the selected term", () => {
     const data = createTimetableHeatmapData({
       meetings: schedule,
-      term: "Fall",
+      selection: "Fall",
       preferences: DEFAULT_USER_PREFERENCES,
       planTransition: planner,
     });
@@ -86,19 +86,21 @@ describe("timetable heatmap export", () => {
     expect(data.routes).toHaveLength(2);
   });
 
-  test("renders a shareable map without course codes or room numbers", () => {
+  test("renders a text-free campus map without schedule identifiers", () => {
     const data = createTimetableHeatmapData({
       meetings: schedule,
-      term: "Fall",
+      selection: "Fall",
       preferences: DEFAULT_USER_PREFERENCES,
       planTransition: planner,
     });
     const svg = renderTimetableHeatmapSvg(data);
 
-    expect(svg).toContain("My timetable heatmap");
-    expect(svg).toContain("MN");
-    expect(svg).toContain("3× / week");
-    expect(svg).toContain("no course codes or room numbers included");
+    expect(svg).toContain('viewBox="0 0 1080 1350"');
+    expect(svg).toContain("<path");
+    expect(svg).not.toContain("<text");
+    expect(svg).not.toContain("My timetable heatmap");
+    expect(svg).not.toContain("MN");
+    expect(svg).not.toContain("IB");
     expect(svg).not.toContain("PRIVATE101");
     expect(svg).not.toContain("SECRET202");
     expect(svg).not.toContain("ROOM-ALPHA");
@@ -107,5 +109,33 @@ describe("timetable heatmap export", () => {
 
   test("uses a stable term-specific PNG filename", () => {
     expect(timetableHeatmapFilename("Fall")).toBe("fall-utm-timetable-heatmap.png");
+    expect(timetableHeatmapFilename("all")).toBe("all-terms-utm-timetable-heatmap.png");
+  });
+
+  test("combines available terms without connecting routes across terms", () => {
+    const data = createTimetableHeatmapData({
+      meetings: [
+        ...schedule,
+        meeting({ id: "winter-mn", term: "Winter", buildingCode: "MN" }),
+        meeting({
+          id: "winter-ib",
+          term: "Winter",
+          buildingCode: "IB",
+          startTime: 720,
+          endTime: 780,
+        }),
+      ],
+      selection: "all",
+      preferences: DEFAULT_USER_PREFERENCES,
+      planTransition: planner,
+    });
+
+    expect(data.totalStops).toBe(6);
+    expect(data.visits).toEqual([
+      { buildingCode: "MN", count: 4 },
+      { buildingCode: "IB", count: 2 },
+    ]);
+    expect(data.routes).toHaveLength(3);
+    expect(renderTimetableHeatmapSvg(data)).not.toContain("<text");
   });
 });
