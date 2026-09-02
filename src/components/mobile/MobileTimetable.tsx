@@ -11,6 +11,7 @@ import {
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { ActivityBadge } from "@/components/TimetableGrid";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
+import { getCampusLocationDisplay } from "@/features/routing/location-presentation";
 import {
   Drawer,
   DrawerContent,
@@ -78,6 +79,7 @@ function MeetingDetailsSheet({
     meetingLocationType(meeting) === "physical" &&
     Boolean(meeting.buildingCode);
   const isPersonal = meeting?.sectionCode === "PERSONAL";
+  const location = meeting ? getCampusLocationDisplay(meeting) : null;
 
   return (
     <Drawer open={meeting !== null} onOpenChange={(open) => !open && onClose()}>
@@ -123,25 +125,33 @@ function MeetingDetailsSheet({
                 </div>
                 <div className="rounded-xl border border-border bg-background/45 p-3.5">
                   <dt className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
-                    Location
+                    <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                    Next occurrence
                   </dt>
-                  <dd className="mt-1.5 text-sm font-medium">{locationLabel(meeting)}</dd>
+                  <dd className="mt-1.5 text-sm font-medium">
+                    {next
+                      ? `${new Intl.DateTimeFormat("en-CA", {
+                          month: "short",
+                          day: "numeric",
+                        }).format(next)} · ${formatTime(meeting.startTime)}`
+                      : "None scheduled"}
+                  </dd>
                 </div>
               </div>
               <div className="rounded-xl border border-border bg-background/45 p-3.5">
                 <dt className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                  Next occurrence
+                  <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                  Location
                 </dt>
-                <dd className="mt-1.5 text-sm font-medium">
-                  {next
-                    ? `${new Intl.DateTimeFormat("en-CA", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                      }).format(next)} at ${formatTime(meeting.startTime)}`
-                    : "No later occurrence in this timetable"}
+                <dd className="mt-2">
+                  <span className="block text-base font-semibold leading-tight text-foreground">
+                    {location?.buildingName ?? locationLabel(meeting)}
+                  </span>
+                  {location && (location.floorLabel || location.roomLabel) ? (
+                    <span className="mt-1 block text-sm font-medium text-muted-foreground">
+                      {[location.floorLabel, location.roomLabel].filter(Boolean).join(" · ")}
+                    </span>
+                  ) : null}
                 </dd>
               </div>
             </dl>
@@ -363,6 +373,7 @@ export function MobileTimetable({
               const next = dayMeetings[index + 1] ?? null;
               const gap = next ? gapByTransition.get(`${meeting.id}:${next.id}`) : null;
               const isPersonal = meeting.sectionCode === "PERSONAL";
+              const location = getCampusLocationDisplay(meeting);
               return (
                 <li key={meeting.id}>
                   <div className="pb-3">
@@ -396,10 +407,22 @@ export function MobileTimetable({
                         <Clock3 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                         {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
                       </p>
-                      <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-foreground">
-                        <MapPin className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                        {locationLabel(meeting)}
-                      </p>
+                      <div className="mt-1.5 flex items-start gap-1.5 text-xs">
+                        <MapPin
+                          className="mt-px h-3.5 w-3.5 shrink-0 text-accent"
+                          aria-hidden="true"
+                        />
+                        <p className="min-w-0">
+                          <span className="block truncate font-semibold text-foreground">
+                            {location?.compactLabel ?? locationLabel(meeting)}
+                          </span>
+                          {location?.floorLabel ? (
+                            <span className="mt-0.5 block font-medium text-muted-foreground">
+                              {location.floorLabel}
+                            </span>
+                          ) : null}
+                        </p>
+                      </div>
                       {meeting.courseName ? (
                         <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
                           {meeting.courseName}

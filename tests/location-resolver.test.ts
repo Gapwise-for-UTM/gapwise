@@ -98,6 +98,21 @@ describe("ACORN location resolution", () => {
     expect(unknown.floorVerification).toBe("unknown");
   });
 
+  test("infers conventional numeric and explicit level prefixes for recognized buildings", () => {
+    expect(resolveAcornLocation("CCT 2060")).toMatchObject({
+      floor: "2",
+      floorVerification: "inferred",
+    });
+    expect(resolveAcornLocation("KN L1206")).toMatchObject({
+      floor: "L",
+      floorVerification: "inferred",
+    });
+    expect(resolveAcornLocation("DV 0116")).toMatchObject({
+      floor: "0",
+      floorVerification: "inferred",
+    });
+  });
+
   test("distinguishes an explicitly verified room floor from an inference", () => {
     const fixtures: BuildingConfiguration[] = [
       {
