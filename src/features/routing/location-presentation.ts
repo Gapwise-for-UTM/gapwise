@@ -6,6 +6,7 @@ import {
   RouteOff,
   type LucideIcon,
 } from "lucide-react";
+import { getRecognizedBuilding } from "@/data/utm/building-registry";
 import type { Meeting } from "@/lib/timetable-types";
 import { campusAccessPointForMeeting } from "./campus-day";
 import { resolveMeetingLocation, type LocationStatus } from "./location-resolver";
@@ -20,6 +21,60 @@ export type LocationPresentation = {
   detail: string;
   icon: LucideIcon;
 };
+
+export type CampusLocationDisplay = {
+  buildingName: string;
+  compactLabel: string;
+  floorLabel: string | null;
+  roomLabel: string | null;
+  fullLabel: string;
+};
+
+function ordinalFloor(value: string): string {
+  if (value === "G") return "Ground floor";
+  if (value === "L" || value === "LL") return "Lower level";
+  if (value === "0") return "Level 0";
+
+  const floor = Number(value);
+  if (!Number.isInteger(floor)) return `Floor ${value}`;
+  const mod100 = floor % 100;
+  const suffix =
+    mod100 >= 11 && mod100 <= 13
+      ? "th"
+      : floor % 10 === 1
+        ? "st"
+        : floor % 10 === 2
+          ? "nd"
+          : floor % 10 === 3
+            ? "rd"
+            : "th";
+  return `${floor}${suffix} floor`;
+}
+
+/**
+ * Turns parsed ACORN location fields into UI-ready parts. Floor text is sourced
+ * from the resolver, which only returns verified floors or conservative
+ * room-number inferences for recognized buildings.
+ */
+export function getCampusLocationDisplay(meeting: Meeting): CampusLocationDisplay | null {
+  const resolution = resolveMeetingLocation(meeting);
+  if (resolution.status !== "known") return null;
+
+  const building = resolution.buildingCode ? getRecognizedBuilding(resolution.buildingCode) : null;
+  const buildingName =
+    building?.name ?? resolution.buildingName ?? resolution.buildingCode ?? "Campus";
+  const room = resolution.room?.trim() || null;
+  const floorLabel = resolution.floor ? ordinalFloor(resolution.floor) : null;
+  const roomLabel = room ? `Room ${room}` : null;
+
+  return {
+    buildingName,
+    compactLabel: [buildingName, room].filter(Boolean).join(" · "),
+    floorLabel,
+    roomLabel,
+    fullLabel: [buildingName, floorLabel, roomLabel].filter(Boolean).join(", "),
+  };
+}
 
 type LocationPresentationInput =
   { meeting: Meeting } | { from: Meeting; to: Meeting; route: TransitionRoute };

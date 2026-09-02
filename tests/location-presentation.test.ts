@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { getLocationPresentation } from "@/features/routing/location-presentation";
+import {
+  getCampusLocationDisplay,
+  getLocationPresentation,
+} from "@/features/routing/location-presentation";
 import { resolveAcornLocation } from "@/features/routing/location-resolver";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { Meeting, MeetingLocationType } from "@/lib/timetable-types";
@@ -29,6 +32,32 @@ function meetingFromRawLocation(raw: string): Meeting {
 }
 
 describe("location presentation", () => {
+  test("expands a recognized location into building, floor, and room display parts", () => {
+    expect(getCampusLocationDisplay(meeting({ buildingCode: "DH", room: "2060" }))).toEqual({
+      buildingName: "Deerfield Hall",
+      compactLabel: "Deerfield Hall · 2060",
+      floorLabel: "2nd floor",
+      roomLabel: "Room 2060",
+      fullLabel: "Deerfield Hall, 2nd floor, Room 2060",
+    });
+  });
+
+  test("applies conservative room-number floor inference across recognized buildings", () => {
+    expect(getCampusLocationDisplay(meeting({ buildingCode: "CCT", room: "2060" }))).toMatchObject({
+      buildingName: "Communication, Culture and Technology Building",
+      floorLabel: "2nd floor",
+      roomLabel: "Room 2060",
+    });
+    expect(getCampusLocationDisplay(meeting({ buildingCode: "KN", room: "L1206" }))).toMatchObject({
+      floorLabel: "Lower level",
+      roomLabel: "Room L1206",
+    });
+    expect(getCampusLocationDisplay(meeting({ buildingCode: "DV", room: "0116" }))).toMatchObject({
+      floorLabel: "Level 0",
+      roomLabel: "Room 0116",
+    });
+  });
+
   test.each(["", "ZZ TBA"])("maps unassigned ACORN location %j to the shared TBA state", (raw) => {
     const unresolved = meetingFromRawLocation(raw);
     const meetingState = getLocationPresentation({ meeting: unresolved });

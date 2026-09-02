@@ -161,6 +161,15 @@ export function resolveAcornLocation(
       // A numbering convention supports an inference, not a verified room position.
       floorVerification = "inferred";
     }
+  } else if (building && room) {
+    const compactRoom = room.replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    const explicitLevel = compactRoom.match(/^(LL|L|G)/)?.[1] ?? null;
+    const standardNumber = compactRoom.match(/^(\d)\d{2,3}[A-Z]?$/)?.[1] ?? null;
+
+    // UTM room labels commonly encode a level in an explicit prefix or the
+    // first digit. This remains an inference and never upgrades route evidence.
+    floor = explicitLevel ?? standardNumber;
+    if (floor) floorVerification = "inferred";
   }
 
   return {
