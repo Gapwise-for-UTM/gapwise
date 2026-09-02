@@ -97,7 +97,8 @@ test.describe("map-first Day Route", () => {
     await expect(meetingDetails.getByText("Location", { exact: true })).toBeVisible();
     await expect(meetingDetails.getByText("Component", { exact: true })).toBeVisible();
     await expect(meetingDetails.getByText("Day", { exact: true })).toBeVisible();
-    await expect(meetingDetails).toContainText("IB 245");
+    await expect(meetingDetails).toContainText("Instructional Centre");
+    await expect(meetingDetails).toContainText("2nd floor · Room 245");
     await expect(meetingDetails).toContainText("TUT");
 
     await expect(page.locator(".maplibregl-ctrl-compass")).toHaveCount(0);

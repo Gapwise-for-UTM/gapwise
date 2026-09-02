@@ -12,6 +12,7 @@ import {
   representativePointForFootprint,
 } from "@/data/utm/building-footprints";
 import { getCampusCameraBounds } from "@/features/routing/campus-region";
+import { getCampusLocationDisplay } from "@/features/routing/location-presentation";
 import { groupedVerticalMarkerOffsets } from "@/features/routing/map-marker-layout";
 import {
   resolveMapAnchor,
@@ -486,25 +487,41 @@ function createMeetingPopupContent(meeting: Meeting, buildingCode: string) {
 
   const details = document.createElement("dl");
   details.className = "map-meeting-popover-details";
-  const location = meeting.room ? `${buildingCode} ${meeting.room}` : buildingCode;
-  const rows: [string, string][] = [
-    ["Time", `${formatTime(meeting.startTime)} – ${formatTime(meeting.endTime)}`],
-    ["Location", location],
-    [
-      "Component",
-      `${meeting.activityType}${meeting.sectionCode ? ` · ${meeting.sectionCode}` : ""}`,
-    ],
-    ["Day", `${meeting.weekday} · ${meeting.term}`],
-  ];
-  for (const [label, value] of rows) {
+  const location = getCampusLocationDisplay(meeting);
+
+  function appendDetail(label: string, value: string | HTMLElement) {
     const row = document.createElement("div");
     const term = document.createElement("dt");
     const description = document.createElement("dd");
     term.textContent = label;
-    description.textContent = value;
+    if (typeof value === "string") description.textContent = value;
+    else description.append(value);
     row.append(term, description);
     details.append(row);
   }
+
+  appendDetail("Time", `${formatTime(meeting.startTime)} – ${formatTime(meeting.endTime)}`);
+
+  const locationContent = document.createElement("span");
+  locationContent.className = "map-meeting-popover-location";
+  const buildingName = document.createElement("span");
+  buildingName.className = "map-meeting-popover-location-building";
+  buildingName.textContent =
+    location?.buildingName ?? (meeting.room ? `${buildingCode} ${meeting.room}` : buildingCode);
+  locationContent.append(buildingName);
+  if (location && (location.floorLabel || location.roomLabel)) {
+    const roomDetails = document.createElement("span");
+    roomDetails.className = "map-meeting-popover-location-meta";
+    roomDetails.textContent = [location.floorLabel, location.roomLabel].filter(Boolean).join(" · ");
+    locationContent.append(roomDetails);
+  }
+  appendDetail("Location", locationContent);
+
+  appendDetail(
+    "Component",
+    `${meeting.activityType}${meeting.sectionCode ? ` · ${meeting.sectionCode}` : ""}`,
+  );
+  appendDetail("Day", `${meeting.weekday} · ${meeting.term}`);
   card.append(details);
   return card;
 }
@@ -563,11 +580,13 @@ function syncMapData(
     markerButton.dataset["buildingCode"] = building.code;
     markerButton.dataset["startTime"] = String(meeting.startTime);
     markerButton.textContent = formatTime(meeting.startTime);
-    const location = meeting.room ? `${building.code} ${meeting.room}` : building.code;
-    markerButton.title = `${formatTime(meeting.startTime)} · ${meeting.courseCode} · ${location}`;
+    const location = getCampusLocationDisplay(meeting);
+    const locationLabel =
+      location?.fullLabel ?? (meeting.room ? `${building.code} ${meeting.room}` : building.code);
+    markerButton.title = `${formatTime(meeting.startTime)} · ${meeting.courseCode} · ${locationLabel}`;
     markerButton.setAttribute(
       "aria-label",
-      `Show details for ${meeting.courseCode}, ${meeting.activityType}, ${formatTime(meeting.startTime)} to ${formatTime(meeting.endTime)}, ${location}`,
+      `Show details for ${meeting.courseCode}, ${meeting.activityType}, ${formatTime(meeting.startTime)} to ${formatTime(meeting.endTime)}, ${locationLabel}`,
     );
     markerButton.addEventListener("click", (event) => {
       event.stopPropagation();
