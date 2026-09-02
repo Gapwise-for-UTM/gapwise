@@ -7,6 +7,7 @@ import {
   type BuildingSearchResult,
   type EntranceCoverageStatus,
 } from "@/features/routing/building-explorer";
+import { getCampusLocationDisplay } from "@/features/routing/location-presentation";
 import { formatTime, locationLabel } from "@/lib/timetable-types";
 
 type CampusExplorerProps = Omit<CampusMapProps, "selectedBuildingCode" | "onSelectBuilding"> & {
@@ -175,11 +176,7 @@ export function CampusExplorer({
     onSelectBuilding(null);
   }
 
-  const mapDetailLocation = mapDetailMeeting
-    ? mapDetailMeeting.buildingCode
-      ? `${mapDetailMeeting.buildingCode}${mapDetailMeeting.room ? ` ${mapDetailMeeting.room}` : ""}`
-      : locationLabel(mapDetailMeeting)
-    : "";
+  const mapDetailLocation = mapDetailMeeting ? getCampusLocationDisplay(mapDetailMeeting) : null;
 
   return (
     <div ref={explorerRef} className="campus-explorer relative">
@@ -241,7 +238,19 @@ export function CampusExplorer({
               <dt className="font-mono font-semibold uppercase tracking-wide text-muted-foreground">
                 Location
               </dt>
-              <dd className="font-semibold">{mapDetailLocation}</dd>
+              <dd>
+                <span className="block font-semibold leading-tight">
+                  {mapDetailLocation?.buildingName ?? locationLabel(mapDetailMeeting)}
+                </span>
+                {mapDetailLocation &&
+                (mapDetailLocation.floorLabel || mapDetailLocation.roomLabel) ? (
+                  <span className="mt-1 block font-medium leading-5 text-muted-foreground">
+                    {[mapDetailLocation.floorLabel, mapDetailLocation.roomLabel]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                ) : null}
+              </dd>
             </div>
             <div className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-2">
               <dt className="font-mono font-semibold uppercase tracking-wide text-muted-foreground">
