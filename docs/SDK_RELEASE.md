@@ -11,6 +11,7 @@ The release workflow is `.github/workflows/release-sdks.yml`. npm publishing is 
 
 ## Registry and runtime matrix
 
+<!-- prettier-ignore -->
 | Implementation | Registry | Package        | Runtime / consumer role                                                              | Release state             |
 | -------------- | -------- | -------------- | ------------------------------------------------------------------------------------ | ------------------------- |
 | TypeScript     | npm      | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling                               | `0.1.0` published         |
