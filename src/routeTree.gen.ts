@@ -13,10 +13,12 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as MailRouteImport } from './routes/mail'
+import { Route as OpsRouteImport } from './routes/ops'
 import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReplayRouteImport } from './routes/replay'
 import { Route as SecurityRouteImport } from './routes/security'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TrustRouteImport } from './routes/trust'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
@@ -46,6 +48,11 @@ const MailRoute = MailRouteImport.update({
   path: '/mail',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OpsRoute = OpsRouteImport.update({
+  id: '/ops',
+  path: '/ops',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlacesRoute = PlacesRouteImport.update({
   id: '/places',
   path: '/places',
@@ -64,6 +71,11 @@ const ReplayRoute = ReplayRouteImport.update({
 const SecurityRoute = SecurityRouteImport.update({
   id: '/security',
   path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -117,10 +129,12 @@ export interface FileRoutesByFullPath {
   '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/mail': typeof MailRoute
+  '/ops': typeof OpsRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
+  '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/gaps': typeof AppGapsRoute
@@ -134,10 +148,12 @@ export interface FileRoutesByTo {
   '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/mail': typeof MailRoute
+  '/ops': typeof OpsRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
+  '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/gaps': typeof AppGapsRoute
@@ -154,10 +170,12 @@ export interface FileRoutesById {
   '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
   '/mail': typeof MailRoute
+  '/ops': typeof OpsRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
+  '/settings': typeof SettingsRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/_app/gaps': typeof AppGapsRoute
@@ -175,10 +193,12 @@ export interface FileRouteTypes {
     | '/accessibility'
     | '/developers'
     | '/mail'
+    | '/ops'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
+    | '/settings'
     | '/terms'
     | '/trust'
     | '/gaps'
@@ -192,10 +212,12 @@ export interface FileRouteTypes {
     | '/accessibility'
     | '/developers'
     | '/mail'
+    | '/ops'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
+    | '/settings'
     | '/terms'
     | '/trust'
     | '/gaps'
@@ -211,10 +233,12 @@ export interface FileRouteTypes {
     | '/accessibility'
     | '/developers'
     | '/mail'
+    | '/ops'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
+    | '/settings'
     | '/terms'
     | '/trust'
     | '/_app/gaps'
@@ -231,10 +255,12 @@ export interface RootRouteChildren {
   AccessibilityRoute: typeof AccessibilityRoute
   DevelopersRoute: typeof DevelopersRoute
   MailRoute: typeof MailRoute
+  OpsRoute: typeof OpsRoute
   PlacesRoute: typeof PlacesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ReplayRoute: typeof ReplayRoute
   SecurityRoute: typeof SecurityRoute
+  SettingsRoute: typeof SettingsRoute
   TermsRoute: typeof TermsRoute
   TrustRoute: typeof TrustRoute
   OauthConsentRoute: typeof OauthConsentRoute
@@ -270,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ops': {
+      id: '/ops'
+      path: '/ops'
+      fullPath: '/ops'
+      preLoaderRoute: typeof OpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/places': {
       id: '/places'
       path: '/places'
@@ -296,6 +329,13 @@ declare module '@tanstack/react-router' {
       path: '/security'
       fullPath: '/security'
       preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -398,10 +438,12 @@ const rootRouteChildren: RootRouteChildren = {
   AccessibilityRoute: AccessibilityRoute,
   DevelopersRoute: DevelopersRoute,
   MailRoute: MailRoute,
+  OpsRoute: OpsRoute,
   PlacesRoute: PlacesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ReplayRoute: ReplayRoute,
   SecurityRoute: SecurityRoute,
+  SettingsRoute: SettingsRoute,
   TermsRoute: TermsRoute,
   TrustRoute: TrustRoute,
   OauthConsentRoute: OauthConsentRoute,
