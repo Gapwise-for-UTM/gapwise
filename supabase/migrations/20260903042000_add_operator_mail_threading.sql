@@ -19,6 +19,7 @@ set thread_id = gen_random_uuid()
 where thread_id is null;
 
 alter table public.resend_email_messages
+  alter column thread_id set default gen_random_uuid(),
   alter column thread_id set not null;
 
 create index if not exists resend_email_messages_thread_updated_at_idx
