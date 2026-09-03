@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "self": "gapwise",
+  "canonical": {
+    "app": "https://gapwise.ca",
+    "api": "https://api.gapwise.ca/v1",
+    "openapi": "https://api.gapwise.ca/openapi.json",
+    "docs": "https://docs.gapwise.ca",
+    "data": "https://data.gapwise.ca",
+    "ai": "https://ai.gapwise.ca",
+    "mcp": "https://ai.gapwise.ca/api/mcp",
+    "status": "https://status.gapwise.ca"
+  },
+  "repositories": {
+    "core": "https://github.com/andrewmuratov/gapwise",
+    "mobile": "https://github.com/andrewmuratov/gapwise-mobile",
+    "ai": "https://github.com/andrewmuratov/gapwise-ai",
+    "data": "https://github.com/andrewmuratov/gapwise-data",
+    "docs": "https://github.com/andrewmuratov/gapwise-docs",
+    "status": "https://github.com/andrewmuratov/gapwise-status"
+  },
+  "ownership": {
+    "core": [
+      "student-state",
+      "deterministic-domain-logic",
+      "public-api",
+      "openapi",
+      "typescript-sdk",
+      "python-sdk"
+    ],
+    "mobile": ["native-mobile-ux", "device-integration", "mobile-distribution"],
+    "ai": ["oauth", "mcp", "delegation", "bounded-ai-actions"],
+    "data": ["provenance", "schemas", "evidence", "attribution", "reuse"],
+    "docs": ["released-developer-documentation"],
+    "status": ["service-health", "incident-communication"]
+  },
+  "sdks": {
+    "typescript": {
+      "package": "@gapwise/sdk",
+      "source": "sdk/javascript",
+      "registries": {
+        "npm": { "version": "0.1.0", "state": "published" },
+        "jsr": { "version": "0.1.0", "state": "configured_not_published" }
+      },
+      "runtimeTargets": ["node", "bun", "deno", "browser"],
+      "model": "single-portable-implementation"
+    },
+    "python": {
+      "package": "gapwise",
+      "source": "sdk/python",
+      "registries": {
+        "pypi": { "version": "0.1.0", "state": "published" }
+      },
+      "clients": ["sync", "async"]
+    }
+  },
+  "contract": {
+    "publicApiVersion": "v1",
+    "sourceOfTruth": "openapi-and-core-implementation",
+    "sdkParityRequired": true,
+    "privateStudentDataInPublicApi": false
+  }
+}
