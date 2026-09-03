@@ -45,17 +45,21 @@ function formatMinutes(seconds: number) {
 function WalkingTimeRoutePage() {
   const { route } = Route.useParams();
   const pair = getSeoWalkingRoute(route);
+  const fromCode = pair?.from.code ?? null;
+  const toCode = pair?.to.code ?? null;
   const [metrics, setMetrics] = useState<RouteMetrics | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!pair) return;
+    if (!fromCode || !toCode) return;
     const controller = new AbortController();
+    setMetrics(null);
+    setFailed(false);
 
     void fetch("/api/utm-route", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ from: pair.from.code, to: pair.to.code }),
+      body: JSON.stringify({ from: fromCode, to: toCode }),
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -72,7 +76,7 @@ function WalkingTimeRoutePage() {
       });
 
     return () => controller.abort();
-  }, [pair]);
+  }, [fromCode, toCode]);
 
   if (!pair) {
     return (
