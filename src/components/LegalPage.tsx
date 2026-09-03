@@ -36,18 +36,24 @@ export function LegalPage({
         <p className="mt-3 text-sm text-muted-foreground">
           {dateLabel} {date}
         </p>
-        <article className="mt-10 space-y-8 text-sm leading-7 text-muted-foreground [&_a]:underline [&_a]:underline-offset-2 [&_h2]:mb-2 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
+        <article className="mt-10 space-y-8 text-sm leading-7 text-muted-foreground [&_a]:underline [&_a]:underline-offset-2 [&_h2]:mb-2 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_ol]:list-decimal [&_ol]:space-y-1 [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
           {children}
         </article>
         <footer className="mt-12 flex flex-wrap gap-4 border-t border-border pt-6 text-sm">
           <Link to="/trust" className="text-accent hover:underline">
             Trust Center
           </Link>
+          <Link to="/ai" className="text-accent hover:underline">
+            AI
+          </Link>
           <Link to="/privacy" className="text-accent hover:underline">
             Privacy
           </Link>
           <Link to="/terms" className="text-accent hover:underline">
             Terms
+          </Link>
+          <Link to="/support" className="text-accent hover:underline">
+            Support
           </Link>
           <Link to="/security" className="text-accent hover:underline">
             Security

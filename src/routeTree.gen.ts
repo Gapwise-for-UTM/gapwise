@@ -11,12 +11,14 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AccessibilityRouteImport } from './routes/accessibility'
+import { Route as AiRouteImport } from './routes/ai'
 import { Route as DevelopersRouteImport } from './routes/developers'
 import { Route as MailRouteImport } from './routes/mail'
 import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReplayRouteImport } from './routes/replay'
 import { Route as SecurityRouteImport } from './routes/security'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TrustRouteImport } from './routes/trust'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
@@ -34,6 +36,11 @@ const AppRoute = AppRouteImport.update({
 const AccessibilityRoute = AccessibilityRouteImport.update({
   id: '/accessibility',
   path: '/accessibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiRoute = AiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevelopersRoute = DevelopersRouteImport.update({
@@ -64,6 +71,11 @@ const ReplayRoute = ReplayRouteImport.update({
 const SecurityRoute = SecurityRouteImport.update({
   id: '/security',
   path: '/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -115,12 +127,14 @@ const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/accessibility': typeof AccessibilityRoute
+  '/ai': typeof AiRoute
   '/developers': typeof DevelopersRoute
   '/mail': typeof MailRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/gaps': typeof AppGapsRoute
@@ -132,12 +146,14 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/accessibility': typeof AccessibilityRoute
+  '/ai': typeof AiRoute
   '/developers': typeof DevelopersRoute
   '/mail': typeof MailRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/gaps': typeof AppGapsRoute
@@ -152,12 +168,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
   '/accessibility': typeof AccessibilityRoute
+  '/ai': typeof AiRoute
   '/developers': typeof DevelopersRoute
   '/mail': typeof MailRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
   '/security': typeof SecurityRoute
+  '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/_app/gaps': typeof AppGapsRoute
@@ -173,12 +191,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/accessibility'
+    | '/ai'
     | '/developers'
     | '/mail'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
+    | '/support'
     | '/terms'
     | '/trust'
     | '/gaps'
@@ -190,12 +210,14 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/accessibility'
+    | '/ai'
     | '/developers'
     | '/mail'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
+    | '/support'
     | '/terms'
     | '/trust'
     | '/gaps'
@@ -209,12 +231,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/accessibility'
+    | '/ai'
     | '/developers'
     | '/mail'
     | '/places'
     | '/privacy'
     | '/replay'
     | '/security'
+    | '/support'
     | '/terms'
     | '/trust'
     | '/_app/gaps'
@@ -229,12 +253,14 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AccessibilityRoute: typeof AccessibilityRoute
+  AiRoute: typeof AiRoute
   DevelopersRoute: typeof DevelopersRoute
   MailRoute: typeof MailRoute
   PlacesRoute: typeof PlacesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ReplayRoute: typeof ReplayRoute
   SecurityRoute: typeof SecurityRoute
+  SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   TrustRoute: typeof TrustRoute
   OauthConsentRoute: typeof OauthConsentRoute
@@ -254,6 +280,13 @@ declare module '@tanstack/react-router' {
       path: '/accessibility'
       fullPath: '/accessibility'
       preLoaderRoute: typeof AccessibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai': {
+      id: '/ai'
+      path: '/ai'
+      fullPath: '/ai'
+      preLoaderRoute: typeof AiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/developers': {
@@ -296,6 +329,13 @@ declare module '@tanstack/react-router' {
       path: '/security'
       fullPath: '/security'
       preLoaderRoute: typeof SecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -396,12 +436,14 @@ const PlacesRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AccessibilityRoute: AccessibilityRoute,
+  AiRoute: AiRoute,
   DevelopersRoute: DevelopersRoute,
   MailRoute: MailRoute,
   PlacesRoute: PlacesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ReplayRoute: ReplayRoute,
   SecurityRoute: SecurityRoute,
+  SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   TrustRoute: TrustRoute,
   OauthConsentRoute: OauthConsentRoute,
