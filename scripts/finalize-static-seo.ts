@@ -24,7 +24,9 @@ function finalizeDocument(html: string, fileName: string, routeFiles: string[]) 
   const { document } = window;
   document.write(html);
 
-  for (const element of document.querySelectorAll('script[type="module"], link[rel="modulepreload"]')) {
+  for (const element of document.querySelectorAll(
+    'script[type="module"], link[rel="modulepreload"]',
+  )) {
     element.remove();
   }
 
