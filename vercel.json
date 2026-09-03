@@ -123,6 +123,8 @@
     },
     { "source": "/places/rawc", "destination": "/_seo/places--rawc.html" },
     { "source": "/developers", "destination": "/_seo/developers.html" },
+    { "source": "/ai", "destination": "/_seo/ai.html" },
+    { "source": "/support", "destination": "/_seo/support.html" },
     { "source": "/trust", "destination": "/_seo/trust.html" },
     { "source": "/privacy", "destination": "/_seo/privacy.html" },
     { "source": "/security", "destination": "/_seo/security.html" },
