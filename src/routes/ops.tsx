@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Activity, ArrowLeft, Database, KeyRound, Mail, RefreshCw, ShieldCheck, Users } from "lucide-react";
+import {
+  Activity,
+  ArrowLeft,
+  Database,
+  KeyRound,
+  Mail,
+  RefreshCw,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/auth/use-auth";
@@ -17,8 +26,20 @@ type OpsResult = {
     inboundMail: number;
     failedMail: number;
   };
-  recentEvents?: Array<{ event_type: string; service: string; severity: string; request_id: string | null; created_at: string }>;
-  recentAudit?: Array<{ action: string; resource_type: string; resource_id: string | null; request_id: string | null; created_at: string }>;
+  recentEvents?: Array<{
+    event_type: string;
+    service: string;
+    severity: string;
+    request_id: string | null;
+    created_at: string;
+  }>;
+  recentAudit?: Array<{
+    action: string;
+    resource_type: string;
+    resource_id: string | null;
+    request_id: string | null;
+    created_at: string;
+  }>;
   error?: string;
 };
 type HealthResult = {
@@ -42,13 +63,18 @@ export const Route = createFileRoute("/ops")({
 async function invokeOps(): Promise<OpsResult> {
   const client = getSupabaseClient();
   if (!client) throw new Error("cloud_unavailable");
-  const { data, error } = await client.functions.invoke("ops-console", { body: { action: "overview" } });
+  const { data, error } = await client.functions.invoke("ops-console", {
+    body: { action: "overview" },
+  });
   if (error) throw error;
   return (data ?? {}) as OpsResult;
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
-  const response = await fetch(path, { cache: "no-store", headers: { accept: "application/json" } });
+  const response = await fetch(path, {
+    cache: "no-store",
+    headers: { accept: "application/json" },
+  });
   if (!response.ok) throw new Error(`request_failed_${response.status}`);
   return (await response.json()) as T;
 }
@@ -59,8 +85,15 @@ function HiddenRoute() {
       <section className="max-w-md text-center">
         <p className="eyebrow text-muted-foreground">404</p>
         <h1 className="mt-2 font-display text-3xl font-semibold">Page not found</h1>
-        <p className="mt-3 text-sm text-muted-foreground">The page you requested does not exist.</p>
-        <Link to="/" className="button-secondary mt-6 inline-flex min-h-11 items-center px-5 text-sm font-semibold">Back to Gapwise</Link>
+        <p className="mt-3 text-sm text-muted-foreground">
+          The page you requested does not exist.
+        </p>
+        <Link
+          to="/"
+          className="button-secondary mt-6 inline-flex min-h-11 items-center px-5 text-sm font-semibold"
+        >
+          Back to Gapwise
+        </Link>
       </section>
     </main>
   );
@@ -76,15 +109,28 @@ function formatTime(value: string | undefined) {
   if (!value) return "Unknown";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Unknown";
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
-function MetricCard({ label, value, icon }: { label: string; value: number | string; icon: React.ReactNode }) {
+function MetricCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ReactNode;
+}) {
   return (
     <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <span className="text-muted-foreground" aria-hidden>{icon}</span>
+        <span className="text-muted-foreground" aria-hidden>
+          {icon}
+        </span>
       </div>
       <p className="mt-3 font-display text-3xl font-semibold tracking-tight">{value}</p>
     </article>
@@ -116,12 +162,17 @@ function OpsPage() {
       setVersion(versionResult);
       setAccess("authorized");
     } catch {
-      if (!ops) setAccess("denied");
-      else setError("Operations data could not be refreshed.");
+      setAccess((current) => {
+        if (current === "authorized") {
+          setError("Operations data could not be refreshed.");
+          return current;
+        }
+        return "denied";
+      });
     } finally {
       setLoading(false);
     }
-  }, [ops]);
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -130,14 +181,24 @@ function OpsPage() {
       return;
     }
     void load();
-  }, [authLoading, user]);
+  }, [authLoading, load, user]);
 
   if (authLoading || access === "checking") {
-    return <main className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">Checking access…</main>;
+    return (
+      <main className="grid min-h-screen place-items-center bg-background text-sm text-muted-foreground">
+        Checking access…
+      </main>
+    );
   }
   if (access === "denied") return <HiddenRoute />;
 
-  const counts = ops?.counts ?? { users: 0, encryptedProfiles: 0, aiDelegations: 0, inboundMail: 0, failedMail: 0 };
+  const counts = ops?.counts ?? {
+    users: 0,
+    encryptedProfiles: 0,
+    aiDelegations: 0,
+    inboundMail: 0,
+    failedMail: 0,
+  };
   const dependencies = health?.dependencies ?? {};
 
   return (
@@ -145,15 +206,29 @@ function OpsPage() {
       <header className="border-b border-border/70 bg-background/95">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <Link to="/" className="button-ghost inline-flex min-h-10 items-center gap-2 px-3 text-sm"><ArrowLeft className="h-4 w-4" />Gapwise</Link>
+            <Link
+              to="/"
+              className="button-ghost inline-flex min-h-10 items-center gap-2 px-3 text-sm"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Gapwise
+            </Link>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Operator only</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Operator only
+              </p>
               <h1 className="font-display text-xl font-semibold">Operations</h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 text-sm" onClick={() => void load()} disabled={loading}>
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh
+            <button
+              type="button"
+              className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 text-sm"
+              onClick={() => void load()}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
             </button>
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
@@ -165,34 +240,82 @@ function OpsPage() {
           <div>
             <p className="eyebrow text-muted-foreground">Production overview</p>
             <h2 className="mt-1 font-display text-3xl font-semibold">Gapwise platform health</h2>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">Sanitized operational metadata only. This dashboard does not expose timetable contents, precise location, credentials, email bodies, or OAuth tokens.</p>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+              Sanitized operational metadata only. This dashboard does not expose timetable contents,
+              precise location, credentials, email bodies, or OAuth tokens.
+            </p>
           </div>
-          <div className="text-sm text-muted-foreground">Revision <span className="font-mono text-foreground">{version?.revision ?? "unknown"}</span> · {version?.environment ?? "unknown"}</div>
+          <div className="text-sm text-muted-foreground">
+            Revision{" "}
+            <span className="font-mono text-foreground">{version?.revision ?? "unknown"}</span> ·{" "}
+            {version?.environment ?? "unknown"}
+          </div>
         </section>
 
-        {error ? <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">{error}</div> : null}
+        {error ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        ) : null}
 
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <MetricCard label="Accounts" value={counts.users} icon={<Users className="h-5 w-5" />} />
-          <MetricCard label="Encrypted profiles" value={counts.encryptedProfiles} icon={<Database className="h-5 w-5" />} />
-          <MetricCard label="AI delegations" value={counts.aiDelegations} icon={<KeyRound className="h-5 w-5" />} />
-          <MetricCard label="Inbound mail" value={counts.inboundMail} icon={<Mail className="h-5 w-5" />} />
-          <MetricCard label="Mail failures" value={counts.failedMail} icon={<ShieldCheck className="h-5 w-5" />} />
+          <MetricCard
+            label="Encrypted profiles"
+            value={counts.encryptedProfiles}
+            icon={<Database className="h-5 w-5" />}
+          />
+          <MetricCard
+            label="AI delegations"
+            value={counts.aiDelegations}
+            icon={<KeyRound className="h-5 w-5" />}
+          />
+          <MetricCard
+            label="Inbound mail"
+            value={counts.inboundMail}
+            icon={<Mail className="h-5 w-5" />}
+          />
+          <MetricCard
+            label="Mail failures"
+            value={counts.failedMail}
+            icon={<ShieldCheck className="h-5 w-5" />}
+          />
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-3"><div><p className="eyebrow text-muted-foreground">Services</p><h3 className="mt-1 font-display text-xl font-semibold">Dependency health</h3></div><Activity className="h-5 w-5 text-muted-foreground" /></div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="eyebrow text-muted-foreground">Services</p>
+                <h3 className="mt-1 font-display text-xl font-semibold">Dependency health</h3>
+              </div>
+              <Activity className="h-5 w-5 text-muted-foreground" />
+            </div>
             <div className="mt-5 divide-y divide-border/70">
               {Object.entries(dependencies).map(([name, state]) => (
                 <div key={name} className="flex items-center justify-between gap-4 py-3 text-sm">
                   <div className="font-medium capitalize">{name}</div>
-                  <div className="text-right"><span className={state.ok ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>{statusText(state.ok)}</span><span className="ml-3 text-muted-foreground">{state.latencyMs} ms</span></div>
+                  <div className="text-right">
+                    <span
+                      className={
+                        state.ok
+                          ? "text-emerald-600 dark:text-emerald-400"
+                          : "text-amber-600 dark:text-amber-400"
+                      }
+                    >
+                      {statusText(state.ok)}
+                    </span>
+                    <span className="ml-3 text-muted-foreground">{state.latencyMs} ms</span>
+                  </div>
                 </div>
               ))}
-              {Object.keys(dependencies).length === 0 ? <p className="py-4 text-sm text-muted-foreground">No dependency data available.</p> : null}
+              {Object.keys(dependencies).length === 0 ? (
+                <p className="py-4 text-sm text-muted-foreground">No dependency data available.</p>
+              ) : null}
             </div>
-            <p className="mt-4 text-xs text-muted-foreground">Last checked {formatTime(health?.checkedAt)}</p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              Last checked {formatTime(health?.checkedAt)}
+            </p>
           </article>
 
           <article className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
@@ -200,12 +323,25 @@ function OpsPage() {
             <h3 className="mt-1 font-display text-xl font-semibold">Recent privileged activity</h3>
             <div className="mt-5 space-y-3">
               {(ops?.recentAudit ?? []).slice(0, 8).map((item, index) => (
-                <div key={`${item.created_at}-${index}`} className="rounded-xl border border-border/60 px-3 py-3 text-sm">
-                  <div className="flex items-center justify-between gap-3"><span className="font-mono text-xs font-semibold">{item.action}</span><span className="text-xs text-muted-foreground">{formatTime(item.created_at)}</span></div>
-                  <p className="mt-1 text-xs text-muted-foreground">{item.resource_type}{item.resource_id ? ` · ${item.resource_id}` : ""}</p>
+                <div
+                  key={`${item.created_at}-${index}`}
+                  className="rounded-xl border border-border/60 px-3 py-3 text-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-mono text-xs font-semibold">{item.action}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatTime(item.created_at)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {item.resource_type}
+                    {item.resource_id ? ` · ${item.resource_id}` : ""}
+                  </p>
                 </div>
               ))}
-              {(ops?.recentAudit ?? []).length === 0 ? <p className="text-sm text-muted-foreground">No audit events yet.</p> : null}
+              {(ops?.recentAudit ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No audit events yet.</p>
+              ) : null}
             </div>
           </article>
         </section>
