@@ -201,5 +201,29 @@ Deno.serve(async (request: Request) => {
     return error ? json(500, { error: "draft_delete_failed" }, origin) : json(200, { ok: true }, origin);
   }
 
+  if (action === "delete_forever") {
+    const threadId = stringValue(body.threadId, 64);
+    if (!threadId) return json(400, { error: "invalid_thread" }, origin);
+    const { data: state } = await supabase.from("mail_thread_state").select("folder").eq("thread_id", threadId).maybeSingle();
+    if (!state || state.folder !== "trash") return json(409, { error: "thread_not_in_trash" }, origin);
+    const { error: messageError } = await supabase.from("resend_email_messages").delete().eq("thread_id", threadId);
+    if (messageError) return json(500, { error: "delete_failed" }, origin);
+    await supabase.from("mail_drafts").delete().eq("thread_id", threadId);
+    await supabase.from("mail_thread_state").delete().eq("thread_id", threadId);
+    return json(200, { ok: true }, origin);
+  }
+
+  if (action === "empty_trash") {
+    const { data: states, error: stateError } = await supabase.from("mail_thread_state").select("thread_id").eq("folder", "trash");
+    if (stateError) return json(500, { error: "trash_list_failed" }, origin);
+    const ids = (states ?? []).map((item) => item.thread_id).filter((item): item is string => typeof item === "string");
+    if (!ids.length) return json(200, { ok: true, deleted: 0 }, origin);
+    const { error: messageError } = await supabase.from("resend_email_messages").delete().in("thread_id", ids);
+    if (messageError) return json(500, { error: "trash_delete_failed" }, origin);
+    await supabase.from("mail_drafts").delete().in("thread_id", ids);
+    await supabase.from("mail_thread_state").delete().in("thread_id", ids);
+    return json(200, { ok: true, deleted: ids.length }, origin);
+  }
+
   return json(400, { error: "unsupported_action" }, origin);
 });
