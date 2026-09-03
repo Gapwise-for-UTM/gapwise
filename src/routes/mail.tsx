@@ -5,14 +5,18 @@ import {
   CheckCircle2,
   ChevronLeft,
   Clock3,
+  Download,
   Inbox,
   Loader2,
   Paperclip,
+  PenLine,
   RefreshCw,
   Reply,
   Search,
+  Send,
   ShieldCheck,
   TriangleAlert,
+  X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/auth/use-auth";
@@ -21,6 +25,12 @@ import { getSupabaseClient } from "@/lib/supabase";
 
 type Mailbox = "support" | "security" | "test";
 type AccessState = "checking" | "authorized" | "denied";
+type AttachmentMeta = {
+  id?: string | null;
+  filename?: string | null;
+  size?: number | null;
+  content_type?: string | null;
+};
 type MailMessage = {
   resend_email_id: string;
   direction: "inbound" | "outbound";
@@ -29,7 +39,7 @@ type MailMessage = {
   to_addresses: string[];
   subject: string | null;
   mailbox: string | null;
-  attachment_metadata: Array<{ filename?: string | null }>;
+  attachment_metadata: AttachmentMeta[];
   text_body: string | null;
   latest_event_type: string;
   event_created_at: string | null;
@@ -38,7 +48,16 @@ type MailMessage = {
   in_reply_to: string | null;
   reply_to_address: string | null;
 };
-type InvokeResult = { messages?: MailMessage[]; ok?: boolean; error?: string };
+type InvokeResult = {
+  messages?: MailMessage[];
+  ok?: boolean;
+  id?: string;
+  threadId?: string;
+  downloadUrl?: string;
+  error?: string;
+};
+
+type ComposeDraft = { recipient: string; subject: string; text: string };
 
 export const Route = createFileRoute("/mail")({
   head: () => ({
@@ -83,6 +102,13 @@ function formatInboxTime(value: string | null) {
     undefined,
     sameYear ? { month: "short", day: "numeric" } : { year: "numeric", month: "short", day: "numeric" },
   ).format(date);
+}
+
+function formatBytes(value: number | null | undefined) {
+  if (!value || value < 1) return null;
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+  return `${(value / (1024 * 1024)).toFixed(value >= 10 * 1024 * 1024 ? 0 : 1)} MB`;
 }
 
 function cleanConversationBody(value: string | null) {
@@ -131,6 +157,14 @@ function draftKey(mailbox: Mailbox, threadId: string) {
   return `gapwise:mail:draft:${mailbox}:${threadId}`;
 }
 
+function composeKey(mailbox: Mailbox) {
+  return `gapwise:mail:compose:${mailbox}`;
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(value.trim());
+}
+
 function HiddenRoute() {
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6 text-foreground">
@@ -156,9 +190,12 @@ function MailPage() {
   const [thread, setThread] = useState<MailMessage[]>([]);
   const [replyText, setReplyText] = useState("");
   const [query, setQuery] = useState("");
+  const [composing, setComposing] = useState(false);
+  const [compose, setCompose] = useState<ComposeDraft>({ recipient: "", subject: "", text: "" });
   const [loading, setLoading] = useState(false);
   const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [attachmentLoading, setAttachmentLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
@@ -253,6 +290,7 @@ function MailPage() {
   }, [conversations, selected]);
 
   const openMessage = useCallback(async (message: MailMessage) => {
+    setComposing(false);
     setSelected(message);
     setError(null);
     setThreadLoading(true);
@@ -295,6 +333,39 @@ function MailPage() {
   }, [mailbox, replyText, selected]);
 
   useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(composeKey(mailbox));
+      if (!raw) {
+        setCompose({ recipient: "", subject: "", text: "" });
+        return;
+      }
+      const parsed = JSON.parse(raw) as Partial<ComposeDraft>;
+      setCompose({
+        recipient: typeof parsed.recipient === "string" ? parsed.recipient : "",
+        subject: typeof parsed.subject === "string" ? parsed.subject : "",
+        text: typeof parsed.text === "string" ? parsed.text : "",
+      });
+    } catch {
+      setCompose({ recipient: "", subject: "", text: "" });
+    }
+  }, [mailbox]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      try {
+        if (compose.recipient.trim() || compose.subject.trim() || compose.text.trim()) {
+          window.localStorage.setItem(composeKey(mailbox), JSON.stringify(compose));
+        } else {
+          window.localStorage.removeItem(composeKey(mailbox));
+        }
+      } catch {
+        // Non-critical local draft convenience.
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [compose, mailbox]);
+
+  useEffect(() => {
     if (!thread.length) return;
     window.requestAnimationFrame(() => threadEndRef.current?.scrollIntoView({ block: "end" }));
   }, [selected?.thread_id, thread.length]);
@@ -311,14 +382,15 @@ function MailPage() {
         event.preventDefault();
         searchRef.current?.focus();
       }
-      if (event.key === "Escape" && selected && !(event.target instanceof HTMLTextAreaElement)) {
+      if (event.key === "Escape" && (selected || composing) && !(event.target instanceof HTMLTextAreaElement)) {
         setSelected(null);
         setThread([]);
+        setComposing(false);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selected]);
+  }, [composing, selected]);
 
   const replyTarget = useMemo(
     () => [...thread].reverse().find((item) => item.direction === "inbound") ?? selected,
@@ -330,7 +402,12 @@ function MailPage() {
     setSending(true);
     setError(null);
     try {
-      await invokeMail({ action: "reply", messageId: replyTarget.resend_email_id, text: replyText.trim() });
+      await invokeMail({
+        action: "reply",
+        messageId: replyTarget.resend_email_id,
+        text: replyText.trim(),
+        requestId: crypto.randomUUID(),
+      });
       try {
         window.localStorage.removeItem(draftKey(mailbox, replyTarget.thread_id));
       } catch {
@@ -345,6 +422,68 @@ function MailPage() {
       setSending(false);
     }
   }, [access, loadInbox, mailbox, refreshThread, replyTarget, replyText, sending]);
+
+  const sendNew = useCallback(async () => {
+    if (
+      access !== "authorized" ||
+      sending ||
+      !isValidEmail(compose.recipient) ||
+      !compose.subject.trim() ||
+      !compose.text.trim()
+    )
+      return;
+    setSending(true);
+    setError(null);
+    try {
+      const result = await invokeMail({
+        action: "send",
+        mailbox,
+        recipient: compose.recipient.trim(),
+        subject: compose.subject.trim(),
+        text: compose.text.trim(),
+        requestId: crypto.randomUUID(),
+      });
+      try {
+        window.localStorage.removeItem(composeKey(mailbox));
+      } catch {
+        // Non-critical.
+      }
+      setCompose({ recipient: "", subject: "", text: "" });
+      setComposing(false);
+      await loadInbox(true);
+      if (result.threadId) {
+        const refreshed = await invokeMail({ action: "thread", threadId: result.threadId });
+        const next = refreshed.messages ?? [];
+        if (next[0]) {
+          setSelected(next[next.length - 1] ?? next[0]);
+          setThread(next);
+        }
+      }
+    } catch {
+      setError("The message was not sent. Your draft is still here.");
+    } finally {
+      setSending(false);
+    }
+  }, [access, compose, loadInbox, mailbox, sending]);
+
+  const downloadAttachment = useCallback(async (message: MailMessage, attachment: AttachmentMeta) => {
+    if (!attachment.id || attachmentLoading) return;
+    setAttachmentLoading(attachment.id);
+    setError(null);
+    try {
+      const result = await invokeMail({
+        action: "attachment",
+        messageId: message.resend_email_id,
+        attachmentId: attachment.id,
+      });
+      if (!result.downloadUrl) throw new Error("attachment_url_missing");
+      window.open(result.downloadUrl, "_blank", "noopener,noreferrer");
+    } catch {
+      setError("The attachment could not be opened securely. Try again to request a fresh download link.");
+    } finally {
+      setAttachmentLoading(null);
+    }
+  }, [attachmentLoading]);
 
   if (authLoading || access === "checking") {
     return (
@@ -361,6 +500,7 @@ function MailPage() {
       ? selected.from_address
       : selected.to_addresses[0]
     : null;
+  const canSendNew = isValidEmail(compose.recipient) && Boolean(compose.subject.trim()) && Boolean(compose.text.trim());
 
   return (
     <main className="min-h-screen bg-background px-3 py-4 text-foreground sm:px-5 sm:py-6 lg:px-8">
@@ -388,30 +528,34 @@ function MailPage() {
           </div>
         </header>
 
-        <div className="mb-3 flex flex-wrap items-center gap-2" role="tablist" aria-label="Mailbox">
-          {(["support", "security", "test"] as const).map((name) => (
-            <button
-              key={name}
-              type="button"
-              role="tab"
-              aria-selected={mailbox === name}
-              onClick={() => {
-                setMailbox(name);
-                setSelected(null);
-                setThread([]);
-                setQuery("");
-              }}
-              className={mailbox === name ? "button-primary min-h-10 px-4 text-sm font-semibold capitalize" : "button-secondary min-h-10 px-4 text-sm font-semibold capitalize"}
-            >
-              {name}
-            </button>
-          ))}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Mailbox">
+            {(["support", "security", "test"] as const).map((name) => (
+              <button
+                key={name}
+                type="button"
+                role="tab"
+                aria-selected={mailbox === name}
+                onClick={() => {
+                  setMailbox(name);
+                  setSelected(null);
+                  setThread([]);
+                  setComposing(false);
+                  setQuery("");
+                }}
+                className={mailbox === name ? "button-primary min-h-10 px-4 text-sm font-semibold capitalize" : "button-secondary min-h-10 px-4 text-sm font-semibold capitalize"}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => { setSelected(null); setThread([]); setComposing(true); }} className="button-secondary ml-auto inline-flex min-h-10 items-center gap-2 px-4 text-sm font-semibold"><PenLine className="h-4 w-4" aria-hidden="true" />New message</button>
         </div>
 
         {error ? <div className="mb-3 flex items-start gap-2 rounded-2xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{error}</div> : null}
 
         <div className="grid min-h-[76vh] overflow-hidden rounded-3xl border border-border/70 bg-card/70 shadow-sm lg:grid-cols-[390px_1fr]">
-          <aside className={`${selected ? "hidden lg:block" : "block"} border-border/70 lg:border-r`}>
+          <aside className={`${selected || composing ? "hidden lg:block" : "block"} border-border/70 lg:border-r`}>
             <div className="border-b border-border/70 p-3">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -461,10 +605,30 @@ function MailPage() {
             </div>
           </aside>
 
-          <section className={`${selected ? "block" : "hidden lg:block"} min-w-0`}>
-            {!selected ? (
+          <section className={`${selected || composing ? "block" : "hidden lg:block"} min-w-0`}>
+            {composing ? (
+              <div className="flex h-full max-h-[76vh] flex-col">
+                <div className="flex items-center gap-3 border-b border-border/70 px-4 py-4 sm:px-5">
+                  <button type="button" onClick={() => setComposing(false)} className="button-secondary inline-flex h-9 w-9 shrink-0 items-center justify-center lg:hidden" aria-label="Back to conversations"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></button>
+                  <div className="min-w-0 flex-1"><h2 className="font-display text-xl font-semibold">New message</h2><p className="mt-1 text-xs text-muted-foreground">From {replyAs}</p></div>
+                  <button type="button" onClick={() => setComposing(false)} className="button-secondary hidden h-9 w-9 items-center justify-center lg:inline-flex" aria-label="Close composer"><X className="h-4 w-4" aria-hidden="true" /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto bg-background/30 p-4 sm:p-6">
+                  <div className="mx-auto max-w-3xl rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-6">
+                    <label className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground" htmlFor="compose-to">To</label>
+                    <input id="compose-to" type="email" value={compose.recipient} onChange={(event) => setCompose((value) => ({ ...value, recipient: event.target.value }))} placeholder="recipient@example.com" className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+                    {compose.recipient.trim() && !isValidEmail(compose.recipient) ? <p className="mt-1 text-xs text-destructive">Enter a valid email address.</p> : null}
+                    <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" htmlFor="compose-subject">Subject</label>
+                    <input id="compose-subject" value={compose.subject} maxLength={300} onChange={(event) => setCompose((value) => ({ ...value, subject: event.target.value }))} placeholder="Subject" className="mt-2 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+                    <label className="mt-5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground" htmlFor="compose-body">Message</label>
+                    <textarea id="compose-body" value={compose.text} onChange={(event) => setCompose((value) => ({ ...value, text: event.target.value }))} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void sendNew(); } }} rows={12} placeholder="Write your message…" className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-[15px] leading-7 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">Draft saved on this device. Gapwise branding is added automatically.</p><button type="button" disabled={!canSendNew || sending} onClick={() => void sendNew()} className="button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}{sending ? "Sending…" : "Send message"}</button></div>
+                  </div>
+                </div>
+              </div>
+            ) : !selected ? (
               <div className="grid h-full min-h-[520px] place-items-center p-8 text-center">
-                <div><Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2><p className="mt-2 text-sm text-muted-foreground">Search, read and reply without leaving the private operator console.</p></div>
+                <div><Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2><p className="mt-2 text-sm text-muted-foreground">Search, read, compose and reply without leaving the private operator console.</p></div>
               </div>
             ) : (
               <div className="flex h-full max-h-[76vh] flex-col">
@@ -492,7 +656,15 @@ function MailPage() {
                               <span className="shrink-0 text-xs text-muted-foreground">{formatTime(message.event_created_at ?? message.updated_at)}</span>
                             </div>
                             <p className="mt-4 whitespace-pre-wrap break-words text-[15px] leading-7">{body}</p>
-                            {message.attachment_metadata?.length ? <div className="mt-4 border-t border-border/60 pt-3"><p className="mb-2 text-xs font-medium text-muted-foreground">Attachments</p><div className="flex flex-wrap gap-2">{message.attachment_metadata.map((item, index) => <span key={`${item.filename ?? "attachment"}-${index}`} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/70 px-2.5 py-1.5 text-xs"><Paperclip className="h-3.5 w-3.5" aria-hidden="true" />{item.filename || "attachment"}</span>)}</div></div> : null}
+                            {message.attachment_metadata?.length ? <div className="mt-4 border-t border-border/60 pt-3"><p className="mb-2 text-xs font-medium text-muted-foreground">Attachments</p><div className="flex flex-wrap gap-2">{message.attachment_metadata.map((attachment, index) => {
+                              const size = formatBytes(attachment.size);
+                              const downloadable = message.direction === "inbound" && Boolean(attachment.id);
+                              return downloadable ? (
+                                <button key={`${attachment.id ?? index}`} type="button" onClick={() => void downloadAttachment(message, attachment)} disabled={attachmentLoading === attachment.id} className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-xs disabled:opacity-60">{attachmentLoading === attachment.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />}<span>{attachment.filename || "attachment"}</span>{size ? <span className="text-muted-foreground">{size}</span> : null}</button>
+                              ) : (
+                                <span key={`${attachment.filename ?? "attachment"}-${index}`} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/70 px-2.5 py-1.5 text-xs"><Paperclip className="h-3.5 w-3.5" aria-hidden="true" />{attachment.filename || "attachment"}{size ? <span className="text-muted-foreground">{size}</span> : null}</span>
+                              );
+                            })}</div></div> : null}
                             {delivery ? <div className={`mt-3 inline-flex items-center gap-1.5 text-xs ${delivery.kind === "error" ? "text-destructive" : "text-muted-foreground"}`}>{delivery.kind === "success" ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : delivery.kind === "pending" ? <Clock3 className="h-3.5 w-3.5" aria-hidden="true" /> : <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />}{delivery.label}</div> : null}
                           </div>
                         </div>
