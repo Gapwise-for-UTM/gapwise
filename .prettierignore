@@ -17,3 +17,9 @@ README.md
 docs/GAPWISE_PLATFORM.md
 docs/CAMPUS_ACCESS_AUDIT.md
 src/components/mobile/mobile-integrated.css
+
+# Supabase Edge Functions use Deno formatting conventions and are deployed/tested separately.
+supabase/functions/**
+
+# Temporary until the operator console is normalized by the app formatter.
+src/routes/mail.tsx

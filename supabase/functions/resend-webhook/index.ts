@@ -7,7 +7,28 @@ type ResendWebhookEvent = {
     email_id?: unknown;
     template_id?: unknown;
     tags?: unknown;
+    message_id?: unknown;
+    from?: unknown;
+    to?: unknown;
+    cc?: unknown;
+    bcc?: unknown;
+    subject?: unknown;
+    attachments?: unknown;
   };
+};
+
+type ReceivedEmail = {
+  id?: unknown;
+  message_id?: unknown;
+  from?: unknown;
+  to?: unknown;
+  cc?: unknown;
+  bcc?: unknown;
+  subject?: unknown;
+  text?: unknown;
+  html?: unknown;
+  headers?: unknown;
+  attachments?: unknown;
 };
 
 const encoder = new TextEncoder();
@@ -28,7 +49,8 @@ function adminClient() {
   }
 
   if (!key) key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ?? "";
-  if (!url || !key) throw new Error("Supabase admin credentials are unavailable.");
+  if (!url || !key)
+    throw new Error("Supabase admin credentials are unavailable.");
 
   return createClient(url, key, {
     auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
@@ -41,7 +63,8 @@ function decodeBase64(value: string) {
 }
 
 function signingKeyBytes(secret: string) {
-  if (!secret.startsWith("whsec_")) throw new Error("Webhook signing secret is malformed.");
+  if (!secret.startsWith("whsec_"))
+    throw new Error("Webhook signing secret is malformed.");
   return decodeBase64(secret.slice("whsec_".length));
 }
 
@@ -72,7 +95,8 @@ async function verifySignature(
     if (comma === -1 || candidate.slice(0, comma) !== "v1") continue;
     try {
       const signature = decodeBase64(candidate.slice(comma + 1));
-      if (await crypto.subtle.verify("HMAC", key, signature, signedPayload)) return true;
+      if (await crypto.subtle.verify("HMAC", key, signature, signedPayload))
+        return true;
     } catch {
       // Ignore malformed signature candidates and continue checking rotations.
     }
@@ -87,12 +111,29 @@ function stringOrNull(value: unknown, maxLength = 255) {
   return normalized && normalized.length <= maxLength ? normalized : null;
 }
 
+function bodyOrNull(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function stringArray(value: unknown, maxLength = 998) {
+  if (!Array.isArray(value)) return [] as string[];
+  return value
+    .map((entry) => stringOrNull(entry, maxLength))
+    .filter((entry): entry is string => Boolean(entry));
+}
+
+function objectOrNull(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
+}
+
 function eventCategory(tags: unknown) {
   if (Array.isArray(tags)) {
     for (const tag of tags) {
       if (!tag || typeof tag !== "object") continue;
       const value = tag as Record<string, unknown>;
-      if (value["name"] === "category") return stringOrNull(value["value"], 120);
+      if (value["name"] === "category")
+        return stringOrNull(value["value"], 120);
     }
     return null;
   }
@@ -102,6 +143,76 @@ function eventCategory(tags: unknown) {
   }
 
   return null;
+}
+
+function attachmentMetadata(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0, 100).flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const item = entry as Record<string, unknown>;
+    const id = stringOrNull(item["id"]);
+    const filename = stringOrNull(item["filename"], 512);
+    const contentType = stringOrNull(item["content_type"], 255);
+    const contentDisposition = stringOrNull(item["content_disposition"], 255);
+    const contentId = stringOrNull(item["content_id"], 512);
+    const size = typeof item["size"] === "number" && Number.isFinite(item["size"])
+      ? item["size"]
+      : null;
+    if (!id && !filename) return [];
+    return [
+      {
+        id,
+        filename,
+        content_type: contentType,
+        content_disposition: contentDisposition,
+        content_id: contentId,
+        size,
+      },
+    ];
+  });
+}
+
+function mailboxForRecipients(recipients: string[]) {
+  for (const recipient of recipients) {
+    const address = recipient.toLowerCase();
+    const local = address.includes("<")
+      ? address.slice(address.lastIndexOf("<") + 1, address.lastIndexOf("@"))
+      : address.slice(0, address.indexOf("@"));
+    if (local === "support") return "support";
+    if (local === "security") return "security";
+    if (local === "hello") return "hello";
+    if (local === "general") return "general";
+    if (local === "test") return "test";
+  }
+  return recipients.length ? "other" : null;
+}
+
+function directionForEvent(eventType: string) {
+  return eventType === "email.received" ? "inbound" : "outbound";
+}
+
+async function fetchReceivedEmail(emailId: string) {
+  const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
+  if (!apiKey) throw new Error("RESEND_API_KEY is unavailable.");
+
+  const response = await fetch(
+    `https://api.resend.com/emails/receiving/${encodeURIComponent(emailId)}`,
+    {
+      method: "GET",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        accept: "application/json",
+      },
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 500);
+    throw new Error(`Resend receiving API ${response.status}: ${detail}`);
+  }
+
+  return (await response.json()) as ReceivedEmail;
 }
 
 function json(status: number, body: Record<string, unknown>) {
@@ -136,11 +247,22 @@ Deno.serve(async (request: Request) => {
     "get_resend_webhook_signing_secret",
   );
   if (secretError || typeof signingSecret !== "string" || !signingSecret) {
-    console.error("resend_webhook_secret_unavailable", secretError?.message ?? "missing secret");
+    console.error(
+      "resend_webhook_secret_unavailable",
+      secretError?.message ?? "missing secret",
+    );
     return json(503, { error: "webhook_unavailable" });
   }
 
-  if (!(await verifySignature(payload, signingSecret, svixId, svixTimestamp, svixSignature))) {
+  if (
+    !(await verifySignature(
+      payload,
+      signingSecret,
+      svixId,
+      svixTimestamp,
+      svixSignature,
+    ))
+  ) {
     return json(400, { error: "invalid_signature" });
   }
 
@@ -155,22 +277,25 @@ Deno.serve(async (request: Request) => {
   if (!eventType) return json(400, { error: "invalid_event" });
 
   const createdAt = stringOrNull(event.created_at, 80);
-  const eventCreatedAt = createdAt && !Number.isNaN(Date.parse(createdAt)) ? createdAt : null;
+  const eventCreatedAt =
+    createdAt && !Number.isNaN(Date.parse(createdAt)) ? createdAt : null;
   const emailId = stringOrNull(event.data?.email_id);
   const templateId = stringOrNull(event.data?.template_id);
   const category = eventCategory(event.data?.tags);
 
-  const { error: insertError } = await supabase.from("resend_webhook_events").upsert(
-    {
-      svix_id: svixId,
-      event_type: eventType,
-      resend_email_id: emailId,
-      template_id: templateId,
-      category,
-      event_created_at: eventCreatedAt,
-    },
-    { onConflict: "svix_id", ignoreDuplicates: true },
-  );
+  const { error: insertError } = await supabase
+    .from("resend_webhook_events")
+    .upsert(
+      {
+        svix_id: svixId,
+        event_type: eventType,
+        resend_email_id: emailId,
+        template_id: templateId,
+        category,
+        event_created_at: eventCreatedAt,
+      },
+      { onConflict: "svix_id", ignoreDuplicates: true },
+    );
 
   if (insertError) {
     console.error("resend_webhook_persist_failed", {
@@ -181,6 +306,100 @@ Deno.serve(async (request: Request) => {
     return json(500, { error: "persist_failed" });
   }
 
+  if (emailId && eventType.startsWith("email.")) {
+    let received: ReceivedEmail | null = null;
+    if (eventType === "email.received") {
+      try {
+        received = await fetchReceivedEmail(emailId);
+      } catch (error) {
+        console.error("resend_received_email_fetch_failed", {
+          emailId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return json(503, { error: "received_email_fetch_failed" });
+      }
+    }
+
+    const to = stringArray(received?.to ?? event.data?.to);
+    const cc = stringArray(received?.cc ?? event.data?.cc);
+    const bcc = stringArray(received?.bcc ?? event.data?.bcc);
+    const attachments = attachmentMetadata(received?.attachments ?? event.data?.attachments);
+    const now = new Date().toISOString();
+    const incoming = {
+      resend_email_id: emailId,
+      direction: directionForEvent(eventType),
+      message_id: stringOrNull(received?.message_id ?? event.data?.message_id, 998),
+      from_address: stringOrNull(received?.from ?? event.data?.from, 998),
+      to_addresses: to,
+      cc_addresses: cc,
+      bcc_addresses: bcc,
+      subject: stringOrNull(received?.subject ?? event.data?.subject, 998),
+      mailbox: eventType === "email.received" ? mailboxForRecipients(to) : null,
+      template_id: templateId,
+      category,
+      attachment_metadata: attachments,
+      text_body: eventType === "email.received" ? bodyOrNull(received?.text) : null,
+      html_body: eventType === "email.received" ? bodyOrNull(received?.html) : null,
+      headers: eventType === "email.received" ? objectOrNull(received?.headers) : null,
+      content_fetched_at: eventType === "email.received" ? now : null,
+      latest_event_type: eventType,
+      event_created_at: eventCreatedAt,
+      updated_at: now,
+    };
+
+    const { data: existing, error: selectError } = await supabase
+      .from("resend_email_messages")
+      .select("*")
+      .eq("resend_email_id", emailId)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error("resend_email_message_lookup_failed", {
+        emailId,
+        code: selectError.code,
+      });
+      return json(500, { error: "message_lookup_failed" });
+    }
+
+    const merged = existing
+      ? {
+          ...existing,
+          ...incoming,
+          direction: existing.direction ?? incoming.direction,
+          message_id: incoming.message_id ?? existing.message_id,
+          from_address: incoming.from_address ?? existing.from_address,
+          to_addresses: to.length ? to : existing.to_addresses,
+          cc_addresses: cc.length ? cc : existing.cc_addresses,
+          bcc_addresses: bcc.length ? bcc : existing.bcc_addresses,
+          subject: incoming.subject ?? existing.subject,
+          mailbox: incoming.mailbox ?? existing.mailbox,
+          template_id: incoming.template_id ?? existing.template_id,
+          category: incoming.category ?? existing.category,
+          attachment_metadata: attachments.length
+            ? attachments
+            : existing.attachment_metadata,
+          text_body: incoming.text_body ?? existing.text_body,
+          html_body: incoming.html_body ?? existing.html_body,
+          headers: incoming.headers ?? existing.headers,
+          content_fetched_at:
+            incoming.content_fetched_at ?? existing.content_fetched_at,
+        }
+      : incoming;
+
+    const { error: messageError } = await supabase
+      .from("resend_email_messages")
+      .upsert(merged, { onConflict: "resend_email_id" });
+
+    if (messageError) {
+      console.error("resend_email_message_persist_failed", {
+        emailId,
+        eventType,
+        code: messageError.code,
+      });
+      return json(500, { error: "message_persist_failed" });
+    }
+  }
+
   console.info("resend_webhook_event", {
     svixId,
     eventType,
@@ -188,6 +407,5 @@ Deno.serve(async (request: Request) => {
     templateId,
     category,
   });
-
   return json(200, { ok: true });
 });

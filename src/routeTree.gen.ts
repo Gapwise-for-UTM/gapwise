@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as AccessibilityRouteImport } from './routes/accessibility'
 import { Route as DevelopersRouteImport } from './routes/developers'
+import { Route as MailRouteImport } from './routes/mail'
 import { Route as PlacesRouteImport } from './routes/places'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReplayRouteImport } from './routes/replay'
@@ -38,6 +39,11 @@ const AccessibilityRoute = AccessibilityRouteImport.update({
 const DevelopersRoute = DevelopersRouteImport.update({
   id: '/developers',
   path: '/developers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MailRoute = MailRouteImport.update({
+  id: '/mail',
+  path: '/mail',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PlacesRoute = PlacesRouteImport.update({
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
   '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
+  '/mail': typeof MailRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
+  '/mail': typeof MailRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/accessibility': typeof AccessibilityRoute
   '/developers': typeof DevelopersRoute
+  '/mail': typeof MailRoute
   '/places': typeof PlacesRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/replay': typeof ReplayRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/'
     | '/accessibility'
     | '/developers'
+    | '/mail'
     | '/places'
     | '/privacy'
     | '/replay'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
   to:
     | '/accessibility'
     | '/developers'
+    | '/mail'
     | '/places'
     | '/privacy'
     | '/replay'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/accessibility'
     | '/developers'
+    | '/mail'
     | '/places'
     | '/privacy'
     | '/replay'
@@ -218,6 +230,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AccessibilityRoute: typeof AccessibilityRoute
   DevelopersRoute: typeof DevelopersRoute
+  MailRoute: typeof MailRoute
   PlacesRoute: typeof PlacesRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   ReplayRoute: typeof ReplayRoute
@@ -248,6 +261,13 @@ declare module '@tanstack/react-router' {
       path: '/developers'
       fullPath: '/developers'
       preLoaderRoute: typeof DevelopersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mail': {
+      id: '/mail'
+      path: '/mail'
+      fullPath: '/mail'
+      preLoaderRoute: typeof MailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/places': {
@@ -377,6 +397,7 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AccessibilityRoute: AccessibilityRoute,
   DevelopersRoute: DevelopersRoute,
+  MailRoute: MailRoute,
   PlacesRoute: PlacesRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   ReplayRoute: ReplayRoute,
