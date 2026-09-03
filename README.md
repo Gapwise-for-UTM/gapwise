@@ -17,7 +17,7 @@
 
 <br />
 
-**[App](https://gapwise.ca)** · **[API](https://api.gapwise.ca/v1)** · **[Data](https://data.gapwise.ca)** · **[AI](https://ai.gapwise.ca)** · **[Docs](https://docs.gapwise.ca)** · **[Status](https://status.gapwise.ca)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)**
+**[App](https://gapwise.ca)** · **[API](https://api.gapwise.ca/v1)** · **[Data](https://data.gapwise.ca)** · **[AI](https://ai.gapwise.ca)** · **[Docs](https://docs.gapwise.ca)** · **[Status](https://status.gapwise.ca)** · **[Trust](https://gapwise.ca/trust)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)**
 
 </div>
 
@@ -120,6 +120,8 @@ Typical route states include:
 - **unavailable** when evidence is insufficient.
 
 Step-free routing fails closed when verified accessible evidence is unavailable.
+
+Walking times are deterministic planning estimates, not guarantees. Actual travel time can vary with walking speed, accessibility needs, entrances, elevators, congestion, construction, temporary closures, weather, and route choice. Gapwise keeps route confidence and evidence visible rather than presenting uncertain routes as exact facts.
 
 ### Day Replay
 
@@ -271,7 +273,7 @@ React renders those decisions. Mobile consumes them. The public API exposes them
 
 ---
 
-## Privacy and cybersecurity architecture
+## Privacy, trust, and cybersecurity architecture
 
 Gapwise is designed around data minimization, explicit trust boundaries, and defense in depth.
 
@@ -288,11 +290,19 @@ Key properties include:
 - OAuth-based sign-in and permission boundaries;
 - Supabase/Postgres with row-level security;
 - Cloudflare Turnstile protection at the auth boundary;
-- dedicated security contact at `security@gapwise.ca`;
 - explicit separation between public campus data and private student state;
 - no claim of zero knowledge or end-to-end encryption where the architecture does not actually provide it.
 
-Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
+The public [Trust Center](https://gapwise.ca/trust) is the canonical user-facing summary of these boundaries and links to the detailed privacy, security, accessibility, data provenance, incident-response, and operational surfaces.
+
+### Contact
+
+- **General support, privacy questions, account help, and non-security bugs:** `support@gapwise.ca`
+- **Security vulnerabilities and sensitive security reports:** `security@gapwise.ca`
+
+Do not place vulnerability details, credentials, tokens, private student data, or cryptographic material in public issues.
+
+Read the [Trust Center](https://gapwise.ca/trust), [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
 
 ---
 
