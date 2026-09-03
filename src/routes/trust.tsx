@@ -8,7 +8,7 @@ export const Route = createFileRoute("/trust")({
       {
         name: "description",
         content:
-          "Evidence-backed privacy, security, accessibility, data-flow, AI permission, incident-response, and independence information for Gapwise.",
+          "Evidence-backed privacy, security, accessibility, data-flow, campus-routing, AI permission, incident-response, and independence information for Gapwise.",
       },
     ],
   }),
@@ -24,7 +24,7 @@ function TrustPage() {
       eyebrow="Trust Center"
       title="Evidence before promises."
       dateLabel="Last reviewed"
-      date="September 1, 2026"
+      date="September 3, 2026"
     >
       <section>
         <p>
@@ -63,7 +63,40 @@ function TrustPage() {
               Current operational status and incident-reporting information.
             </span>
           </a>
+          <a href="https://data.gapwise.ca/" className={cardClass}>
+            <strong className="block text-foreground">Campus data & provenance</strong>
+            <span className="mt-1 block">
+              Inspect the source-backed campus data layer, schemas, and uncertainty boundaries.
+            </span>
+          </a>
         </div>
+      </section>
+
+      <section>
+        <h2>Contact Gapwise</h2>
+        <p>
+          Use the channel that matches the issue so operational questions and security reports do
+          not get mixed together.
+        </p>
+        <ul>
+          <li>
+            General help, privacy questions, account support, bug reports, and product questions:{" "}
+            <a className="text-accent underline" href="mailto:support@gapwise.ca">
+              support@gapwise.ca
+            </a>
+          </li>
+          <li>
+            Suspected vulnerabilities, exposed secrets, authentication or authorization issues,
+            and other security-sensitive reports:{" "}
+            <a className="text-accent underline" href="mailto:security@gapwise.ca">
+              security@gapwise.ca
+            </a>
+          </li>
+        </ul>
+        <p>
+          Security reports should not be posted in public GitHub issues. The dedicated vulnerability
+          disclosure page also links to GitHub private vulnerability reporting when available.
+        </p>
       </section>
 
       <section>
@@ -96,6 +129,33 @@ function TrustPage() {
           provider backups, logs, retention, and production configuration are separate evidence
           questions and are not inferred from source code.
         </p>
+      </section>
+
+      <section>
+        <h2>Campus routes and walking-time estimates</h2>
+        <p>
+          Gapwise computes deterministic UTM building-to-building routes from the project&apos;s
+          maintained campus model. Building identity, route evidence, accessibility evidence, and
+          confidence are kept separate so an unknown or approximate route is not silently presented
+          as verified.
+        </p>
+        <p>
+          Walking times are planning estimates, not guarantees. Actual travel time can vary with
+          walking speed, accessibility needs, entrances, elevators, congestion, construction,
+          temporary closures, weather, and route choice. Step-free routing fails closed when the
+          available evidence is insufficient to support a verified accessible route.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link to="/places" className="text-accent hover:underline">
+            Campus places
+          </Link>
+          <a href="https://data.gapwise.ca/" className="text-accent hover:underline">
+            Data provenance
+          </a>
+          <a href="https://docs.gapwise.ca/platform/routing/" className="text-accent hover:underline">
+            Routing documentation
+          </a>
+        </div>
       </section>
 
       <section>
@@ -133,9 +193,10 @@ function TrustPage() {
         <p>
           Current source shows Vercel for application/API hosting and aggregate product telemetry,
           Supabase for authentication and optional account/cloud storage, optional Google,
-          Microsoft, and GitHub identity providers, OpenFreeMap for browser map requests, and the
-          optional Gapwise AI boundary when a user enables it. Source data attribution is not the
-          same thing as a runtime processor.
+          Microsoft, and GitHub identity providers, OpenFreeMap for browser map requests, Cloudflare
+          for DNS, inbound Gapwise email routing, and Turnstile, Resend for configured transactional
+          authentication email, and the optional Gapwise AI boundary when a user enables it. Source
+          data attribution is not the same thing as a runtime processor.
         </p>
         <p>
           Exact provider regions, contractual roles, subprocessor chains, backup/log retention, and
@@ -148,6 +209,17 @@ function TrustPage() {
         >
           Data and trust inventory
         </a>
+      </section>
+
+      <section>
+        <h2>Analytics and tracking</h2>
+        <p>
+          Gapwise uses Vercel Web Analytics and Speed Insights for aggregate operational and
+          performance measurements. The project does not intentionally send raw timetable entries,
+          room details, friend data, authentication tokens, or precise live location as analytics
+          events. Hosting and provider logs can still contain technical network metadata, so Gapwise
+          does not describe the deployed service as producing no telemetry at all.
+        </p>
       </section>
 
       <section>
