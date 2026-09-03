@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://gapwise.ca/</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-times</loc></url>
   <url><loc>https://gapwise.ca/places</loc></url>
   <url><loc>https://gapwise.ca/places/davis-food-court</loc></url>
   <url><loc>https://gapwise.ca/places/utm-library</loc></url>
@@ -10,4 +11,14 @@
   <url><loc>https://gapwise.ca/privacy</loc></url>
   <url><loc>https://gapwise.ca/security</loc></url>
   <url><loc>https://gapwise.ca/accessibility</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/cct-to-davis</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/cct-to-deerfield</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/cct-to-kaneff</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/cct-to-mn</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/davis-to-deerfield</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/davis-to-kaneff</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/davis-to-mn</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/deerfield-to-kaneff</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/deerfield-to-mn</loc></url>
+  <url><loc>https://gapwise.ca/utm/walking-time/kaneff-to-mn</loc></url>
 </urlset>
