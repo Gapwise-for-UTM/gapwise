@@ -11,11 +11,11 @@ The release workflow is `.github/workflows/release-sdks.yml`. JavaScript publish
 
 ## Registry and runtime matrix
 
-| Implementation | Registry | Package | Runtime / consumer role | Release state |
-| --- | --- | --- | --- | --- |
-| TypeScript | npm | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling | `0.1.0` published |
-| TypeScript | JSR | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | package reserved and GitHub-linked; publication is complete only after the JSR job succeeds |
-| Python | PyPI | `gapwise` | Python sync + async clients | `0.1.0` published |
+| Implementation | Registry | Package        | Runtime / consumer role                                                        | Release state                                                                         |
+| -------------- | -------- | -------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| TypeScript     | npm      | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling                                | `0.1.0` published                                                                     |
+| TypeScript     | JSR      | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | package reserved and GitHub-linked; publication is complete only after the JSR job succeeds |
+| Python         | PyPI     | `gapwise`      | Python sync + async clients                                                            | `0.1.0` published                                                                     |
 
 Do not describe JSR as having a released version until the registry confirms that version exists. A reserved package and linked OIDC publisher are configuration facts, not a published release.
 
