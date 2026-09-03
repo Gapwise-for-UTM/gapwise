@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Inbox, Loader2, LockKeyhole, RefreshCw, Reply, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Inbox, Loader2, RefreshCw, Reply, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/features/auth/use-auth";
-import { requestGapwiseSignIn } from "@/features/auth/sign-in-trigger";
 import { getSupabaseClient } from "@/lib/supabase";
 
 type Mailbox = "support" | "security" | "test";
-
+type AccessState = "checking" | "authorized" | "denied";
 type MailMessage = {
   resend_email_id: string;
   direction: "inbound" | "outbound";
@@ -24,15 +23,14 @@ type MailMessage = {
   in_reply_to: string | null;
   reply_to_address: string | null;
 };
-
 type InvokeResult = { messages?: MailMessage[]; ok?: boolean; error?: string };
 
 export const Route = createFileRoute("/mail")({
   head: () => ({
     meta: [
-      { title: "Operator Mail — Gapwise" },
-      { name: "robots", content: "noindex,nofollow,noarchive" },
-      { name: "description", content: "Private Gapwise support and security mail console." },
+      { title: "Gapwise" },
+      { name: "robots", content: "noindex,nofollow,noarchive,nosnippet" },
+      { name: "referrer", content: "no-referrer" },
     ],
   }),
   component: MailPage,
@@ -40,7 +38,7 @@ export const Route = createFileRoute("/mail")({
 
 async function invokeMail(body: Record<string, unknown>): Promise<InvokeResult> {
   const client = getSupabaseClient();
-  if (!client) throw new Error("Gapwise cloud services are unavailable.");
+  if (!client) throw new Error("cloud_unavailable");
   const { data, error } = await client.functions.invoke("mail-operator", { body });
   if (error) throw error;
   return (data ?? {}) as InvokeResult;
@@ -54,8 +52,24 @@ function formatTime(value: string | null) {
     : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function HiddenRoute() {
+  return (
+    <main className="grid min-h-screen place-items-center bg-background px-6 text-foreground">
+      <section className="max-w-md text-center">
+        <p className="eyebrow text-muted-foreground">404</p>
+        <h1 className="mt-2 font-display text-3xl font-semibold">Page not found</h1>
+        <p className="mt-3 text-sm text-muted-foreground">The page you requested does not exist.</p>
+        <Link to="/" className="button-secondary mt-6 inline-flex min-h-11 items-center px-5 text-sm font-semibold">
+          Back to Gapwise
+        </Link>
+      </section>
+    </main>
+  );
+}
+
 function MailPage() {
   const { user, loading: authLoading } = useAuth();
+  const [access, setAccess] = useState<AccessState>("checking");
   const [mailbox, setMailbox] = useState<Mailbox>("support");
   const [messages, setMessages] = useState<MailMessage[]>([]);
   const [selected, setSelected] = useState<MailMessage | null>(null);
@@ -65,8 +79,28 @@ function MailPage() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      setAccess("denied");
+      return;
+    }
+    let active = true;
+    setAccess("checking");
+    void invokeMail({ action: "authorize" })
+      .then((result) => {
+        if (active) setAccess(result.ok === true ? "authorized" : "denied");
+      })
+      .catch(() => {
+        if (active) setAccess("denied");
+      });
+    return () => {
+      active = false;
+    };
+  }, [authLoading, user]);
+
   const loadInbox = useCallback(async () => {
-    if (!user) return;
+    if (access !== "authorized") return;
     setLoading(true);
     setError(null);
     try {
@@ -78,15 +112,15 @@ function MailPage() {
         setThread([]);
       }
     } catch {
-      setError("This account is not authorized for the Gapwise operator mailbox, or mail services are unavailable.");
+      setError("Mail could not be loaded. No message data was exposed.");
     } finally {
       setLoading(false);
     }
-  }, [mailbox, selected, user]);
+  }, [access, mailbox, selected]);
 
   useEffect(() => {
-    void loadInbox();
-  }, [loadInbox]);
+    if (access === "authorized") void loadInbox();
+  }, [access, loadInbox]);
 
   const openMessage = useCallback(async (message: MailMessage) => {
     setSelected(message);
@@ -95,8 +129,9 @@ function MailPage() {
       const result = await invokeMail({ action: "thread", threadId: message.thread_id });
       setThread(result.messages ?? [message]);
     } catch {
-      setThread([message]);
-      setError("The message opened, but its full conversation could not be loaded.");
+      setThread([]);
+      setSelected(null);
+      setError("The conversation could not be opened.");
     }
   }, []);
 
@@ -106,7 +141,7 @@ function MailPage() {
   );
 
   const sendReply = useCallback(async () => {
-    if (!replyTarget || !replyText.trim()) return;
+    if (!replyTarget || !replyText.trim() || access !== "authorized") return;
     setSending(true);
     setError(null);
     try {
@@ -116,37 +151,20 @@ function MailPage() {
       setThread(refreshed.messages ?? []);
       await loadInbox();
     } catch {
-      setError("The reply was not sent. Nothing was silently discarded; try again after checking mail service status.");
+      setError("The reply was not sent. Nothing was silently discarded.");
     } finally {
       setSending(false);
     }
-  }, [loadInbox, replyTarget, replyText]);
+  }, [access, loadInbox, replyTarget, replyText]);
 
-  if (authLoading) {
+  if (authLoading || access === "checking") {
     return (
       <main className="grid min-h-screen place-items-center bg-background px-6 text-foreground">
-        <Loader2 className="h-6 w-6 animate-spin text-accent" aria-label="Loading" />
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading" />
       </main>
     );
   }
-
-  if (!user) {
-    return (
-      <main className="min-h-screen bg-background px-6 py-16 text-foreground">
-        <section className="surface mx-auto max-w-xl p-8 sm:p-10">
-          <LockKeyhole className="h-8 w-8 text-accent" aria-hidden="true" />
-          <p className="eyebrow mt-5 text-accent">Restricted operations</p>
-          <h1 className="mt-2 font-display text-3xl font-semibold">Gapwise operator mail</h1>
-          <p className="mt-4 text-sm leading-6 text-muted-foreground">
-            Sign in with an authorized Gapwise operator account to read and answer support or security mail.
-          </p>
-          <button type="button" onClick={requestGapwiseSignIn} className="button-primary mt-6 min-h-11 px-5 text-sm font-semibold">
-            Sign in
-          </button>
-        </section>
-      </main>
-    );
-  }
+  if (access !== "authorized") return <HiddenRoute />;
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
@@ -173,14 +191,7 @@ function MailPage() {
 
         <div className="mb-4 flex gap-2" role="tablist" aria-label="Mailbox">
           {(["support", "security", "test"] as const).map((name) => (
-            <button
-              key={name}
-              type="button"
-              role="tab"
-              aria-selected={mailbox === name}
-              onClick={() => { setMailbox(name); setSelected(null); setThread([]); }}
-              className={mailbox === name ? "button-primary min-h-10 px-4 text-sm font-semibold capitalize" : "button-secondary min-h-10 px-4 text-sm font-semibold capitalize"}
-            >
+            <button key={name} type="button" role="tab" aria-selected={mailbox === name} onClick={() => { setMailbox(name); setSelected(null); setThread([]); }} className={mailbox === name ? "button-primary min-h-10 px-4 text-sm font-semibold capitalize" : "button-secondary min-h-10 px-4 text-sm font-semibold capitalize"}>
               {name}
             </button>
           ))}
@@ -194,16 +205,9 @@ function MailPage() {
               <Inbox className="h-4 w-4 text-accent" aria-hidden="true" /> {mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}
             </div>
             <div className="max-h-[68vh] overflow-y-auto">
-              {!loading && messages.length === 0 ? (
-                <p className="p-6 text-sm text-muted-foreground">No messages in this mailbox yet.</p>
-              ) : null}
+              {!loading && messages.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No messages in this mailbox yet.</p> : null}
               {messages.map((message) => (
-                <button
-                  key={message.resend_email_id}
-                  type="button"
-                  onClick={() => void openMessage(message)}
-                  className={`w-full border-b border-border/60 px-4 py-4 text-left transition hover:bg-accent/5 ${selected?.resend_email_id === message.resend_email_id ? "bg-accent/8" : ""}`}
-                >
+                <button key={message.resend_email_id} type="button" onClick={() => void openMessage(message)} className={`w-full border-b border-border/60 px-4 py-4 text-left transition hover:bg-accent/5 ${selected?.resend_email_id === message.resend_email_id ? "bg-accent/8" : ""}`}>
                   <div className="flex items-center justify-between gap-3">
                     <span className="truncate text-sm font-semibold">{message.direction === "inbound" ? message.from_address : message.to_addresses[0]}</span>
                     <span className="shrink-0 text-[11px] text-muted-foreground">{message.direction === "outbound" ? "Sent" : "Received"}</span>
@@ -218,25 +222,15 @@ function MailPage() {
           <section className="min-w-0">
             {!selected ? (
               <div className="grid h-full min-h-[420px] place-items-center p-8 text-center">
-                <div>
-                  <Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" />
-                  <h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">Replies are authenticated and sent through Resend from the matching Gapwise address.</p>
-                </div>
+                <div><Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2></div>
               </div>
             ) : (
               <div className="flex h-full max-h-[68vh] flex-col">
-                <div className="border-b border-border/70 px-5 py-4">
-                  <h2 className="font-display text-xl font-semibold">{selected.subject || "(no subject)"}</h2>
-                  <p className="mt-1 text-xs text-muted-foreground">Thread {selected.thread_id.slice(0, 8)} · {formatTime(selected.event_created_at ?? selected.updated_at)}</p>
-                </div>
+                <div className="border-b border-border/70 px-5 py-4"><h2 className="font-display text-xl font-semibold">{selected.subject || "(no subject)"}</h2><p className="mt-1 text-xs text-muted-foreground">Thread {selected.thread_id.slice(0, 8)} · {formatTime(selected.event_created_at ?? selected.updated_at)}</p></div>
                 <div className="flex-1 space-y-4 overflow-y-auto p-5">
                   {thread.map((message) => (
                     <article key={message.resend_email_id} className={`max-w-3xl rounded-2xl border p-4 ${message.direction === "outbound" ? "ml-auto border-accent/20 bg-accent/6" : "border-border/70 bg-background/60"}`}>
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                        <span>{message.direction === "inbound" ? `From ${message.from_address ?? "unknown sender"}` : `From ${message.from_address ?? "Gapwise"}`}</span>
-                        <span>{formatTime(message.event_created_at ?? message.updated_at)}</span>
-                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"><span>{message.direction === "inbound" ? `From ${message.from_address ?? "unknown sender"}` : `From ${message.from_address ?? "Gapwise"}`}</span><span>{formatTime(message.event_created_at ?? message.updated_at)}</span></div>
                       <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{message.text_body || "(No plain-text body)"}</p>
                       {message.attachment_metadata?.length ? <p className="mt-3 text-xs text-muted-foreground">Attachments: {message.attachment_metadata.map((item) => item.filename || "attachment").join(", ")}</p> : null}
                     </article>
@@ -245,12 +239,7 @@ function MailPage() {
                 <div className="border-t border-border/70 p-4">
                   <label htmlFor="operator-reply" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reply as {mailbox === "security" ? "security@gapwise.ca" : "support@gapwise.ca"}</label>
                   <textarea id="operator-reply" value={replyText} onChange={(event) => setReplyText(event.target.value)} rows={4} placeholder="Write a reply…" className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent" />
-                  <div className="mt-3 flex justify-end">
-                    <button type="button" disabled={!replyText.trim() || sending} onClick={() => void sendReply()} className="button-primary inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-50">
-                      {sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Reply className="h-4 w-4" aria-hidden="true" />}
-                      {sending ? "Sending…" : "Send reply"}
-                    </button>
-                  </div>
+                  <div className="mt-3 flex justify-end"><button type="button" disabled={!replyText.trim() || sending} onClick={() => void sendReply()} className="button-primary inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Reply className="h-4 w-4" aria-hidden="true" />}{sending ? "Sending…" : "Send reply"}</button></div>
                 </div>
               </div>
             )}
