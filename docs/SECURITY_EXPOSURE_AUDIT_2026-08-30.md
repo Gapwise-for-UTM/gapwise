@@ -43,9 +43,11 @@ Authorization is enforced on the server and in PostgreSQL RLS, not only through 
 
 ### 6. Users able to access other users' data
 
-**Status:** Verified protected for the current database/application boundary; the AI real-client matrix remains separately open.
+**Status:** Verified protected for the current database/application boundary with additional AI application-layer ownership assertions; the real-client matrix remains separately open.
 
-Cross-account/RLS tests fail closed, current policies bind private rows to `auth.uid()`, and live production metadata review found no anonymous table grants. Real Claude/ChatGPT delegation matrices are still required by the separate broad-client release gate and are not replaced by this result.
+Cross-account/RLS tests fail closed, current policies bind private rows to `auth.uid()`, and live production metadata review found no anonymous table grants. The `gapwise-ai` service now independently rejects returned AI delegation, pending-action, or approved-client rows when `user_id` does not exactly match the cryptographically verified caller, and it rejects delegation/action inserts whose owner differs from that caller. This makes an upstream/RLS regression fail closed at the application boundary rather than silently becoming a cross-account read or write.
+
+These checks are defense in depth rather than a replacement for RLS, OAuth client approval, MCP audience binding, token validation, or encryption user binding. Real Claude/ChatGPT OAuth/read/write/revoke and cross-account refusal matrices are still required by the separate broad-client release gate and are not replaced by this result.
 
 ### 7. Open or overly permissive database read/write permissions
 
@@ -87,7 +89,7 @@ PR #213 redacts bearer tokens, JWTs, cookie values, API/service-role keys, passw
 
 **Status:** Verified protected by permanent core and AI history gates.
 
-Core CI scans every commit reachable from the candidate head. `gapwise-ai` already has a reachable-history secret scan. The AI release checklist still requires a fresh exact-final-head run after the real-client matrices.
+Core CI scans every commit reachable from the candidate head. `gapwise-ai` has a reachable-history secret scan, and the ownership-hardening PR passed its CI, Vercel, and review checks before merge. The AI release checklist still requires a fresh exact-final-head run after the real-client matrices.
 
 ### 14. Secrets included in frontend JavaScript
 
@@ -99,7 +101,7 @@ Public browser configuration is separated from service-role, KEK, and database s
 
 **Status:** Verified protected.
 
-Authentication and authorization for private data are enforced server-side and again by forced database RLS. Security-sensitive ownership is derived from the authenticated session instead of trusted from user-supplied owner IDs.
+Authentication and authorization for private data are enforced server-side and again by forced database RLS. Security-sensitive ownership is derived from the authenticated session instead of trusted from user-supplied owner IDs. The AI bridge also independently validates ownership on returned rows and owner-bearing inserts.
 
 ### 16. Missing input validation
 
@@ -143,6 +145,8 @@ These observations are point-in-time provider evidence, not permanent claims abo
 - known server-only secret names referenced by browser source; or
 - new admin/debug/devtools/internal production-route filenames requiring explicit review.
 
+The AI bridge additionally keeps a regression test for its application ownership assertion so a hypothetical upstream/RLS cross-account row is rejected before application use.
+
 Known synthetic credential fixtures use the reserved `example.invalid` domain and are excluded narrowly rather than weakening the credential pattern globally.
 
 ## Remaining evidence that cannot be manufactured from source code
@@ -150,7 +154,7 @@ Known synthetic credential fixtures use the reserved `example.invalid` domain an
 This audit does not close provider, device, or external-client facts. In particular:
 
 - Vercel/runtime-log retention and access, provider contractual terms, OAuth-provider scopes, and other provider-account facts still require their own evidence (Linear AND-174);
-- the real Claude and ChatGPT OAuth/read/write/revoke matrices and production-equivalent revoke/re-auth negative paths remain required by the Gapwise AI release program;
+- the real Claude and ChatGPT OAuth/read/write/revoke matrices, cross-account refusal checks, and production-equivalent revoke/re-auth negative paths remain required by the Gapwise AI release program;
 - the final exact-head secret/history/CI/deployment verification must run after those real-client matrices and any fixes they cause; and
 - the actual encrypted off-site database backup and disposable-target restore drill remains an operational exercise rather than a repository claim.
 
