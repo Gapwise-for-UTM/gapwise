@@ -10,7 +10,14 @@ curl 'https://api.gapwise.ca/v1/places?building=HM&openNow=unknown'
 curl -X POST https://api.gapwise.ca/v1/routes -H 'content-type: application/json' -d '{"from":"MN","to":"IB"}'
 ```
 
-JavaScript/TypeScript consumers can install the verified npm release with `npm install @gapwise/sdk@0.1.0`. Python consumers use `gapwise`, but the Python package is not yet published to PyPI; use the repository source until the PyPI Trusted Publishing and clean-install gates complete. Source quickstarts and recipes live in [`../sdk/javascript`](../sdk/javascript) and [`../sdk/python`](../sdk/python).
+Official SDKs are published for both ecosystems:
+
+```bash
+npm install @gapwise/sdk@0.1.0
+python -m pip install gapwise==0.1.0
+```
+
+Source quickstarts and recipes live in [`../sdk/javascript`](../sdk/javascript) and [`../sdk/python`](../sdk/python).
 
 ## Resources and discovery
 
