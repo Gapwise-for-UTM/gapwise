@@ -85,9 +85,7 @@ function HiddenRoute() {
       <section className="max-w-md text-center">
         <p className="eyebrow text-muted-foreground">404</p>
         <h1 className="mt-2 font-display text-3xl font-semibold">Page not found</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          The page you requested does not exist.
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground">The page you requested does not exist.</p>
         <Link
           to="/"
           className="button-secondary mt-6 inline-flex min-h-11 items-center px-5 text-sm font-semibold"
@@ -241,8 +239,8 @@ function OpsPage() {
             <p className="eyebrow text-muted-foreground">Production overview</p>
             <h2 className="mt-1 font-display text-3xl font-semibold">Gapwise platform health</h2>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Sanitized operational metadata only. This dashboard does not expose timetable contents,
-              precise location, credentials, email bodies, or OAuth tokens.
+              Sanitized operational metadata only. This dashboard does not expose timetable
+              contents, precise location, credentials, email bodies, or OAuth tokens.
             </p>
           </div>
           <div className="text-sm text-muted-foreground">
