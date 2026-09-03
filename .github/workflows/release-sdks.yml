@@ -17,6 +17,10 @@ on:
           - both
           - all
   push:
+    branches:
+      - main
+    paths:
+      - "sdk/javascript/jsr.json"
     tags:
       - "python-v*"
 
@@ -149,7 +153,7 @@ jobs:
 
   publish-jsr:
     name: Publish @gapwise/sdk to JSR
-    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'jsr' || inputs.target == 'javascript' || inputs.target == 'all') }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'jsr' || inputs.target == 'javascript' || inputs.target == 'all')) }}
     needs: verify
     runs-on: ubuntu-latest
     permissions:
