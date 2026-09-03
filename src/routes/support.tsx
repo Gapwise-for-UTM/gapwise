@@ -33,11 +33,15 @@ function SupportPage() {
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <Link to="/ai" className={cardClass}>
             <strong className="block text-foreground">AI connectors</strong>
-            <span className="mt-1 block">Connect, authorize, revoke, and troubleshoot Gapwise AI access.</span>
+            <span className="mt-1 block">
+              Connect, authorize, revoke, and troubleshoot Gapwise AI access.
+            </span>
           </Link>
           <Link to="/privacy" className={cardClass}>
             <strong className="block text-foreground">Privacy & data</strong>
-            <span className="mt-1 block">What Gapwise processes and the controls available to you.</span>
+            <span className="mt-1 block">
+              What Gapwise processes and the controls available to you.
+            </span>
           </Link>
           <Link to="/security" className={cardClass}>
             <strong className="block text-foreground">Security reporting</strong>
@@ -45,7 +49,9 @@ function SupportPage() {
           </Link>
           <a href="https://status.gapwise.ca/" className={cardClass}>
             <strong className="block text-foreground">Service status</strong>
-            <span className="mt-1 block">Check whether a current service issue may explain a failure.</span>
+            <span className="mt-1 block">
+              Check whether a current service issue may explain a failure.
+            </span>
           </a>
         </div>
       </section>
@@ -60,9 +66,9 @@ function SupportPage() {
           <li>If access was previously revoked, reconnect and authorize the client again.</li>
         </ol>
         <p>
-          The canonical remote MCP service is{" "}
-          <code>https://ai.gapwise.ca/api/mcp</code>. Supported clients should discover the OAuth
-          requirements from that service rather than asking you to paste an access token.
+          The canonical remote MCP service is <code>https://ai.gapwise.ca/api/mcp</code>. Supported
+          clients should discover the OAuth requirements from that service rather than asking you to
+          paste an access token.
         </p>
       </section>
 
@@ -78,9 +84,9 @@ function SupportPage() {
       <section>
         <h2>An AI-requested change was rejected</h2>
         <p>
-          Personal-item and supported preference writes are permission-checked and revision-bound.
-          A stale or conflicting write can fail even if the assistant expected it to work. Refresh
-          the current Gapwise context and retry only if the request still fits. Imported academic
+          Personal-item and supported preference writes are permission-checked and revision-bound. A
+          stale or conflicting write can fail even if the assistant expected it to work. Refresh the
+          current Gapwise context and retry only if the request still fits. Imported academic
           meetings cannot be created, edited, or deleted through AI integrations.
         </p>
       </section>
@@ -90,8 +96,8 @@ function SupportPage() {
         <p>
           Revoke the connector from Gapwise AI settings. Revocation removes the delegated Gapwise AI
           snapshot and queued bridge actions and prevents subsequent private connector reads or
-          writes until you explicitly authorize again. You may also use the connected provider&apos;s
-          own connector-management controls.
+          writes until you explicitly authorize again. You may also use the connected
+          provider&apos;s own connector-management controls.
         </p>
       </section>
 
@@ -118,10 +124,7 @@ function SupportPage() {
           public Gapwise GitHub repository. Remove account data, timetable details, tokens, and
           security-sensitive reproduction information before posting publicly.
         </p>
-        <a
-          className="text-accent underline"
-          href="https://github.com/andrewmuratov/gapwise/issues"
-        >
+        <a className="text-accent underline" href="https://github.com/andrewmuratov/gapwise/issues">
           Gapwise issues
         </a>
       </section>
