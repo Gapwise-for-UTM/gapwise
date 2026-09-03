@@ -1,6 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Inbox, Loader2, RefreshCw, Reply, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronLeft,
+  Clock3,
+  Inbox,
+  Loader2,
+  Paperclip,
+  RefreshCw,
+  Reply,
+  Search,
+  ShieldCheck,
+  TriangleAlert,
+} from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/auth/use-auth";
 import { useTheme } from "@/hooks/use-preferences";
@@ -46,12 +59,30 @@ async function invokeMail(body: Record<string, unknown>): Promise<InvokeResult> 
   return (data ?? {}) as InvokeResult;
 }
 
-function formatTime(value: string | null) {
-  if (!value) return "Unknown time";
+function toDate(value: string | null) {
+  if (!value) return null;
   const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Unknown time"
-    : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatTime(value: string | null) {
+  const date = toDate(value);
+  return date
+    ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date)
+    : "Unknown time";
+}
+
+function formatInboxTime(value: string | null) {
+  const date = toDate(value);
+  if (!date) return "";
+  const now = new Date();
+  const sameDay = date.toDateString() === now.toDateString();
+  if (sameDay) return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(date);
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return new Intl.DateTimeFormat(
+    undefined,
+    sameYear ? { month: "short", day: "numeric" } : { year: "numeric", month: "short", day: "numeric" },
+  ).format(date);
 }
 
 function cleanConversationBody(value: string | null) {
@@ -59,13 +90,45 @@ function cleanConversationBody(value: string | null) {
   const lines = value.replace(/\r\n/g, "\n").split("\n");
   const kept: string[] = [];
   for (const line of lines) {
-    if (/^On .+ wrote:\s*$/iu.test(line.trim())) break;
-    if (/^-{2,}\s*Original Message\s*-{2,}$/iu.test(line.trim())) break;
-    if (/^From:\s.+/iu.test(line.trim()) && kept.length > 0) break;
+    const trimmed = line.trim();
+    if (/^On .+ wrote:\s*$/iu.test(trimmed)) break;
+    if (/^-{2,}\s*Original Message\s*-{2,}$/iu.test(trimmed)) break;
+    if (/^From:\s.+/iu.test(trimmed) && kept.length > 0) break;
     kept.push(line);
   }
   while (kept.length && !kept[kept.length - 1]?.trim()) kept.pop();
   return kept.join("\n").trim();
+}
+
+function bareAddress(value: string | null | undefined) {
+  if (!value) return "";
+  return value.match(/<([^<>]+)>/u)?.[1] ?? value;
+}
+
+function displayName(value: string | null | undefined) {
+  if (!value) return "Unknown sender";
+  const name = value.replace(/<[^<>]+>/gu, "").trim();
+  if (name) return name;
+  const address = bareAddress(value);
+  return address.split("@")[0] || address;
+}
+
+function senderInitial(value: string | null | undefined) {
+  return displayName(value).slice(0, 1).toUpperCase() || "?";
+}
+
+function deliveryLabel(message: MailMessage) {
+  if (message.direction === "inbound") return null;
+  const event = message.latest_event_type.toLowerCase();
+  if (event.includes("fail") || event.includes("bounce") || event.includes("suppress"))
+    return { label: "Delivery issue", kind: "error" as const };
+  if (event.includes("deliver")) return { label: "Delivered", kind: "success" as const };
+  if (event.includes("sent")) return { label: "Sent", kind: "success" as const };
+  return { label: "Sending", kind: "pending" as const };
+}
+
+function draftKey(mailbox: Mailbox, threadId: string) {
+  return `gapwise:mail:draft:${mailbox}:${threadId}`;
 }
 
 function HiddenRoute() {
@@ -92,9 +155,13 @@ function MailPage() {
   const [selected, setSelected] = useState<MailMessage | null>(null);
   const [thread, setThread] = useState<MailMessage[]>([]);
   const [replyText, setReplyText] = useState("");
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [threadLoading, setThreadLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const threadEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -119,7 +186,7 @@ function MailPage() {
   const loadInbox = useCallback(async (silent = false) => {
     if (access !== "authorized") return;
     if (!silent) setLoading(true);
-    setError(null);
+    if (!silent) setError(null);
     try {
       const result = await invokeMail({ action: "list", mailbox });
       setMessages(result.messages ?? []);
@@ -130,12 +197,27 @@ function MailPage() {
     }
   }, [access, mailbox]);
 
+  const refreshThread = useCallback(async (threadId: string, silent = false) => {
+    if (!silent) setThreadLoading(true);
+    try {
+      const result = await invokeMail({ action: "thread", threadId });
+      setThread(result.messages ?? []);
+    } catch {
+      if (!silent) setError("The conversation could not be refreshed.");
+    } finally {
+      if (!silent) setThreadLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (access !== "authorized") return;
     void loadInbox();
-    const timer = window.setInterval(() => void loadInbox(true), 20_000);
+    const timer = window.setInterval(() => {
+      void loadInbox(true);
+      if (selected?.thread_id) void refreshThread(selected.thread_id, true);
+    }, 20_000);
     return () => window.clearInterval(timer);
-  }, [access, loadInbox]);
+  }, [access, loadInbox, refreshThread, selected?.thread_id]);
 
   const conversations = useMemo(() => {
     const byThread = new Map<string, MailMessage>();
@@ -145,10 +227,26 @@ function MailPage() {
     return [...byThread.values()];
   }, [messages]);
 
+  const filteredConversations = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return conversations;
+    return conversations.filter((message) => {
+      const haystack = [
+        message.subject,
+        message.from_address,
+        message.to_addresses.join(" "),
+        cleanConversationBody(message.text_body),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [conversations, query]);
+
   useEffect(() => {
     if (!selected) return;
-    const summary = conversations.find((item) => item.thread_id === selected.thread_id);
-    if (!summary) {
+    if (!conversations.some((item) => item.thread_id === selected.thread_id)) {
       setSelected(null);
       setThread([]);
     }
@@ -157,6 +255,7 @@ function MailPage() {
   const openMessage = useCallback(async (message: MailMessage) => {
     setSelected(message);
     setError(null);
+    setThreadLoading(true);
     try {
       const result = await invokeMail({ action: "thread", threadId: message.thread_id });
       setThread(result.messages ?? [message]);
@@ -164,8 +263,62 @@ function MailPage() {
       setThread([]);
       setSelected(null);
       setError("The conversation could not be opened.");
+    } finally {
+      setThreadLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (!selected) {
+      setReplyText("");
+      return;
+    }
+    try {
+      setReplyText(window.localStorage.getItem(draftKey(mailbox, selected.thread_id)) ?? "");
+    } catch {
+      setReplyText("");
+    }
+  }, [mailbox, selected?.thread_id]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const key = draftKey(mailbox, selected.thread_id);
+    const timer = window.setTimeout(() => {
+      try {
+        if (replyText.trim()) window.localStorage.setItem(key, replyText);
+        else window.localStorage.removeItem(key);
+      } catch {
+        // Draft persistence is a convenience only; mailbox operation never depends on it.
+      }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [mailbox, replyText, selected]);
+
+  useEffect(() => {
+    if (!thread.length) return;
+    window.requestAnimationFrame(() => threadEndRef.current?.scrollIntoView({ block: "end" }));
+  }, [selected?.thread_id, thread.length]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key === "/" &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        !(event.target instanceof HTMLInputElement) &&
+        !(event.target instanceof HTMLTextAreaElement)
+      ) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (event.key === "Escape" && selected && !(event.target instanceof HTMLTextAreaElement)) {
+        setSelected(null);
+        setThread([]);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [selected]);
 
   const replyTarget = useMemo(
     () => [...thread].reverse().find((item) => item.direction === "inbound") ?? selected,
@@ -178,16 +331,20 @@ function MailPage() {
     setError(null);
     try {
       await invokeMail({ action: "reply", messageId: replyTarget.resend_email_id, text: replyText.trim() });
+      try {
+        window.localStorage.removeItem(draftKey(mailbox, replyTarget.thread_id));
+      } catch {
+        // Non-critical.
+      }
       setReplyText("");
-      const refreshed = await invokeMail({ action: "thread", threadId: replyTarget.thread_id });
-      setThread(refreshed.messages ?? []);
+      await refreshThread(replyTarget.thread_id, true);
       await loadInbox(true);
     } catch {
-      setError("The reply was not sent. Nothing was silently discarded.");
+      setError("The reply was not sent. Your draft is still here.");
     } finally {
       setSending(false);
     }
-  }, [access, loadInbox, replyTarget, replyText, sending]);
+  }, [access, loadInbox, mailbox, refreshThread, replyTarget, replyText, sending]);
 
   if (authLoading || access === "checking") {
     return (
@@ -199,13 +356,18 @@ function MailPage() {
   if (access !== "authorized") return <HiddenRoute />;
 
   const replyAs = mailbox === "security" ? "security@gapwise.ca" : "support@gapwise.ca";
+  const selectedParticipant = selected
+    ? selected.direction === "inbound"
+      ? selected.from_address
+      : selected.to_addresses[0]
+    : null;
 
   return (
-    <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <main className="min-h-screen bg-background px-3 py-4 text-foreground sm:px-5 sm:py-6 lg:px-8">
+      <div className="mx-auto max-w-[1440px]">
+        <header className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <Link to="/" className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <Link to="/" className="mb-3 inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground">
               <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Gapwise
             </Link>
             <div className="flex items-center gap-3">
@@ -218,7 +380,7 @@ function MailPage() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-end sm:self-auto">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <button type="button" onClick={() => void loadInbox()} disabled={loading} className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60">
               <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" /> Refresh
@@ -226,65 +388,124 @@ function MailPage() {
           </div>
         </header>
 
-        <div className="mb-4 flex gap-2" role="tablist" aria-label="Mailbox">
+        <div className="mb-3 flex flex-wrap items-center gap-2" role="tablist" aria-label="Mailbox">
           {(["support", "security", "test"] as const).map((name) => (
-            <button key={name} type="button" role="tab" aria-selected={mailbox === name} onClick={() => { setMailbox(name); setSelected(null); setThread([]); }} className={mailbox === name ? "button-primary min-h-10 px-4 text-sm font-semibold capitalize" : "button-secondary min-h-10 px-4 text-sm font-semibold capitalize"}>
+            <button
+              key={name}
+              type="button"
+              role="tab"
+              aria-selected={mailbox === name}
+              onClick={() => {
+                setMailbox(name);
+                setSelected(null);
+                setThread([]);
+                setQuery("");
+              }}
+              className={mailbox === name ? "button-primary min-h-10 px-4 text-sm font-semibold capitalize" : "button-secondary min-h-10 px-4 text-sm font-semibold capitalize"}
+            >
               {name}
             </button>
           ))}
         </div>
 
-        {error ? <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm">{error}</div> : null}
+        {error ? <div className="mb-3 flex items-start gap-2 rounded-2xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm"><TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />{error}</div> : null}
 
-        <div className="grid min-h-[70vh] overflow-hidden rounded-3xl border border-border/70 bg-card/70 shadow-sm lg:grid-cols-[360px_1fr]">
-          <aside className="border-b border-border/70 lg:border-b-0 lg:border-r">
+        <div className="grid min-h-[76vh] overflow-hidden rounded-3xl border border-border/70 bg-card/70 shadow-sm lg:grid-cols-[390px_1fr]">
+          <aside className={`${selected ? "hidden lg:block" : "block"} border-border/70 lg:border-r`}>
+            <div className="border-b border-border/70 p-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <input
+                  ref={searchRef}
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={`Search ${mailbox}…`}
+                  aria-label={`Search ${mailbox} conversations`}
+                  className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-12 text-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15"
+                />
+                <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border bg-muted/50 px-1.5 py-0.5 text-[10px] text-muted-foreground">/</kbd>
+              </div>
+            </div>
             <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
               <div className="flex items-center gap-2 text-sm font-semibold"><Inbox className="h-4 w-4 text-accent" aria-hidden="true" /> {mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</div>
-              <span className="text-xs text-muted-foreground">{conversations.length} conversation{conversations.length === 1 ? "" : "s"}</span>
+              <span className="text-xs text-muted-foreground">{filteredConversations.length} of {conversations.length}</span>
             </div>
-            <div className="max-h-[70vh] overflow-y-auto">
-              {!loading && conversations.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No messages in this mailbox yet.</p> : null}
-              {conversations.map((message) => {
+            <div className="max-h-[calc(76vh-105px)] overflow-y-auto">
+              {loading ? <div className="flex items-center gap-2 p-6 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />Loading conversations…</div> : null}
+              {!loading && filteredConversations.length === 0 ? <p className="p-6 text-sm text-muted-foreground">{query ? "No conversations match your search." : "No messages in this mailbox yet."}</p> : null}
+              {filteredConversations.map((message) => {
                 const active = selected?.thread_id === message.thread_id;
+                const participant = message.direction === "inbound" ? message.from_address : message.to_addresses[0];
                 const preview = cleanConversationBody(message.text_body) || "No plain-text preview.";
+                const delivery = deliveryLabel(message);
                 return (
-                  <button key={message.thread_id} type="button" onClick={() => void openMessage(message)} className={`w-full border-b border-border/60 px-4 py-4 text-left transition-colors hover:bg-accent/5 ${active ? "bg-accent/8" : ""}`}>
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="truncate text-sm font-semibold">{message.direction === "inbound" ? message.from_address : message.to_addresses[0]}</span>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">{formatTime(message.event_created_at ?? message.updated_at)}</span>
+                  <button key={message.thread_id} type="button" onClick={() => void openMessage(message)} className={`group w-full border-b border-border/60 px-4 py-4 text-left transition-colors hover:bg-accent/5 ${active ? "bg-accent/8" : ""}`}>
+                    <div className="flex gap-3">
+                      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">{senderInitial(participant)}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="truncate text-sm font-semibold">{displayName(participant)}</span>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">{formatInboxTime(message.event_created_at ?? message.updated_at)}</span>
+                        </div>
+                        <p className="mt-0.5 truncate text-sm font-medium">{message.subject || "(no subject)"}</p>
+                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{preview}</p>
+                        <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                          {message.attachment_metadata?.length ? <span className="inline-flex items-center gap-1"><Paperclip className="h-3 w-3" aria-hidden="true" />{message.attachment_metadata.length}</span> : null}
+                          {delivery ? <span>{delivery.label}</span> : null}
+                        </div>
+                      </div>
                     </div>
-                    <p className="mt-1 truncate text-sm font-medium">{message.subject || "(no subject)"}</p>
-                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{preview}</p>
                   </button>
                 );
               })}
             </div>
           </aside>
 
-          <section className="min-w-0">
+          <section className={`${selected ? "block" : "hidden lg:block"} min-w-0`}>
             {!selected ? (
-              <div className="grid h-full min-h-[440px] place-items-center p-8 text-center">
-                <div><Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2><p className="mt-2 text-sm text-muted-foreground">Replies and follow-ups stay grouped into one thread.</p></div>
+              <div className="grid h-full min-h-[520px] place-items-center p-8 text-center">
+                <div><Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2><p className="mt-2 text-sm text-muted-foreground">Search, read and reply without leaving the private operator console.</p></div>
               </div>
             ) : (
-              <div className="flex h-full max-h-[70vh] flex-col">
-                <div className="border-b border-border/70 px-5 py-4"><h2 className="font-display text-xl font-semibold">{selected.subject || "(no subject)"}</h2><p className="mt-1 text-xs text-muted-foreground">Conversation · {thread.length} message{thread.length === 1 ? "" : "s"}</p></div>
-                <div className="flex-1 space-y-4 overflow-y-auto bg-background/30 p-5">
+              <div className="flex h-full max-h-[76vh] flex-col">
+                <div className="flex items-start gap-3 border-b border-border/70 px-4 py-4 sm:px-5">
+                  <button type="button" onClick={() => { setSelected(null); setThread([]); }} className="button-secondary mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center lg:hidden" aria-label="Back to conversations"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></button>
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate font-display text-xl font-semibold">{selected.subject || "(no subject)"}</h2>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{selectedParticipant ? `${displayName(selectedParticipant)} · ${bareAddress(selectedParticipant)}` : "Conversation"} · {thread.length} message{thread.length === 1 ? "" : "s"}</p>
+                  </div>
+                  {threadLoading ? <Loader2 className="mt-1 h-4 w-4 animate-spin text-muted-foreground" aria-label="Refreshing conversation" /> : null}
+                </div>
+
+                <div className="flex-1 space-y-5 overflow-y-auto bg-background/30 p-4 sm:p-5">
                   {thread.map((message) => {
                     const body = cleanConversationBody(message.text_body) || "(No plain-text body)";
+                    const delivery = deliveryLabel(message);
+                    const sender = message.direction === "inbound" ? message.from_address : message.from_address ?? "Gapwise";
                     return (
-                      <article key={message.resend_email_id} className={`max-w-3xl rounded-2xl border p-4 shadow-sm ${message.direction === "outbound" ? "ml-auto border-accent/20 bg-accent/6" : "border-border/70 bg-card"}`}>
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"><span>{message.direction === "inbound" ? `From ${message.from_address ?? "unknown sender"}` : `From ${message.from_address ?? "Gapwise"}`}</span><span>{formatTime(message.event_created_at ?? message.updated_at)}</span></div>
-                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{body}</p>
-                        {message.attachment_metadata?.length ? <p className="mt-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">Attachments: {message.attachment_metadata.map((item) => item.filename || "attachment").join(", ")}</p> : null}
+                      <article key={message.resend_email_id} className={`max-w-3xl rounded-2xl border p-4 shadow-sm sm:p-5 ${message.direction === "outbound" ? "ml-auto border-accent/20 bg-accent/6" : "border-border/70 bg-card"}`}>
+                        <div className="flex items-start gap-3">
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${message.direction === "outbound" ? "bg-accent/12 text-accent" : "bg-muted text-muted-foreground"}`}>{senderInitial(sender)}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                              <div className="min-w-0"><p className="truncate text-sm font-semibold">{displayName(sender)}</p><p className="truncate text-xs text-muted-foreground">{bareAddress(sender)}</p></div>
+                              <span className="shrink-0 text-xs text-muted-foreground">{formatTime(message.event_created_at ?? message.updated_at)}</span>
+                            </div>
+                            <p className="mt-4 whitespace-pre-wrap break-words text-[15px] leading-7">{body}</p>
+                            {message.attachment_metadata?.length ? <div className="mt-4 border-t border-border/60 pt-3"><p className="mb-2 text-xs font-medium text-muted-foreground">Attachments</p><div className="flex flex-wrap gap-2">{message.attachment_metadata.map((item, index) => <span key={`${item.filename ?? "attachment"}-${index}`} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/70 px-2.5 py-1.5 text-xs"><Paperclip className="h-3.5 w-3.5" aria-hidden="true" />{item.filename || "attachment"}</span>)}</div></div> : null}
+                            {delivery ? <div className={`mt-3 inline-flex items-center gap-1.5 text-xs ${delivery.kind === "error" ? "text-destructive" : "text-muted-foreground"}`}>{delivery.kind === "success" ? <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> : delivery.kind === "pending" ? <Clock3 className="h-3.5 w-3.5" aria-hidden="true" /> : <TriangleAlert className="h-3.5 w-3.5" aria-hidden="true" />}{delivery.label}</div> : null}
+                          </div>
+                        </div>
                       </article>
                     );
                   })}
+                  <div ref={threadEndRef} />
                 </div>
-                <div className="border-t border-border/70 bg-card/80 p-4">
-                  <div className="mb-2 flex items-center justify-between gap-3"><label htmlFor="operator-reply" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reply as {replyAs}</label><span className="text-[11px] text-muted-foreground">Ctrl/⌘ + Enter to send</span></div>
-                  <textarea id="operator-reply" value={replyText} onChange={(event) => setReplyText(event.target.value)} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void sendReply(); } }} rows={5} placeholder="Write a polished reply…" className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
-                  <div className="mt-3 flex items-center justify-between gap-3"><p className="text-xs text-muted-foreground">Gapwise branding, logo, website and a professional signature are added automatically.</p><button type="button" disabled={!replyText.trim() || sending} onClick={() => void sendReply()} className="button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Reply className="h-4 w-4" aria-hidden="true" />}{sending ? "Sending…" : "Send reply"}</button></div>
+
+                <div className="border-t border-border/70 bg-card/90 p-3 sm:p-4">
+                  <div className="mb-2 flex items-center justify-between gap-3"><label htmlFor="operator-reply" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reply as {replyAs}</label><span className="hidden text-[11px] text-muted-foreground sm:inline">Ctrl/⌘ + Enter to send</span></div>
+                  <textarea id="operator-reply" value={replyText} onChange={(event) => setReplyText(event.target.value)} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void sendReply(); } }} rows={5} placeholder="Write a reply…" className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-[15px] leading-6 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+                  <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-muted-foreground">{replyText.trim() ? "Draft saved on this device." : "Professional Gapwise signature and responsive email formatting are added automatically."}</p><button type="button" disabled={!replyText.trim() || sending} onClick={() => void sendReply()} className="button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Reply className="h-4 w-4" aria-hidden="true" />}{sending ? "Sending…" : "Send reply"}</button></div>
                 </div>
               </div>
             )}
