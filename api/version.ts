@@ -7,9 +7,9 @@ export default {
       return jsonResponse(requestId, { error: "method_not_allowed" }, 405);
     }
 
-    const commit = process.env.VERCEL_GIT_COMMIT_SHA?.trim() || null;
-    const branch = process.env.VERCEL_GIT_COMMIT_REF?.trim() || null;
-    const environment = process.env.VERCEL_ENV?.trim() || "unknown";
+    const commit = process.env["VERCEL_GIT_COMMIT_SHA"]?.trim() || null;
+    const branch = process.env["VERCEL_GIT_COMMIT_REF"]?.trim() || null;
+    const environment = process.env["VERCEL_ENV"]?.trim() || "unknown";
 
     return jsonResponse(
       requestId,
