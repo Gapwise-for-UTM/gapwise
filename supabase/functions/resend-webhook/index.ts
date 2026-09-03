@@ -35,7 +35,8 @@ function adminClient() {
   }
 
   if (!key) key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ?? "";
-  if (!url || !key) throw new Error("Supabase admin credentials are unavailable.");
+  if (!url || !key)
+    throw new Error("Supabase admin credentials are unavailable.");
 
   return createClient(url, key, {
     auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
@@ -48,7 +49,8 @@ function decodeBase64(value: string) {
 }
 
 function signingKeyBytes(secret: string) {
-  if (!secret.startsWith("whsec_")) throw new Error("Webhook signing secret is malformed.");
+  if (!secret.startsWith("whsec_"))
+    throw new Error("Webhook signing secret is malformed.");
   return decodeBase64(secret.slice("whsec_".length));
 }
 
@@ -79,7 +81,8 @@ async function verifySignature(
     if (comma === -1 || candidate.slice(0, comma) !== "v1") continue;
     try {
       const signature = decodeBase64(candidate.slice(comma + 1));
-      if (await crypto.subtle.verify("HMAC", key, signature, signedPayload)) return true;
+      if (await crypto.subtle.verify("HMAC", key, signature, signedPayload))
+        return true;
     } catch {
       // Ignore malformed signature candidates and continue checking rotations.
     }
@@ -106,7 +109,8 @@ function eventCategory(tags: unknown) {
     for (const tag of tags) {
       if (!tag || typeof tag !== "object") continue;
       const value = tag as Record<string, unknown>;
-      if (value["name"] === "category") return stringOrNull(value["value"], 120);
+      if (value["name"] === "category")
+        return stringOrNull(value["value"], 120);
     }
     return null;
   }
@@ -129,14 +133,24 @@ function attachmentMetadata(value: unknown) {
     const contentDisposition = stringOrNull(item["content_disposition"], 255);
     const contentId = stringOrNull(item["content_id"], 512);
     if (!id && !filename) return [];
-    return [{ id, filename, content_type: contentType, content_disposition: contentDisposition, content_id: contentId }];
+    return [
+      {
+        id,
+        filename,
+        content_type: contentType,
+        content_disposition: contentDisposition,
+        content_id: contentId,
+      },
+    ];
   });
 }
 
 function mailboxForRecipients(recipients: string[]) {
   for (const recipient of recipients) {
     const address = recipient.toLowerCase();
-    const local = address.includes("<") ? address.slice(address.lastIndexOf("<") + 1, address.lastIndexOf("@")) : address.slice(0, address.indexOf("@"));
+    const local = address.includes("<")
+      ? address.slice(address.lastIndexOf("<") + 1, address.lastIndexOf("@"))
+      : address.slice(0, address.indexOf("@"));
     if (local === "support") return "support";
     if (local === "security") return "security";
     if (local === "hello") return "hello";
@@ -182,11 +196,22 @@ Deno.serve(async (request: Request) => {
     "get_resend_webhook_signing_secret",
   );
   if (secretError || typeof signingSecret !== "string" || !signingSecret) {
-    console.error("resend_webhook_secret_unavailable", secretError?.message ?? "missing secret");
+    console.error(
+      "resend_webhook_secret_unavailable",
+      secretError?.message ?? "missing secret",
+    );
     return json(503, { error: "webhook_unavailable" });
   }
 
-  if (!(await verifySignature(payload, signingSecret, svixId, svixTimestamp, svixSignature))) {
+  if (
+    !(await verifySignature(
+      payload,
+      signingSecret,
+      svixId,
+      svixTimestamp,
+      svixSignature,
+    ))
+  ) {
     return json(400, { error: "invalid_signature" });
   }
 
@@ -201,25 +226,32 @@ Deno.serve(async (request: Request) => {
   if (!eventType) return json(400, { error: "invalid_event" });
 
   const createdAt = stringOrNull(event.created_at, 80);
-  const eventCreatedAt = createdAt && !Number.isNaN(Date.parse(createdAt)) ? createdAt : null;
+  const eventCreatedAt =
+    createdAt && !Number.isNaN(Date.parse(createdAt)) ? createdAt : null;
   const emailId = stringOrNull(event.data?.email_id);
   const templateId = stringOrNull(event.data?.template_id);
   const category = eventCategory(event.data?.tags);
 
-  const { error: insertError } = await supabase.from("resend_webhook_events").upsert(
-    {
-      svix_id: svixId,
-      event_type: eventType,
-      resend_email_id: emailId,
-      template_id: templateId,
-      category,
-      event_created_at: eventCreatedAt,
-    },
-    { onConflict: "svix_id", ignoreDuplicates: true },
-  );
+  const { error: insertError } = await supabase
+    .from("resend_webhook_events")
+    .upsert(
+      {
+        svix_id: svixId,
+        event_type: eventType,
+        resend_email_id: emailId,
+        template_id: templateId,
+        category,
+        event_created_at: eventCreatedAt,
+      },
+      { onConflict: "svix_id", ignoreDuplicates: true },
+    );
 
   if (insertError) {
-    console.error("resend_webhook_persist_failed", { svixId, eventType, code: insertError.code });
+    console.error("resend_webhook_persist_failed", {
+      svixId,
+      eventType,
+      code: insertError.code,
+    });
     return json(500, { error: "persist_failed" });
   }
 
@@ -252,7 +284,10 @@ Deno.serve(async (request: Request) => {
       .maybeSingle();
 
     if (selectError) {
-      console.error("resend_email_message_lookup_failed", { emailId, code: selectError.code });
+      console.error("resend_email_message_lookup_failed", {
+        emailId,
+        code: selectError.code,
+      });
       return json(500, { error: "message_lookup_failed" });
     }
 
@@ -281,11 +316,21 @@ Deno.serve(async (request: Request) => {
       .upsert(merged, { onConflict: "resend_email_id" });
 
     if (messageError) {
-      console.error("resend_email_message_persist_failed", { emailId, eventType, code: messageError.code });
+      console.error("resend_email_message_persist_failed", {
+        emailId,
+        eventType,
+        code: messageError.code,
+      });
       return json(500, { error: "message_persist_failed" });
     }
   }
 
-  console.info("resend_webhook_event", { svixId, eventType, emailId, templateId, category });
+  console.info("resend_webhook_event", {
+    svixId,
+    eventType,
+    emailId,
+    templateId,
+    category,
+  });
   return json(200, { ok: true });
 });
