@@ -40,11 +40,24 @@ export default {
       }
 
       const now = new Date().toISOString();
-      const { error } = await client
+      const { data, error } = await client
         .from("user_onboarding")
         .update({ completed_at: now, updated_at: now })
-        .eq("user_id", authenticated.userId);
+        .eq("user_id", authenticated.userId)
+        .is("completed_at", null)
+        .select("user_id")
+        .limit(1);
       if (error) throw new ApiError(503, "Account setup could not be saved.");
+
+      // Only the null -> completed transition is eligible for the welcome. Delivery
+      // is intentionally non-blocking for product state and the Edge Function uses
+      // a stable Resend idempotency key as a second duplicate-send boundary.
+      if ((data?.length ?? 0) > 0) {
+        void client.functions
+          .invoke("lifecycle-email", { body: { event: "onboarding_completed" } })
+          .catch(() => undefined);
+      }
+
       return { completed: true };
     });
   },
