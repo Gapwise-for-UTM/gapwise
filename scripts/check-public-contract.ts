@@ -4,7 +4,14 @@ import { fetchV1 } from "../api/v1";
 
 // OpenAPI and ecosystem manifests are decoded JSON whose shapes are validated below.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Json = Record<string, any>;
+type Json = Record<string, any> & {
+  package?: string;
+  registries?: Record<string, Json>;
+  version?: string;
+  state?: string;
+  model?: string;
+  runtimeTargets?: string[];
+};
 type GapwiseClient = {
   info(): Promise<unknown>;
   buildings: { list(): Promise<unknown>; get(building: string): Promise<unknown> };
