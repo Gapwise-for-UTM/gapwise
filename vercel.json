@@ -54,6 +54,15 @@
       ]
     },
     {
+      "source": "/mail",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store, max-age=0" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" }
+      ]
+    },
+    {
       "source": "/assets/(.*)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
