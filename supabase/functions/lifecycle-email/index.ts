@@ -152,21 +152,19 @@ Deno.serve(async (request: Request) => {
     if (!apiKey) return json(503, { error: "mail_transport_unavailable" }, origin);
 
     const template = TEMPLATES[event];
-    const userKey = await stableUserKey(data.user.id);
-    const idempotencyKey =
-      event === "onboarding_completed"
-        ? `gapwise-welcome-${userKey}`
-        : `gapwise-${event}-${userKey}-${await stableUserKey(clientName ?? "")}`;
+    const headers: Record<string, string> = {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+      accept: "application/json",
+    };
+    if (event === "onboarding_completed") {
+      headers["Idempotency-Key"] = `gapwise-welcome-${await stableUserKey(data.user.id)}`;
+    }
 
     const variables = clientName ? { CLIENT_NAME: clientName } : undefined;
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        "content-type": "application/json",
-        accept: "application/json",
-        "Idempotency-Key": idempotencyKey,
-      },
+      headers,
       body: JSON.stringify({
         from: template.from,
         to: [data.user.email],
