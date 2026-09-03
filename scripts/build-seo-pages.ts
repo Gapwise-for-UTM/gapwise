@@ -75,6 +75,26 @@ const PAGES: readonly SeoPage[] = [
     sitemap: true,
   },
   {
+    path: "/ai",
+    title: "Gapwise AI — Connect Gapwise to AI Assistants",
+    description:
+      "Connect explicitly delegated Gapwise timetable context and deterministic UTM campus intelligence to compatible AI assistants through Gapwise's secure remote MCP service.",
+    heading: "Your Gapwise context, with an assistant you choose.",
+    detail:
+      "Gapwise AI exposes public campus intelligence plus narrowly delegated timetable, availability, gap-planning, and bounded personal-item capabilities. Academic meetings remain read-only and AI access can be revoked.",
+    sitemap: true,
+  },
+  {
+    path: "/support",
+    title: "Support — Gapwise UTM",
+    description:
+      "Support for Gapwise accounts, timetables, AI connectors, privacy, security, revocation, and troubleshooting.",
+    heading: "Help with Gapwise.",
+    detail:
+      "Find first-party guidance for connector authorization, missing schedule context, rejected writes, revocation, privacy, security reporting, and service status.",
+    sitemap: true,
+  },
+  {
     path: "/trust",
     title: "Trust Center — Gapwise UTM",
     description:
@@ -207,6 +227,8 @@ function fallback(page: SeoPage) {
     ["/", "Gapwise UTM home"],
     ["/places", "UTM campus places"],
     ["/developers", "Developer API and SDKs"],
+    ["/ai", "Gapwise AI"],
+    ["/support", "Support"],
     ["/trust", "Trust Center"],
     ["/privacy", "Privacy"],
     ["/accessibility", "Accessibility"],

@@ -17,6 +17,8 @@ describe("Gapwise UTM searchability", () => {
       `${SITE_ORIGIN}/places`,
       ...listCampusPlaces().map((place) => `${SITE_ORIGIN}/places/${place.id}`),
       `${SITE_ORIGIN}/developers`,
+      `${SITE_ORIGIN}/ai`,
+      `${SITE_ORIGIN}/support`,
       `${SITE_ORIGIN}/trust`,
       `${SITE_ORIGIN}/privacy`,
       `${SITE_ORIGIN}/security`,
@@ -78,6 +80,8 @@ describe("Gapwise UTM searchability", () => {
     }
     for (const path of [
       "/developers",
+      "/ai",
+      "/support",
       "/trust",
       "/privacy",
       "/security",

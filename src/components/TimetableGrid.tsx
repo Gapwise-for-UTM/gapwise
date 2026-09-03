@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { getCampusLocationDisplay } from "@/features/routing/location-presentation";
 import {
   firstOccurrenceForMeeting,
   lastOccurrenceForMeeting,
@@ -248,6 +249,7 @@ function MeetingDetailsDialog({
     meetingLocationType(meeting) === "physical" &&
     Boolean(meeting.buildingCode) &&
     Boolean(onRoute);
+  const location = meeting ? getCampusLocationDisplay(meeting) : null;
 
   return (
     <Dialog open={meeting !== null} onOpenChange={(open) => !open && onClose()}>
@@ -292,7 +294,16 @@ function MeetingDetailsDialog({
                 <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
                 Location
               </dt>
-              <dd className="mt-1 text-sm font-medium text-foreground">{locationLabel(meeting)}</dd>
+              <dd className="mt-2">
+                <span className="block text-base font-semibold leading-tight text-foreground">
+                  {location?.buildingName ?? locationLabel(meeting)}
+                </span>
+                {location && (location.floorLabel || location.roomLabel) ? (
+                  <span className="mt-1 block text-sm font-medium text-muted-foreground">
+                    {[location.floorLabel, location.roomLabel].filter(Boolean).join(" · ")}
+                  </span>
+                ) : null}
+              </dd>
             </div>
             <div className="rounded-lg border border-border bg-background/40 p-3 sm:col-span-2">
               <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
