@@ -7,17 +7,18 @@ Gapwise ships two equal first-party SDK implementations from this repository:
 
 The JavaScript/TypeScript implementation is distributed through both npm and JSR rather than being forked into separate Node, Deno, or Bun SDKs. The Python implementation is distributed through PyPI. All releases consume the same public API v1 contract and must preserve semantic parity.
 
-The release workflow is `.github/workflows/release-sdks.yml`. JavaScript publishing is manually dispatched so npm and JSR releases remain deliberate. Python publishing is automated from `python-v*` Git tags and can also be manually dispatched as a recovery path. npm, JSR, and PyPI publishing use short-lived OIDC credentials rather than repository secrets.
+The release workflow is `.github/workflows/release-sdks.yml`. npm publishing is manually dispatched. JSR publishing runs automatically when the JSR version configuration changes on `main` and is also available by manual dispatch for recovery. Python publishing is automated from `python-v*` Git tags and can also be manually dispatched as a recovery path. npm, JSR, and PyPI publishing use short-lived OIDC credentials rather than repository secrets.
 
 ## Registry and runtime matrix
 
-| Implementation | Registry | Package        | Runtime / consumer role                                                              | Release state                                                                               |
-| -------------- | -------- | -------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| TypeScript     | npm      | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling                               | `0.1.0` published                                                                           |
-| TypeScript     | JSR      | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | package reserved and GitHub-linked; publication is complete only after the JSR job succeeds |
-| Python         | PyPI     | `gapwise`      | Python sync + async clients                                                          | `0.1.0` published                                                                           |
+<!-- prettier-ignore -->
+| Implementation | Registry | Package        | Runtime / consumer role                                                              | Release state             |
+| -------------- | -------- | -------------- | ------------------------------------------------------------------------------------ | ------------------------- |
+| TypeScript     | npm      | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling                               | `0.1.0` published         |
+| TypeScript     | JSR      | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.0` published         |
+| Python         | PyPI     | `gapwise`      | Python sync + async clients                                                          | `0.1.0` published         |
 
-Do not describe JSR as having a released version until the registry confirms that version exists. A reserved package and linked OIDC publisher are configuration facts, not a published release.
+`@gapwise/sdk@0.1.0` was successfully published to JSR by GitHub Actions OIDC after the shared verification gate completed. Future registry claims remain evidence-based: update release-state documentation only after the relevant publish job and registry confirm the version.
 
 ## npm Trusted Publishing
 
@@ -36,9 +37,9 @@ Prefer npm's strongest publishing-access setting that keeps OIDC enabled while d
 
 ## JSR OIDC publishing
 
-The JSR package identity is also `@gapwise/sdk`. It is linked on JSR to `andrewmuratov/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
+The JSR package identity is also `@gapwise/sdk`. `@gapwise/sdk@0.1.0` is published and linked on JSR to `andrewmuratov/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
 
-JSR configuration lives in `sdk/javascript/jsr.json` and exports the TypeScript source entry point directly from `src/index.ts`. The JSR package intentionally reuses the same implementation as npm.
+JSR configuration lives in `sdk/javascript/jsr.json` and exports the TypeScript source entry point directly from `src/index.ts`. The JSR package intentionally reuses the same implementation and version line as npm.
 
 Before every JSR release, the verification job must:
 
@@ -98,17 +99,13 @@ The manual **Actions → Release SDKs → pypi** path remains available from `ma
 
 1. Update `sdk/javascript/package.json` and `sdk/javascript/jsr.json` to the same intended version.
 2. Confirm the TypeScript and Python public surfaces remain semantically aligned with OpenAPI v1.
-3. Confirm `main` is green.
-4. Open **Actions → Release SDKs** and choose:
-   - `npm` for npm only;
-   - `jsr` for JSR only;
-   - `javascript` for both TypeScript registries;
-   - `all` only when intentionally publishing npm, JSR, and PyPI together.
+3. Merge the version change to `main` only after CI is green.
+4. The `jsr.json` change triggers the JSR release path automatically. For npm, open **Actions → Release SDKs** and choose `npm`; use `javascript` only when intentionally publishing both TypeScript registries from a recovery/manual run.
 5. Wait for the shared verification job before any publish job can run.
 6. Verify each selected registry independently before updating public release claims.
-7. For JSR, confirm the generated docs and runtime compatibility information on the package page before calling the version released.
+7. Confirm JSR generated docs/runtime compatibility and npm package metadata for the exact version before considering the release synchronized.
 
-`both` is retained as the legacy npm + PyPI recovery target. Prefer the explicit targets above for new release work.
+Manual targets `jsr`, `javascript`, and `all` remain available for recovery or deliberately coordinated releases. `both` is retained as the legacy npm + PyPI recovery target.
 
 ## Ecosystem synchronization
 
@@ -129,6 +126,6 @@ All six repositories should link back to the canonical SDK source and documentat
 - Publish jobs receive `id-token: write` only when publishing.
 - Python tag releases validate that the Git tag and package metadata carry the same version before publishing.
 - The publish jobs depend on the complete SDK verification job, including tests, linting, artifact inspection, clean-environment installation, JSR dry-run validation, Deno portability checks, and package metadata checks.
-- External GitHub Actions should be pinned to immutable commit SHAs before this release workflow reaches `main`.
-- JavaScript publishing remains deliberate and manual; Python publishing is deliberate through signed/reviewable release tagging rather than on every push to `main`.
+- External GitHub Actions are pinned to immutable commit SHAs.
+- npm publishing remains deliberate/manual; JSR publishing is version-config-driven on `main`; Python publishing is deliberate through reviewable release tagging.
 - Do not recreate or introduce bootstrap credentials after Trusted Publishing/OIDC is configured.

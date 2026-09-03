@@ -7,10 +7,10 @@ Official dependency-free TypeScript client for the unauthenticated Gapwise Publi
 The canonical package identity is `@gapwise/sdk`.
 
 - **npm:** `@gapwise/sdk@0.1.0` is published with provenance and is the primary package for Node.js, Bun, browser bundlers, and npm-compatible tooling.
-- **JSR:** the `@gapwise/sdk` package is reserved and linked to `andrewmuratov/gapwise` for GitHub Actions OIDC publishing. JSR publishes the TypeScript source entry point directly from `src/index.ts`; release documentation must not call a JSR version public until the JSR release job succeeds.
+- **JSR:** `@gapwise/sdk@0.1.0` is published from the same TypeScript source through GitHub Actions OIDC with provenance. JSR publishes the source entry point directly from `src/index.ts`.
 - **Node.js:** supported through the npm package; package metadata requires Node 20+.
 - **Bun:** first-party test/runtime target using the same package and source.
-- **Deno:** first-party portability target using the same TypeScript source/package; release verification runs JSR validation and Deno type/runtime checks before a JSR publication is allowed.
+- **Deno:** first-party portability target using the same TypeScript source/package; release verification runs JSR validation and Deno type/runtime checks before publication.
 - **Browsers and edge-style runtimes:** the client is dependency-free and accepts an injected `fetch`; compatibility claims should stay evidence-based for each environment.
 
 Python is an equal first-party SDK, not a fallback implementation. It is maintained in [`../python`](../python) and published as `gapwise` on PyPI. Public API changes must preserve contract parity across the TypeScript and Python clients.
@@ -19,6 +19,18 @@ Install the released npm package with:
 
 ```bash
 npm install @gapwise/sdk@0.1.0
+```
+
+Install the same released TypeScript SDK from JSR with Deno:
+
+```bash
+deno add jsr:@gapwise/sdk@0.1.0
+```
+
+Or import the exact JSR version directly:
+
+```ts
+import { Gapwise } from "jsr:@gapwise/sdk@0.1.0";
 ```
 
 For unreleased repository work, a local checkout can still be installed with `npm install ./sdk/javascript`.
