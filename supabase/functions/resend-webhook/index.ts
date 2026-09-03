@@ -17,6 +17,20 @@ type ResendWebhookEvent = {
   };
 };
 
+type ReceivedEmail = {
+  id?: unknown;
+  message_id?: unknown;
+  from?: unknown;
+  to?: unknown;
+  cc?: unknown;
+  bcc?: unknown;
+  subject?: unknown;
+  text?: unknown;
+  html?: unknown;
+  headers?: unknown;
+  attachments?: unknown;
+};
+
 const encoder = new TextEncoder();
 const SIGNATURE_TOLERANCE_SECONDS = 300;
 
@@ -97,11 +111,20 @@ function stringOrNull(value: unknown, maxLength = 255) {
   return normalized && normalized.length <= maxLength ? normalized : null;
 }
 
+function bodyOrNull(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
 function stringArray(value: unknown, maxLength = 998) {
   if (!Array.isArray(value)) return [] as string[];
   return value
     .map((entry) => stringOrNull(entry, maxLength))
     .filter((entry): entry is string => Boolean(entry));
+}
+
+function objectOrNull(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as Record<string, unknown>;
 }
 
 function eventCategory(tags: unknown) {
@@ -132,6 +155,9 @@ function attachmentMetadata(value: unknown) {
     const contentType = stringOrNull(item["content_type"], 255);
     const contentDisposition = stringOrNull(item["content_disposition"], 255);
     const contentId = stringOrNull(item["content_id"], 512);
+    const size = typeof item["size"] === "number" && Number.isFinite(item["size"])
+      ? item["size"]
+      : null;
     if (!id && !filename) return [];
     return [
       {
@@ -140,6 +166,7 @@ function attachmentMetadata(value: unknown) {
         content_type: contentType,
         content_disposition: contentDisposition,
         content_id: contentId,
+        size,
       },
     ];
   });
@@ -162,6 +189,30 @@ function mailboxForRecipients(recipients: string[]) {
 
 function directionForEvent(eventType: string) {
   return eventType === "email.received" ? "inbound" : "outbound";
+}
+
+async function fetchReceivedEmail(emailId: string) {
+  const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
+  if (!apiKey) throw new Error("RESEND_API_KEY is unavailable.");
+
+  const response = await fetch(
+    `https://api.resend.com/emails/receiving/${encodeURIComponent(emailId)}`,
+    {
+      method: "GET",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        accept: "application/json",
+      },
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+
+  if (!response.ok) {
+    const detail = (await response.text()).slice(0, 500);
+    throw new Error(`Resend receiving API ${response.status}: ${detail}`);
+  }
+
+  return (await response.json()) as ReceivedEmail;
 }
 
 function json(status: number, body: Record<string, unknown>) {
@@ -256,25 +307,44 @@ Deno.serve(async (request: Request) => {
   }
 
   if (emailId && eventType.startsWith("email.")) {
-    const to = stringArray(event.data?.to);
-    const cc = stringArray(event.data?.cc);
-    const bcc = stringArray(event.data?.bcc);
+    let received: ReceivedEmail | null = null;
+    if (eventType === "email.received") {
+      try {
+        received = await fetchReceivedEmail(emailId);
+      } catch (error) {
+        console.error("resend_received_email_fetch_failed", {
+          emailId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return json(503, { error: "received_email_fetch_failed" });
+      }
+    }
+
+    const to = stringArray(received?.to ?? event.data?.to);
+    const cc = stringArray(received?.cc ?? event.data?.cc);
+    const bcc = stringArray(received?.bcc ?? event.data?.bcc);
+    const attachments = attachmentMetadata(received?.attachments ?? event.data?.attachments);
+    const now = new Date().toISOString();
     const incoming = {
       resend_email_id: emailId,
       direction: directionForEvent(eventType),
-      message_id: stringOrNull(event.data?.message_id, 998),
-      from_address: stringOrNull(event.data?.from, 998),
+      message_id: stringOrNull(received?.message_id ?? event.data?.message_id, 998),
+      from_address: stringOrNull(received?.from ?? event.data?.from, 998),
       to_addresses: to,
       cc_addresses: cc,
       bcc_addresses: bcc,
-      subject: stringOrNull(event.data?.subject, 998),
+      subject: stringOrNull(received?.subject ?? event.data?.subject, 998),
       mailbox: eventType === "email.received" ? mailboxForRecipients(to) : null,
       template_id: templateId,
       category,
-      attachment_metadata: attachmentMetadata(event.data?.attachments),
+      attachment_metadata: attachments,
+      text_body: eventType === "email.received" ? bodyOrNull(received?.text) : null,
+      html_body: eventType === "email.received" ? bodyOrNull(received?.html) : null,
+      headers: eventType === "email.received" ? objectOrNull(received?.headers) : null,
+      content_fetched_at: eventType === "email.received" ? now : null,
       latest_event_type: eventType,
       event_created_at: eventCreatedAt,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     };
 
     const { data: existing, error: selectError } = await supabase
@@ -305,9 +375,14 @@ Deno.serve(async (request: Request) => {
           mailbox: incoming.mailbox ?? existing.mailbox,
           template_id: incoming.template_id ?? existing.template_id,
           category: incoming.category ?? existing.category,
-          attachment_metadata: incoming.attachment_metadata.length
-            ? incoming.attachment_metadata
+          attachment_metadata: attachments.length
+            ? attachments
             : existing.attachment_metadata,
+          text_body: incoming.text_body ?? existing.text_body,
+          html_body: incoming.html_body ?? existing.html_body,
+          headers: incoming.headers ?? existing.headers,
+          content_fetched_at:
+            incoming.content_fetched_at ?? existing.content_fetched_at,
         }
       : incoming;
 
