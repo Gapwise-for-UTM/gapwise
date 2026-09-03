@@ -96,10 +96,6 @@
     {
       "source": "/v1/(.*)",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
-    },
-    {
-      "source": "/_seo/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     }
   ],
   "rewrites": [
