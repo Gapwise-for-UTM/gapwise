@@ -47,10 +47,8 @@ export type SeoWalkingRoute = {
 export function listSeoWalkingRoutes(): SeoWalkingRoute[] {
   const routes: SeoWalkingRoute[] = [];
 
-  for (let i = 0; i < SEO_WALKING_BUILDINGS.length; i += 1) {
-    for (let j = i + 1; j < SEO_WALKING_BUILDINGS.length; j += 1) {
-      const from = SEO_WALKING_BUILDINGS[i];
-      const to = SEO_WALKING_BUILDINGS[j];
+  for (const [index, from] of SEO_WALKING_BUILDINGS.entries()) {
+    for (const to of SEO_WALKING_BUILDINGS.slice(index + 1)) {
       routes.push({ route: `${from.slug}-to-${to.slug}`, from, to });
     }
   }
