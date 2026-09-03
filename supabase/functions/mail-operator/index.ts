@@ -62,9 +62,28 @@ function mailboxValue(value: unknown): Mailbox | null {
 }
 
 function senderForMailbox(mailbox: Mailbox) {
-  if (mailbox === "security") return { from: "Gapwise Security <security@gapwise.ca>", replyTo: "security@inbound.gapwise.ca" };
-  if (mailbox === "hello" || mailbox === "general") return { from: "Gapwise <hello@gapwise.ca>", replyTo: "hello@inbound.gapwise.ca" };
-  return { from: "Gapwise Support <support@gapwise.ca>", replyTo: "support@inbound.gapwise.ca" };
+  if (mailbox === "security") {
+    return {
+      from: "Gapwise Security <security@gapwise.ca>",
+      replyTo: "security@inbound.gapwise.ca",
+      label: "Gapwise Security",
+      address: "security@gapwise.ca",
+    };
+  }
+  if (mailbox === "hello" || mailbox === "general") {
+    return {
+      from: "Gapwise <hello@gapwise.ca>",
+      replyTo: "hello@inbound.gapwise.ca",
+      label: "Gapwise",
+      address: "hello@gapwise.ca",
+    };
+  }
+  return {
+    from: "Gapwise Support <support@gapwise.ca>",
+    replyTo: "support@inbound.gapwise.ca",
+    label: "Gapwise Support",
+    address: "support@gapwise.ca",
+  };
 }
 
 function bareEmail(value: unknown) {
@@ -89,6 +108,68 @@ function uniqueReferences(values: unknown[], current: string | null) {
   }
   if (current && !result.includes(current)) result.push(current);
   return result.slice(-30);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function htmlParagraphs(value: string) {
+  return value
+    .split(/\n{2,}/u)
+    .map((block) => `<p style="margin:0 0 16px;white-space:pre-wrap;">${escapeHtml(block).replaceAll("\n", "<br>")}</p>`)
+    .join("");
+}
+
+function professionalText(text: string, sender: ReturnType<typeof senderForMailbox>) {
+  return `${text.trim()}\n\n—\n${sender.label}\n${sender.address}\nhttps://gapwise.ca`;
+}
+
+function professionalHtml(text: string, sender: ReturnType<typeof senderForMailbox>) {
+  return `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f4f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#172033;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f4f7fb;margin:0;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border:1px solid #dfe6ef;border-radius:16px;overflow:hidden;">
+            <tr>
+              <td style="padding:28px 30px 8px;font-size:15px;line-height:1.65;color:#172033;">
+                ${htmlParagraphs(text.trim())}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 30px 30px;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td style="vertical-align:middle;padding-right:12px;">
+                      <img src="https://gapwise.ca/icon-512.png" width="38" height="38" alt="Gapwise" style="display:block;width:38px;height:38px;border-radius:10px;border:0;" />
+                    </td>
+                    <td style="vertical-align:middle;font-size:13px;line-height:1.45;color:#526074;">
+                      <strong style="display:block;color:#172033;font-size:14px;">${escapeHtml(sender.label)}</strong>
+                      <a href="mailto:${escapeHtml(sender.address)}" style="color:#526074;text-decoration:none;">${escapeHtml(sender.address)}</a><br>
+                      <a href="https://gapwise.ca" style="color:#0b72ce;text-decoration:none;font-weight:600;">gapwise.ca</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="border-top:1px solid #edf1f5;padding:14px 30px 16px;font-size:11px;line-height:1.5;color:#7a8799;">
+                Gapwise · Independent campus tools for University of Toronto Mississauga students
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 }
 
 function jwtHasDelegatedClient(token: string) {
@@ -155,10 +236,14 @@ async function sendReply(supabase: ReturnType<typeof adminClient>, messageId: st
       from: sender.from,
       to: [recipient],
       subject: replySubject(parent.subject),
-      text,
+      text: professionalText(text, sender),
+      html: professionalHtml(text, sender),
       reply_to: [sender.replyTo],
       headers,
-      tags: [{ name: "category", value: "operator_reply" }, { name: "mailbox", value: mailbox }],
+      tags: [
+        { name: "category", value: "operator_reply" },
+        { name: "mailbox", value: mailbox },
+      ],
     }),
     signal: AbortSignal.timeout(10_000),
   });
