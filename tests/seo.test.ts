@@ -23,9 +23,7 @@ describe("Gapwise UTM searchability", () => {
       `${SITE_ORIGIN}/privacy`,
       `${SITE_ORIGIN}/security`,
       `${SITE_ORIGIN}/accessibility`,
-      ...listSeoWalkingRoutes().map(
-        ({ route }) => `${SITE_ORIGIN}/utm/walking-time/${route}`,
-      ),
+      ...listSeoWalkingRoutes().map(({ route }) => `${SITE_ORIGIN}/utm/walking-time/${route}`),
     ];
 
     expect(locations).toEqual(expected);
@@ -85,9 +83,7 @@ describe("Gapwise UTM searchability", () => {
 
     expect(config.trailingSlash).toBe(false);
     expect(rewrite.get("/utm/walking-times")).toBe("/_seo/utm--walking-times.html");
-    expect(rewrite.get("/utm/walking-time/:route")).toBe(
-      "/_seo/utm--walking-time--:route.html",
-    );
+    expect(rewrite.get("/utm/walking-time/:route")).toBe("/_seo/utm--walking-time--:route.html");
     expect(rewrite.get("/places")).toBe("/_seo/places.html");
     for (const place of listCampusPlaces()) {
       expect(rewrite.get(`/places/${place.id}`)).toBe(`/_seo/places--${place.id}.html`);
