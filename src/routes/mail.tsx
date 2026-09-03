@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Inbox, Loader2, RefreshCw, Reply, ShieldCheck } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/features/auth/use-auth";
+import { useTheme } from "@/hooks/use-preferences";
 import { getSupabaseClient } from "@/lib/supabase";
 
 type Mailbox = "support" | "security" | "test";
@@ -69,6 +71,7 @@ function HiddenRoute() {
 
 function MailPage() {
   const { user, loading: authLoading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [access, setAccess] = useState<AccessState>("checking");
   const [mailbox, setMailbox] = useState<Mailbox>("support");
   const [messages, setMessages] = useState<MailMessage[]>([]);
@@ -184,9 +187,12 @@ function MailPage() {
               </div>
             </div>
           </div>
-          <button type="button" onClick={() => void loadInbox()} disabled={loading} className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60">
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" /> Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <button type="button" onClick={() => void loadInbox()} disabled={loading} className="button-secondary inline-flex min-h-10 items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60">
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" /> Refresh
+            </button>
+          </div>
         </header>
 
         <div className="mb-4 flex gap-2" role="tablist" aria-label="Mailbox">
