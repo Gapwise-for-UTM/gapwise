@@ -24,17 +24,17 @@ Prefer npm's strongest publishing-access setting that keeps OIDC enabled while d
 
 ## PyPI Trusted Publishing
 
-PyPI supports creating a new project through a pending Trusted Publisher, so no bootstrap API token is needed for the first `gapwise` release.
+`gapwise==0.1.0` has been published to PyPI through GitHub Actions Trusted Publishing. The pending publisher successfully created the project and became the trusted publisher for future releases.
 
-Before the first Python publish, add a pending GitHub Actions publisher in PyPI with:
+The publisher configuration should remain:
 
 - PyPI project name: `gapwise`
 - repository owner: `andrewmuratov`
 - repository: `gapwise`
 - workflow filename: `release-sdks.yml`
-- environment name: leave blank
+- environment name: blank
 
-No PyPI API token belongs in GitHub secrets. The pending publisher creates the project on the first successful trusted publish if the name is still available at publish time.
+No PyPI API token belongs in GitHub secrets. Future releases should continue using OIDC Trusted Publishing.
 
 ## Automated Python releases
 
@@ -44,26 +44,25 @@ To release a version:
 
 1. Update `project.version` in `sdk/python/pyproject.toml` and make any corresponding changelog/docs updates.
 2. Merge the release commit to `main` and confirm CI is green.
-3. Tag that exact `main` commit as `python-v<version>` (for example `python-v0.1.0`) and push the tag.
+3. Tag that exact `main` commit as `python-v<version>` (for example `python-v0.1.1`) and push the tag.
 4. GitHub Actions runs the full SDK verification suite.
 5. The workflow checks that the tag version exactly matches the Python package version.
 6. Only after verification succeeds, the PyPI job requests a short-lived OIDC credential and publishes the built distributions.
 
 A mismatched tag fails before publishing. Reusing an already-published version will also be rejected by PyPI, so every release requires a new version.
 
-The manual **Actions → Release SDKs → pypi** path remains available from `main` for recovery or the initial release if desired, but normal Python releases should use version tags.
+The manual **Actions → Release SDKs → pypi** path remains available from `main` for recovery, but normal Python releases should use version tags.
 
 ## Release procedure
 
-### First Python release
+### Python releases
 
-1. Configure the pending PyPI Trusted Publisher described above.
-2. Confirm `sdk/python/pyproject.toml` contains the intended first version.
-3. Confirm `main` is green and `https://api.gapwise.ca/v1` is healthy.
-4. Create and push `python-v<version>` from the matching `main` commit.
-5. Inspect **Actions → Release SDKs** and wait for verification and publishing to complete.
-6. Verify the PyPI project page and install the package into a clean environment with `python -m pip install gapwise`.
-7. Update public developer documentation that still says the Python package is unpublished.
+1. Update `sdk/python/pyproject.toml` to the intended new version.
+2. Confirm `main` is green and `https://api.gapwise.ca/v1` is healthy.
+3. Create and push `python-v<version>` from the matching `main` commit.
+4. Inspect **Actions → Release SDKs** and wait for verification and publishing to complete.
+5. Verify the PyPI project page and install the exact version into a clean environment.
+6. Exercise at least one real API call through the installed SDK before considering the release complete.
 
 ### JavaScript releases
 
