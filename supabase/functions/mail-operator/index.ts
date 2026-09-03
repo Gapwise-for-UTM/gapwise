@@ -20,6 +20,10 @@ type RequestBody = {
   mailbox?: unknown;
   threadId?: unknown;
   messageId?: unknown;
+  attachmentId?: unknown;
+  recipient?: unknown;
+  subject?: unknown;
+  requestId?: unknown;
   text?: unknown;
 };
 
@@ -213,7 +217,22 @@ async function authorize(request: Request, supabase: ReturnType<typeof adminClie
   return data.user;
 }
 
-async function sendReply(supabase: ReturnType<typeof adminClient>, messageId: string, text: string, origin: string | null) {
+function resendHeaders(apiKey: string, requestId: string | null) {
+  return {
+    authorization: `Bearer ${apiKey}`,
+    "content-type": "application/json",
+    accept: "application/json",
+    ...(requestId ? { "Idempotency-Key": requestId } : {}),
+  };
+}
+
+async function sendReply(
+  supabase: ReturnType<typeof adminClient>,
+  messageId: string,
+  text: string,
+  requestId: string | null,
+  origin: string | null,
+) {
   const { data: parent, error } = await supabase.from("resend_email_messages").select("*").eq("resend_email_id", messageId).maybeSingle();
   if (error || !parent) return json(404, { error: "message_not_found" }, origin);
   const mailbox = mailboxValue(parent.mailbox);
@@ -231,7 +250,7 @@ async function sendReply(supabase: ReturnType<typeof adminClient>, messageId: st
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { authorization: `Bearer ${apiKey}`, "content-type": "application/json", accept: "application/json" },
+    headers: resendHeaders(apiKey, requestId),
     body: JSON.stringify({
       from: sender.from,
       to: [recipient],
@@ -280,6 +299,112 @@ async function sendReply(supabase: ReturnType<typeof adminClient>, messageId: st
   return json(200, { ok: true, id: resendId, threadId: parent.thread_id }, origin);
 }
 
+async function sendNew(
+  supabase: ReturnType<typeof adminClient>,
+  mailbox: Mailbox,
+  recipient: string,
+  subject: string,
+  text: string,
+  requestId: string | null,
+  origin: string | null,
+) {
+  const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
+  if (!apiKey) return json(503, { error: "mail_transport_unavailable" }, origin);
+  const sender = senderForMailbox(mailbox);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: resendHeaders(apiKey, requestId),
+    body: JSON.stringify({
+      from: sender.from,
+      to: [recipient],
+      subject,
+      text: professionalText(text, sender),
+      html: professionalHtml(text, sender),
+      reply_to: [sender.replyTo],
+      tags: [
+        { name: "category", value: "operator_new" },
+        { name: "mailbox", value: mailbox },
+      ],
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) {
+    console.error("operator_mail_send_new_failed", response.status);
+    return json(502, { error: "send_failed" }, origin);
+  }
+  const sent = (await response.json()) as { id?: unknown };
+  const resendId = typeof sent.id === "string" ? sent.id : null;
+  if (!resendId) return json(502, { error: "send_id_missing" }, origin);
+
+  const now = new Date().toISOString();
+  const threadId = crypto.randomUUID();
+  const { error: persistError } = await supabase.from("resend_email_messages").insert({
+    resend_email_id: resendId,
+    direction: "outbound",
+    from_address: sender.from,
+    to_addresses: [recipient],
+    cc_addresses: [],
+    bcc_addresses: [],
+    subject,
+    mailbox,
+    category: "operator_new",
+    attachment_metadata: [],
+    text_body: text,
+    latest_event_type: "operator.send_queued",
+    event_created_at: now,
+    updated_at: now,
+    thread_id: threadId,
+    in_reply_to: null,
+    reference_message_ids: [],
+    reply_to_address: sender.replyTo,
+  });
+  if (persistError) console.error("operator_mail_persist_new_failed", persistError.code);
+  return json(200, { ok: true, id: resendId, threadId }, origin);
+}
+
+async function retrieveAttachment(
+  supabase: ReturnType<typeof adminClient>,
+  messageId: string,
+  attachmentId: string,
+  origin: string | null,
+) {
+  const { data: message, error } = await supabase
+    .from("resend_email_messages")
+    .select("direction,attachment_metadata")
+    .eq("resend_email_id", messageId)
+    .maybeSingle();
+  if (error || !message || message.direction !== "inbound") return json(404, { error: "attachment_not_found" }, origin);
+  const attachments = Array.isArray(message.attachment_metadata) ? message.attachment_metadata : [];
+  const known = attachments.some((item) => item && typeof item === "object" && "id" in item && item.id === attachmentId);
+  if (!known) return json(404, { error: "attachment_not_found" }, origin);
+
+  const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
+  if (!apiKey) return json(503, { error: "mail_transport_unavailable" }, origin);
+  const response = await fetch(
+    `https://api.resend.com/emails/receiving/${encodeURIComponent(messageId)}/attachments/${encodeURIComponent(attachmentId)}`,
+    {
+      headers: { authorization: `Bearer ${apiKey}`, accept: "application/json" },
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+  if (!response.ok) {
+    console.error("operator_mail_attachment_failed", response.status);
+    return json(502, { error: "attachment_unavailable" }, origin);
+  }
+  const data = (await response.json()) as { download_url?: unknown; filename?: unknown; expires_at?: unknown };
+  if (typeof data.download_url !== "string") return json(502, { error: "attachment_url_missing" }, origin);
+  return json(
+    200,
+    {
+      ok: true,
+      downloadUrl: data.download_url,
+      filename: typeof data.filename === "string" ? data.filename : null,
+      expiresAt: typeof data.expires_at === "string" ? data.expires_at : null,
+    },
+    origin,
+  );
+}
+
 Deno.serve(async (request: Request) => {
   const origin = request.headers.get("origin");
   if (request.method === "OPTIONS") {
@@ -325,8 +450,26 @@ Deno.serve(async (request: Request) => {
   if (action === "reply") {
     const messageId = stringValue(body.messageId, 255);
     const text = stringValue(body.text, 100_000);
+    const requestId = stringValue(body.requestId, 256);
     if (!messageId || !text) return json(400, { error: "invalid_reply" }, origin);
-    return await sendReply(supabase, messageId, text, origin);
+    return await sendReply(supabase, messageId, text, requestId, origin);
+  }
+
+  if (action === "send") {
+    const mailbox = mailboxValue(body.mailbox);
+    const recipient = bareEmail(body.recipient);
+    const subject = stringValue(body.subject, 300);
+    const text = stringValue(body.text, 100_000);
+    const requestId = stringValue(body.requestId, 256);
+    if (!mailbox || !recipient || !subject || !text) return json(400, { error: "invalid_message" }, origin);
+    return await sendNew(supabase, mailbox, recipient, subject, text, requestId, origin);
+  }
+
+  if (action === "attachment") {
+    const messageId = stringValue(body.messageId, 255);
+    const attachmentId = stringValue(body.attachmentId, 255);
+    if (!messageId || !attachmentId) return json(400, { error: "invalid_attachment" }, origin);
+    return await retrieveAttachment(supabase, messageId, attachmentId, origin);
   }
 
   return json(400, { error: "unsupported_action" }, origin);
