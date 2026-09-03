@@ -7,6 +7,7 @@ const corsHeaders = {
   "cache-control": "no-store",
   "x-content-type-options": "nosniff",
 };
+const MAX_REQUEST_BYTES = 110_000;
 
 type Mailbox = "support" | "security" | "hello" | "general" | "test";
 
@@ -101,6 +102,23 @@ function uniqueReferences(values: unknown[], current: string | null) {
   }
   if (current && !result.includes(current)) result.push(current);
   return result.slice(-30);
+}
+
+async function readRequestBody(request: Request): Promise<RequestBody | null> {
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BYTES) return null;
+
+  const raw = await request.text();
+  if (!raw || new TextEncoder().encode(raw).byteLength > MAX_REQUEST_BYTES) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as RequestBody)
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 async function authorize(request: Request, supabase: ReturnType<typeof adminClient>) {
@@ -211,17 +229,13 @@ Deno.serve(async (request: Request) => {
   const user = await authorize(request, supabase);
   if (!user) return json(403, { error: "forbidden" });
 
-  let body: RequestBody;
-  try {
-    body = await request.json() as RequestBody;
-  } catch {
-    return json(400, { error: "invalid_json" });
-  }
+  const body = await readRequestBody(request);
+  if (!body) return json(400, { error: "invalid_json" });
 
   const action = stringValue(body.action, 40);
   if (action === "list") {
     const mailbox = mailboxValue(body.mailbox);
-    let query = supabase
+    const query = supabase
       .from("resend_email_messages")
       .select("resend_email_id,direction,message_id,from_address,to_addresses,subject,mailbox,attachment_metadata,text_body,latest_event_type,event_created_at,updated_at,thread_id,in_reply_to,reply_to_address")
       .in("mailbox", mailbox ? [mailbox] : ["support", "security", "hello", "general", "test"])
