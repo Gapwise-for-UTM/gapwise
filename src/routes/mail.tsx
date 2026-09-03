@@ -54,6 +54,20 @@ function formatTime(value: string | null) {
     : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+function cleanConversationBody(value: string | null) {
+  if (!value) return "";
+  const lines = value.replace(/\r\n/g, "\n").split("\n");
+  const kept: string[] = [];
+  for (const line of lines) {
+    if (/^On .+ wrote:\s*$/iu.test(line.trim())) break;
+    if (/^-{2,}\s*Original Message\s*-{2,}$/iu.test(line.trim())) break;
+    if (/^From:\s.+/iu.test(line.trim()) && kept.length > 0) break;
+    kept.push(line);
+  }
+  while (kept.length && !kept[kept.length - 1]?.trim()) kept.pop();
+  return kept.join("\n").trim();
+}
+
 function HiddenRoute() {
   return (
     <main className="grid min-h-screen place-items-center bg-background px-6 text-foreground">
@@ -102,28 +116,43 @@ function MailPage() {
     };
   }, [authLoading, user]);
 
-  const loadInbox = useCallback(async () => {
+  const loadInbox = useCallback(async (silent = false) => {
     if (access !== "authorized") return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const result = await invokeMail({ action: "list", mailbox });
-      const next = result.messages ?? [];
-      setMessages(next);
-      if (selected && !next.some((item) => item.resend_email_id === selected.resend_email_id)) {
-        setSelected(null);
-        setThread([]);
-      }
+      setMessages(result.messages ?? []);
     } catch {
-      setError("Mail could not be loaded. No message data was exposed.");
+      if (!silent) setError("Mail could not be loaded. No message data was exposed.");
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }, [access, mailbox, selected]);
+  }, [access, mailbox]);
 
   useEffect(() => {
-    if (access === "authorized") void loadInbox();
+    if (access !== "authorized") return;
+    void loadInbox();
+    const timer = window.setInterval(() => void loadInbox(true), 20_000);
+    return () => window.clearInterval(timer);
   }, [access, loadInbox]);
+
+  const conversations = useMemo(() => {
+    const byThread = new Map<string, MailMessage>();
+    for (const message of messages) {
+      if (!byThread.has(message.thread_id)) byThread.set(message.thread_id, message);
+    }
+    return [...byThread.values()];
+  }, [messages]);
+
+  useEffect(() => {
+    if (!selected) return;
+    const summary = conversations.find((item) => item.thread_id === selected.thread_id);
+    if (!summary) {
+      setSelected(null);
+      setThread([]);
+    }
+  }, [conversations, selected]);
 
   const openMessage = useCallback(async (message: MailMessage) => {
     setSelected(message);
@@ -144,7 +173,7 @@ function MailPage() {
   );
 
   const sendReply = useCallback(async () => {
-    if (!replyTarget || !replyText.trim() || access !== "authorized") return;
+    if (!replyTarget || !replyText.trim() || access !== "authorized" || sending) return;
     setSending(true);
     setError(null);
     try {
@@ -152,13 +181,13 @@ function MailPage() {
       setReplyText("");
       const refreshed = await invokeMail({ action: "thread", threadId: replyTarget.thread_id });
       setThread(refreshed.messages ?? []);
-      await loadInbox();
+      await loadInbox(true);
     } catch {
       setError("The reply was not sent. Nothing was silently discarded.");
     } finally {
       setSending(false);
     }
-  }, [access, loadInbox, replyTarget, replyText]);
+  }, [access, loadInbox, replyTarget, replyText, sending]);
 
   if (authLoading || access === "checking") {
     return (
@@ -168,6 +197,8 @@ function MailPage() {
     );
   }
   if (access !== "authorized") return <HiddenRoute />;
+
+  const replyAs = mailbox === "security" ? "security@gapwise.ca" : "support@gapwise.ca";
 
   return (
     <main className="min-h-screen bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8">
@@ -205,47 +236,55 @@ function MailPage() {
 
         {error ? <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/8 px-4 py-3 text-sm">{error}</div> : null}
 
-        <div className="grid min-h-[68vh] overflow-hidden rounded-3xl border border-border/70 bg-card/70 lg:grid-cols-[360px_1fr]">
+        <div className="grid min-h-[70vh] overflow-hidden rounded-3xl border border-border/70 bg-card/70 shadow-sm lg:grid-cols-[360px_1fr]">
           <aside className="border-b border-border/70 lg:border-b-0 lg:border-r">
-            <div className="flex items-center gap-2 border-b border-border/70 px-4 py-3 text-sm font-semibold">
-              <Inbox className="h-4 w-4 text-accent" aria-hidden="true" /> {mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}
+            <div className="flex items-center justify-between border-b border-border/70 px-4 py-3">
+              <div className="flex items-center gap-2 text-sm font-semibold"><Inbox className="h-4 w-4 text-accent" aria-hidden="true" /> {mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</div>
+              <span className="text-xs text-muted-foreground">{conversations.length} conversation{conversations.length === 1 ? "" : "s"}</span>
             </div>
-            <div className="max-h-[68vh] overflow-y-auto">
-              {!loading && messages.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No messages in this mailbox yet.</p> : null}
-              {messages.map((message) => (
-                <button key={message.resend_email_id} type="button" onClick={() => void openMessage(message)} className={`w-full border-b border-border/60 px-4 py-4 text-left transition hover:bg-accent/5 ${selected?.resend_email_id === message.resend_email_id ? "bg-accent/8" : ""}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="truncate text-sm font-semibold">{message.direction === "inbound" ? message.from_address : message.to_addresses[0]}</span>
-                    <span className="shrink-0 text-[11px] text-muted-foreground">{message.direction === "outbound" ? "Sent" : "Received"}</span>
-                  </div>
-                  <p className="mt-1 truncate text-sm">{message.subject || "(no subject)"}</p>
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{message.text_body || "No plain-text preview."}</p>
-                </button>
-              ))}
+            <div className="max-h-[70vh] overflow-y-auto">
+              {!loading && conversations.length === 0 ? <p className="p-6 text-sm text-muted-foreground">No messages in this mailbox yet.</p> : null}
+              {conversations.map((message) => {
+                const active = selected?.thread_id === message.thread_id;
+                const preview = cleanConversationBody(message.text_body) || "No plain-text preview.";
+                return (
+                  <button key={message.thread_id} type="button" onClick={() => void openMessage(message)} className={`w-full border-b border-border/60 px-4 py-4 text-left transition-colors hover:bg-accent/5 ${active ? "bg-accent/8" : ""}`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="truncate text-sm font-semibold">{message.direction === "inbound" ? message.from_address : message.to_addresses[0]}</span>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{formatTime(message.event_created_at ?? message.updated_at)}</span>
+                    </div>
+                    <p className="mt-1 truncate text-sm font-medium">{message.subject || "(no subject)"}</p>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{preview}</p>
+                  </button>
+                );
+              })}
             </div>
           </aside>
 
           <section className="min-w-0">
             {!selected ? (
-              <div className="grid h-full min-h-[420px] place-items-center p-8 text-center">
-                <div><Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2></div>
+              <div className="grid h-full min-h-[440px] place-items-center p-8 text-center">
+                <div><Inbox className="mx-auto h-8 w-8 text-muted-foreground" aria-hidden="true" /><h2 className="mt-4 font-display text-xl font-semibold">Choose a conversation</h2><p className="mt-2 text-sm text-muted-foreground">Replies and follow-ups stay grouped into one thread.</p></div>
               </div>
             ) : (
-              <div className="flex h-full max-h-[68vh] flex-col">
-                <div className="border-b border-border/70 px-5 py-4"><h2 className="font-display text-xl font-semibold">{selected.subject || "(no subject)"}</h2><p className="mt-1 text-xs text-muted-foreground">Thread {selected.thread_id.slice(0, 8)} · {formatTime(selected.event_created_at ?? selected.updated_at)}</p></div>
-                <div className="flex-1 space-y-4 overflow-y-auto p-5">
-                  {thread.map((message) => (
-                    <article key={message.resend_email_id} className={`max-w-3xl rounded-2xl border p-4 ${message.direction === "outbound" ? "ml-auto border-accent/20 bg-accent/6" : "border-border/70 bg-background/60"}`}>
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"><span>{message.direction === "inbound" ? `From ${message.from_address ?? "unknown sender"}` : `From ${message.from_address ?? "Gapwise"}`}</span><span>{formatTime(message.event_created_at ?? message.updated_at)}</span></div>
-                      <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{message.text_body || "(No plain-text body)"}</p>
-                      {message.attachment_metadata?.length ? <p className="mt-3 text-xs text-muted-foreground">Attachments: {message.attachment_metadata.map((item) => item.filename || "attachment").join(", ")}</p> : null}
-                    </article>
-                  ))}
+              <div className="flex h-full max-h-[70vh] flex-col">
+                <div className="border-b border-border/70 px-5 py-4"><h2 className="font-display text-xl font-semibold">{selected.subject || "(no subject)"}</h2><p className="mt-1 text-xs text-muted-foreground">Conversation · {thread.length} message{thread.length === 1 ? "" : "s"}</p></div>
+                <div className="flex-1 space-y-4 overflow-y-auto bg-background/30 p-5">
+                  {thread.map((message) => {
+                    const body = cleanConversationBody(message.text_body) || "(No plain-text body)";
+                    return (
+                      <article key={message.resend_email_id} className={`max-w-3xl rounded-2xl border p-4 shadow-sm ${message.direction === "outbound" ? "ml-auto border-accent/20 bg-accent/6" : "border-border/70 bg-card"}`}>
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"><span>{message.direction === "inbound" ? `From ${message.from_address ?? "unknown sender"}` : `From ${message.from_address ?? "Gapwise"}`}</span><span>{formatTime(message.event_created_at ?? message.updated_at)}</span></div>
+                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6">{body}</p>
+                        {message.attachment_metadata?.length ? <p className="mt-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">Attachments: {message.attachment_metadata.map((item) => item.filename || "attachment").join(", ")}</p> : null}
+                      </article>
+                    );
+                  })}
                 </div>
-                <div className="border-t border-border/70 p-4">
-                  <label htmlFor="operator-reply" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reply as {mailbox === "security" ? "security@gapwise.ca" : "support@gapwise.ca"}</label>
-                  <textarea id="operator-reply" value={replyText} onChange={(event) => setReplyText(event.target.value)} rows={4} placeholder="Write a reply…" className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm outline-none transition focus:border-accent" />
-                  <div className="mt-3 flex justify-end"><button type="button" disabled={!replyText.trim() || sending} onClick={() => void sendReply()} className="button-primary inline-flex min-h-11 items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Reply className="h-4 w-4" aria-hidden="true" />}{sending ? "Sending…" : "Send reply"}</button></div>
+                <div className="border-t border-border/70 bg-card/80 p-4">
+                  <div className="mb-2 flex items-center justify-between gap-3"><label htmlFor="operator-reply" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reply as {replyAs}</label><span className="text-[11px] text-muted-foreground">Ctrl/⌘ + Enter to send</span></div>
+                  <textarea id="operator-reply" value={replyText} onChange={(event) => setReplyText(event.target.value)} onKeyDown={(event) => { if ((event.ctrlKey || event.metaKey) && event.key === "Enter") { event.preventDefault(); void sendReply(); } }} rows={5} placeholder="Write a polished reply…" className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-6 outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/15" />
+                  <div className="mt-3 flex items-center justify-between gap-3"><p className="text-xs text-muted-foreground">Gapwise branding, logo, website and a professional signature are added automatically.</p><button type="button" disabled={!replyText.trim() || sending} onClick={() => void sendReply()} className="button-primary inline-flex min-h-11 shrink-0 items-center justify-center gap-2 px-5 text-sm font-semibold disabled:opacity-50">{sending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Reply className="h-4 w-4" aria-hidden="true" />}{sending ? "Sending…" : "Send reply"}</button></div>
                 </div>
               </div>
             )}
