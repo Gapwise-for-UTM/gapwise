@@ -166,8 +166,8 @@ jobs:
         working-directory: sdk/javascript
         run: |
           npx --yes jsr publish --dry-run
-          deno check src/index.ts
-          deno eval 'import { Gapwise } from "./src/index.ts"; const client = new Gapwise({ fetch: globalThis.fetch }); if (!(client instanceof Gapwise)) Deno.exit(1)'
+          deno check --no-config --unstable-sloppy-imports src/index.ts
+          deno eval --no-config --unstable-sloppy-imports 'import { Gapwise } from "./src/index.ts"; const client = new Gapwise({ fetch: globalThis.fetch }); if (!(client instanceof Gapwise)) Deno.exit(1)'
       - name: Build and test Python SDK
         run: |
           python -m pip install './sdk/python[test]'
