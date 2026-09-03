@@ -2,9 +2,10 @@
 
 Official typed Python client for the unauthenticated Gapwise Public Campus API v1. It supports Python 3.11+ and defaults to `https://api.gapwise.ca/v1`.
 
+Published on PyPI as `gapwise`.
+
 ```bash
-# Not published to PyPI yet. From a checkout of this repository:
-python -m pip install './sdk/python'
+python -m pip install gapwise==0.1.0
 ```
 
 ```python

@@ -220,19 +220,18 @@ for (const [path, text] of docs) {
     fail(`${path} describes the retired preview/browser SDK contract.`);
 
   if (
-    /(?:pip install gapwise|pip3 install gapwise)/.test(text) &&
-    !/not published|not yet published|after (?:the )?registry release|awaiting (?:its )?first verified PyPI release/i.test(
-      text,
-    )
-  )
-    fail(`${path} implies the Python registry install is available before the PyPI release gate.`);
-
-  if (
     /(?:not published to npm|not yet published[^\n]*npm|neither package is published|names are publication targets and are not published)/i.test(
       text,
     )
   )
     fail(`${path} still describes the verified @gapwise/sdk npm release as unpublished.`);
+
+  if (
+    /(?:not published to PyPI|not yet published[^\n]*PyPI|awaiting (?:its )?first verified PyPI release)/i.test(
+      text,
+    )
+  )
+    fail(`${path} still describes the verified gapwise PyPI release as unpublished.`);
 }
 
 if (errors.length) {
