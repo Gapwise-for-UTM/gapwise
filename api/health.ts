@@ -11,7 +11,10 @@ async function probe(url: string): Promise<{ ok: boolean; latencyMs: number }> {
       cache: "no-store",
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
-    return { ok: response.status > 0 && response.status < 500, latencyMs: Math.round(performance.now() - started) };
+    return {
+      ok: response.status > 0 && response.status < 500,
+      latencyMs: Math.round(performance.now() - started),
+    };
   } catch {
     return { ok: false, latencyMs: Math.round(performance.now() - started) };
   }
@@ -41,13 +44,26 @@ export default {
         durationMs: Math.round(performance.now() - started),
         dependencies,
       };
-      logEvent(degraded ? "warn" : "info", "health_check", { requestId, status: payload.status });
-      return jsonResponse(requestId, payload, 200, "public, s-maxage=15, stale-while-revalidate=45");
+      logEvent(degraded ? "warn" : "info", "health_check", {
+        requestId,
+        status: payload.status,
+      });
+      return jsonResponse(
+        requestId,
+        payload,
+        200,
+        "public, s-maxage=15, stale-while-revalidate=45",
+      );
     } catch (error) {
       logEvent("error", "health_check_failed", { requestId, error: safeError(error) });
       return jsonResponse(
         requestId,
-        { schemaVersion: 1, service: "gapwise-web", status: "degraded", checkedAt: new Date().toISOString() },
+        {
+          schemaVersion: 1,
+          service: "gapwise-web",
+          status: "degraded",
+          checkedAt: new Date().toISOString(),
+        },
         200,
         "public, s-maxage=10",
       );
