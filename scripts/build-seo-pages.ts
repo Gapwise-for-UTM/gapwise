@@ -1,5 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { listSeoWalkingRoutes } from "../src/data/seo-walking-routes.js";
+import { routeBetweenPublicBuildings } from "../src/server/public-campus/service.js";
 
 const SITE_ORIGIN = "https://gapwise.ca";
 const SOCIAL_IMAGE = `${SITE_ORIGIN}/icon-512.png`;
@@ -11,9 +13,10 @@ type SeoPage = {
   heading: string;
   detail: string;
   sitemap: boolean;
+  structuredData?: Record<string, unknown>;
 };
 
-const PAGES: readonly SeoPage[] = [
+const STATIC_PAGES: readonly SeoPage[] = [
   {
     path: "/",
     title: "Gapwise UTM — Timetable, Gap & Campus Route Planner",
@@ -22,6 +25,16 @@ const PAGES: readonly SeoPage[] = [
     heading: "Plan your UTM day around the time between classes.",
     detail:
       "Import an ACORN .ics timetable in your browser, see useful gaps and leave-by timing, and navigate source-backed UTM campus routes. Guest mode and a demo are available without an account.",
+    sitemap: true,
+  },
+  {
+    path: "/utm/walking-times",
+    title: "UTM Building Walking Times — Gapwise",
+    description:
+      "Check Gapwise walking-time estimates between major University of Toronto Mississauga buildings, including Davis, CCT, Deerfield, Kaneff, and MN.",
+    heading: "UTM building walking times",
+    detail:
+      "Compare deterministic Gapwise route estimates for major UTM building pairs. Route confidence and evidence remain explicit, and estimates are planning guidance rather than guarantees.",
     sitemap: true,
   },
   {
@@ -78,10 +91,10 @@ const PAGES: readonly SeoPage[] = [
     path: "/trust",
     title: "Trust Center — Gapwise UTM",
     description:
-      "Evidence-backed privacy, security, accessibility, data-flow, AI permission, incident-response, and independence information for Gapwise UTM.",
+      "Evidence-backed privacy, security, accessibility, data-flow, campus-routing, AI permission, incident-response, and independence information for Gapwise UTM.",
     heading: "Gapwise UTM Trust Center",
     detail:
-      "Review implementation-backed privacy and security boundaries, accessibility evidence, incident processes, subprocessors, AI permissions, and open items that still require human or provider confirmation.",
+      "Review implementation-backed privacy and security boundaries, campus-routing evidence, accessibility evidence, incident processes, subprocessors, AI permissions, and open items that still require human or provider confirmation.",
     sitemap: true,
   },
   {
@@ -126,6 +139,78 @@ const PAGES: readonly SeoPage[] = [
   },
 ];
 
+function walkingSeoPages(): SeoPage[] {
+  return listSeoWalkingRoutes().flatMap(({ route, from, to }) => {
+    const result = routeBetweenPublicBuildings({ from: from.code, to: to.code });
+    if (
+      "error" in result ||
+      result.status === "unavailable" ||
+      result.estimatedSeconds === null ||
+      result.totalDistanceMeters === null
+    ) {
+      return [];
+    }
+
+    const minutes = Math.max(1, Math.ceil(result.estimatedSeconds / 60));
+    const metres = Math.round(result.totalDistanceMeters / 10) * 10;
+    const path = `/utm/walking-time/${route}`;
+    const title = `${from.shortName} to ${to.shortName} Walking Time at UTM — Gapwise`;
+    const description = `It takes about ${minutes} minutes to walk from ${from.name} to ${to.name} at UTM using the current Gapwise ${result.status === "routed" ? "mapped campus route" : "campus estimate"}.`;
+
+    return [
+      {
+        path,
+        title,
+        description,
+        heading: `${from.shortName} to ${to.shortName} walking time at UTM`,
+        detail: `Gapwise estimates about ${minutes} minutes over approximately ${metres} metres from ${from.name} to ${to.name}. Route evidence is ${result.routeVerification}; ${result.accuracy.toLowerCase()}. Walking times are planning estimates and can vary with entrances, elevators, accessibility needs, congestion, construction, weather, route choice, and walking speed.`,
+        sitemap: true,
+        structuredData: {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: title,
+          url: canonicalUrl(path),
+          description,
+          isPartOf: {
+            "@type": "WebSite",
+            name: "Gapwise",
+            url: `${SITE_ORIGIN}/`,
+          },
+          about: [
+            { "@type": "Place", name: from.name },
+            { "@type": "Place", name: to.name },
+          ],
+          breadcrumb: {
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "Gapwise",
+                item: `${SITE_ORIGIN}/`,
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "UTM walking times",
+                item: `${SITE_ORIGIN}/utm/walking-times`,
+              },
+              {
+                "@type": "ListItem",
+                position: 3,
+                name: `${from.shortName} to ${to.shortName}`,
+                item: canonicalUrl(path),
+              },
+            ],
+          },
+        },
+      },
+    ];
+  });
+}
+
+const PAGES: readonly SeoPage[] = [...STATIC_PAGES, ...walkingSeoPages()];
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -144,41 +229,63 @@ function outputPath(path: string) {
   return `_seo/${path.slice(1).replaceAll("/", "--")}.html`;
 }
 
+function jsonLd(value: Record<string, unknown>) {
+  return `<script type="application/ld+json">${JSON.stringify(value).replaceAll("<", "\\u003c")}</script>`;
+}
+
 function metadata(page: SeoPage) {
   const canonical = canonicalUrl(page.path);
   const title = escapeHtml(page.title);
   const description = escapeHtml(page.description);
-  const appSchema =
-    page.path === "/"
-      ? `\n    <script type="application/ld+json">${JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          name: "Gapwise for UTM",
-          alternateName: "Gapwise UTM",
-          url: `${SITE_ORIGIN}/`,
-          description: page.description,
-          applicationCategory: "EducationalApplication",
-          operatingSystem: "Any",
-          isAccessibleForFree: true,
-          inLanguage: "en-CA",
-          offers: {
-            "@type": "Offer",
-            price: "0",
-            priceCurrency: "CAD",
-          },
-          audience: {
-            "@type": "Audience",
-            audienceType: "University of Toronto Mississauga students",
-          },
-          featureList: [
-            "Browser-local ACORN timetable import",
-            "UTM timetable and gap planning",
-            "UTM campus routing",
-            "Optional encrypted private sync",
-          ],
-          sameAs: ["https://github.com/andrewmuratov/gapwise"],
-        }).replaceAll("<", "\\u003c")}</script>`
-      : "";
+  const schemas: string[] = [];
+
+  if (page.path === "/") {
+    schemas.push(
+      jsonLd({
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "@id": `${SITE_ORIGIN}/#webapp`,
+        name: "Gapwise",
+        alternateName: "Gapwise UTM",
+        url: `${SITE_ORIGIN}/`,
+        description: page.description,
+        applicationCategory: "EducationalApplication",
+        operatingSystem: "Any",
+        browserRequirements: "Requires a modern web browser with JavaScript enabled.",
+        isAccessibleForFree: true,
+        inLanguage: "en-CA",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "CAD",
+        },
+        audience: {
+          "@type": "Audience",
+          audienceType: "University of Toronto Mississauga students",
+        },
+        featureList: [
+          "Browser-local ACORN timetable import",
+          "UTM timetable and gap planning",
+          "UTM campus building-to-building routing",
+          "Walking-time and leave-by estimates",
+          "Optional browser-encrypted private sync",
+        ],
+        author: {
+          "@type": "Person",
+          name: "Andrew Muratov",
+          url: "https://github.com/andrewmuratov",
+        },
+        softwareHelp: {
+          "@type": "CreativeWork",
+          name: "Gapwise Documentation",
+          url: "https://docs.gapwise.ca/",
+        },
+        sameAs: ["https://github.com/andrewmuratov/gapwise"],
+      }),
+    );
+  }
+
+  if (page.structuredData) schemas.push(jsonLd(page.structuredData));
 
   return `
     <title>${title}</title>
@@ -199,12 +306,14 @@ function metadata(page: SeoPage) {
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="${title}" />
     <meta name="twitter:description" content="${description}" />
-    <meta name="twitter:image" content="${SOCIAL_IMAGE}" />${appSchema}`;
+    <meta name="twitter:image" content="${SOCIAL_IMAGE}" />
+    ${schemas.join("\n    ")}`;
 }
 
 function fallback(page: SeoPage) {
   const links = [
     ["/", "Gapwise UTM home"],
+    ["/utm/walking-times", "UTM building walking times"],
     ["/places", "UTM campus places"],
     ["/developers", "Developer API and SDKs"],
     ["/trust", "Trust Center"],
@@ -220,6 +329,7 @@ function fallback(page: SeoPage) {
       <h1>${escapeHtml(page.heading)}</h1>
       <p>${escapeHtml(page.description)}</p>
       <p>${escapeHtml(page.detail)}</p>
+      <p><a href="/">Open Gapwise</a> to use the estimate with your ACORN timetable, schedule gaps, route confidence, and leave-by planning.</p>
       <p>Gapwise is an independent student project for University of Toronto Mississauga. It is not an official University of Toronto service and does not claim university approval, sponsorship, or endorsement.</p>
       <nav aria-label="Gapwise public pages">${navigation}</nav>
     </main>`;
@@ -227,8 +337,9 @@ function fallback(page: SeoPage) {
 
 function renderDocument(baseHtml: string, page: SeoPage) {
   if (!baseHtml.includes("</head>")) throw new Error("Built index is missing </head>.");
-  if (!/<div id="root"><\/div>/.test(baseHtml))
+  if (!/<div id="root"><\/div>/.test(baseHtml)) {
     throw new Error("Built index is missing the empty #root mount point.");
+  }
 
   return baseHtml
     .replace("</head>", `${metadata(page)}\n  </head>`)
