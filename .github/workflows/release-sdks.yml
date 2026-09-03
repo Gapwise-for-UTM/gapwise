@@ -13,12 +13,15 @@ on:
           - npm
           - pypi
           - both
+  push:
+    tags:
+      - "python-v*"
 
 permissions:
   contents: read
 
 concurrency:
-  group: sdk-release
+  group: sdk-release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -78,10 +81,26 @@ jobs:
             echo "Unexpected credential-like file in Python artifact." >&2
             exit 1
           fi
+      - name: Verify Python release tag matches package version
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/python-v') }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#python-v}"
+          PACKAGE_VERSION="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('sdk/python/pyproject.toml').read_text())['project']['version'])
+          PY
+          )"
+          if [ "$TAG_VERSION" != "$PACKAGE_VERSION" ]; then
+            echo "Tag version $TAG_VERSION does not match sdk/python/pyproject.toml version $PACKAGE_VERSION" >&2
+            exit 1
+          fi
 
   publish-npm:
     name: Publish @gapwise/sdk
-    if: ${{ github.ref == 'refs/heads/main' && (inputs.target == 'npm' || inputs.target == 'both') }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'npm' || inputs.target == 'both') }}
     needs: verify
     runs-on: ubuntu-latest
     permissions:
@@ -117,7 +136,7 @@ jobs:
 
   publish-pypi:
     name: Publish gapwise to PyPI
-    if: ${{ github.ref == 'refs/heads/main' && (inputs.target == 'pypi' || inputs.target == 'both') }}
+    if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/python-v')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'pypi' || inputs.target == 'both')) }}
     needs: verify
     runs-on: ubuntu-latest
     permissions:

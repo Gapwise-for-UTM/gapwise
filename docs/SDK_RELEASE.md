@@ -5,7 +5,7 @@ Gapwise ships two public SDKs from this repository:
 - JavaScript/TypeScript: `@gapwise/sdk` from `sdk/javascript`
 - Python: `gapwise` from `sdk/python`
 
-The release workflow is `.github/workflows/release-sdks.yml`. It is intentionally manual and uses short-lived OIDC credentials rather than repository secrets once each registry supports the package's trusted publisher. Registry publish jobs are also restricted to runs dispatched from the `main` branch.
+The release workflow is `.github/workflows/release-sdks.yml`. JavaScript publishing remains manually dispatched. Python publishing is automated from `python-v*` Git tags and can also be manually dispatched as a recovery path. Both registries use short-lived OIDC credentials rather than repository secrets.
 
 ## npm Trusted Publishing
 
@@ -32,27 +32,51 @@ Before the first Python publish, add a pending GitHub Actions publisher in PyPI 
 - repository owner: `andrewmuratov`
 - repository: `gapwise`
 - workflow filename: `release-sdks.yml`
-
-A GitHub environment is optional. If one is introduced later for approval protection, the exact same environment name must also be added to the PyPI publisher configuration.
+- environment name: leave blank
 
 No PyPI API token belongs in GitHub secrets. The pending publisher creates the project on the first successful trusted publish if the name is still available at publish time.
 
+## Automated Python releases
+
+The Python package version is defined in `sdk/python/pyproject.toml`.
+
+To release a version:
+
+1. Update `project.version` in `sdk/python/pyproject.toml` and make any corresponding changelog/docs updates.
+2. Merge the release commit to `main` and confirm CI is green.
+3. Tag that exact `main` commit as `python-v<version>` (for example `python-v0.1.0`) and push the tag.
+4. GitHub Actions runs the full SDK verification suite.
+5. The workflow checks that the tag version exactly matches the Python package version.
+6. Only after verification succeeds, the PyPI job requests a short-lived OIDC credential and publishes the built distributions.
+
+A mismatched tag fails before publishing. Reusing an already-published version will also be rejected by PyPI, so every release requires a new version.
+
+The manual **Actions → Release SDKs → pypi** path remains available from `main` for recovery or the initial release if desired, but normal Python releases should use version tags.
+
 ## Release procedure
 
-1. Confirm `main` is green and `https://api.gapwise.ca/v1` is healthy.
-2. Confirm the SDK package versions are the intended release versions.
-3. Open **Actions → Release SDKs**, select the `main` branch, and run target `verify`.
-4. Inspect the verification run.
-5. For Python, run target `pypi` after the pending/normal PyPI Trusted Publisher is configured.
-6. For JavaScript, use target `npm` only when publishing a new version after its npm Trusted Publisher is confirmed.
-7. Verify the registry package pages and install each package into a clean environment.
-8. Update developer documentation and the changelog for the published version.
+### First Python release
+
+1. Configure the pending PyPI Trusted Publisher described above.
+2. Confirm `sdk/python/pyproject.toml` contains the intended first version.
+3. Confirm `main` is green and `https://api.gapwise.ca/v1` is healthy.
+4. Create and push `python-v<version>` from the matching `main` commit.
+5. Inspect **Actions → Release SDKs** and wait for verification and publishing to complete.
+6. Verify the PyPI project page and install the package into a clean environment with `python -m pip install gapwise`.
+7. Update public developer documentation that still says the Python package is unpublished.
+
+### JavaScript releases
+
+1. Confirm the JavaScript package version is new and intended.
+2. Open **Actions → Release SDKs**, select `main`, and run target `npm` (or `both` when deliberately publishing both registries).
+3. Inspect verification and publishing before updating public docs.
 
 ## Security properties
 
 - No long-lived npm or PyPI publish token is stored in the repository.
-- Publish jobs receive `id-token: write` only when a publish target is selected.
-- Registry publish jobs refuse to run unless the workflow was dispatched from `main`.
+- Publish jobs receive `id-token: write` only when publishing.
+- Python tag releases validate that the Git tag and package metadata carry the same version before publishing.
+- The publish job depends on the complete SDK verification job, including tests, linting, artifact inspection, clean-environment installation, and package metadata checks.
 - External GitHub Actions are pinned to immutable commit SHAs.
-- Publishing remains a deliberate manual action rather than occurring on every push to `main`.
-- Do not recreate or introduce an npm bootstrap credential now that the package exists.
+- JavaScript publishing remains deliberate and manual; Python publishing is deliberate through signed/reviewable release tagging rather than on every push to `main`.
+- Do not recreate or introduce bootstrap credentials after Trusted Publishing is configured.
