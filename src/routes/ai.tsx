@@ -15,8 +15,7 @@ export const Route = createFileRoute("/ai")({
   component: AiPage,
 });
 
-const cardClass =
-  "rounded-2xl border border-border bg-card/40 p-5";
+const cardClass = "rounded-2xl border border-border bg-card/40 p-5";
 
 function AiPage() {
   return (
@@ -29,9 +28,8 @@ function AiPage() {
           reasoning.
         </p>
         <p>
-          The production remote MCP endpoint is{" "}
-          <code>https://ai.gapwise.ca/api/mcp</code>. You should never need to paste your Gapwise
-          access token into an AI client.
+          The production remote MCP endpoint is <code>https://ai.gapwise.ca/api/mcp</code>. You
+          should never need to paste your Gapwise access token into an AI client.
         </p>
       </section>
 
@@ -40,19 +38,28 @@ function AiPage() {
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className={cardClass}>
             <strong className="block text-foreground">Understand your day or week</strong>
-            <span className="mt-1 block">Read only the timetable and personal context you explicitly delegated.</span>
+            <span className="mt-1 block">
+              Read only the timetable and personal context you explicitly delegated.
+            </span>
           </div>
           <div className={cardClass}>
             <strong className="block text-foreground">Find realistic free time</strong>
-            <span className="mt-1 block">Use Gapwise availability and gap calculations instead of model-side timetable arithmetic.</span>
+            <span className="mt-1 block">
+              Use Gapwise availability and gap calculations instead of model-side timetable
+              arithmetic.
+            </span>
           </div>
           <div className={cardClass}>
             <strong className="block text-foreground">Navigate UTM</strong>
-            <span className="mt-1 block">Reason over Gapwise building, routing, accessibility, and gap-planning facts.</span>
+            <span className="mt-1 block">
+              Reason over Gapwise building, routing, accessibility, and gap-planning facts.
+            </span>
           </div>
           <div className={cardClass}>
             <strong className="block text-foreground">Manage personal planning</strong>
-            <span className="mt-1 block">When you allow writes, queue bounded personal-item and selected preference changes.</span>
+            <span className="mt-1 block">
+              When you allow writes, queue bounded personal-item and selected preference changes.
+            </span>
           </div>
         </div>
       </section>
@@ -88,8 +95,8 @@ function AiPage() {
         </p>
         <p>
           Public directory availability for individual AI platforms is announced only after that
-          exact client has passed Gapwise&apos;s production OAuth/read/write/revocation validation and
-          the platform has approved the listing.
+          exact client has passed Gapwise&apos;s production OAuth/read/write/revocation validation
+          and the platform has approved the listing.
         </p>
       </section>
 
@@ -117,10 +124,18 @@ function AiPage() {
       <section>
         <h2>Privacy, terms, and support</h2>
         <div className="flex flex-wrap gap-4">
-          <Link to="/privacy" className="text-accent underline">Privacy</Link>
-          <Link to="/terms" className="text-accent underline">Terms</Link>
-          <Link to="/support" className="text-accent underline">Support</Link>
-          <Link to="/trust" className="text-accent underline">Trust Center</Link>
+          <Link to="/privacy" className="text-accent underline">
+            Privacy
+          </Link>
+          <Link to="/terms" className="text-accent underline">
+            Terms
+          </Link>
+          <Link to="/support" className="text-accent underline">
+            Support
+          </Link>
+          <Link to="/trust" className="text-accent underline">
+            Trust Center
+          </Link>
           <a href="https://docs.gapwise.ca/ai/permissions/" className="text-accent underline">
             AI permissions documentation
           </a>
