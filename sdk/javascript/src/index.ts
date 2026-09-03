@@ -38,7 +38,7 @@ export type GapwiseErrorCode =
   | "request_too_large"
   | (string & {});
 export class GapwiseApiError extends Error {
-  readonly name = "GapwiseApiError";
+  override readonly name = "GapwiseApiError";
   constructor(
     message: string,
     public readonly status: number,
@@ -50,13 +50,13 @@ export class GapwiseApiError extends Error {
   }
 }
 export class GapwiseTimeoutError extends Error {
-  readonly name = "GapwiseTimeoutError";
+  override readonly name = "GapwiseTimeoutError";
   constructor(message = "The Gapwise API request timed out.") {
     super(message);
   }
 }
 export class GapwiseResponseError extends Error {
-  readonly name = "GapwiseResponseError";
+  override readonly name = "GapwiseResponseError";
   constructor(message = "The Gapwise API returned an invalid JSON response.") {
     super(message);
   }
