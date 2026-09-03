@@ -20,6 +20,7 @@ on:
     branches:
       - main
     paths:
+      - "sdk/javascript/package.json"
       - "sdk/javascript/jsr.json"
     tags:
       - "python-v*"
@@ -53,6 +54,20 @@ jobs:
         with:
           python-version: "3.13"
       - run: bun install --frozen-lockfile
+      - name: Verify TypeScript registry versions agree
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const npmPackage = JSON.parse(readFileSync("sdk/javascript/package.json", "utf8"));
+          const jsrPackage = JSON.parse(readFileSync("sdk/javascript/jsr.json", "utf8"));
+          if (npmPackage.name !== jsrPackage.name) {
+            throw new Error(`TypeScript registry package names differ: npm=${npmPackage.name}, jsr=${jsrPackage.name}`);
+          }
+          if (npmPackage.version !== jsrPackage.version) {
+            throw new Error(`TypeScript registry versions differ: npm=${npmPackage.version}, jsr=${jsrPackage.version}`);
+          }
+          console.log(`TypeScript registry identity verified: ${npmPackage.name}@${npmPackage.version}`);
+          NODE
       - name: Verify JavaScript SDK artifact and clean install
         run: |
           set -euo pipefail
@@ -117,7 +132,7 @@ jobs:
 
   publish-npm:
     name: Publish @gapwise/sdk to npm
-    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'npm' || inputs.target == 'javascript' || inputs.target == 'both' || inputs.target == 'all') }}
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'npm' || inputs.target == 'javascript' || inputs.target == 'both' || inputs.target == 'all')) }}
     needs: verify
     runs-on: ubuntu-latest
     permissions:
