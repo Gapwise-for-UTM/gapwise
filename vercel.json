@@ -103,6 +103,11 @@
     }
   ],
   "rewrites": [
+    { "source": "/utm/walking-times", "destination": "/_seo/utm--walking-times.html" },
+    {
+      "source": "/utm/walking-time/:route",
+      "destination": "/_seo/utm--walking-time--:route.html"
+    },
     { "source": "/places", "destination": "/_seo/places.html" },
     {
       "source": "/places/davis-food-court",
