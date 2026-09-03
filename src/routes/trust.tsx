@@ -86,8 +86,8 @@ function TrustPage() {
             </a>
           </li>
           <li>
-            Suspected vulnerabilities, exposed secrets, authentication or authorization issues,
-            and other security-sensitive reports:{" "}
+            Suspected vulnerabilities, exposed secrets, authentication or authorization issues, and
+            other security-sensitive reports:{" "}
             <a className="text-accent underline" href="mailto:security@gapwise.ca">
               security@gapwise.ca
             </a>
@@ -152,7 +152,10 @@ function TrustPage() {
           <a href="https://data.gapwise.ca/" className="text-accent hover:underline">
             Data provenance
           </a>
-          <a href="https://docs.gapwise.ca/platform/routing/" className="text-accent hover:underline">
+          <a
+            href="https://docs.gapwise.ca/platform/routing/"
+            className="text-accent hover:underline"
+          >
             Routing documentation
           </a>
         </div>
