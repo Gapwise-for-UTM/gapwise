@@ -66,9 +66,12 @@ type Envelope<T> = { data: T; meta: ResponseMeta };
 /** Official client for the unauthenticated Gapwise Public Campus API v1. */
 export class Gapwise {
   readonly buildings = {
-    list: (filters: BuildingListOptions = {}, options?: RequestOptions) =>
+    list: (
+      filters: BuildingListOptions = {},
+      options?: RequestOptions,
+    ): Promise<Collection<Building>> =>
       this.requestCollection<Building>(`/buildings${query(filters)}`, options),
-    get: (building: string, options?: RequestOptions) =>
+    get: (building: string, options?: RequestOptions): Promise<Building> =>
       this.request<Building>(
         `/buildings/${encodeURIComponent(required(building, "building"))}`,
         {},
@@ -76,9 +79,12 @@ export class Gapwise {
       ).then((r) => r.data),
   };
   readonly places = {
-    list: (filters: PlaceListOptions = {}, options?: RequestOptions) =>
+    list: (
+      filters: PlaceListOptions = {},
+      options?: RequestOptions,
+    ): Promise<Collection<CampusPlace>> =>
       this.requestCollection<CampusPlace>(`/places${query(filters)}`, options),
-    get: (placeId: string, options?: RequestOptions) =>
+    get: (placeId: string, options?: RequestOptions): Promise<CampusPlace> =>
       this.request<CampusPlace>(
         `/places/${encodeURIComponent(required(placeId, "placeId"))}`,
         {},
@@ -86,11 +92,11 @@ export class Gapwise {
       ).then((r) => r.data),
   };
   readonly routes = {
-    calculate: (input: RouteRequest, options?: RequestOptions) =>
+    calculate: (input: RouteRequest, options?: RequestOptions): Promise<RouteResult> =>
       this.request<RouteResult>("/routes", json(input), options).then((r) => r.data),
   };
   readonly gaps = {
-    plan: (input: GapPlanRequest, options?: RequestOptions) =>
+    plan: (input: GapPlanRequest, options?: RequestOptions): Promise<GapPlanResult> =>
       this.request<GapPlanResult>("/gaps/plan", json(input), options).then((r) => r.data),
   };
   private readonly baseUrl: string;
@@ -109,7 +115,7 @@ export class Gapwise {
     applyHeaders(this.headers, options.headers);
   }
   /** Return API, data-version, capability, and privacy metadata. */
-  info(options?: RequestOptions) {
+  info(options?: RequestOptions): Promise<ApiInfo> {
     return this.request<ApiInfo>("", {}, options).then((r) => r.data);
   }
   private async requestCollection<T>(
@@ -128,7 +134,7 @@ export class Gapwise {
     if (!Number.isFinite(timeoutMs) || timeoutMs <= 0)
       throw new TypeError("timeoutMs must be a positive finite number.");
     const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const abort = () => controller.abort(options.signal?.reason);
+    const abort = (): void => controller.abort(options.signal?.reason);
     options.signal?.addEventListener("abort", abort, { once: true });
     const headers = new Headers(this.headers);
     applyHeaders(headers, init.headers);
@@ -181,20 +187,20 @@ export class Gapwise {
     return body as Envelope<T>;
   }
 }
-function applyHeaders(target: Headers, source?: HeadersInit) {
+function applyHeaders(target: Headers, source?: HeadersInit): void {
   if (!source) return;
   new Headers(source).forEach((value, name) => target.set(name, value));
 }
-function trimTrailingSlashes(value: string) {
+function trimTrailingSlashes(value: string): string {
   let end = value.length;
   while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
   return value.slice(0, end);
 }
-function required(value: string, name: string) {
+function required(value: string, name: string): string {
   if (!value?.trim()) throw new TypeError(`${name} must be a non-empty string.`);
   return value.trim();
 }
-function query(values: object) {
+function query(values: object): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(values as Record<string, unknown>))
     if (value !== undefined) params.set(key, String(value));
