@@ -8,7 +8,13 @@ import { getSupabaseClient } from "@/lib/supabase";
 
 type EmailPreferences = { product_updates: boolean; security_notices: boolean };
 type AiEvent = { id: string; client_name: string; event_type: string; capability: string | null; created_at: string };
-
+type SettingsResult = {
+  ok?: boolean;
+  preferences?: EmailPreferences;
+  aiEvents?: AiEvent[];
+  productUpdates?: boolean;
+  error?: string;
+};
 type SaveState = "idle" | "saving" | "saved" | "error";
 
 export const Route = createFileRoute("/settings")({
@@ -28,6 +34,14 @@ function formatTime(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
+async function invokeSettings(body: Record<string, unknown>): Promise<SettingsResult> {
+  const client = getSupabaseClient();
+  if (!client) throw new Error("cloud_unavailable");
+  const { data, error } = await client.functions.invoke("account-settings", { body });
+  if (error) throw error;
+  return (data ?? {}) as SettingsResult;
+}
+
 function SettingsPage() {
   const { user, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -38,21 +52,17 @@ function SettingsPage() {
 
   useEffect(() => {
     if (loading || !user) return;
-    const client = getSupabaseClient();
-    if (!client) return;
     let alive = true;
-    Promise.all([
-      client.from("user_email_preferences").select("product_updates,security_notices").eq("user_id", user.id).maybeSingle(),
-      client.from("ai_access_events").select("id,client_name,event_type,capability,created_at").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
-    ]).then(([prefs, events]) => {
-      if (!alive) return;
-      if (prefs.error || events.error) {
-        setLoadError("Some cloud settings could not be loaded. Your local timetable is unaffected.");
-        return;
-      }
-      setPreferences(prefs.data ?? { product_updates: false, security_notices: true });
-      setAiEvents((events.data ?? []) as AiEvent[]);
-    });
+    invokeSettings({ action: "read" })
+      .then((result) => {
+        if (!alive) return;
+        if (!result.ok) throw new Error(result.error || "settings_unavailable");
+        setPreferences(result.preferences ?? { product_updates: false, security_notices: true });
+        setAiEvents(result.aiEvents ?? []);
+      })
+      .catch(() => {
+        if (alive) setLoadError("Some cloud settings could not be loaded. Your local timetable is unaffected.");
+      });
     return () => {
       alive = false;
     };
@@ -62,15 +72,13 @@ function SettingsPage() {
 
   async function setProductUpdates(enabled: boolean) {
     if (!user || !preferences) return;
-    const client = getSupabaseClient();
-    if (!client) return;
     const previous = preferences;
     setPreferences({ ...preferences, product_updates: enabled });
     setSaveState("saving");
-    const { error } = await client
-      .from("user_email_preferences")
-      .upsert({ user_id: user.id, product_updates: enabled, security_notices: true, updated_at: new Date().toISOString() });
-    if (error) {
+    try {
+      const result = await invokeSettings({ action: "set_product_updates", productUpdates: enabled });
+      if (!result.ok) throw new Error(result.error || "save_failed");
+    } catch {
       setPreferences(previous);
       setSaveState("error");
       return;
