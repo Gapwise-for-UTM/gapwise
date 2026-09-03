@@ -8,8 +8,8 @@ Gapwise exposes a small public campus-intelligence surface for University of Tor
 - API base URL: `https://api.gapwise.ca/v1`
 - OpenAPI 3.1: `https://api.gapwise.ca/openapi.json`
 - Open UTM building snapshot: `https://gapwise.ca/data/utm-campus-v1.json`
-- JavaScript/TypeScript SDK source: [`../sdk/javascript`](../sdk/javascript)
-- Python SDK source: [`../sdk/python`](../sdk/python)
+- JavaScript/TypeScript SDK: `@gapwise/sdk@0.1.0`
+- Python SDK: `gapwise==0.1.0`
 - Visual Day Replay: `https://gapwise.ca/replay`
 
 ## API
@@ -28,12 +28,13 @@ The canonical public v1 surface intentionally stays small:
 
 No API key is required for these public campus-data endpoints. They do not expose private timetable, friend, account, credential, or live-location data.
 
-## JavaScript / TypeScript quick start
+## SDK quick starts
 
-`@gapwise/sdk@0.1.0` is published on npm with provenance. The Python `gapwise` package is still awaiting its first verified PyPI release, so do not advertise `pip install gapwise` yet.
+Both official SDKs are published and verified.
 
 ```bash
 npm install @gapwise/sdk@0.1.0
+python -m pip install gapwise==0.1.0
 ```
 
 ```ts
@@ -44,20 +45,15 @@ const route = await gapwise.routes.calculate({ from: "MN", to: "IB" });
 console.log(route.status, route.estimatedSeconds);
 ```
 
-```js
-const plan = await gapwise.gaps.plan({
-  from: "MN",
-  to: "IB",
-  term: "Fall",
-  weekday: "Wednesday",
-  startTime: 660,
-  endTime: 780,
-});
+```python
+from gapwise import Gapwise
 
-console.log(plan.assessment.primary);
+with Gapwise() as gapwise:
+    buildings = gapwise.buildings.list()
+    print(len(buildings.items))
 ```
 
-The client is deliberately a thin wrapper around standard `fetch`. Projects that prefer generated clients can use the OpenAPI document instead.
+The JavaScript client is deliberately a thin wrapper around standard `fetch`. Projects that prefer generated clients can use the OpenAPI document instead.
 
 ## Reliability and uncertainty
 
