@@ -17,7 +17,7 @@
 
 <br />
 
-**[App](https://gapwise.ca)** · **[API](https://api.gapwise.ca/v1)** · **[Data](https://data.gapwise.ca)** · **[AI](https://ai.gapwise.ca)** · **[Docs](https://docs.gapwise.ca)** · **[Status](https://status.gapwise.ca)** · **[Trust](https://gapwise.ca/trust)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)**
+**[App](https://gapwise.ca)** · **[Walking Times](https://gapwise.ca/utm/walking-times)** · **[API](https://api.gapwise.ca/v1)** · **[Data](https://data.gapwise.ca)** · **[AI](https://ai.gapwise.ca)** · **[Docs](https://docs.gapwise.ca)** · **[Status](https://status.gapwise.ca)** · **[Trust](https://gapwise.ca/trust)**
 
 </div>
 
@@ -121,7 +121,9 @@ Typical route states include:
 
 Step-free routing fails closed when verified accessible evidence is unavailable.
 
-Walking times are deterministic planning estimates, not guarantees. Actual travel time can vary with walking speed, accessibility needs, entrances, elevators, congestion, construction, temporary closures, weather, and route choice. Gapwise keeps route confidence and evidence visible rather than presenting uncertain routes as exact facts.
+Public search-friendly walking-time pages for major UTM building pairs live at [gapwise.ca/utm/walking-times](https://gapwise.ca/utm/walking-times). These pages use the same deterministic routing source of truth as the application instead of hardcoded marketing estimates.
+
+Walking times are planning estimates rather than guarantees. Actual travel can vary with route choice, accessibility needs, building entrances, elevators, congestion, construction, temporary closures, weather, and individual walking speed.
 
 ### Day Replay
 
@@ -273,7 +275,7 @@ React renders those decisions. Mobile consumes them. The public API exposes them
 
 ---
 
-## Privacy, trust, and cybersecurity architecture
+## Privacy and cybersecurity architecture
 
 Gapwise is designed around data minimization, explicit trust boundaries, and defense in depth.
 
@@ -290,19 +292,14 @@ Key properties include:
 - OAuth-based sign-in and permission boundaries;
 - Supabase/Postgres with row-level security;
 - Cloudflare Turnstile protection at the auth boundary;
+- dedicated security contact at `security@gapwise.ca`;
+- general support contact at `support@gapwise.ca`;
 - explicit separation between public campus data and private student state;
 - no claim of zero knowledge or end-to-end encryption where the architecture does not actually provide it.
 
-The public [Trust Center](https://gapwise.ca/trust) is the canonical user-facing summary of these boundaries and links to the detailed privacy, security, accessibility, data provenance, incident-response, and operational surfaces.
+Public trust summary: **https://gapwise.ca/trust**
 
-### Contact
-
-- **General support, privacy questions, account help, and non-security bugs:** `support@gapwise.ca`
-- **Security vulnerabilities and sensitive security reports:** `security@gapwise.ca`
-
-Do not place vulnerability details, credentials, tokens, private student data, or cryptographic material in public issues.
-
-Read the [Trust Center](https://gapwise.ca/trust), [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
+Read [`PRIVACY.md`](PRIVACY.md), [`SECURITY.md`](SECURITY.md), and [`docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md`](docs/PRIVATE_CLOUD_SECURITY_ARCHITECTURE.md).
 
 ---
 
