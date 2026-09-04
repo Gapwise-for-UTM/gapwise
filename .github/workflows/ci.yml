@@ -67,6 +67,8 @@ jobs:
         with:
           bun-version: 1.3.14
       - run: bun install --frozen-lockfile
+      - name: Enforce Vercel Hobby function budget
+        run: bun run deployment:hobby-budget
       - name: Audit production dependencies
         run: bun run security:audit
       - name: Verify API, OpenAPI, SDK, and maintained docs conformance
