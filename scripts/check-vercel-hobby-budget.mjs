@@ -1,7 +1,8 @@
 import { readdir } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const API_DIRECTORY = new URL("../api/", import.meta.url);
+const API_DIRECTORY = fileURLToPath(new URL("../api/", import.meta.url));
 const HOBBY_FUNCTION_LIMIT = 12;
 
 async function collectFunctionFiles(directory, root = directory) {
