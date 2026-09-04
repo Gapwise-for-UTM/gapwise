@@ -8,8 +8,8 @@ Gapwise exposes a small public campus-intelligence surface for University of Tor
 - API base URL: `https://api.gapwise.ca/v1`
 - OpenAPI 3.1: `https://api.gapwise.ca/openapi.json`
 - Open UTM building snapshot: `https://gapwise.ca/data/utm-campus-v1.json`
-- JavaScript/TypeScript SDK: `@gapwise/sdk@0.1.0`
-- Python SDK: `gapwise==0.1.0`
+- JavaScript/TypeScript SDK: `@gapwise/sdk@0.1.1` on npm and JSR
+- Python SDK: `gapwise==0.1.0` on PyPI
 - Visual Day Replay: `https://gapwise.ca/replay`
 
 ## API
@@ -30,10 +30,11 @@ No API key is required for these public campus-data endpoints. They do not expos
 
 ## SDK quick starts
 
-Both official SDKs are published and verified.
+Both official SDK implementations are published and verified. The TypeScript implementation is distributed on npm and JSR; Python is distributed on PyPI.
 
 ```bash
-npm install @gapwise/sdk@0.1.0
+npm install @gapwise/sdk@0.1.1
+# Deno / JSR: deno add jsr:@gapwise/sdk@0.1.1
 python -m pip install gapwise==0.1.0
 ```
 
