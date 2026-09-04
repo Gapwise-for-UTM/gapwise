@@ -1,4 +1,4 @@
-import { jsonResponse, logEvent, requestIdFrom, safeError } from "./_lib/observability";
+import { jsonResponse, logEvent, requestIdFrom, safeError } from "./_lib/observability.js";
 
 const UPSTREAM_TIMEOUT_MS = 2500;
 
