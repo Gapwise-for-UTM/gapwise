@@ -130,6 +130,7 @@
     { "source": "/security", "destination": "/_seo/security.html" },
     { "source": "/accessibility", "destination": "/_seo/accessibility.html" },
     { "source": "/terms", "destination": "/_seo/terms.html" },
+    { "source": "/api/version", "destination": "/api/health?view=version" },
     { "source": "/v1", "destination": "/api/v1?resource=root" },
     { "source": "/v1/buildings", "destination": "/api/v1?resource=buildings" },
     {
