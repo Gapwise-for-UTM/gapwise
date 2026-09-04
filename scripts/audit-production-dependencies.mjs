@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 
 const MAX_ATTEMPTS = 2;
-const ATTEMPT_TIMEOUT_MS = 90_000;
+const ATTEMPT_TIMEOUT_MS = 180_000;
 const RETRY_DELAY_MS = 5_000;
 
 const transientFailurePattern =
