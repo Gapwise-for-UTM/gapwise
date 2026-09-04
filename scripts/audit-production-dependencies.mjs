@@ -75,9 +75,7 @@ for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
   }
 
   if (result.timedOut) {
-    console.error(
-      `Production dependency audit timed out after ${ATTEMPT_TIMEOUT_MS / 1000}s.`,
-    );
+    console.error(`Production dependency audit timed out after ${ATTEMPT_TIMEOUT_MS / 1000}s.`);
   } else {
     console.error("Production dependency audit hit a transient transport failure.");
   }
