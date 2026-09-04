@@ -40,11 +40,26 @@ export default {
       }
 
       const now = new Date().toISOString();
-      const { error } = await client
+      const { data, error } = await client
         .from("user_onboarding")
         .update({ completed_at: now, updated_at: now })
-        .eq("user_id", authenticated.userId);
+        .eq("user_id", authenticated.userId)
+        .is("completed_at", null)
+        .select("user_id")
+        .limit(1);
       if (error) throw new ApiError(503, "Account setup could not be saved.");
+
+      // Only the null -> completed transition is eligible for the welcome. Await
+      // the protected handoff so a serverless runtime cannot terminate it early,
+      // but deliberately swallow delivery errors: email must never roll back or
+      // block a successfully persisted onboarding transition. The Edge Function
+      // also uses a stable Resend idempotency key as a duplicate-send boundary.
+      if ((data?.length ?? 0) > 0) {
+        await client.functions
+          .invoke("lifecycle-email", { body: { event: "onboarding_completed" } })
+          .catch(() => undefined);
+      }
+
       return { completed: true };
     });
   },

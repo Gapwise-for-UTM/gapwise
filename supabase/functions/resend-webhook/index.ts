@@ -33,6 +33,26 @@ type ReceivedEmail = {
 
 const encoder = new TextEncoder();
 const SIGNATURE_TOLERANCE_SECONDS = 300;
+const MAX_ACKS_PER_SENDER_PER_HOUR = 3;
+
+const RECEIPT_TEMPLATES = {
+  support: {
+    id: "gapwise-support-received",
+    from: "Gapwise Support <support@gapwise.ca>",
+    subject: "We received your Gapwise support request",
+    replyTo: "support@inbound.gapwise.ca",
+    category: "support_received",
+  },
+  security: {
+    id: "gapwise-security-report-received",
+    from: "Gapwise Security <security@gapwise.ca>",
+    subject: "We received your Gapwise security report",
+    replyTo: "security@inbound.gapwise.ca",
+    category: "security_report_received",
+  },
+} as const;
+
+type ReceiptMailbox = keyof typeof RECEIPT_TEMPLATES;
 
 function adminClient() {
   const url = Deno.env.get("SUPABASE_URL")?.trim() ?? "";
@@ -49,8 +69,7 @@ function adminClient() {
   }
 
   if (!key) key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim() ?? "";
-  if (!url || !key)
-    throw new Error("Supabase admin credentials are unavailable.");
+  if (!url || !key) throw new Error("Supabase admin credentials are unavailable.");
 
   return createClient(url, key, {
     auth: { autoRefreshToken: false, detectSessionInUrl: false, persistSession: false },
@@ -63,8 +82,7 @@ function decodeBase64(value: string) {
 }
 
 function signingKeyBytes(secret: string) {
-  if (!secret.startsWith("whsec_"))
-    throw new Error("Webhook signing secret is malformed.");
+  if (!secret.startsWith("whsec_")) throw new Error("Webhook signing secret is malformed.");
   return decodeBase64(secret.slice("whsec_".length));
 }
 
@@ -95,8 +113,7 @@ async function verifySignature(
     if (comma === -1 || candidate.slice(0, comma) !== "v1") continue;
     try {
       const signature = decodeBase64(candidate.slice(comma + 1));
-      if (await crypto.subtle.verify("HMAC", key, signature, signedPayload))
-        return true;
+      if (await crypto.subtle.verify("HMAC", key, signature, signedPayload)) return true;
     } catch {
       // Ignore malformed signature candidates and continue checking rotations.
     }
@@ -132,8 +149,7 @@ function eventCategory(tags: unknown) {
     for (const tag of tags) {
       if (!tag || typeof tag !== "object") continue;
       const value = tag as Record<string, unknown>;
-      if (value["name"] === "category")
-        return stringOrNull(value["value"], 120);
+      if (value["name"] === "category") return stringOrNull(value["value"], 120);
     }
     return null;
   }
@@ -155,9 +171,10 @@ function attachmentMetadata(value: unknown) {
     const contentType = stringOrNull(item["content_type"], 255);
     const contentDisposition = stringOrNull(item["content_disposition"], 255);
     const contentId = stringOrNull(item["content_id"], 512);
-    const size = typeof item["size"] === "number" && Number.isFinite(item["size"])
-      ? item["size"]
-      : null;
+    const size =
+      typeof item["size"] === "number" && Number.isFinite(item["size"])
+        ? item["size"]
+        : null;
     if (!id && !filename) return [];
     return [
       {
@@ -191,6 +208,39 @@ function directionForEvent(eventType: string) {
   return eventType === "email.received" ? "inbound" : "outbound";
 }
 
+function normalizedSender(value: unknown) {
+  const raw = stringOrNull(value, 998);
+  if (!raw) return null;
+  const bracket = raw.match(/<([^<>\s]+@[^<>\s]+)>/u);
+  const address = (bracket?.[1] ?? raw).trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(address) || address.length > 254) return null;
+  const domain = address.slice(address.lastIndexOf("@") + 1);
+  if (domain === "gapwise.ca" || domain.endsWith(".gapwise.ca")) return null;
+  return address;
+}
+
+function headerLookup(headers: Record<string, unknown> | null, name: string) {
+  if (!headers) return null;
+  const wanted = name.toLowerCase();
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() !== wanted) continue;
+    return typeof value === "string" ? value.trim() : null;
+  }
+  return null;
+}
+
+function looksAutomated(headers: Record<string, unknown> | null) {
+  const autoSubmitted = headerLookup(headers, "auto-submitted")?.toLowerCase();
+  if (autoSubmitted && autoSubmitted !== "no") return true;
+  const precedence = headerLookup(headers, "precedence")?.toLowerCase();
+  if (precedence && ["bulk", "junk", "list"].includes(precedence)) return true;
+  return Boolean(
+    headerLookup(headers, "x-autoreply") ||
+      headerLookup(headers, "x-autorespond") ||
+      headerLookup(headers, "x-auto-response-suppress"),
+  );
+}
+
 async function fetchReceivedEmail(emailId: string) {
   const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
   if (!apiKey) throw new Error("RESEND_API_KEY is unavailable.");
@@ -199,10 +249,7 @@ async function fetchReceivedEmail(emailId: string) {
     `https://api.resend.com/emails/receiving/${encodeURIComponent(emailId)}`,
     {
       method: "GET",
-      headers: {
-        authorization: `Bearer ${apiKey}`,
-        accept: "application/json",
-      },
+      headers: { authorization: `Bearer ${apiKey}`, accept: "application/json" },
       signal: AbortSignal.timeout(10_000),
     },
   );
@@ -213,6 +260,58 @@ async function fetchReceivedEmail(emailId: string) {
   }
 
   return (await response.json()) as ReceivedEmail;
+}
+
+async function shouldSendReceipt(
+  supabase: ReturnType<typeof adminClient>,
+  mailbox: string | null,
+  senderRaw: string | null,
+  headers: Record<string, unknown> | null,
+) {
+  if (mailbox !== "support" && mailbox !== "security") return false;
+  if (!senderRaw || !normalizedSender(senderRaw) || looksAutomated(headers)) return false;
+
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count, error } = await supabase
+    .from("resend_email_messages")
+    .select("resend_email_id", { count: "exact", head: true })
+    .eq("direction", "inbound")
+    .eq("from_address", senderRaw)
+    .gte("event_created_at", since);
+  if (error) {
+    console.error("receipt_rate_limit_lookup_failed", { code: error.code });
+    return false;
+  }
+  return (count ?? 0) <= MAX_ACKS_PER_SENDER_PER_HOUR;
+}
+
+async function sendReceiptAcknowledgement(
+  emailId: string,
+  mailbox: ReceiptMailbox,
+  sender: string,
+) {
+  const apiKey = Deno.env.get("RESEND_API_KEY")?.trim() ?? "";
+  if (!apiKey) throw new Error("RESEND_API_KEY is unavailable.");
+  const template = RECEIPT_TEMPLATES[mailbox];
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${apiKey}`,
+      "content-type": "application/json",
+      accept: "application/json",
+      "Idempotency-Key": `gapwise-${mailbox}-receipt-${emailId}`,
+    },
+    body: JSON.stringify({
+      from: template.from,
+      to: [sender],
+      subject: template.subject,
+      reply_to: [template.replyTo],
+      template: { id: template.id },
+      tags: [{ name: "category", value: template.category }],
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) throw new Error(`Receipt acknowledgement failed with status ${response.status}.`);
 }
 
 function json(status: number, body: Record<string, unknown>) {
@@ -237,9 +336,7 @@ Deno.serve(async (request: Request) => {
   const svixId = request.headers.get("svix-id")?.trim() ?? "";
   const svixTimestamp = request.headers.get("svix-timestamp")?.trim() ?? "";
   const svixSignature = request.headers.get("svix-signature")?.trim() ?? "";
-  if (!svixId || !svixTimestamp || !svixSignature) {
-    return json(400, { error: "missing_signature" });
-  }
+  if (!svixId || !svixTimestamp || !svixSignature) return json(400, { error: "missing_signature" });
 
   const payload = await request.text();
   const supabase = adminClient();
@@ -247,22 +344,11 @@ Deno.serve(async (request: Request) => {
     "get_resend_webhook_signing_secret",
   );
   if (secretError || typeof signingSecret !== "string" || !signingSecret) {
-    console.error(
-      "resend_webhook_secret_unavailable",
-      secretError?.message ?? "missing secret",
-    );
+    console.error("resend_webhook_secret_unavailable", secretError?.message ?? "missing secret");
     return json(503, { error: "webhook_unavailable" });
   }
 
-  if (
-    !(await verifySignature(
-      payload,
-      signingSecret,
-      svixId,
-      svixTimestamp,
-      svixSignature,
-    ))
-  ) {
+  if (!(await verifySignature(payload, signingSecret, svixId, svixTimestamp, svixSignature))) {
     return json(400, { error: "invalid_signature" });
   }
 
@@ -277,32 +363,25 @@ Deno.serve(async (request: Request) => {
   if (!eventType) return json(400, { error: "invalid_event" });
 
   const createdAt = stringOrNull(event.created_at, 80);
-  const eventCreatedAt =
-    createdAt && !Number.isNaN(Date.parse(createdAt)) ? createdAt : null;
+  const eventCreatedAt = createdAt && !Number.isNaN(Date.parse(createdAt)) ? createdAt : null;
   const emailId = stringOrNull(event.data?.email_id);
   const templateId = stringOrNull(event.data?.template_id);
   const category = eventCategory(event.data?.tags);
 
-  const { error: insertError } = await supabase
-    .from("resend_webhook_events")
-    .upsert(
-      {
-        svix_id: svixId,
-        event_type: eventType,
-        resend_email_id: emailId,
-        template_id: templateId,
-        category,
-        event_created_at: eventCreatedAt,
-      },
-      { onConflict: "svix_id", ignoreDuplicates: true },
-    );
+  const { error: insertError } = await supabase.from("resend_webhook_events").upsert(
+    {
+      svix_id: svixId,
+      event_type: eventType,
+      resend_email_id: emailId,
+      template_id: templateId,
+      category,
+      event_created_at: eventCreatedAt,
+    },
+    { onConflict: "svix_id", ignoreDuplicates: true },
+  );
 
   if (insertError) {
-    console.error("resend_webhook_persist_failed", {
-      svixId,
-      eventType,
-      code: insertError.code,
-    });
+    console.error("resend_webhook_persist_failed", { svixId, eventType, code: insertError.code });
     return json(500, { error: "persist_failed" });
   }
 
@@ -354,10 +433,7 @@ Deno.serve(async (request: Request) => {
       .maybeSingle();
 
     if (selectError) {
-      console.error("resend_email_message_lookup_failed", {
-        emailId,
-        code: selectError.code,
-      });
+      console.error("resend_email_message_lookup_failed", { emailId, code: selectError.code });
       return json(500, { error: "message_lookup_failed" });
     }
 
@@ -375,14 +451,11 @@ Deno.serve(async (request: Request) => {
           mailbox: incoming.mailbox ?? existing.mailbox,
           template_id: incoming.template_id ?? existing.template_id,
           category: incoming.category ?? existing.category,
-          attachment_metadata: attachments.length
-            ? attachments
-            : existing.attachment_metadata,
+          attachment_metadata: attachments.length ? attachments : existing.attachment_metadata,
           text_body: incoming.text_body ?? existing.text_body,
           html_body: incoming.html_body ?? existing.html_body,
           headers: incoming.headers ?? existing.headers,
-          content_fetched_at:
-            incoming.content_fetched_at ?? existing.content_fetched_at,
+          content_fetched_at: incoming.content_fetched_at ?? existing.content_fetched_at,
         }
       : incoming;
 
@@ -391,21 +464,31 @@ Deno.serve(async (request: Request) => {
       .upsert(merged, { onConflict: "resend_email_id" });
 
     if (messageError) {
-      console.error("resend_email_message_persist_failed", {
-        emailId,
-        eventType,
-        code: messageError.code,
-      });
+      console.error("resend_email_message_persist_failed", { emailId, eventType, code: messageError.code });
       return json(500, { error: "message_persist_failed" });
+    }
+
+    if (eventType === "email.received" && received) {
+      const senderRaw = stringOrNull(received.from, 998);
+      const sender = normalizedSender(senderRaw);
+      const headers = objectOrNull(received.headers);
+      const mailbox = incoming.mailbox;
+      if (
+        sender &&
+        (mailbox === "support" || mailbox === "security") &&
+        (await shouldSendReceipt(supabase, mailbox, senderRaw, headers))
+      ) {
+        await sendReceiptAcknowledgement(emailId, mailbox, sender).catch((error) => {
+          console.error("receipt_acknowledgement_failed", {
+            emailId,
+            mailbox,
+            error: error instanceof Error ? error.message : "unknown",
+          });
+        });
+      }
     }
   }
 
-  console.info("resend_webhook_event", {
-    svixId,
-    eventType,
-    emailId,
-    templateId,
-    category,
-  });
+  console.info("resend_webhook_event", { svixId, eventType, emailId, templateId, category });
   return json(200, { ok: true });
 });
