@@ -23,7 +23,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "security:audit": "bun audit --prod --audit-level=high",
+    "security:audit": "bun scripts/audit-production-dependencies.mjs",
     "survey:import": "bun scripts/import-campus-survey.ts",
     "survey:dry-run": "bun scripts/import-campus-survey.ts --dry-run",
     "routing:refresh": "bun scripts/generate-outdoor-routing.ts",
