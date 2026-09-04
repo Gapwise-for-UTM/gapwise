@@ -219,8 +219,8 @@ function DevelopersPage() {
                 </p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   The official TypeScript and Python clients are source-available and validated by
-                  the release gate. Check the documentation for current npm and PyPI availability
-                  before installing from a registry.
+                  the release gate. Check the documentation for current npm, JSR, and PyPI
+                  availability before installing from a registry.
                 </p>
               </div>
             </section>
