@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/LegalPage";
 
-const PRIVATE_REPORT_URL = "https://github.com/andrewmuratov/gapwise/security/advisories/new";
+const PRIVATE_REPORT_URL = "https://github.com/Gapwise-for-UTM/gapwise/security/advisories/new";
 
 export const Route = createFileRoute("/security")({
   head: () => ({
