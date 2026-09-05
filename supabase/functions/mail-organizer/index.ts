@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 const ALLOWED_ORIGIN = "https://gapwise.ca";
 const MAX_REQUEST_BYTES = 120_000;
 
-type Mailbox = "support" | "security" | "hello" | "general" | "test";
+type Mailbox = "support" | "security" | "hello" | "general" | "dmarc" | "test";
 type Folder = "inbox" | "archive" | "trash";
 type Body = {
   action?: unknown;
@@ -88,7 +88,7 @@ function stringValue(value: unknown, max: number) {
 }
 
 function mailboxValue(value: unknown): Mailbox | null {
-  return value === "support" || value === "security" || value === "hello" || value === "general" || value === "test" ? value : null;
+  return value === "support" || value === "security" || value === "hello" || value === "general" || value === "dmarc" || value === "test" ? value : null;
 }
 
 function folderValue(value: unknown): Folder | null {

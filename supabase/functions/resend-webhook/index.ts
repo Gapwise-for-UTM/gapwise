@@ -199,6 +199,7 @@ function mailboxForRecipients(recipients: string[]) {
     if (local === "security") return "security";
     if (local === "hello") return "hello";
     if (local === "general") return "general";
+    if (local === "dmarc" || local === "_dmarc") return "dmarc";
     if (local === "test") return "test";
   }
   return recipients.length ? "other" : null;
