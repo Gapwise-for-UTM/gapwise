@@ -64,7 +64,9 @@ async function mirror(fromRoot: string, toRoot: string, fromFiles: string[], toF
 async function writeCanonicalChecksums(files: string[]) {
   const lines: string[] = [];
   for (const path of files) {
-    const digest = createHash("sha256").update(await readFile(resolve(sourceRoot, path))).digest("hex");
+    const digest = createHash("sha256")
+      .update(await readFile(resolve(sourceRoot, path)))
+      .digest("hex");
     lines.push(`${digest}  ${path}`);
   }
   await writeFile(resolve(sourceRoot, "SHA256SUMS"), `${lines.join("\n")}\n`, "utf8");
