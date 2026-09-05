@@ -102,9 +102,9 @@ Do not add ACORN scraping, automated enrolment, background location tracking, pa
 
 ## Campus data
 
-Campus navigation contributions must be evidence-backed. Follow [`docs/CAMPUS_SURVEY.md`](docs/CAMPUS_SURVEY.md) and [`docs/CAMPUS_MAP_GEOMETRY.md`](docs/CAMPUS_MAP_GEOMETRY.md).
+Campus-data changes belong in [`andrewmuratov/gapwise-data`](https://github.com/andrewmuratov/gapwise-data), not in the core compatibility mirror. Follow the public [Gapwise Data contribution guide](https://docs.gapwise.ca/data/contributing/) and source-adjacent maintenance guidance in the Data repository.
 
-Do not promote an estimate or inferred approach to a verified entrance/route without provenance and review. Unknown accessibility is not equivalent to step-free accessibility.
+Core keeps a tested snapshot for runtime reliability. Do not promote an estimate or inferred approach to a verified entrance/route without provenance and review. Unknown accessibility is not equivalent to step-free accessibility.
 
 ## Lovable and generated changes
 

@@ -1,0 +1,14 @@
+{
+  "name": "Gapwise",
+  "app": "https://gapwise.ca",
+  "developers": "https://gapwise.ca/developers",
+  "api": "https://api.gapwise.ca/v1",
+  "openapi": "https://api.gapwise.ca/openapi.json",
+  "docs": "https://docs.gapwise.ca",
+  "data": "https://data.gapwise.ca",
+  "datasetManifest": "https://data.gapwise.ca/datasets/utm/latest/manifest.json",
+  "ai": "https://ai.gapwise.ca",
+  "mcp": "https://ai.gapwise.ca/api/mcp",
+  "status": "https://status.gapwise.ca",
+  "source": "https://github.com/andrewmuratov/gapwise"
+}

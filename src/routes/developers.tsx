@@ -19,12 +19,12 @@ export const Route = createFileRoute("/developers")({
       {
         name: "description",
         content:
-          "Build with Gapwise public UTM building, place, routing, and deterministic gap-planning data.",
+          "Build with Gapwise public UTM data, APIs, SDKs, deterministic routing and gap planning, and permissioned AI integration.",
       },
       { property: "og:title", content: "Gapwise Developers" },
       {
         property: "og:description",
-        content: "The production developer surface for deterministic UTM campus intelligence.",
+        content: "The developer gateway for Gapwise API, SDKs, open campus data, docs, and AI/MCP.",
       },
     ],
   }),
@@ -51,9 +51,16 @@ const ENTRY_POINTS = [
   {
     icon: BookOpen,
     title: "Read the docs",
-    body: "Start with quickstarts, endpoint reference, SDK guides, provenance, uncertainty, privacy, and versioning.",
+    body: "Quickstarts, endpoint reference, data provenance, SDK guides, security, AI/MCP, uncertainty, and versioning.",
     href: "https://docs.gapwise.ca",
     label: "docs.gapwise.ca",
+  },
+  {
+    icon: Database,
+    title: "Explore campus data",
+    body: "Canonical raw UTM campus artifacts, schemas, checksums, provenance, and source-level reuse through Gapwise Data.",
+    href: "https://data.gapwise.ca",
+    label: "data.gapwise.ca",
   },
   {
     icon: Package,
@@ -74,7 +81,7 @@ const ENTRY_POINTS = [
 const PLATFORM_FACTS = [
   "Production v1",
   "No API key",
-  "OpenAPI 3.1",
+  "Open campus data",
   "Deterministic results",
 ] as const;
 
@@ -102,14 +109,14 @@ function DevelopersPage() {
           <div className="topography-field" aria-hidden="true" />
           <div className="relative mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 sm:py-20 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
             <div>
-              <p className="eyebrow text-accent">Gapwise Developers · Production v1</p>
+              <p className="eyebrow text-accent">Gapwise Developers · Production platform</p>
               <h1 className="mt-4 max-w-3xl font-display text-4xl font-semibold tracking-[-0.055em] sm:text-6xl">
                 Build with the campus layer behind Gapwise.
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground">
-                Public UTM buildings, places, deterministic routing, and gap planning through one
-                stable versioned contract. No student timetable, account, or private location data
-                is required.
+                Use the stable API and SDKs for deterministic campus intelligence, Gapwise Data for
+                canonical raw UTM artifacts, or the separate AI/MCP surface for explicitly delegated
+                student context.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-2" aria-label="Platform properties">
@@ -130,6 +137,13 @@ function DevelopersPage() {
                 >
                   <BookOpen className="h-4 w-4" aria-hidden="true" />
                   Documentation
+                </a>
+                <a
+                  href="https://data.gapwise.ca"
+                  className="button-secondary inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold"
+                >
+                  <Database className="h-4 w-4" aria-hidden="true" />
+                  Campus data
                 </a>
                 <a
                   href="https://api.gapwise.ca/openapi.json"
@@ -167,7 +181,7 @@ function DevelopersPage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {ENTRY_POINTS.map((item) => {
               const Icon = item.icon;
               return (
@@ -205,7 +219,8 @@ function DevelopersPage() {
                 </p>
                 <p className="flex items-start gap-2">
                   <Database className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                  Building and place data carries provenance, freshness, and coverage information.
+                  Campus facts originate in Gapwise Data; core pins a tested snapshot rather than
+                  adding a runtime dependency on the Data website.
                 </p>
                 <p className="flex items-start gap-2">
                   <RouteIcon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
@@ -265,17 +280,38 @@ function DevelopersPage() {
               <div className="mt-3 flex items-start gap-3">
                 <FileJson2 className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
                 <div>
-                  <h2 className="font-display text-lg font-semibold">Versioned campus snapshot</h2>
+                  <h2 className="font-display text-lg font-semibold">Canonical raw campus data</h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Need the canonical building snapshot without an API call? Download the public
-                    JSON artifact directly.
+                    Need source-level GeoJSON, graph artifacts, provenance, or audits rather than
+                    API semantics? Gapwise Data publishes the validated canonical tree with
+                    checksums.
                   </p>
-                  <a
-                    href="/data/utm-campus-v1.json"
-                    className="button-secondary mt-4 inline-flex min-h-10 items-center justify-center px-4 text-xs font-semibold"
-                  >
-                    Download JSON
-                  </a>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <a
+                      href="https://data.gapwise.ca"
+                      className="button-secondary inline-flex min-h-10 items-center justify-center px-4 text-xs font-semibold"
+                    >
+                      Explore Data
+                    </a>
+                    <a
+                      href="https://data.gapwise.ca/datasets/utm/latest/manifest.json"
+                      className="button-secondary inline-flex min-h-10 items-center justify-center px-4 text-xs font-semibold"
+                    >
+                      Manifest
+                    </a>
+                    <a
+                      href="https://docs.gapwise.ca/data/"
+                      className="button-secondary inline-flex min-h-10 items-center justify-center px-4 text-xs font-semibold"
+                    >
+                      Data docs
+                    </a>
+                    <a
+                      href="/data/utm-campus-v1.json"
+                      className="button-secondary inline-flex min-h-10 items-center justify-center px-4 text-xs font-semibold"
+                    >
+                      Download JSON
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
