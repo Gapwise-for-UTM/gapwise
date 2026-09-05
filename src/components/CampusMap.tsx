@@ -843,10 +843,7 @@ function fitPadding(map: MapLibreMap): MapFocusPadding {
   return { top: 96, right: 156, bottom: 64, left: 64 };
 }
 
-function campusMinimumZoom(
-  map: MapLibreMap,
-  bounds: ReturnType<typeof getCampusCameraBounds>,
-) {
+function campusMinimumZoom(map: MapLibreMap, bounds: ReturnType<typeof getCampusCameraBounds>) {
   const overviewCamera = map.cameraForBounds(bounds, { padding: fitPadding(map) });
   return Math.max(
     14.5,
