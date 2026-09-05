@@ -282,8 +282,9 @@ function DevelopersPage() {
                 <div>
                   <h2 className="font-display text-lg font-semibold">Canonical raw campus data</h2>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Need source-level GeoJSON, graph artifacts, provenance, or audits rather than API
-                    semantics? Gapwise Data publishes the validated canonical tree with checksums.
+                    Need source-level GeoJSON, graph artifacts, provenance, or audits rather than
+                    API semantics? Gapwise Data publishes the validated canonical tree with
+                    checksums.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     <a
