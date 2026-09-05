@@ -56,7 +56,7 @@ jobs:
           PY
           python3 scripts/one-shot-retire-personal-seo.py
 
-      - name: Normalize exact-gap wiring and removed callback remnants
+      - name: Normalize exact-gap wiring and retired-surface test expectations
         shell: bash
         run: |
           python3 - <<'PY'
@@ -95,6 +95,82 @@ jobs:
           segment = segment.replace(generic_handler.strip(), exact_handler.strip(), 1)
           app = app[:mobile_start] + segment + app[mobile_end:]
           app_path.write_text(app)
+
+          branding_path = Path('tests/auth-branding.test.ts')
+          branding = branding_path.read_text()
+          old_brand = '      name: "Gapwise for UTM",\n'
+          if old_brand not in branding:
+              raise SystemExit('auth-branding manifest expectation not found')
+          branding = branding.replace(old_brand, '      name: "Gapwise",\n', 1)
+          branding_path.write_text(branding)
+
+          restoration_path = Path('tests/restoration-flow.test.tsx')
+          restoration = restoration_path.read_text()
+          old_test = '''  test("applies personal items from the same encrypted private payload as the schedule", async () => {
+            const cloud = meeting({ id: "cloud-private", courseCode: "PRIVATE101H5" });
+            authSnapshot = { user: authenticatedUser, loading: false, error: null };
+            loadImplementation = async () => ({
+              meetings: [cloud],
+              updatedAt: "2026-08-01T12:00:00.000Z",
+              privateData: {
+                ...payload([cloud]),
+                personalItems: [
+                  {
+                    id: "restored-personal",
+                    title: "Restored study block",
+                    category: "Study",
+                    term: "Fall",
+                    weekday: "Monday",
+                    startTime: 11 * 60,
+                    endTime: 12 * 60,
+                    flexibility: { kind: "fixed" },
+                    createdAt: "2026-08-01T00:00:00.000Z",
+                    updatedAt: "2026-08-01T00:00:00.000Z",
+                  },
+                ],
+              },
+            });
+
+            await mountRoute();
+            await waitFor(() => pageText().includes("Restored study block"), "the restored personal item");
+            expect(pageText()).toContain("PRIVATE101H5");
+          });
+          '''
+          new_test = '''  test("accepts legacy personal items in encrypted payloads without exposing them in the timetable", async () => {
+            const cloud = meeting({ id: "cloud-private", courseCode: "PRIVATE101H5" });
+            authSnapshot = { user: authenticatedUser, loading: false, error: null };
+            loadImplementation = async () => ({
+              meetings: [cloud],
+              updatedAt: "2026-08-01T12:00:00.000Z",
+              privateData: {
+                ...payload([cloud]),
+                personalItems: [
+                  {
+                    id: "restored-personal",
+                    title: "Restored study block",
+                    category: "Study",
+                    term: "Fall",
+                    weekday: "Monday",
+                    startTime: 11 * 60,
+                    endTime: 12 * 60,
+                    flexibility: { kind: "fixed" },
+                    createdAt: "2026-08-01T00:00:00.000Z",
+                    updatedAt: "2026-08-01T00:00:00.000Z",
+                  },
+                ],
+              },
+            });
+
+            await mountRoute();
+            await waitFor(() => pageText().includes("PRIVATE101H5"), "the restored timetable");
+            expect(pageText()).not.toContain("Restored study block");
+            expect(loadCalls).toEqual([authenticatedUser.id]);
+          });
+          '''
+          if old_test not in restoration:
+              raise SystemExit('legacy personal restoration test block not found')
+          restoration = restoration.replace(old_test, new_test, 1)
+          restoration_path.write_text(restoration)
           PY
 
       - name: Generate canonical favicon and social image
@@ -134,7 +210,8 @@ jobs:
             src/content/public-feature-pages.ts src/routes/about.tsx src/routes/utm-timetable.tsx \
             src/routes/campus-map.tsx src/routes/gap-planner.tsx src/routes/campus-routing.tsx \
             src/routes/acorn-import.tsx src/routes/support.tsx scripts/build-seo-pages.ts scripts/check-seo-output.ts \
-            tests/seo.test.ts tests/personal-items-retired.test.ts e2e/clickable-gaps.e2e.ts \
+            tests/seo.test.ts tests/personal-items-retired.test.ts tests/auth-branding.test.ts \
+            tests/restoration-flow.test.tsx e2e/clickable-gaps.e2e.ts \
             package.json vercel.json public/site.webmanifest index.html README.md \
             docs/CLOUDFLARE_PAGES.md docs/TRUST_DATA_INVENTORY.md e2e/trust-auth-academic.e2e.ts
 
