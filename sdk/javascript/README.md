@@ -54,4 +54,10 @@ Collections return `{ data, meta }`; `meta.pagination.nextOffset` is `null` on t
 
 HTTP failures throw `GapwiseApiError` with `status`, stable `code`, optional `details`, and `requestId`. Timeouts throw `GapwiseTimeoutError`; malformed successful responses throw `GapwiseResponseError`. If an error has code `rate_limited`, respect the server's retry guidance before retrying.
 
+## Security and release integrity
+
+The package has no runtime dependencies. npm releases use GitHub Actions OIDC trusted publishing with provenance, while JSR releases use the same repository and source through its OIDC publisher. Release verification builds and tests the SDK, inspects the packed file list for credential-like material, installs the tarball into a clean consumer project, and checks the JSR/Deno source package before publication. The JSR CLI is pinned in the release workflow rather than downloaded as an unbounded latest version.
+
+Report suspected vulnerabilities privately using the repository's [security policy](../../SECURITY.md). Do not include credentials, tokens, private timetable data, or exploitable details in a public issue.
+
 API v1, campus data versions, npm/JSR package versions, and the Python package version evolve independently at the registry layer but must remain semantically aligned with the same released v1 contract. See [`../../docs/DEVELOPER_PLATFORM.md`](../../docs/DEVELOPER_PLATFORM.md) for filtering, uncertainty, privacy, versioning, and legacy migration guidance, and [`../../docs/SDK_RELEASE.md`](../../docs/SDK_RELEASE.md) for the release process.
