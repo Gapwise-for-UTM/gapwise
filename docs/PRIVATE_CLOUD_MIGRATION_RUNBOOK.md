@@ -14,7 +14,7 @@ This document now serves as the recovery/rotation record for the deployed archit
 - **Gate 3 — disposable proof:** encrypted restore, local-key reload, common-gap minimization, account deletion, tamper failure and cross-user isolation were exercised with disposable data.
 - **Gate 4 — legacy migration:** the remaining production owner migrated through the real application and the encrypted replacement was read back and verified.
 - **Gate 5 — authoritative cutover:** production restored the real timetable from encrypted cloud state on a fresh browser context and subsequent encrypted revisions advanced without rewriting the legacy rollback rows.
-- **Gate 6 — plaintext retirement:** the fail-closed precheck found zero incomplete replacements. Migration `20260812020500_retire_legacy_plaintext_cloud.sql` then removed the legacy plaintext schedule/preferences tables and plaintext overlap helpers. Post-apply checks confirmed the encrypted private row, key envelope and encrypted availability row remained present.
+- **Gate 6 — plaintext retirement:** the fail-closed precheck found zero incomplete replacements. Migration `20260812022934_retire_legacy_plaintext_cloud.sql` then removed the legacy plaintext schedule/preferences tables and plaintext overlap helpers. Post-apply checks confirmed the encrypted private row, key envelope and encrypted availability row remained present.
 
 ## Production trust boundary
 
