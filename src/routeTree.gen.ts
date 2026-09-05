@@ -10,9 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AppRouteImport } from './routes/_app'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AccessibilityRouteImport } from './routes/accessibility'
+import { Route as AcornImportRouteImport } from './routes/acorn-import'
 import { Route as AiRouteImport } from './routes/ai'
+import { Route as CampusMapRouteImport } from './routes/campus-map'
+import { Route as CampusRoutingRouteImport } from './routes/campus-routing'
 import { Route as DevelopersRouteImport } from './routes/developers'
+import { Route as GapPlannerRouteImport } from './routes/gap-planner'
 import { Route as MailRouteImport } from './routes/mail'
 import { Route as OpsRouteImport } from './routes/ops'
 import { Route as PlacesRouteImport } from './routes/places'
@@ -23,6 +28,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TrustRouteImport } from './routes/trust'
+import { Route as UtmTimetableRouteImport } from './routes/utm-timetable'
 import { Route as AppIndexRouteImport } from './routes/_app.index'
 import { Route as AppGapsRouteImport } from './routes/_app.gaps'
 import { Route as AppTimetableRouteImport } from './routes/_app.timetable'
@@ -35,9 +41,19 @@ const AppRoute = AppRouteImport.update({
   id: '/_app',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccessibilityRoute = AccessibilityRouteImport.update({
   id: '/accessibility',
   path: '/accessibility',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AcornImportRoute = AcornImportRouteImport.update({
+  id: '/acorn-import',
+  path: '/acorn-import',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AiRoute = AiRouteImport.update({
@@ -45,9 +61,24 @@ const AiRoute = AiRouteImport.update({
   path: '/ai',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CampusMapRoute = CampusMapRouteImport.update({
+  id: '/campus-map',
+  path: '/campus-map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampusRoutingRoute = CampusRoutingRouteImport.update({
+  id: '/campus-routing',
+  path: '/campus-routing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevelopersRoute = DevelopersRouteImport.update({
   id: '/developers',
   path: '/developers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GapPlannerRoute = GapPlannerRouteImport.update({
+  id: '/gap-planner',
+  path: '/gap-planner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MailRoute = MailRouteImport.update({
@@ -100,6 +131,11 @@ const TrustRoute = TrustRouteImport.update({
   path: '/trust',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UtmTimetableRoute = UtmTimetableRouteImport.update({
+  id: '/utm-timetable',
+  path: '/utm-timetable',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -138,9 +174,14 @@ const AppRouteIndexRoute = AppRouteIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/about': typeof AboutRoute
   '/accessibility': typeof AccessibilityRoute
+  '/acorn-import': typeof AcornImportRoute
   '/ai': typeof AiRoute
+  '/campus-map': typeof CampusMapRoute
+  '/campus-routing': typeof CampusRoutingRoute
   '/developers': typeof DevelopersRoute
+  '/gap-planner': typeof GapPlannerRoute
   '/mail': typeof MailRoute
   '/ops': typeof OpsRoute
   '/places': typeof PlacesRouteWithChildren
@@ -151,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
+  '/utm-timetable': typeof UtmTimetableRoute
   '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
@@ -159,9 +201,14 @@ export interface FileRoutesByFullPath {
   '/route/': typeof AppRouteIndexRoute
 }
 export interface FileRoutesByTo {
+  '/about': typeof AboutRoute
   '/accessibility': typeof AccessibilityRoute
+  '/acorn-import': typeof AcornImportRoute
   '/ai': typeof AiRoute
+  '/campus-map': typeof CampusMapRoute
+  '/campus-routing': typeof CampusRoutingRoute
   '/developers': typeof DevelopersRoute
+  '/gap-planner': typeof GapPlannerRoute
   '/mail': typeof MailRoute
   '/ops': typeof OpsRoute
   '/places': typeof PlacesRouteWithChildren
@@ -172,6 +219,7 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
+  '/utm-timetable': typeof UtmTimetableRoute
   '/gaps': typeof AppGapsRoute
   '/timetable': typeof AppTimetableRoute
   '/today': typeof AppTodayRoute
@@ -183,9 +231,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteWithChildren
+  '/about': typeof AboutRoute
   '/accessibility': typeof AccessibilityRoute
+  '/acorn-import': typeof AcornImportRoute
   '/ai': typeof AiRoute
+  '/campus-map': typeof CampusMapRoute
+  '/campus-routing': typeof CampusRoutingRoute
   '/developers': typeof DevelopersRoute
+  '/gap-planner': typeof GapPlannerRoute
   '/mail': typeof MailRoute
   '/ops': typeof OpsRoute
   '/places': typeof PlacesRouteWithChildren
@@ -196,6 +249,7 @@ export interface FileRoutesById {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
+  '/utm-timetable': typeof UtmTimetableRoute
   '/_app/gaps': typeof AppGapsRoute
   '/_app/timetable': typeof AppTimetableRoute
   '/_app/today': typeof AppTodayRoute
@@ -208,9 +262,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/accessibility'
+    | '/acorn-import'
     | '/ai'
+    | '/campus-map'
+    | '/campus-routing'
     | '/developers'
+    | '/gap-planner'
     | '/mail'
     | '/ops'
     | '/places'
@@ -221,6 +280,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/trust'
+    | '/utm-timetable'
     | '/gaps'
     | '/timetable'
     | '/today'
@@ -229,9 +289,14 @@ export interface FileRouteTypes {
     | '/route/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/about'
     | '/accessibility'
+    | '/acorn-import'
     | '/ai'
+    | '/campus-map'
+    | '/campus-routing'
     | '/developers'
+    | '/gap-planner'
     | '/mail'
     | '/ops'
     | '/places'
@@ -242,6 +307,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/trust'
+    | '/utm-timetable'
     | '/gaps'
     | '/timetable'
     | '/today'
@@ -252,9 +318,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_app'
+    | '/about'
     | '/accessibility'
+    | '/acorn-import'
     | '/ai'
+    | '/campus-map'
+    | '/campus-routing'
     | '/developers'
+    | '/gap-planner'
     | '/mail'
     | '/ops'
     | '/places'
@@ -265,6 +336,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/trust'
+    | '/utm-timetable'
     | '/_app/gaps'
     | '/_app/timetable'
     | '/_app/today'
@@ -276,9 +348,14 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
+  AboutRoute: typeof AboutRoute
   AccessibilityRoute: typeof AccessibilityRoute
+  AcornImportRoute: typeof AcornImportRoute
   AiRoute: typeof AiRoute
+  CampusMapRoute: typeof CampusMapRoute
+  CampusRoutingRoute: typeof CampusRoutingRoute
   DevelopersRoute: typeof DevelopersRoute
+  GapPlannerRoute: typeof GapPlannerRoute
   MailRoute: typeof MailRoute
   OpsRoute: typeof OpsRoute
   PlacesRoute: typeof PlacesRouteWithChildren
@@ -289,6 +366,7 @@ export interface RootRouteChildren {
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
   TrustRoute: typeof TrustRoute
+  UtmTimetableRoute: typeof UtmTimetableRoute
   OauthConsentRoute: typeof OauthConsentRoute
 }
 
@@ -301,11 +379,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/accessibility': {
       id: '/accessibility'
       path: '/accessibility'
       fullPath: '/accessibility'
       preLoaderRoute: typeof AccessibilityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/acorn-import': {
+      id: '/acorn-import'
+      path: '/acorn-import'
+      fullPath: '/acorn-import'
+      preLoaderRoute: typeof AcornImportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ai': {
@@ -315,11 +407,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/campus-map': {
+      id: '/campus-map'
+      path: '/campus-map'
+      fullPath: '/campus-map'
+      preLoaderRoute: typeof CampusMapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campus-routing': {
+      id: '/campus-routing'
+      path: '/campus-routing'
+      fullPath: '/campus-routing'
+      preLoaderRoute: typeof CampusRoutingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/developers': {
       id: '/developers'
       path: '/developers'
       fullPath: '/developers'
       preLoaderRoute: typeof DevelopersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gap-planner': {
+      id: '/gap-planner'
+      path: '/gap-planner'
+      fullPath: '/gap-planner'
+      preLoaderRoute: typeof GapPlannerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mail': {
@@ -390,6 +503,13 @@ declare module '@tanstack/react-router' {
       path: '/trust'
       fullPath: '/trust'
       preLoaderRoute: typeof TrustRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/utm-timetable': {
+      id: '/utm-timetable'
+      path: '/utm-timetable'
+      fullPath: '/utm-timetable'
+      preLoaderRoute: typeof UtmTimetableRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/': {
@@ -475,9 +595,14 @@ const PlacesRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
+  AboutRoute: AboutRoute,
   AccessibilityRoute: AccessibilityRoute,
+  AcornImportRoute: AcornImportRoute,
   AiRoute: AiRoute,
+  CampusMapRoute: CampusMapRoute,
+  CampusRoutingRoute: CampusRoutingRoute,
   DevelopersRoute: DevelopersRoute,
+  GapPlannerRoute: GapPlannerRoute,
   MailRoute: MailRoute,
   OpsRoute: OpsRoute,
   PlacesRoute: PlacesRouteWithChildren,
@@ -488,6 +613,7 @@ const rootRouteChildren: RootRouteChildren = {
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
   TrustRoute: TrustRoute,
+  UtmTimetableRoute: UtmTimetableRoute,
   OauthConsentRoute: OauthConsentRoute,
 }
 export const routeTree = rootRouteImport

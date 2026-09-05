@@ -15,9 +15,7 @@ import {
 } from "lucide-react";
 import { BubbleTabs } from "@/components/BubbleTabs";
 import { GapPlan } from "@/components/GapPlan";
-import PersonalItemForm from "@/components/PersonalItemForm";
 import { loadPersonalItems } from "@/features/personal/persistence";
-import { usePersonalItemCommands } from "@/features/personal/use-personal-item-commands";
 import { useAppNavigation, type AppDestination } from "@/features/navigation/use-app-navigation";
 import { useSelectedScheduleContext } from "@/features/schedule/use-selected-schedule-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -45,6 +43,7 @@ import {
   saveGapPreferences,
 } from "@/features/gaps/preferences";
 import type { GapPreferences } from "@/features/gaps/types";
+import { queueGapPlanSelection } from "@/features/gaps/selection";
 import {
   DEFAULT_USER_PREFERENCES,
   loadLocalUserPreferences,
@@ -53,7 +52,6 @@ import {
 } from "@/features/sync/preferences";
 import { useIntroDismissed, useTheme } from "@/hooks/use-preferences";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
-import { emitClickSpark } from "@/lib/micro-interactions";
 import type { Meeting } from "@/lib/timetable-types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import { useEncryptedAutosave } from "@/features/sync/use-encrypted-autosave";
@@ -67,7 +65,6 @@ import {
   type AcademicState,
 } from "@/features/academic/state";
 import { plannedWorkMeetings } from "@/features/academic/integration";
-import { composeSchedule } from "@/lib/personal-scheduler";
 import { getCampusAccessPoint } from "@/data/utm/campus-access-points";
 import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 
@@ -208,7 +205,6 @@ function AppLayout() {
     openGapPlan,
     openDayRoute,
   } = useAppNavigation(Boolean(meetings?.length));
-  const personalCommands = usePersonalItemCommands(personalItems, setPersonalItems);
   const {
     term,
     setTerm,
@@ -216,7 +212,7 @@ function AppLayout() {
     schedule: termMeetings,
     gaps,
     planTransition,
-  } = useSelectedScheduleContext(meetings, personalItems);
+  } = useSelectedScheduleContext(meetings);
 
   const {
     restoration,
@@ -361,10 +357,10 @@ function AppLayout() {
   );
   const exportMeetings = useMemo(
     () => [
-      ...composeSchedule(meetings ?? EMPTY_MEETINGS, personalItems),
+      ...(meetings ?? EMPTY_MEETINGS),
       ...terms.flatMap((availableTerm) => plannedWorkMeetings(academic, availableTerm)),
     ],
-    [academic, meetings, personalItems, terms],
+    [academic, meetings, terms],
   );
   const { now: todayNow, state: todayState } = useTodayState({
     meetings: timetableWithWork,
@@ -439,17 +435,13 @@ function AppLayout() {
               terms={terms}
               gaps={gaps}
               onTermChange={setTerm}
-              onOpenGapPlan={() => {
+              onOpenGapPlan={(gap) => {
+                queueGapPlanSelection(gap.id);
                 openGapPlan();
               }}
               onRouteToMeeting={() => {
                 openDayRoute();
               }}
-              onAddPersonal={() => {
-                personalCommands.openCreate();
-              }}
-              onEditPersonal={personalCommands.openEdit}
-              onDeletePersonal={personalCommands.remove}
               exportAction={null}
             />
           ) : null}
@@ -552,13 +544,6 @@ function AppLayout() {
           state={academic}
           onChange={setAcademic}
           meetings={timetableWithWork}
-        />
-        <PersonalItemForm
-          open={personalCommands.formOpen}
-          onOpenChange={personalCommands.setOpen}
-          initial={personalCommands.editingItem}
-          defaultTerm={term}
-          onSave={personalCommands.save}
         />
       </>
     );
@@ -986,45 +971,13 @@ function AppLayout() {
                           >
                             Academic work
                           </button>
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              emitClickSpark(event);
-                              personalCommands.openCreate();
-                            }}
-                            className="button-primary click-spark inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold"
-                          >
-                            Add personal
-                          </button>
                         </div>
                       }
                       onRouteToMeeting={() => showView("route")}
-                      onEditPersonal={personalCommands.openEdit}
-                      onDeletePersonal={personalCommands.remove}
-                      onCreatePersonal={({ weekday, startTime, endTime }) =>
-                        personalCommands.createAt({
-                          term,
-                          weekday: weekday as import("@/lib/timetable-types").Weekday,
-                          startTime,
-                          endTime,
-                        })
-                      }
-                      onMovePersonal={(id, weekday, startTime, endTime) =>
-                        personalCommands.move(
-                          id,
-                          weekday as import("@/lib/timetable-types").Weekday,
-                          startTime,
-                          endTime,
-                        )
-                      }
-                      onResizePersonal={personalCommands.resize}
-                    />
-                    <PersonalItemForm
-                      open={personalCommands.formOpen}
-                      onOpenChange={personalCommands.setOpen}
-                      initial={personalCommands.editingItem}
-                      defaultTerm={term}
-                      onSave={personalCommands.save}
+                      onOpenGap={(gap) => {
+                        queueGapPlanSelection(gap.id);
+                        openGapPlan();
+                      }}
                     />
                   </div>
                   {openedViews.gaps ? (
@@ -1122,7 +1075,7 @@ function AppLayout() {
               Gapwise for UTM is an independent student project and is not affiliated with the
               University of Toronto. It is free, open-source software on{" "}
               <a
-                href="https://github.com/andrewmuratov/gapwise"
+                href="https://github.com/Gapwise-for-UTM/gapwise"
                 target="_blank"
                 rel="noreferrer"
                 className="font-medium text-foreground underline decoration-border underline-offset-4 hover:text-accent"
@@ -1131,7 +1084,7 @@ function AppLayout() {
               </a>{" "}
               under the{" "}
               <a
-                href="https://github.com/andrewmuratov/gapwise/blob/main/LICENSE"
+                href="https://github.com/Gapwise-for-UTM/gapwise/blob/main/LICENSE"
                 target="_blank"
                 rel="noreferrer"
                 className="font-medium text-foreground underline decoration-border underline-offset-4 hover:text-accent"
@@ -1140,6 +1093,35 @@ function AppLayout() {
               </a>
               .
             </p>
+            <nav
+              aria-label="Explore Gapwise"
+              className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold"
+            >
+              <Link to="/about" className="hover:text-accent hover:underline">
+                About
+              </Link>
+              <Link to="/utm-timetable" className="hover:text-accent hover:underline">
+                UTM timetable
+              </Link>
+              <Link to="/gap-planner" className="hover:text-accent hover:underline">
+                Gap planner
+              </Link>
+              <Link to="/campus-map" className="hover:text-accent hover:underline">
+                Campus map
+              </Link>
+              <Link to="/campus-routing" className="hover:text-accent hover:underline">
+                Campus routing
+              </Link>
+              <Link to="/acorn-import" className="hover:text-accent hover:underline">
+                ACORN import
+              </Link>
+              <Link to="/developers" className="hover:text-accent hover:underline">
+                Developers
+              </Link>
+              <Link to="/support" className="hover:text-accent hover:underline">
+                Support
+              </Link>
+            </nav>
           </div>
           <p className="eyebrow self-end text-muted-foreground">Built for UTM students</p>
         </div>

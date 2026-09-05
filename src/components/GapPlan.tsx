@@ -19,6 +19,11 @@ import type { FriendGapOverlap } from "@/features/friends/types";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
 import { DEFAULT_GAP_PREFERENCES, sanitizeGapPreferences } from "@/features/gaps/preferences";
 import type { GapAction, GapPreferences, GapRecommendation } from "@/features/gaps/types";
+import {
+  clearQueuedGapPlanSelection,
+  peekQueuedGapPlanSelection,
+  subscribeGapPlanSelection,
+} from "@/features/gaps/selection";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import { selectedResidence } from "@/features/routing/residence";
 import type { TransitionPlanner } from "@/features/routing/transition";
@@ -904,6 +909,19 @@ export const GapPlan = memo(function GapPlan({
   useEffect(() => {
     if (!gaps.some((gap) => gap.id === selectedGapId)) setSelectedGapId(gaps[0]?.id ?? null);
   }, [gaps, selectedGapId]);
+  useEffect(() => {
+    const applySelection = (gapId: string) => {
+      const gap = gaps.find((item) => item.id === gapId);
+      if (!gap) return;
+      setSelectedGapId(gap.id);
+      setSelectedByDay((current) => ({ ...current, [gap.weekday]: gap.id }));
+      clearQueuedGapPlanSelection(gap.id);
+    };
+
+    const queued = peekQueuedGapPlanSelection();
+    if (queued) applySelection(queued);
+    return subscribeGapPlanSelection(applySelection);
+  }, [gaps]);
   const handleFriendOverlapsChange = useCallback(
     (overlaps: FriendGapOverlap[]) => setFriendOverlapState({ userId, overlaps }),
     [userId],

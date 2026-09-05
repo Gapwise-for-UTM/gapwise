@@ -22,9 +22,7 @@ import {
   nextOccurrenceForMeeting,
   termStatus,
 } from "@/lib/calendar-awareness";
-import { detectConflicts, moveItem, resizeItem, snapToIncrement } from "@/lib/personal-scheduler";
 import type { ActivityType, Gap, Meeting } from "@/lib/timetable-types";
-import type { PersonalItem } from "@/lib/personal-types";
 import {
   formatCompactDuration,
   formatTime,
@@ -131,16 +129,11 @@ function MeetingCard({
   meeting,
   compact,
   onSelect,
-  onEdit,
-  onDelete,
 }: {
   meeting: Meeting;
   compact?: boolean;
   onSelect: (meeting: Meeting) => void;
-  onEdit?: ((meetingId: string) => void) | undefined;
-  onDelete?: ((meetingId: string) => void) | undefined;
 }) {
-  const isPersonal = meeting.sectionCode === "PERSONAL";
   const isStudy = meeting.sectionCode === "STUDY";
   return (
     <div
@@ -157,32 +150,6 @@ function MeetingCard({
         compact ? "py-1.5" : "py-2"
       }`}
     >
-      {isPersonal ? (
-        <div className="absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit?.(meeting.id);
-            }}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-xs font-semibold text-foreground shadow-sm ring-1 ring-border hover:bg-secondary"
-            aria-label="Edit personal item"
-          >
-            ✎
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete?.(meeting.id);
-            }}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-xs font-semibold text-destructive shadow-sm ring-1 ring-border hover:bg-destructive/10"
-            aria-label="Delete personal item"
-          >
-            ×
-          </button>
-        </div>
-      ) : null}
       <div className="flex min-w-0 items-center gap-1.5">
         {isStudy ? (
           <BookOpen className="card-pin h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
@@ -226,14 +193,10 @@ function MeetingDetailsDialog({
   meeting,
   onClose,
   onRoute,
-  onEditPersonal,
-  onDeletePersonal,
 }: {
   meeting: Meeting | null;
   onClose: () => void;
   onRoute: ((meeting: Meeting) => void) | undefined;
-  onEditPersonal: ((meetingId: string) => void) | undefined;
-  onDeletePersonal: ((meetingId: string) => void) | undefined;
 }) {
   const first = meeting ? firstOccurrenceForMeeting(meeting) : null;
   const last = meeting ? lastOccurrenceForMeeting(meeting) : null;
@@ -343,38 +306,6 @@ function MeetingDetailsDialog({
               Route to this class
             </button>
           ) : null}
-          {/* Edit/Delete for personal items */}
-          {meeting?.sectionCode === "PERSONAL" ? (
-            <div className="mt-3 space-y-2">
-              {meeting.notes ? (
-                <div className="rounded-xl border border-border bg-background/40 p-3 text-sm text-muted-foreground">
-                  <p className="font-semibold text-foreground">Notes</p>
-                  <p className="mt-1 whitespace-pre-wrap">{meeting.notes}</p>
-                </div>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onEditPersonal?.(meeting.id);
-                }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-input px-4 py-2 text-sm font-semibold"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onDeletePersonal?.(meeting.id);
-                }}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-destructive px-4 py-2 text-sm font-semibold text-destructive-foreground"
-              >
-                Delete
-              </button>
-            </div>
-          ) : null}
-
           <p className="text-xs leading-relaxed text-muted-foreground">
             This information comes from the ACORN calendar file you imported. Opening a class card
             does not contact ACORN or upload anything new.
@@ -389,21 +320,13 @@ export const TimetableGrid = memo(function TimetableGrid({
   meetings,
   gaps,
   onRouteToMeeting,
-  onEditPersonal,
-  onDeletePersonal,
-  onCreatePersonal,
-  onMovePersonal,
-  onResizePersonal,
+  onOpenGap,
   headerAction,
 }: {
   meetings: Meeting[];
   gaps: Gap[];
   onRouteToMeeting?: (meeting: Meeting) => void;
-  onEditPersonal?: (meetingId: string) => void;
-  onDeletePersonal?: (meetingId: string) => void;
-  onCreatePersonal?: (payload: { weekday: string; startTime: number; endTime: number }) => void;
-  onMovePersonal?: (id: string, weekday: string, startTime: number, endTime: number) => void;
-  onResizePersonal?: (id: string, startTime: number, endTime: number) => void;
+  onOpenGap?: (gap: Gap) => void;
   headerAction?: ReactNode;
 }) {
   const visibleDays = useMemo(() => visibleWeekdaysForMeetings(meetings), [meetings]);
@@ -412,14 +335,6 @@ export const TimetableGrid = memo(function TimetableGrid({
     [meetings, visibleDays],
   );
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
-  const [dragState, setDragState] = useState<null | {
-    type: "create" | "move" | "resize";
-    meetingId?: string;
-    weekday: string;
-    start: number;
-    end: number;
-    resizing?: "start" | "end";
-  }>(null);
   const [compactHours, setCompactHours] = useState(true);
   const now = useCurrentTime();
   const scale = useMemo(
@@ -563,70 +478,6 @@ export const TimetableGrid = memo(function TimetableGrid({
                   className={`weekday-column relative border-l border-border ${
                     termIsCurrent && day === currentDay ? "bg-accent/[0.035]" : ""
                   }`}
-                  onPointerDown={(e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.closest(".meeting-card")) return;
-                    const col = e.currentTarget as HTMLElement;
-                    col.setPointerCapture(e.pointerId);
-                    const rect = col.getBoundingClientRect();
-                    const offsetY = e.clientY - rect.top;
-                    let acc = 0;
-                    let minute = gridStartMinute;
-                    for (const hour of hours) {
-                      const h = scale.hourHeights.get(hour) ?? FULL_HOUR_HEIGHT;
-                      if (offsetY >= acc + h) {
-                        acc += h;
-                        minute = (hour + 1) * 60;
-                        continue;
-                      }
-                      const within = offsetY - acc;
-                      const fraction = Math.max(0, Math.min(1, within / h));
-                      minute = hour * 60 + Math.round(fraction * 60);
-                      break;
-                    }
-                    const snap = (m: number) => Math.round(m / 15) * 15;
-                    const start = Math.max(gridStartMinute, Math.min(gridEndMinute, snap(minute)));
-                    setDragState({ type: "create", weekday: day, start, end: start + 60 });
-                    document.body.classList.add("user-select-none");
-                  }}
-                  onPointerMove={(e) => {
-                    if (!dragState) return;
-                    const col = e.currentTarget as HTMLElement;
-                    const rect = col.getBoundingClientRect();
-                    const offsetY = e.clientY - rect.top;
-                    let acc = 0;
-                    let minute = gridStartMinute;
-                    for (const hour of hours) {
-                      const h = scale.hourHeights.get(hour) ?? FULL_HOUR_HEIGHT;
-                      if (offsetY >= acc + h) {
-                        acc += h;
-                        minute = (hour + 1) * 60;
-                        continue;
-                      }
-                      const within = offsetY - acc;
-                      const fraction = Math.max(0, Math.min(1, within / h));
-                      minute = hour * 60 + Math.round(fraction * 60);
-                      break;
-                    }
-                    const snap = (m: number) => Math.round(m / 15) * 15;
-                    const cur = Math.max(gridStartMinute, Math.min(gridEndMinute, snap(minute)));
-                    if (dragState.type === "create") {
-                      setDragState({ ...dragState, end: Math.max(dragState.start + 15, cur) });
-                    }
-                  }}
-                  onPointerUp={(e) => {
-                    const col = e.currentTarget as HTMLElement;
-                    col.releasePointerCapture?.(e.pointerId);
-                    if (dragState?.type === "create") {
-                      onCreatePersonal?.({
-                        weekday: dragState.weekday,
-                        startTime: dragState.start,
-                        endTime: dragState.end,
-                      });
-                    }
-                    setDragState(null);
-                    document.body.classList.remove("user-select-none");
-                  }}
                 >
                   {hours.map((hour) => (
                     <div
@@ -647,19 +498,24 @@ export const TimetableGrid = memo(function TimetableGrid({
                       scale.minuteToTop(gap.endTime) - scale.minuteToTop(gap.startTime),
                     );
                     return (
-                      <div
+                      <button
                         key={gap.id}
-                        className="gap-window pointer-events-none"
+                        type="button"
+                        className="gap-window"
                         data-testid="gap-window"
-                        aria-hidden="true"
+                        data-gap-interactive="true"
+                        data-gap-id={gap.id}
+                        aria-label={`${formatCompactDuration(gap.durationMinutes)} gap, ${formatTime(gap.startTime)} to ${formatTime(gap.endTime)}. Open gap plan.`}
                         style={{ top, height }}
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={() => onOpenGap?.(gap)}
                       >
                         {height >= 28 ? (
                           <span className="gap-window-label">
                             {formatCompactDuration(gap.durationMinutes)} gap
                           </span>
                         ) : null}
-                      </div>
+                      </button>
                     );
                   })}
 
@@ -676,24 +532,11 @@ export const TimetableGrid = memo(function TimetableGrid({
 
                   {sorted.map((meeting) => {
                     const lane = placement.get(meeting.id) ?? 0;
-                    const isPersonal = meeting.sectionCode === "PERSONAL";
                     return (
                       <div
                         key={meeting.id}
                         data-meeting-id={meeting.id}
-                        className={`absolute z-10 px-1 py-0.5 ${
-                          dragState?.meetingId === meeting.id &&
-                          detectConflicts(
-                            {
-                              weekday: dragState.weekday,
-                              startTime: dragState.start,
-                              endTime: dragState.end,
-                            },
-                            meetings.filter((m) => m.id !== meeting.id),
-                          ).length > 0
-                            ? "ring-2 ring-destructive"
-                            : ""
-                        }`}
+                        className="absolute z-10 px-1 py-0.5"
                         style={{
                           top: scale.minuteToTop(meeting.startTime),
                           height:
@@ -702,206 +545,15 @@ export const TimetableGrid = memo(function TimetableGrid({
                           left: `${(lane / laneCount) * 100}%`,
                           width: `${(1 / laneCount) * 100}%`,
                         }}
-                        onPointerDown={(e) => {
-                          if (!isPersonal) return;
-                          const target = e.target as HTMLElement;
-                          if (
-                            target.closest("button, input, textarea, select, a, [role='button']")
-                          ) {
-                            return;
-                          }
-                          e.stopPropagation();
-                          const col = (e.currentTarget as HTMLElement).closest(
-                            "[data-weekday]",
-                          ) as HTMLElement | null;
-                          const weekday = col?.getAttribute("data-weekday") ?? meeting.weekday;
-                          (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-                          setDragState({
-                            type: "move",
-                            meetingId: meeting.id,
-                            weekday,
-                            start: meeting.startTime,
-                            end: meeting.endTime,
-                          });
-                          document.body.classList.add("user-select-none");
-                        }}
-                        onPointerMove={(e) => {
-                          if (!dragState || dragState.meetingId !== meeting.id) return;
-                          const rect =
-                            (e.currentTarget as HTMLElement)
-                              .closest("[data-weekday]")
-                              ?.getBoundingClientRect() ??
-                            (e.currentTarget as HTMLElement).getBoundingClientRect();
-                          const offsetY = e.clientY - rect.top;
-                          let acc = 0;
-                          let minute = gridStartMinute;
-                          for (const hour of hours) {
-                            const h = scale.hourHeights.get(hour) ?? FULL_HOUR_HEIGHT;
-                            if (offsetY >= acc + h) {
-                              acc += h;
-                              minute = (hour + 1) * 60;
-                              continue;
-                            }
-                            const within = offsetY - acc;
-                            const fraction = Math.max(0, Math.min(1, within / h));
-                            minute = hour * 60 + Math.round(fraction * 60);
-                            break;
-                          }
-                          const cur = Math.max(
-                            gridStartMinute,
-                            Math.min(gridEndMinute, snapToIncrement(minute)),
-                          );
-                          if (dragState.type === "move") {
-                            const duration = meeting.endTime - meeting.startTime;
-                            setDragState({
-                              ...dragState,
-                              weekday:
-                                (e.currentTarget as HTMLElement)
-                                  .closest("[data-weekday]")
-                                  ?.getAttribute("data-weekday") ?? meeting.weekday,
-                              start: cur,
-                              end: Math.min(gridEndMinute, cur + duration),
-                            });
-                            return;
-                          }
-                          if (dragState.type === "resize") {
-                            const next =
-                              dragState.resizing === "start"
-                                ? resizeItem(meeting, cur, dragState.end)
-                                : resizeItem(meeting, dragState.start, cur);
-                            setDragState({
-                              ...dragState,
-                              start: next.startTime ?? dragState.start,
-                              end: next.endTime ?? dragState.end,
-                            });
-                          }
-                        }}
-                        onPointerUp={(e) => {
-                          if (!dragState || dragState.meetingId !== meeting.id) return;
-                          const candidate = {
-                            weekday: dragState.weekday,
-                            startTime: dragState.start,
-                            endTime: dragState.end,
-                          };
-                          const conflicts = detectConflicts(
-                            candidate,
-                            meetings.filter((m) => m.id !== meeting.id),
-                          );
-                          if (conflicts.length === 0) {
-                            if (dragState.type === "move") {
-                              const moved = moveItem(meeting, dragState.weekday, dragState.start);
-                              onMovePersonal?.(
-                                meeting.id,
-                                moved.weekday,
-                                moved.startTime,
-                                moved.endTime,
-                              );
-                            }
-                            if (dragState.type === "resize") {
-                              const resized = resizeItem(meeting, dragState.start, dragState.end);
-                              onResizePersonal?.(meeting.id, resized.startTime, resized.endTime);
-                            }
-                          }
-                          setDragState(null);
-                          document.body.classList.remove("user-select-none");
-                        }}
                       >
-                        {isPersonal ? (
-                          <>
-                            <div
-                              className="absolute left-0 right-0 top-0 h-2 cursor-ns-resize"
-                              onPointerDown={(e) => {
-                                e.stopPropagation();
-                                const target = e.target as HTMLElement;
-                                if (
-                                  target.closest(
-                                    "button, input, textarea, select, a, [role='button']",
-                                  )
-                                ) {
-                                  return;
-                                }
-                                const col = (e.currentTarget as HTMLElement).closest(
-                                  "[data-weekday]",
-                                ) as HTMLElement | null;
-                                const weekday =
-                                  col?.getAttribute("data-weekday") ?? meeting.weekday;
-                                (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-                                setDragState({
-                                  type: "resize",
-                                  meetingId: meeting.id,
-                                  weekday,
-                                  start: meeting.startTime,
-                                  end: meeting.endTime,
-                                  resizing: "start",
-                                });
-                                document.body.classList.add("user-select-none");
-                              }}
-                            />
-                            <div
-                              className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize"
-                              onPointerDown={(e) => {
-                                e.stopPropagation();
-                                const target = e.target as HTMLElement;
-                                if (
-                                  target.closest(
-                                    "button, input, textarea, select, a, [role='button']",
-                                  )
-                                ) {
-                                  return;
-                                }
-                                const col = (e.currentTarget as HTMLElement).closest(
-                                  "[data-weekday]",
-                                ) as HTMLElement | null;
-                                const weekday =
-                                  col?.getAttribute("data-weekday") ?? meeting.weekday;
-                                (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-                                setDragState({
-                                  type: "resize",
-                                  meetingId: meeting.id,
-                                  weekday,
-                                  start: meeting.startTime,
-                                  end: meeting.endTime,
-                                  resizing: "end",
-                                });
-                                document.body.classList.add("user-select-none");
-                              }}
-                            />
-                          </>
-                        ) : null}
                         <MeetingCard
                           meeting={meeting}
                           compact={isCompactMeetingCard(meeting, laneCount)}
                           onSelect={selectMeeting}
-                          onEdit={onEditPersonal}
-                          onDelete={onDeletePersonal}
                         />
                       </div>
                     );
                   })}
-                  {dragState && dragState.weekday === day ? (
-                    <div
-                      aria-hidden="true"
-                      className="absolute z-20 px-1 py-0.5"
-                      style={{
-                        top: scale.minuteToTop(dragState.start),
-                        height: Math.max(
-                          12,
-                          scale.minuteToTop(dragState.end) - scale.minuteToTop(dragState.start),
-                        ),
-                        left: 0,
-                        right: 0,
-                      }}
-                    >
-                      <div className="meeting-card pointer-events-none opacity-80">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-extrabold">New</span>
-                          <span className="text-xs tabular-nums">
-                            {formatTime(dragState.start)} – {formatTime(dragState.end)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               );
             })}
@@ -974,8 +626,6 @@ export const TimetableGrid = memo(function TimetableGrid({
         meeting={selectedMeeting}
         onClose={closeMeeting}
         onRoute={onRouteToMeeting}
-        onEditPersonal={onEditPersonal}
-        onDeletePersonal={onDeletePersonal}
       />
     </div>
   );

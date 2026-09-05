@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://gapwise.ca/</loc></url>
+  <url><loc>https://gapwise.ca/about</loc></url>
+  <url><loc>https://gapwise.ca/utm-timetable</loc></url>
+  <url><loc>https://gapwise.ca/campus-map</loc></url>
+  <url><loc>https://gapwise.ca/gap-planner</loc></url>
+  <url><loc>https://gapwise.ca/campus-routing</loc></url>
+  <url><loc>https://gapwise.ca/acorn-import</loc></url>
   <url><loc>https://gapwise.ca/places</loc></url>
   <url><loc>https://gapwise.ca/places/davis-food-court</loc></url>
   <url><loc>https://gapwise.ca/places/utm-library</loc></url>

@@ -134,7 +134,7 @@ describe("branding metadata", () => {
   test("declares valid manifest and existing logo assets", async () => {
     const manifest = JSON.parse(await readFile("public/site.webmanifest", "utf8"));
     expect(manifest).toMatchObject({
-      name: "Gapwise for UTM",
+      name: "Gapwise",
       short_name: "Gapwise",
       display: "standalone",
       start_url: "/",

@@ -21,7 +21,7 @@ export function LegalPage({
             <span className="brand-mark-shell">
               <img src="/logo-mark.svg" alt="" />
             </span>
-            <span className="font-display font-semibold">Gapwise UTM</span>
+            <span className="font-display font-semibold">Gapwise</span>
           </Link>
           <Link to="/" className="button-secondary px-3 py-2 text-sm font-semibold">
             Open Gapwise
@@ -65,7 +65,7 @@ export function LegalPage({
             Status
           </a>
           <a
-            href="https://github.com/andrewmuratov/gapwise"
+            href="https://github.com/Gapwise-for-UTM/gapwise"
             className="text-accent hover:underline"
           >
             Source
