@@ -196,7 +196,7 @@ jobs:
         run: npx --yes jsr@0.14.3 publish
 
   publish-github:
-    name: Publish @gapwise/sdk to GitHub Packages
+    name: Publish @gapwise-for-utm/sdk to GitHub Packages
     if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'github' || inputs.target == 'all') }}
     needs: verify
     runs-on: ubuntu-latest
@@ -229,6 +229,11 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm pkg set name="@gapwise-for-utm/sdk"
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "@gapwise-for-utm/sdk@$VERSION" version --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "@gapwise-for-utm/sdk@$VERSION is already published; nothing to do."
+            exit 0
+          fi
           npm publish --registry=https://npm.pkg.github.com --provenance=false
 
   publish-pypi:
