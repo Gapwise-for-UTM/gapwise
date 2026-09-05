@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "canonicalRepository": "andrewmuratov/gapwise-data",
+  "canonicalPath": "data/utm",
+  "consumerRepository": "andrewmuratov/gapwise",
+  "mirrorPath": "src/data/utm",
+  "runtimeFetchRequired": false,
+  "sync": {
+    "checkCommand": "bun campus-data:check",
+    "writeCommand": "bun campus-data:sync",
+    "defaultSiblingPath": "../gapwise-data/data/utm"
+  },
+  "ownership": {
+    "gapwiseData": "Canonical UTM campus facts, geometry, entrances, routing graph inputs, evidence, provenance, and generated data artifacts.",
+    "gapwise": "Deterministic routing algorithms, timetable and gap-planning behavior, public API orchestration, SDK contracts, map UI, and product presentation."
+  },
+  "compatibility": "The core repository vendors a build-time snapshot so production routing never depends on data.gapwise.ca or GitHub at runtime."
+}
