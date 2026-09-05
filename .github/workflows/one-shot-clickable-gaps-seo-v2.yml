@@ -56,6 +56,47 @@ jobs:
           PY
           python3 scripts/one-shot-retire-personal-seo.py
 
+      - name: Normalize exact-gap wiring and removed callback remnants
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          selection = Path('src/features/gaps/selection.ts')
+          text = selection.read_text()
+          text = text.replace(
+              '  return () => listeners.delete(listener);',
+              '  return () => {\n    listeners.delete(listener);\n  };',
+          )
+          selection.write_text(text)
+
+          grid_path = Path('src/components/TimetableGrid.tsx')
+          grid = grid_path.read_text()
+          grid = re.sub(r'\n\s*onEdit=\{onEditPersonal\}\n\s*onDelete=\{onDeletePersonal\}', '', grid)
+          grid = re.sub(r'\n\s*onEditPersonal=\{onEditPersonal\}\n\s*onDeletePersonal=\{onDeletePersonal\}', '', grid)
+          grid_path.write_text(grid)
+
+          app_path = Path('src/routes/_app.tsx')
+          app = app_path.read_text()
+          exact_handler = '''              onOpenGapPlan={(gap) => {\n                queueGapPlanSelection(gap.id);\n                openGapPlan();\n              }}'''
+          generic_handler = '''              onOpenGapPlan={() => {\n                openGapPlan();\n              }}'''
+          # MobileToday stays a generic navigation action.
+          if exact_handler in app:
+              app = app.replace(exact_handler, generic_handler, 1)
+          # MobileTimetable must pass the exact clicked Gap object.
+          mobile_start = app.find('<MobileTimetable')
+          mobile_end = app.find('/>', mobile_start)
+          if mobile_start < 0 or mobile_end < 0:
+              raise SystemExit('MobileTimetable usage not found')
+          segment = app[mobile_start:mobile_end]
+          if generic_handler.strip() not in segment:
+              raise SystemExit('MobileTimetable generic gap handler not found')
+          segment = segment.replace(generic_handler.strip(), exact_handler.strip(), 1)
+          app = app[:mobile_start] + segment + app[mobile_end:]
+          app_path.write_text(app)
+          PY
+
       - name: Generate canonical favicon and social image
         shell: bash
         run: |
