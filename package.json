@@ -15,6 +15,8 @@
     "build": "vite build && bun scripts/build-seo-pages.ts && bun scripts/check-bundle-budget.ts",
     "bundle:check": "bun scripts/check-bundle-budget.ts",
     "contract:check": "bun scripts/check-public-contract.ts && python3 scripts/check-python-contract.py",
+    "campus-data:check": "bun scripts/sync-campus-data.ts --check",
+    "campus-data:sync": "bun scripts/sync-campus-data.ts --write",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "test": "bun test",
