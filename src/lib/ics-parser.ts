@@ -1,5 +1,6 @@
 import ICAL from "ical.js";
 import {
+  ASSESSMENT_WINDOW_NOTE,
   type ActivityType,
   type Meeting,
   type MeetingLocationType,
@@ -249,8 +250,17 @@ export function parseIcs(text: string): ParsedTimetable {
 
     const description = unescapeText(event.description ?? "");
     const courseName = description.split("\n")[0]?.trim() || courseCode;
+    const rawLocation = unescapeText(
+      (vevent.getFirstPropertyValue("location") as string | null) ?? "",
+    )
+      .replace(/\s+/g, " ")
+      .trim();
+    // ACORN uses a synthetic "ZZ TBA" location plus an asterisk-only description
+    // line for recurring blocks reserved for tests, quizzes, and midterms.
+    const isReservedAssessmentWindow =
+      /^ZZ\s+TBA$/i.test(rawLocation) && /(^|\n)\*{6,}($|\n)/.test(description);
 
-    const location = parseLocation(vevent.getFirstPropertyValue("location") as string | null);
+    const location = parseLocation(rawLocation);
     if (location.warning) {
       warnings.add(`${courseCode} ${activityType}: ${location.warning}`);
     }
@@ -308,6 +318,7 @@ export function parseIcs(text: string): ParsedTimetable {
         term,
         locationUnknown: location.locationUnknown,
         locationType: location.locationType,
+        ...(isReservedAssessmentWindow ? { notes: ASSESSMENT_WINDOW_NOTE } : {}),
         dateRange: recurrence.dateRange,
         ...(recurrence.excludedDates.length > 0 ? { excludedDates: recurrence.excludedDates } : {}),
         ...(recurrence.recurrenceIntervalWeeks

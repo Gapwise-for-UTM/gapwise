@@ -40,6 +40,7 @@ function deserializeMeeting(value: unknown): Meeting | null {
   const room = value["room"];
   const term = value["term"] as Term;
   const locationUnknown = value["locationUnknown"];
+  const notes = value["notes"];
   const locationType = value["locationType"] as MeetingLocationType | undefined;
   const dateRange = value["dateRange"];
   const excludedDates = value["excludedDates"];
@@ -57,6 +58,7 @@ function deserializeMeeting(value: unknown): Meeting | null {
     (buildingCode !== null && typeof buildingCode !== "string") ||
     (room !== null && typeof room !== "string") ||
     typeof locationUnknown !== "boolean" ||
+    (notes !== undefined && typeof notes !== "string") ||
     (locationType !== undefined && !LOCATION_TYPES.includes(locationType)) ||
     (recurrenceIntervalWeeks !== undefined &&
       (!Number.isInteger(recurrenceIntervalWeeks) ||
@@ -103,6 +105,7 @@ function deserializeMeeting(value: unknown): Meeting | null {
     term,
     locationUnknown,
   };
+  if (notes !== undefined) meeting.notes = notes as string;
   if (locationType !== undefined) meeting.locationType = locationType;
   if (dateRange !== undefined) {
     meeting.dateRange = {
@@ -143,6 +146,7 @@ export function serializeSchedule(meetings: Meeting[]): Meeting[] {
       term: meeting.term,
       locationUnknown: meeting.locationUnknown,
     };
+    if (meeting.notes) serialized.notes = meeting.notes;
     if (meeting.locationType) serialized.locationType = meeting.locationType;
     if (meeting.dateRange) serialized.dateRange = { ...meeting.dateRange };
     if (meeting.excludedDates) serialized.excludedDates = [...meeting.excludedDates];
