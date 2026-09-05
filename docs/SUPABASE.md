@@ -15,7 +15,7 @@ The publishable key identifies the project but cannot bypass RLS. Never expose a
 
 ## Current production schema
 
-Production is encrypted-only. The Gate 6 migration `20260812020500_retire_legacy_plaintext_cloud.sql` removed the legacy plaintext `user_schedules` and `user_preferences` tables plus the legacy plaintext overlap helpers after a fail-closed replacement precheck passed.
+Production is encrypted-only. The Gate 6 migration `20260812022934_retire_legacy_plaintext_cloud.sql` removed the legacy plaintext `user_schedules` and `user_preferences` tables plus the legacy plaintext overlap helpers after a fail-closed replacement precheck passed.
 
 Current private-cloud tables are:
 
