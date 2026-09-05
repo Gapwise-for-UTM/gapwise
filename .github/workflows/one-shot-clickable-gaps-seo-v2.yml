@@ -42,6 +42,11 @@ jobs:
               'pointer_start = grid.find("                        onPointerDown={(e) => {", style_start)',
               'pointer_start = grid.find("                        onPointerDown={(e) => {", sorted_anchor)',
           )
+          check = 'if any(token in grid for token in ["onCreatePersonal", "onMovePersonal", "onResizePersonal", "detectConflicts", "dragState", "isPersonal"]):\n'
+          cleanup = 'for leftover in ["  onCreatePersonal,\\n", "  onMovePersonal,\\n", "  onResizePersonal,\\n", "  onEditPersonal,\\n", "  onDeletePersonal,\\n"]:\n    grid = grid.replace(leftover, "")\n' + check
+          if check not in s:
+              raise SystemExit('grid cleanup anchor missing')
+          s = s.replace(check, cleanup, 1)
           p.write_text(s)
           PY
           python3 scripts/one-shot-retire-personal-seo.py
