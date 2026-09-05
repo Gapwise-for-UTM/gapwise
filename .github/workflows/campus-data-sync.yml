@@ -27,11 +27,24 @@ jobs:
       - name: Check out Gapwise
         uses: actions/checkout@v4
 
+      - name: Resolve canonical data ref
+        id: data-ref
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$HEAD_REF" == "refactor/canonical-campus-data" || "$REF_NAME" == "refactor/canonical-campus-data" ]]; then
+            echo "ref=refactor/canonical-campus-data" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check out canonical campus data
         uses: actions/checkout@v4
         with:
           repository: andrewmuratov/gapwise-data
-          ref: refactor/canonical-campus-data
+          ref: ${{ steps.data-ref.outputs.ref }}
           path: .canonical-data
 
       - name: Set up Bun
