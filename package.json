@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
+  "homepage": "https://gapwise.ca",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gapwise-for-UTM/gapwise.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Gapwise-for-UTM/gapwise/issues"
+  },
   "packageManager": "bun@1.3.14",
   "sideEffects": false,
   "type": "module",
@@ -12,7 +20,7 @@
   },
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build && bun scripts/build-seo-pages.ts && bun scripts/check-bundle-budget.ts",
+    "build": "vite build && bun scripts/build-seo-pages.ts && bun scripts/check-seo-output.ts && bun scripts/check-bundle-budget.ts",
     "bundle:check": "bun scripts/check-bundle-budget.ts",
     "contract:check": "bun scripts/check-public-contract.ts && python3 scripts/check-python-contract.py",
     "campus-data:check": "bun scripts/sync-campus-data.ts --check",

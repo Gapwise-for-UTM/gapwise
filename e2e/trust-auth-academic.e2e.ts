@@ -40,7 +40,7 @@ test("accessibility statement publishes scoped evidence and limitations", async 
   await expect(page.getByText(/No documented, repeatable manual screen-reader/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Gapwise GitHub repository" })).toHaveAttribute(
     "href",
-    "https://github.com/andrewmuratov/gapwise/issues",
+    "https://github.com/Gapwise-for-UTM/gapwise/issues",
   );
   const results = await new AxeBuilder({ page }).analyze();
   expect(
@@ -75,7 +75,7 @@ test("trust center exposes evidence-backed boundaries and limitations", async ({
   );
   await expect(page.getByRole("link", { name: "Data and trust inventory" })).toHaveAttribute(
     "href",
-    "https://github.com/andrewmuratov/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md",
+    "https://github.com/Gapwise-for-UTM/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md",
   );
   const results = await new AxeBuilder({ page }).analyze();
   expect(
@@ -93,7 +93,7 @@ test("vulnerability policy and canonical security contact are public", async ({ 
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "private vulnerability reporting form" }),
-  ).toHaveAttribute("href", "https://github.com/andrewmuratov/gapwise/security/advisories/new");
+  ).toHaveAttribute("href", "https://github.com/Gapwise-for-UTM/gapwise/security/advisories/new");
   await expect(page.getByText("operational goals, not guaranteed")).toBeVisible();
 
   const response = await page.request.get("/.well-known/security.txt");
@@ -103,7 +103,7 @@ test("vulnerability policy and canonical security contact are public", async ({ 
   expect(securityTxt).toContain("Canonical: https://gapwise.ca/.well-known/security.txt");
   expect(securityTxt).toContain("Policy: https://gapwise.ca/security");
   expect(securityTxt).toContain(
-    "Contact: https://github.com/andrewmuratov/gapwise/security/advisories/new",
+    "Contact: https://github.com/Gapwise-for-UTM/gapwise/security/advisories/new",
   );
 });
 

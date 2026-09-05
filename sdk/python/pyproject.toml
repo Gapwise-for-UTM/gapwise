@@ -20,7 +20,7 @@ classifiers = [
 
 [project.urls]
 Documentation = "https://docs.gapwise.ca"
-Repository = "https://github.com/andrewmuratov/gapwise"
+Repository = "https://github.com/Gapwise-for-UTM/gapwise"
 OpenAPI = "https://api.gapwise.ca/openapi.json"
 
 [project.optional-dependencies]

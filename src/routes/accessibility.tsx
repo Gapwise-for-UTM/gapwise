@@ -95,7 +95,7 @@ function AccessibilityPage() {
           A dedicated accessibility contact channel and response-time commitment have not yet been
           verified. For non-sensitive feedback, open a public issue in the{" "}
           <a
-            href="https://github.com/andrewmuratov/gapwise/issues"
+            href="https://github.com/Gapwise-for-UTM/gapwise/issues"
             className="text-accent hover:underline"
           >
             Gapwise GitHub repository

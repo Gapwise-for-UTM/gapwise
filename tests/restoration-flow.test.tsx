@@ -488,7 +488,7 @@ describe("route-level encrypted timetable restoration", () => {
     expect(loadCalls).toEqual([authenticatedUser.id, secondAuthenticatedUser.id]);
   });
 
-  test("applies personal items from the same encrypted private payload as the schedule", async () => {
+  test("accepts legacy personal items in encrypted payloads without exposing them in the timetable", async () => {
     const cloud = meeting({ id: "cloud-private", courseCode: "PRIVATE101H5" });
     authSnapshot = { user: authenticatedUser, loading: false, error: null };
     loadImplementation = async () => ({
@@ -514,8 +514,9 @@ describe("route-level encrypted timetable restoration", () => {
     });
 
     await mountRoute();
-    await waitFor(() => pageText().includes("Restored study block"), "the restored personal item");
-    expect(pageText()).toContain("PRIVATE101H5");
+    await waitFor(() => pageText().includes("PRIVATE101H5"), "the restored timetable");
+    expect(pageText()).not.toContain("Restored study block");
+    expect(loadCalls).toEqual([authenticatedUser.id]);
   });
 
   test("keeps the weekly grid mounted while switching schedule views", async () => {

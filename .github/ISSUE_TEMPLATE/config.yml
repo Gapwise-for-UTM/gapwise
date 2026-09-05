@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Report a security vulnerability privately
-    url: https://github.com/andrewmuratov/gapwise/security/policy
+    url: https://github.com/Gapwise-for-UTM/gapwise/security/policy
     about: Do not disclose authentication, authorization, timetable-privacy, or credential vulnerabilities in public issues.
   - name: Use Gapwise for UTM
     url: https://gapwise.ca

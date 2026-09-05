@@ -5,7 +5,6 @@ import {
   Clock3,
   MapPin,
   Navigation,
-  Plus,
   Sparkles,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
@@ -56,14 +55,10 @@ function MeetingDetailsSheet({
   meeting,
   onClose,
   onRoute,
-  onEditPersonal,
-  onDeletePersonal,
 }: {
   meeting: Meeting | null;
   onClose: () => void;
   onRoute: (meeting: Meeting) => void;
-  onEditPersonal: (meetingId: string) => void;
-  onDeletePersonal: (meetingId: string) => void;
 }) {
   const first = meeting ? firstOccurrenceForMeeting(meeting) : null;
   const last = meeting ? lastOccurrenceForMeeting(meeting) : null;
@@ -78,7 +73,6 @@ function MeetingDetailsSheet({
     meeting !== null &&
     meetingLocationType(meeting) === "physical" &&
     Boolean(meeting.buildingCode);
-  const isPersonal = meeting?.sectionCode === "PERSONAL";
   const location = meeting ? getCampusLocationDisplay(meeting) : null;
 
   return (
@@ -92,7 +86,7 @@ function MeetingDetailsSheet({
                   {meeting.courseCode}
                 </DrawerTitle>
                 <ActivityBadge type={meeting.activityType} />
-                {meeting.sectionCode && !isPersonal ? (
+                {meeting.sectionCode ? (
                   <span className="text-xs font-medium text-muted-foreground">
                     {meeting.sectionCode}
                   </span>
@@ -177,30 +171,6 @@ function MeetingDetailsSheet({
                   Route to this class
                 </button>
               ) : null}
-              {isPersonal ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onEditPersonal(meeting.id);
-                    }}
-                    className="button-secondary min-h-11 px-4 text-sm font-semibold"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onClose();
-                      onDeletePersonal(meeting.id);
-                    }}
-                    className="min-h-11 rounded-xl border border-destructive/40 bg-destructive/10 px-4 text-sm font-semibold text-destructive"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ) : null}
             </div>
 
             <p className="mt-4 text-xs leading-5 text-muted-foreground">
@@ -222,9 +192,6 @@ export function MobileTimetable({
   onTermChange,
   onOpenGapPlan,
   onRouteToMeeting,
-  onAddPersonal,
-  onEditPersonal,
-  onDeletePersonal,
   exportAction,
 }: {
   meetings: Meeting[];
@@ -232,11 +199,8 @@ export function MobileTimetable({
   terms: Term[];
   gaps: Gap[];
   onTermChange: (term: Term) => void;
-  onOpenGapPlan: () => void;
+  onOpenGapPlan: (gap: Gap) => void;
   onRouteToMeeting: (meeting: Meeting) => void;
-  onAddPersonal: () => void;
-  onEditPersonal: (meetingId: string) => void;
-  onDeletePersonal: (meetingId: string) => void;
   exportAction: ReactNode;
 }) {
   const [selectedDay, setSelectedDay] = useState<Weekday>(() => initialDay(meetings));
@@ -287,17 +251,7 @@ export function MobileTimetable({
                   )} – ${formatTime(lastTime!)}`}
             </p>
           </div>
-          <div className="flex shrink-0 flex-col gap-2">
-            {exportAction}
-            <button
-              type="button"
-              onClick={onAddPersonal}
-              className="button-primary inline-flex min-h-10 items-center justify-center gap-1.5 px-3 text-xs font-semibold"
-            >
-              <Plus className="h-4 w-4" aria-hidden="true" />
-              Add
-            </button>
-          </div>
+          <div className="flex shrink-0 flex-col gap-2">{exportAction}</div>
         </div>
 
         {terms.length > 1 ? (
@@ -356,15 +310,8 @@ export function MobileTimetable({
           </span>
           <h2 className="mt-4 font-display text-lg font-semibold">Your {selectedDay} is clear</h2>
           <p className="mt-2 max-w-xs text-sm leading-6 text-muted-foreground">
-            Pick another day or add a personal item to plan time outside your ACORN schedule.
+            Pick another day to review the classes in your imported ACORN schedule.
           </p>
-          <button
-            type="button"
-            onClick={onAddPersonal}
-            className="button-secondary mt-5 min-h-11 px-4 text-sm font-semibold"
-          >
-            Add personal item
-          </button>
         </section>
       ) : (
         <section className="surface overflow-hidden p-4" aria-label={`${selectedDay} schedule`}>
@@ -372,7 +319,6 @@ export function MobileTimetable({
             {dayMeetings.map((meeting, index) => {
               const next = dayMeetings[index + 1] ?? null;
               const gap = next ? gapByTransition.get(`${meeting.id}:${next.id}`) : null;
-              const isPersonal = meeting.sectionCode === "PERSONAL";
               const location = getCampusLocationDisplay(meeting);
               return (
                 <li key={meeting.id}>
@@ -393,11 +339,6 @@ export function MobileTimetable({
                           {meeting.courseCode}
                         </span>
                         <ActivityBadge type={meeting.activityType} />
-                        {isPersonal ? (
-                          <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[0.62rem] font-semibold text-muted-foreground">
-                            Personal
-                          </span>
-                        ) : null}
                         <ChevronRight
                           className="ml-auto h-4 w-4 shrink-0 text-muted-foreground"
                           aria-hidden="true"
@@ -435,7 +376,7 @@ export function MobileTimetable({
                     <div className="pb-3">
                       <button
                         type="button"
-                        onClick={onOpenGapPlan}
+                        onClick={() => onOpenGapPlan(gap)}
                         className="mobile-gap-card w-full rounded-xl border border-dashed px-4 py-3 text-left transition-colors active:bg-gap/10"
                       >
                         <div className="flex items-center gap-2">
@@ -467,8 +408,6 @@ export function MobileTimetable({
           setRouteTargetId(meeting.id);
           onRouteToMeeting(meeting);
         }}
-        onEditPersonal={onEditPersonal}
-        onDeletePersonal={onDeletePersonal}
       />
     </div>
   );

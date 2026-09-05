@@ -2531,3 +2531,33 @@
     padding-inline: 3.5rem;
   }
 }
+
+/* Timetable gaps are first-class navigation targets, not decorative overlays. */
+.gap-window[data-gap-interactive="true"] {
+  pointer-events: auto;
+  cursor: pointer;
+  color: inherit;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+
+.gap-window[data-gap-interactive="true"]:hover {
+  border-color: color-mix(in oklab, var(--color-gap) 68%, var(--color-border));
+  box-shadow:
+    inset 0 1px 0 color-mix(in oklab, white 7%, transparent),
+    0 0 0 1px color-mix(in oklab, var(--color-gap) 14%, transparent),
+    var(--gap-glow);
+}
+
+.gap-window[data-gap-interactive="true"]:active {
+  transform: scale(0.995);
+}
+
+.gap-window[data-gap-interactive="true"]:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -3px;
+  border-style: solid;
+}

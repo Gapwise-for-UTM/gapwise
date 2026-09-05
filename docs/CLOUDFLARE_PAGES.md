@@ -9,7 +9,7 @@ Production uses Vercel because encrypted cloud sync and friend common-gap discov
 A backend-free static deployment can support:
 
 - ACORN `.ics` import and parsing in the browser;
-- local timetable and personal-item use;
+- local timetable use and backwards-compatible preservation of legacy personal-item payloads;
 - gap calculations and recommendations;
 - bundled UTM routing and OpenFreeMap tiles; and
 - local guest persistence supported by the browser.

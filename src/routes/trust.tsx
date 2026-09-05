@@ -143,7 +143,7 @@ function TrustPage() {
           maintained inventory records those unknowns instead of guessing them.
         </p>
         <a
-          href="https://github.com/andrewmuratov/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md"
+          href="https://github.com/Gapwise-for-UTM/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md"
           className="text-accent hover:underline"
         >
           Data and trust inventory
@@ -165,7 +165,7 @@ function TrustPage() {
             Privacy page
           </Link>
           <a
-            href="https://github.com/andrewmuratov/gapwise-docs/tree/main/governance/privacy"
+            href="https://github.com/Gapwise-for-UTM/gapwise-docs/tree/main/governance/privacy"
             className="text-accent hover:underline"
           >
             Privacy governance package
@@ -195,7 +195,7 @@ function TrustPage() {
             Service status
           </a>
           <a
-            href="https://github.com/andrewmuratov/gapwise/blob/main/docs/INCIDENT_RESPONSE.md"
+            href="https://github.com/Gapwise-for-UTM/gapwise/blob/main/docs/INCIDENT_RESPONSE.md"
             className="text-accent hover:underline"
           >
             Incident-response runbook
@@ -236,7 +236,7 @@ function TrustPage() {
             Developer-platform changelog
           </a>
           <a
-            href="https://github.com/andrewmuratov/gapwise/commits/main"
+            href="https://github.com/Gapwise-for-UTM/gapwise/commits/main"
             className="text-accent hover:underline"
           >
             Source history

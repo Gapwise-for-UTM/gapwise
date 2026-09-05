@@ -102,7 +102,7 @@ Do not add ACORN scraping, automated enrolment, background location tracking, pa
 
 ## Campus data
 
-Campus-data changes belong in [`andrewmuratov/gapwise-data`](https://github.com/andrewmuratov/gapwise-data), not in the core compatibility mirror. Follow the public [Gapwise Data contribution guide](https://docs.gapwise.ca/data/contributing/) and source-adjacent maintenance guidance in the Data repository.
+Campus-data changes belong in [`andrewmuratov/gapwise-data`](https://github.com/Gapwise-for-UTM/gapwise-data), not in the core compatibility mirror. Follow the public [Gapwise Data contribution guide](https://docs.gapwise.ca/data/contributing/) and source-adjacent maintenance guidance in the Data repository.
 
 Core keeps a tested snapshot for runtime reliability. Do not promote an estimate or inferred approach to a verified entrance/route without provenance and review. Unknown accessibility is not equivalent to step-free accessibility.
 

@@ -1,3 +1,5 @@
+> **Current UI boundary:** Personal Items are retained in the private-data contract for backwards compatibility but are no longer surfaced by the web timetable or included in current gap calculations. Academic Work remains the supported user-facing planning layer.
+
 # Gapwise trust and data inventory
 
 **Issue:** AND-156 (AND-131 Phase 1)  

@@ -43,10 +43,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/andrewmuratov/gapwise.git",
+    "url": "git+https://github.com/Gapwise-for-UTM/gapwise.git",
     "directory": "sdk/javascript"
   },
-  "bugs": "https://github.com/andrewmuratov/gapwise/issues",
+  "bugs": "https://github.com/Gapwise-for-UTM/gapwise/issues",
   "homepage": "https://docs.gapwise.ca",
   "publishConfig": {
     "access": "public",

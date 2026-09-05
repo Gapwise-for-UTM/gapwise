@@ -4,16 +4,12 @@ import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import { chooseDefaultTerm } from "@/lib/calendar-awareness";
 import { findGaps } from "@/lib/gaps";
 import { availableScheduleTerms, composeTermSchedule } from "@/lib/personal-scheduler";
-import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting, Term } from "@/lib/timetable-types";
 
 const EMPTY_MEETINGS: Meeting[] = [];
 
 /** Owns the selected-term facts shared by responsive timetable, Today, and gap views. */
-export function useSelectedScheduleContext(
-  meetings: Meeting[] | null,
-  personalItems: PersonalItem[],
-) {
+export function useSelectedScheduleContext(meetings: Meeting[] | null) {
   const [term, setTerm] = useState<Term>("Fall");
   const terms = useMemo(() => availableScheduleTerms(meetings ?? EMPTY_MEETINGS), [meetings]);
 
@@ -26,8 +22,8 @@ export function useSelectedScheduleContext(
   }, [meetings]);
 
   const schedule = useMemo(
-    () => composeTermSchedule(meetings ?? EMPTY_MEETINGS, personalItems, term),
-    [meetings, personalItems, term],
+    () => composeTermSchedule(meetings ?? EMPTY_MEETINGS, [], term),
+    [meetings, term],
   );
   const gaps = useMemo(() => findGaps(schedule, term), [schedule, term]);
   const planTransition = useMemo(

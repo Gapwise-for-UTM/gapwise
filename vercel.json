@@ -14,19 +14,34 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "www.gapwise.ca" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "www.gapwise.ca"
+        }
+      ],
       "destination": "https://gapwise.ca/:path*",
       "permanent": true
     },
     {
       "source": "/:path*",
-      "has": [{ "type": "host", "value": "gapwise-utm.vercel.app" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "gapwise-utm.vercel.app"
+        }
+      ],
       "destination": "https://gapwise.ca/:path*",
       "permanent": true
     },
     {
       "source": "/",
-      "has": [{ "type": "host", "value": "api.gapwise.ca" }],
+      "has": [
+        {
+          "type": "host",
+          "value": "api.gapwise.ca"
+        }
+      ],
       "destination": "https://api.gapwise.ca/v1",
       "permanent": false
     }
@@ -43,76 +58,187 @@
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000; includeSubDomains"
         },
-        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
         {
           "key": "Permissions-Policy",
           "value": "geolocation=(self), camera=(), microphone=(), payment=(), usb=()"
         },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Permitted-Cross-Domain-Policies", "value": "none" },
-        { "key": "X-Frame-Options", "value": "DENY" }
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Permitted-Cross-Domain-Policies",
+          "value": "none"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
       ]
     },
     {
       "source": "/mail",
       "headers": [
-        { "key": "Cache-Control", "value": "private, no-store, max-age=0" },
-        { "key": "Pragma", "value": "no-cache" },
-        { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive, nosnippet" }
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store, max-age=0"
+        },
+        {
+          "key": "Pragma",
+          "value": "no-cache"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive, nosnippet"
+        }
       ]
     },
     {
       "source": "/assets/(.*)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     },
     {
       "source": "/sdk/gapwise-utm.d.ts",
-      "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }]
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
     },
     {
-      "source": "/(favicon.svg|favicon-16x16.png|favicon-32x32.png|apple-touch-icon.png|icon-192.png|icon-512.png|site.webmanifest|robots.txt|sitemap.xml)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }]
+      "source": "/(favicon.svg|favicon-16x16.png|favicon-32x32.png|favicon-192x192.png|og-gapwise.png|apple-touch-icon.png|icon-192.png|icon-512.png|site.webmanifest|robots.txt|sitemap.xml)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/today",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/timetable",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/gaps",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/route/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/oauth/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/api/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/v1",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/v1/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     },
     {
       "source": "/_seo/(.*)",
-      "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
     }
   ],
   "rewrites": [
-    { "source": "/places", "destination": "/_seo/places.html" },
+    {
+      "source": "/about",
+      "destination": "/_seo/about.html"
+    },
+    {
+      "source": "/utm-timetable",
+      "destination": "/_seo/utm-timetable.html"
+    },
+    {
+      "source": "/campus-map",
+      "destination": "/_seo/campus-map.html"
+    },
+    {
+      "source": "/gap-planner",
+      "destination": "/_seo/gap-planner.html"
+    },
+    {
+      "source": "/campus-routing",
+      "destination": "/_seo/campus-routing.html"
+    },
+    {
+      "source": "/acorn-import",
+      "destination": "/_seo/acorn-import.html"
+    },
+    {
+      "source": "/places",
+      "destination": "/_seo/places.html"
+    },
     {
       "source": "/places/davis-food-court",
       "destination": "/_seo/places--davis-food-court.html"
@@ -121,29 +247,77 @@
       "source": "/places/utm-library",
       "destination": "/_seo/places--utm-library.html"
     },
-    { "source": "/places/rawc", "destination": "/_seo/places--rawc.html" },
-    { "source": "/developers", "destination": "/_seo/developers.html" },
-    { "source": "/ai", "destination": "/_seo/ai.html" },
-    { "source": "/support", "destination": "/_seo/support.html" },
-    { "source": "/trust", "destination": "/_seo/trust.html" },
-    { "source": "/privacy", "destination": "/_seo/privacy.html" },
-    { "source": "/security", "destination": "/_seo/security.html" },
-    { "source": "/accessibility", "destination": "/_seo/accessibility.html" },
-    { "source": "/terms", "destination": "/_seo/terms.html" },
-    { "source": "/api/version", "destination": "/api/health?view=version" },
-    { "source": "/v1", "destination": "/api/v1?resource=root" },
-    { "source": "/v1/buildings", "destination": "/api/v1?resource=buildings" },
+    {
+      "source": "/places/rawc",
+      "destination": "/_seo/places--rawc.html"
+    },
+    {
+      "source": "/developers",
+      "destination": "/_seo/developers.html"
+    },
+    {
+      "source": "/ai",
+      "destination": "/_seo/ai.html"
+    },
+    {
+      "source": "/support",
+      "destination": "/_seo/support.html"
+    },
+    {
+      "source": "/trust",
+      "destination": "/_seo/trust.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/_seo/privacy.html"
+    },
+    {
+      "source": "/security",
+      "destination": "/_seo/security.html"
+    },
+    {
+      "source": "/accessibility",
+      "destination": "/_seo/accessibility.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/_seo/terms.html"
+    },
+    {
+      "source": "/api/version",
+      "destination": "/api/health?view=version"
+    },
+    {
+      "source": "/v1",
+      "destination": "/api/v1?resource=root"
+    },
+    {
+      "source": "/v1/buildings",
+      "destination": "/api/v1?resource=buildings"
+    },
     {
       "source": "/v1/buildings/:building",
       "destination": "/api/v1?resource=building&building=:building"
     },
-    { "source": "/v1/places", "destination": "/api/v1?resource=places" },
+    {
+      "source": "/v1/places",
+      "destination": "/api/v1?resource=places"
+    },
     {
       "source": "/v1/places/:placeId",
       "destination": "/api/v1?resource=place&placeId=:placeId"
     },
-    { "source": "/v1/routes", "destination": "/api/v1?resource=routes" },
-    { "source": "/v1/gaps/plan", "destination": "/api/v1?resource=gap-plan" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/v1/routes",
+      "destination": "/api/v1?resource=routes"
+    },
+    {
+      "source": "/v1/gaps/plan",
+      "destination": "/api/v1?resource=gap-plan"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

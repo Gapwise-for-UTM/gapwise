@@ -1,7 +1,7 @@
 {
-  "name": "Gapwise for UTM",
+  "name": "Gapwise",
   "short_name": "Gapwise",
-  "description": "Independent student timetable gap and campus route planner for UTM.",
+  "description": "Privacy-first timetable, gap planning, and campus routing for University of Toronto Mississauga students.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f8f6ef",
