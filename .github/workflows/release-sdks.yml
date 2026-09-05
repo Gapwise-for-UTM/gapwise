@@ -227,7 +227,9 @@ jobs:
         working-directory: sdk/javascript
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm publish --registry=https://npm.pkg.github.com --provenance=false
+        run: |
+          npm pkg set name="@gapwise-for-utm/sdk"
+          npm publish --registry=https://npm.pkg.github.com --provenance=false
 
   publish-pypi:
     name: Publish gapwise to PyPI
