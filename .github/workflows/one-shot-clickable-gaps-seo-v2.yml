@@ -43,7 +43,7 @@ jobs:
               'pointer_start = grid.find("                        onPointerDown={(e) => {", sorted_anchor)',
           )
           check = 'if any(token in grid for token in ["onCreatePersonal", "onMovePersonal", "onResizePersonal", "detectConflicts", "dragState", "isPersonal"]):\n'
-          cleanup = 'for leftover in ["  onCreatePersonal,\\n", "  onMovePersonal,\\n", "  onResizePersonal,\\n", "  onEditPersonal,\\n", "  onDeletePersonal,\\n"]:\n    grid = grid.replace(leftover, "")\n' + check
+          cleanup = '''for leftover in ["  onCreatePersonal,\\n", "  onMovePersonal,\\n", "  onResizePersonal,\\n", "  onEditPersonal,\\n", "  onDeletePersonal,\\n"]:\n    grid = grid.replace(leftover, "")\noverlay_start = grid.find("                  {dragState && dragState.weekday === day ? (")\nif overlay_start >= 0:\n    overlay_end = grid.find("                </div>\\n              );", overlay_start)\n    if overlay_end < 0:\n        raise RuntimeError("TimetableGrid: personal drag preview end missing")\n    grid = grid[:overlay_start] + grid[overlay_end:]\n''' + check
           if check not in s:
               raise SystemExit('grid cleanup anchor missing')
           s = s.replace(check, cleanup, 1)
