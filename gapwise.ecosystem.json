@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "self": "gapwise",
+  "githubOrganization": "Gapwise-for-UTM",
   "canonical": {
     "app": "https://gapwise.ca",
     "api": "https://api.gapwise.ca/v1",
@@ -12,12 +13,12 @@
     "status": "https://status.gapwise.ca"
   },
   "repositories": {
-    "core": "https://github.com/andrewmuratov/gapwise",
-    "mobile": "https://github.com/andrewmuratov/gapwise-mobile",
-    "ai": "https://github.com/andrewmuratov/gapwise-ai",
-    "data": "https://github.com/andrewmuratov/gapwise-data",
-    "docs": "https://github.com/andrewmuratov/gapwise-docs",
-    "status": "https://github.com/andrewmuratov/gapwise-status"
+    "core": "https://github.com/Gapwise-for-UTM/gapwise",
+    "mobile": "https://github.com/Gapwise-for-UTM/gapwise-mobile",
+    "ai": "https://github.com/Gapwise-for-UTM/gapwise-ai",
+    "data": "https://github.com/Gapwise-for-UTM/gapwise-data",
+    "docs": "https://github.com/Gapwise-for-UTM/gapwise-docs",
+    "status": "https://github.com/Gapwise-for-UTM/gapwise-status"
   },
   "ownership": {
     "core": [
@@ -49,7 +50,7 @@
     "status": ["service-health", "incident-communication"]
   },
   "campusData": {
-    "canonicalRepository": "https://github.com/andrewmuratov/gapwise-data",
+    "canonicalRepository": "https://github.com/Gapwise-for-UTM/gapwise-data",
     "canonicalPath": "data/utm",
     "coreMirrorPath": "src/data/utm",
     "runtimeFetchRequired": false,
