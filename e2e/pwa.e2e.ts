@@ -17,7 +17,7 @@ test("PWA metadata, service worker, and cached app shell are functional", async 
   });
   expect(manifest.status).toBe(200);
   expect(manifest.json).toMatchObject({
-    name: "Gapwise for UTM",
+    name: "Gapwise",
     short_name: "Gapwise",
     start_url: "/",
     display: "standalone",
