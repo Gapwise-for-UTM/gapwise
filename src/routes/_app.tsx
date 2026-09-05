@@ -1095,7 +1095,7 @@ function AppLayout() {
             </p>
             <nav
               aria-label="Explore Gapwise"
-              className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs font-semibold"
+              className="mt-2 flex flex-nowrap gap-x-3 overflow-x-auto whitespace-nowrap text-[0.65rem] font-semibold leading-none [scrollbar-width:none] sm:mt-4 sm:flex-wrap sm:gap-x-4 sm:gap-y-2 sm:overflow-visible sm:whitespace-normal sm:text-xs sm:leading-normal"
             >
               <Link to="/about" className="hover:text-accent hover:underline">
                 About
