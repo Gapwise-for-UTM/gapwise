@@ -153,7 +153,7 @@ function DevelopersPage() {
                   OpenAPI
                 </a>
                 <a
-                  href="https://github.com/andrewmuratov/gapwise"
+                  href="https://github.com/Gapwise-for-UTM/gapwise"
                   target="_blank"
                   rel="noreferrer"
                   className="button-secondary inline-flex min-h-11 items-center gap-2 px-4 text-sm font-semibold"
