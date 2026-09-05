@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "canonicalRepository": "andrewmuratov/gapwise-data",
+  "canonicalRepository": "Gapwise-for-UTM/gapwise-data",
   "canonicalPath": "data/utm",
-  "consumerRepository": "andrewmuratov/gapwise",
+  "consumerRepository": "Gapwise-for-UTM/gapwise",
   "mirrorPath": "src/data/utm",
   "runtimeFetchRequired": false,
   "sync": {
