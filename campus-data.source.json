@@ -6,8 +6,9 @@
   "mirrorPath": "src/data/utm",
   "runtimeFetchRequired": false,
   "sync": {
-    "checkCommand": "bun campus-data:check",
-    "writeCommand": "bun campus-data:sync",
+    "checkCommand": "bun run campus-data:check",
+    "writeCommand": "bun run campus-data:sync",
+    "publishCommand": "bun run campus-data:publish",
     "defaultSiblingPath": "../gapwise-data/data/utm"
   },
   "ownership": {
