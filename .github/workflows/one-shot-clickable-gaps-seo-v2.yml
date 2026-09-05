@@ -47,6 +47,11 @@ jobs:
           if check not in s:
               raise SystemExit('grid cleanup anchor missing')
           s = s.replace(check, cleanup, 1)
+          mobile_check = 'if any(token in mobile for token in ["onAddPersonal", "onEditPersonal", "onDeletePersonal", "Add personal item", "isPersonal"]):\n'
+          mobile_cleanup = '''for leftover in ["  onAddPersonal,\\n", "  onEditPersonal,\\n", "  onDeletePersonal,\\n"]:\n    mobile = mobile.replace(leftover, "")\n''' + mobile_check
+          if mobile_check not in s:
+              raise SystemExit('mobile cleanup anchor missing')
+          s = s.replace(mobile_check, mobile_cleanup, 1)
           p.write_text(s)
           PY
           python3 scripts/one-shot-retire-personal-seo.py
