@@ -14,15 +14,15 @@ The release workflow is `.github/workflows/release-sdks.yml`. npm publishing is 
 <!-- prettier-ignore -->
 | Implementation | Registry | Package        | Runtime / consumer role                                                              | Release state             |
 | -------------- | -------- | -------------- | ------------------------------------------------------------------------------------ | ------------------------- |
-| TypeScript     | npm      | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling                               | `0.1.0` published         |
-| TypeScript     | JSR      | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.0` published         |
+| TypeScript     | npm      | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling                               | `0.1.1` published         |
+| TypeScript     | JSR      | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.1` published         |
 | Python         | PyPI     | `gapwise`      | Python sync + async clients                                                          | `0.1.0` published         |
 
-`@gapwise/sdk@0.1.0` was successfully published to JSR by GitHub Actions OIDC after the shared verification gate completed. Future registry claims remain evidence-based: update release-state documentation only after the relevant publish job and registry confirm the version.
+The initial TypeScript `0.1.0` publication established the npm/JSR package identities and trusted-publishing paths. The current verified TypeScript release is `@gapwise/sdk@0.1.1` on both npm and JSR. Future registry claims remain evidence-based: update release-state documentation only after the relevant publish job and registry confirm the version.
 
 ## npm Trusted Publishing
 
-`@gapwise/sdk@0.1.0` has already been published to npm. The one-time initial-package bootstrap is complete and must not be repeated.
+`@gapwise/sdk@0.1.1` is currently published to npm. The one-time initial-package bootstrap completed with the 0.1.0 release and must not be repeated.
 
 The package's GitHub Actions Trusted Publisher should remain configured with:
 
@@ -37,7 +37,7 @@ Prefer npm's strongest publishing-access setting that keeps OIDC enabled while d
 
 ## JSR OIDC publishing
 
-The JSR package identity is also `@gapwise/sdk`. `@gapwise/sdk@0.1.0` is published and linked on JSR to `andrewmuratov/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
+The JSR package identity is also `@gapwise/sdk`. `@gapwise/sdk@0.1.1` is published and linked on JSR to `andrewmuratov/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
 
 JSR configuration lives in `sdk/javascript/jsr.json` and exports the TypeScript source entry point directly from `src/index.ts`. The JSR package intentionally reuses the same implementation and version line as npm.
 
