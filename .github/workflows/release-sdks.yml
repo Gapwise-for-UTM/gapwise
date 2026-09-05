@@ -20,6 +20,7 @@ on:
     branches:
       - main
     paths:
+      - ".github/workflows/release-sdks.yml"
       - "sdk/javascript/package.json"
       - "sdk/javascript/jsr.json"
     tags:
