@@ -38,6 +38,10 @@ jobs:
           if anchor not in s:
               raise SystemExit('migration anchor missing')
           s = s.replace(anchor, injected, 1)
+          s = s.replace(
+              'pointer_start = grid.find("                        onPointerDown={(e) => {", style_start)',
+              'pointer_start = grid.find("                        onPointerDown={(e) => {", sorted_anchor)',
+          )
           p.write_text(s)
           PY
           python3 scripts/one-shot-retire-personal-seo.py
