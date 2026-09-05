@@ -164,7 +164,14 @@ jobs:
           npm --version
       - name: Publish JavaScript SDK
         working-directory: sdk/javascript
-        run: npm publish --access public
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          if npm view "@gapwise/sdk@$VERSION" version >/dev/null 2>&1; then
+            echo "@gapwise/sdk@$VERSION is already published; nothing to do."
+            exit 0
+          fi
+          npm publish --access public
 
   publish-jsr:
     name: Publish @gapwise/sdk to JSR
