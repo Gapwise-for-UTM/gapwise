@@ -87,6 +87,7 @@ type MapTheme = keyof typeof MAP_CONFIG.styleUrls;
 type LocationControlState = LiveLocationState | { status: "disabled"; point: null };
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const FIT_BOUNDS_MAX_ZOOM = 17;
+const CAMPUS_OVERVIEW_ZOOM_OUT_ALLOWANCE = 0.15;
 const ROUTE_DRAW_DURATION_MS = 900;
 const BUILDING_HOVER_DURATION_MS = 200;
 const DEFAULT_FOCUS_PADDING: MapFocusPadding = { top: 72, right: 24, bottom: 24, left: 24 };
@@ -842,6 +843,17 @@ function fitPadding(map: MapLibreMap): MapFocusPadding {
   return { top: 96, right: 156, bottom: 64, left: 64 };
 }
 
+function campusMinimumZoom(
+  map: MapLibreMap,
+  bounds: ReturnType<typeof getCampusCameraBounds>,
+) {
+  const overviewCamera = map.cameraForBounds(bounds, { padding: fitPadding(map) });
+  return Math.max(
+    14.5,
+    (overviewCamera?.zoom ?? MAP_CONFIG.initialZoom) - CAMPUS_OVERVIEW_ZOOM_OUT_ALLOWANCE,
+  );
+}
+
 function maybeFitBounds(
   map: MapLibreMap,
   maplibregl: MapLibreModule,
@@ -908,7 +920,7 @@ function focusBuilding(
 function showCampusOverview(map: MapLibreMap) {
   map.fitBounds(getCampusCameraBounds(UTM_ROUTING_GRAPH), {
     padding: fitPadding(map),
-    maxZoom: MAP_CONFIG.initialZoom,
+    maxZoom: Math.max(MAP_CONFIG.initialZoom, map.getMinZoom()),
     duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 520,
   });
 }
@@ -1071,6 +1083,11 @@ export function CampusMap({
           renderWorldCopies: false,
           attributionControl: false,
         });
+        const syncCampusCameraLimits = () => {
+          map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));
+        };
+        syncCampusCameraLimits();
+        map.on("resize", syncCampusCameraLimits);
         map.dragRotate.disable();
         map.touchZoomRotate.disableRotation();
         appliedThemeRef.current = initialTheme;
