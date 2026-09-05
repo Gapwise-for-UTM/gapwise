@@ -106,7 +106,7 @@ describe("account deletion and encrypted-only cloud security", () => {
 
   test("Gate 6 is fail-closed and permanently removes plaintext cloud storage", async () => {
     const migration = await readFile(
-      "supabase/migrations/20260812020500_retire_legacy_plaintext_cloud.sql",
+      "supabase/migrations/20260812022934_retire_legacy_plaintext_cloud.sql",
       "utf8",
     );
     expect(migration).toContain("legacy schedule owner lacks a complete encrypted replacement");
