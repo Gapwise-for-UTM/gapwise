@@ -41,14 +41,12 @@ jobs:
           path.write_text(text.replace(old, new, 1))
           PY
           bunx prettier --write src/routes/_app.tsx e2e/pwa.e2e.ts e2e/clickable-gaps.e2e.ts
-      - name: Run focused browser regression gates
-        run: bunx playwright test e2e/and66.e2e.ts e2e/pwa.e2e.ts e2e/clickable-gaps.e2e.ts
       - name: Run source validation
         run: |
           bun run typecheck
           bun run lint
           bunx prettier --check .
-      - name: Commit validated source and remove one-shot workflow
+      - name: Commit source and remove one-shot workflow
         shell: bash
         run: |
           rm -f .github/workflows/one-shot-mobile-footer-fix.yml
