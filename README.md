@@ -9,7 +9,7 @@
 **Gapwise is a connected software platform for understanding and acting on a student's day: timetable intelligence, gap planning, campus routing, leave-by timing, open campus data, public APIs and SDKs, native mobile, permissioned AI, developer documentation, and independent service monitoring.**
 
 [![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-gapwise.ca-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise.ca)
-[![CI](https://img.shields.io/github/actions/workflow/status/andrewmuratov/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Gapwise-for-UTM/gapwise/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/Gapwise-for-UTM/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Gapwise-for-UTM/gapwise/actions/workflows/ci.yml)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://api.gapwise.ca/openapi.json)
 [![MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
 
