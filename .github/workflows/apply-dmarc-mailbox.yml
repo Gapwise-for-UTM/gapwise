@@ -1,0 +1,125 @@
+name: Apply DMARC mailbox
+
+on:
+  push:
+    branches:
+      - feat/dmarc-mailbox
+    paths:
+      - .github/workflows/apply-dmarc-mailbox.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: feat/dmarc-mailbox
+          fetch-depth: 0
+
+      - name: Add DMARC mailbox support
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace(path: str, old: str, new: str):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"Expected fragment missing in {path}: {old!r}")
+              p.write_text(text.replace(old, new))
+
+          replace(
+              "src/routes/mail.tsx",
+              'type Mailbox = "support" | "security" | "hello" | "test";',
+              'type Mailbox = "support" | "security" | "hello" | "dmarc" | "test";',
+          )
+          replace(
+              "src/routes/mail.tsx",
+              '  if (mailbox === "hello") return "hello@gapwise.ca";\n  return "support@gapwise.ca";',
+              '  if (mailbox === "hello") return "hello@gapwise.ca";\n  if (mailbox === "dmarc") return "dmarc@gapwise.ca";\n  return "support@gapwise.ca";',
+          )
+          replace(
+              "src/routes/mail.tsx",
+              '  const startCompose = () => {\n    setSelected(null);',
+              '  const startCompose = () => {\n    if (mailbox === "dmarc") return;\n    setSelected(null);',
+          )
+          replace(
+              "src/routes/mail.tsx",
+              '{(["support", "security", "hello", "test"] as const).map((name) => (',
+              '{(["support", "security", "hello", "dmarc", "test"] as const).map((name) => (',
+          )
+          replace(
+              "src/routes/mail.tsx",
+              '''            <button\n              type="button"\n              onClick={startCompose}\n              className="button-secondary ml-auto inline-flex min-h-9 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold"\n            >\n              <PenLine className="h-4 w-4" aria-hidden="true" />\n              <span>Compose</span>\n            </button>''',
+              '''            {mailbox !== "dmarc" ? (\n              <button\n                type="button"\n                onClick={startCompose}\n                className="button-secondary ml-auto inline-flex min-h-9 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold"\n              >\n                <PenLine className="h-4 w-4" aria-hidden="true" />\n                <span>Compose</span>\n              </button>\n            ) : (\n              <span className="ml-auto shrink-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">\n                Read-only reports\n              </span>\n            )}''',
+          )
+          replace(
+              "src/routes/mail.tsx",
+              '''            <button\n              type="button"\n              onClick={startCompose}\n              className="button-primary mb-3 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold"\n            >\n              <PenLine className="h-4 w-4" aria-hidden="true" />\n              New message\n            </button>''',
+              '''            {mailbox !== "dmarc" ? (\n              <button\n                type="button"\n                onClick={startCompose}\n                className="button-primary mb-3 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold"\n              >\n                <PenLine className="h-4 w-4" aria-hidden="true" />\n                New message\n              </button>\n            ) : (\n              <div className="mb-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs leading-5 text-muted-foreground">\n                DMARC aggregate reports are read-only.\n              </div>\n            )}''',
+          )
+          replace(
+              "src/routes/mail.tsx",
+              '{selectedState?.folder !== "trash" ? (',
+              '{selectedState?.folder !== "trash" && mailbox !== "dmarc" ? (',
+          )
+
+          replace(
+              "supabase/functions/mail-operator/index.ts",
+              'type Mailbox = "support" | "security" | "hello" | "general" | "test";',
+              'type Mailbox = "support" | "security" | "hello" | "general" | "dmarc" | "test";',
+          )
+          replace(
+              "supabase/functions/mail-operator/index.ts",
+              'return value === "support" || value === "security" || value === "hello" || value === "general" || value === "test"',
+              'return value === "support" || value === "security" || value === "hello" || value === "general" || value === "dmarc" || value === "test"',
+          )
+          replace(
+              "supabase/functions/mail-operator/index.ts",
+              '  if (!mailbox) return json(400, { error: "unsupported_mailbox" }, origin);\n  const recipient = bareEmail',
+              '  if (!mailbox) return json(400, { error: "unsupported_mailbox" }, origin);\n  if (mailbox === "dmarc") return json(400, { error: "read_only_mailbox" }, origin);\n  const recipient = bareEmail',
+          )
+          replace(
+              "supabase/functions/mail-operator/index.ts",
+              '["support", "security", "hello", "general", "test"]',
+              '["support", "security", "hello", "general", "dmarc", "test"]',
+          )
+          replace(
+              "supabase/functions/mail-operator/index.ts",
+              '    if (!mailbox || !recipient || !subject || !text) return json(400, { error: "invalid_message" }, origin);\n    return await sendNew',
+              '    if (!mailbox || !recipient || !subject || !text) return json(400, { error: "invalid_message" }, origin);\n    if (mailbox === "dmarc") return json(400, { error: "read_only_mailbox" }, origin);\n    return await sendNew',
+          )
+
+          replace(
+              "supabase/functions/mail-organizer/index.ts",
+              'type Mailbox = "support" | "security" | "hello" | "general" | "test";',
+              'type Mailbox = "support" | "security" | "hello" | "general" | "dmarc" | "test";',
+          )
+          replace(
+              "supabase/functions/mail-organizer/index.ts",
+              'return value === "support" || value === "security" || value === "hello" || value === "general" || value === "test" ? value : null;',
+              'return value === "support" || value === "security" || value === "hello" || value === "general" || value === "dmarc" || value === "test" ? value : null;',
+          )
+
+          replace(
+              "supabase/functions/resend-webhook/index.ts",
+              '    if (local === "general") return "general";\n    if (local === "test") return "test";',
+              '    if (local === "general") return "general";\n    if (local === "dmarc" || local === "_dmarc") return "dmarc";\n    if (local === "test") return "test";',
+          )
+
+          migration = Path("supabase/migrations/20260905134000_add_dmarc_mailbox.sql")
+          migration.write_text('''begin;\n\nalter table public.resend_email_messages\n  drop constraint if exists resend_email_messages_mailbox_check;\n\nalter table public.resend_email_messages\n  add constraint resend_email_messages_mailbox_check\n  check (mailbox is null or mailbox in ('support', 'security', 'hello', 'general', 'dmarc', 'test', 'other'));\n\nalter table public.mail_drafts\n  drop constraint if exists mail_drafts_mailbox_check;\n\nalter table public.mail_drafts\n  add constraint mail_drafts_mailbox_check\n  check (mailbox in ('support', 'security', 'hello', 'general', 'dmarc', 'test'));\n\ncommit;\n''')
+
+          Path(".github/workflows/apply-dmarc-mailbox.yml").unlink()
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: add DMARC mailbox to operator mail"
+          git push origin HEAD:feat/dmarc-mailbox
