@@ -68,6 +68,7 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
+  // Keep crawlable public navigation useful without letting it expand the first-run mobile shell.
   expect(
     await page.evaluate(() => document.documentElement.scrollHeight / window.innerHeight),
   ).toBeLessThanOrEqual(1.45);
