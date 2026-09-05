@@ -1,5 +1,5 @@
 Contact: mailto:security@gapwise.ca
-Contact: https://github.com/andrewmuratov/gapwise/security/advisories/new
+Contact: https://github.com/Gapwise-for-UTM/gapwise/security/advisories/new
 Contact: https://gapwise.ca/security
 Expires: 2027-08-28T23:59:59Z
 Preferred-Languages: en
