@@ -81,10 +81,8 @@ jobs:
           app = app_path.read_text()
           exact_handler = '''              onOpenGapPlan={(gap) => {\n                queueGapPlanSelection(gap.id);\n                openGapPlan();\n              }}'''
           generic_handler = '''              onOpenGapPlan={() => {\n                openGapPlan();\n              }}'''
-          # MobileToday stays a generic navigation action.
           if exact_handler in app:
               app = app.replace(exact_handler, generic_handler, 1)
-          # MobileTimetable must pass the exact clicked Gap object.
           mobile_start = app.find('<MobileTimetable')
           mobile_end = app.find('/>', mobile_start)
           if mobile_start < 0 or mobile_end < 0:
@@ -114,7 +112,6 @@ jobs:
           old_assertions = '''    await waitFor(() => pageText().includes("Restored study block"), "the restored personal item");
               expect(pageText()).toContain("PRIVATE101H5");'''
           if old_assertions not in restoration:
-              # Formatting may wrap the waitFor call across lines; replace the smallest stable range instead.
               pattern = re.compile(
                   r'\s*await waitFor\(\(\) => pageText\(\)\.includes\("Restored study block"\), "the restored personal item"\);\s*expect\(pageText\(\)\)\.toContain\("PRIVATE101H5"\);'
               )
@@ -166,7 +163,7 @@ jobs:
         shell: bash
         run: |
           bunx prettier --write \
-            src/routes/_app.tsx src/components/TimetableGrid.tsx \
+            src/styles.css src/routes/_app.tsx src/components/TimetableGrid.tsx \
             src/components/mobile/MobileTimetable.tsx src/components/GapPlan.tsx \
             src/components/LegalPage.tsx src/components/PublicFeaturePage.tsx \
             src/features/gaps/selection.ts src/features/schedule/use-selected-schedule-context.ts \
