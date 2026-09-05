@@ -1,0 +1,56 @@
+name: Campus data sync
+
+on:
+  pull_request:
+    paths:
+      - src/data/utm/**
+      - scripts/sync-campus-data.ts
+      - campus-data.source.json
+      - .github/workflows/campus-data-sync.yml
+  push:
+    branches:
+      - main
+      - refactor/canonical-campus-data
+    paths:
+      - src/data/utm/**
+      - scripts/sync-campus-data.ts
+      - campus-data.source.json
+      - .github/workflows/campus-data-sync.yml
+
+permissions:
+  contents: read
+
+jobs:
+  verify-mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Gapwise
+        uses: actions/checkout@v4
+
+      - name: Resolve canonical data ref
+        id: data-ref
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [[ "$HEAD_REF" == "refactor/canonical-campus-data" || "$REF_NAME" == "refactor/canonical-campus-data" ]]; then
+            echo "ref=refactor/canonical-campus-data" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=main" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out canonical campus data
+        uses: actions/checkout@v4
+        with:
+          repository: andrewmuratov/gapwise-data
+          ref: ${{ steps.data-ref.outputs.ref }}
+          path: .canonical-data
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify vendored campus snapshot
+        run: bun scripts/sync-campus-data.ts --check --source=.canonical-data/data/utm

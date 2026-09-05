@@ -23,6 +23,9 @@
     "core": [
       "student-state",
       "deterministic-domain-logic",
+      "routing-algorithms",
+      "gap-planning",
+      "map-product-ui",
       "public-api",
       "openapi",
       "typescript-sdk",
@@ -30,9 +33,27 @@
     ],
     "mobile": ["native-mobile-ux", "device-integration", "mobile-distribution"],
     "ai": ["oauth", "mcp", "delegation", "bounded-ai-actions"],
-    "data": ["provenance", "schemas", "evidence", "attribution", "reuse"],
+    "data": [
+      "canonical-public-campus-facts",
+      "campus-geometry",
+      "entrances",
+      "routing-graph-data",
+      "provenance",
+      "schemas",
+      "evidence",
+      "attribution",
+      "validation",
+      "reuse"
+    ],
     "docs": ["released-developer-documentation"],
     "status": ["service-health", "incident-communication"]
+  },
+  "campusData": {
+    "canonicalRepository": "https://github.com/andrewmuratov/gapwise-data",
+    "canonicalPath": "data/utm",
+    "coreMirrorPath": "src/data/utm",
+    "runtimeFetchRequired": false,
+    "syncMode": "vendored-build-time-snapshot"
   },
   "sdks": {
     "typescript": {
