@@ -133,7 +133,7 @@ jobs:
             src/features/gaps/selection.ts src/features/schedule/use-selected-schedule-context.ts \
             src/content/public-feature-pages.ts src/routes/about.tsx src/routes/utm-timetable.tsx \
             src/routes/campus-map.tsx src/routes/gap-planner.tsx src/routes/campus-routing.tsx \
-            src/routes/acorn-import.tsx scripts/build-seo-pages.ts scripts/check-seo-output.ts \
+            src/routes/acorn-import.tsx src/routes/support.tsx scripts/build-seo-pages.ts scripts/check-seo-output.ts \
             tests/seo.test.ts tests/personal-items-retired.test.ts e2e/clickable-gaps.e2e.ts \
             package.json vercel.json public/site.webmanifest index.html README.md \
             docs/CLOUDFLARE_PAGES.md docs/TRUST_DATA_INVENTORY.md e2e/trust-auth-academic.e2e.ts
