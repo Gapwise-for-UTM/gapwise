@@ -305,6 +305,12 @@ function DevelopersPage() {
                     >
                       Data docs
                     </a>
+                    <a
+                      href="/data/utm-campus-v1.json"
+                      className="button-secondary inline-flex min-h-10 items-center justify-center px-4 text-xs font-semibold"
+                    >
+                      Download JSON
+                    </a>
                   </div>
                 </div>
               </div>
