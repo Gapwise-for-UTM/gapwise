@@ -106,70 +106,33 @@ jobs:
 
           restoration_path = Path('tests/restoration-flow.test.tsx')
           restoration = restoration_path.read_text()
-          old_test = '''  test("applies personal items from the same encrypted private payload as the schedule", async () => {
-            const cloud = meeting({ id: "cloud-private", courseCode: "PRIVATE101H5" });
-            authSnapshot = { user: authenticatedUser, loading: false, error: null };
-            loadImplementation = async () => ({
-              meetings: [cloud],
-              updatedAt: "2026-08-01T12:00:00.000Z",
-              privateData: {
-                ...payload([cloud]),
-                personalItems: [
-                  {
-                    id: "restored-personal",
-                    title: "Restored study block",
-                    category: "Study",
-                    term: "Fall",
-                    weekday: "Monday",
-                    startTime: 11 * 60,
-                    endTime: 12 * 60,
-                    flexibility: { kind: "fixed" },
-                    createdAt: "2026-08-01T00:00:00.000Z",
-                    updatedAt: "2026-08-01T00:00:00.000Z",
-                  },
-                ],
-              },
-            });
-
-            await mountRoute();
-            await waitFor(() => pageText().includes("Restored study block"), "the restored personal item");
-            expect(pageText()).toContain("PRIVATE101H5");
-          });
-          '''
-          new_test = '''  test("accepts legacy personal items in encrypted payloads without exposing them in the timetable", async () => {
-            const cloud = meeting({ id: "cloud-private", courseCode: "PRIVATE101H5" });
-            authSnapshot = { user: authenticatedUser, loading: false, error: null };
-            loadImplementation = async () => ({
-              meetings: [cloud],
-              updatedAt: "2026-08-01T12:00:00.000Z",
-              privateData: {
-                ...payload([cloud]),
-                personalItems: [
-                  {
-                    id: "restored-personal",
-                    title: "Restored study block",
-                    category: "Study",
-                    term: "Fall",
-                    weekday: "Monday",
-                    startTime: 11 * 60,
-                    endTime: 12 * 60,
-                    flexibility: { kind: "fixed" },
-                    createdAt: "2026-08-01T00:00:00.000Z",
-                    updatedAt: "2026-08-01T00:00:00.000Z",
-                  },
-                ],
-              },
-            });
-
-            await mountRoute();
-            await waitFor(() => pageText().includes("PRIVATE101H5"), "the restored timetable");
-            expect(pageText()).not.toContain("Restored study block");
-            expect(loadCalls).toEqual([authenticatedUser.id]);
-          });
-          '''
-          if old_test not in restoration:
-              raise SystemExit('legacy personal restoration test block not found')
-          restoration = restoration.replace(old_test, new_test, 1)
+          old_name = '  test("applies personal items from the same encrypted private payload as the schedule", async () => {'
+          new_name = '  test("accepts legacy personal items in encrypted payloads without exposing them in the timetable", async () => {'
+          if old_name not in restoration:
+              raise SystemExit('legacy personal restoration test name not found')
+          restoration = restoration.replace(old_name, new_name, 1)
+          old_assertions = '''    await waitFor(() => pageText().includes("Restored study block"), "the restored personal item");
+              expect(pageText()).toContain("PRIVATE101H5");'''
+          if old_assertions not in restoration:
+              # Formatting may wrap the waitFor call across lines; replace the smallest stable range instead.
+              pattern = re.compile(
+                  r'\s*await waitFor\(\(\) => pageText\(\)\.includes\("Restored study block"\), "the restored personal item"\);\s*expect\(pageText\(\)\)\.toContain\("PRIVATE101H5"\);'
+              )
+              replacement = '''
+              await waitFor(() => pageText().includes("PRIVATE101H5"), "the restored timetable");
+              expect(pageText()).not.toContain("Restored study block");
+              expect(loadCalls).toEqual([authenticatedUser.id]);'''
+              restoration, count = pattern.subn(replacement, restoration, count=1)
+              if count != 1:
+                  raise SystemExit('legacy personal restoration assertions not found')
+          else:
+              restoration = restoration.replace(
+                  old_assertions,
+                  '''    await waitFor(() => pageText().includes("PRIVATE101H5"), "the restored timetable");
+              expect(pageText()).not.toContain("Restored study block");
+              expect(loadCalls).toEqual([authenticatedUser.id]);''',
+                  1,
+              )
           restoration_path.write_text(restoration)
           PY
 
