@@ -28,7 +28,7 @@ import { useAuth } from "@/features/auth/use-auth";
 import { useTheme } from "@/hooks/use-preferences";
 import { getSupabaseClient } from "@/lib/supabase";
 
-type Mailbox = "support" | "security" | "hello" | "test";
+type Mailbox = "support" | "security" | "hello" | "dmarc" | "test";
 type FolderView = "inbox" | "starred" | "sent" | "drafts" | "archive" | "trash" | "all";
 type AccessState = "checking" | "authorized" | "denied";
 type AttachmentMeta = {
@@ -200,6 +200,7 @@ function validEmail(value: string) {
 function replyAddress(mailbox: Mailbox) {
   if (mailbox === "security") return "security@gapwise.ca";
   if (mailbox === "hello") return "hello@gapwise.ca";
+  if (mailbox === "dmarc") return "dmarc@gapwise.ca";
   return "support@gapwise.ca";
 }
 
@@ -687,6 +688,7 @@ function MailPage() {
   };
 
   const startCompose = () => {
+    if (mailbox === "dmarc") return;
     setSelected(null);
     setThread([]);
     setComposing(true);
@@ -743,7 +745,7 @@ function MailPage() {
 
         <div className="px-3 pb-3 pt-3 sm:px-5 lg:px-0 lg:pb-0 lg:pt-0">
           <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {(["support", "security", "hello", "test"] as const).map((name) => (
+            {(["support", "security", "hello", "dmarc", "test"] as const).map((name) => (
               <button
                 key={name}
                 type="button"
@@ -757,14 +759,20 @@ function MailPage() {
                 {name}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={startCompose}
-              className="button-secondary ml-auto inline-flex min-h-9 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold"
-            >
-              <PenLine className="h-4 w-4" aria-hidden="true" />
-              <span>Compose</span>
-            </button>
+            {mailbox !== "dmarc" ? (
+              <button
+                type="button"
+                onClick={startCompose}
+                className="button-secondary ml-auto inline-flex min-h-9 shrink-0 items-center gap-2 px-3.5 text-sm font-semibold"
+              >
+                <PenLine className="h-4 w-4" aria-hidden="true" />
+                <span>Compose</span>
+              </button>
+            ) : (
+              <span className="ml-auto shrink-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground">
+                Read-only reports
+              </span>
+            )}
           </div>
 
           {!selected && !composing ? (
@@ -805,14 +813,20 @@ function MailPage() {
 
         <div className="mx-0 grid overflow-hidden border-y border-border/70 bg-card/70 shadow-sm lg:mx-0 lg:min-h-[78vh] lg:grid-cols-[210px_380px_1fr] lg:rounded-3xl lg:border">
           <nav className="hidden border-r border-border/70 p-3 lg:block" aria-label="Mail folders">
-            <button
-              type="button"
-              onClick={startCompose}
-              className="button-primary mb-3 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold"
-            >
-              <PenLine className="h-4 w-4" aria-hidden="true" />
-              New message
-            </button>
+            {mailbox !== "dmarc" ? (
+              <button
+                type="button"
+                onClick={startCompose}
+                className="button-primary mb-3 inline-flex min-h-11 w-full items-center justify-center gap-2 text-sm font-semibold"
+              >
+                <PenLine className="h-4 w-4" aria-hidden="true" />
+                New message
+              </button>
+            ) : (
+              <div className="mb-3 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs leading-5 text-muted-foreground">
+                DMARC aggregate reports are read-only.
+              </div>
+            )}
             <div className="space-y-1">
               {folderItems.map((item) => {
                 const Icon = item.icon;
@@ -1286,7 +1300,7 @@ function MailPage() {
                   <div ref={threadEndRef} />
                 </div>
 
-                {selectedState?.folder !== "trash" ? (
+                {selectedState?.folder !== "trash" && mailbox !== "dmarc" ? (
                   <div className="border-t border-border/70 bg-card/95 px-3 py-2.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-4 sm:py-4">
                     <div className="mb-1.5 flex items-center justify-between gap-2">
                       <label htmlFor="mail-reply" className="truncate text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">

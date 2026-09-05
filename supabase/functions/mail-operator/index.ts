@@ -14,7 +14,7 @@ function corsHeaders(origin: string | null) {
   };
 }
 
-type Mailbox = "support" | "security" | "hello" | "general" | "test";
+type Mailbox = "support" | "security" | "hello" | "general" | "dmarc" | "test";
 type RequestBody = {
   action?: unknown;
   mailbox?: unknown;
@@ -60,7 +60,7 @@ function stringValue(value: unknown, maxLength: number) {
 }
 
 function mailboxValue(value: unknown): Mailbox | null {
-  return value === "support" || value === "security" || value === "hello" || value === "general" || value === "test"
+  return value === "support" || value === "security" || value === "hello" || value === "general" || value === "dmarc" || value === "test"
     ? value
     : null;
 }
@@ -237,6 +237,7 @@ async function sendReply(
   if (error || !parent) return json(404, { error: "message_not_found" }, origin);
   const mailbox = mailboxValue(parent.mailbox);
   if (!mailbox) return json(400, { error: "unsupported_mailbox" }, origin);
+  if (mailbox === "dmarc") return json(400, { error: "read_only_mailbox" }, origin);
   const recipient = bareEmail(parent.direction === "inbound" ? parent.from_address : parent.to_addresses?.[0]);
   if (!recipient) return json(400, { error: "recipient_unavailable" }, origin);
 
@@ -428,7 +429,7 @@ Deno.serve(async (request: Request) => {
     const { data, error } = await supabase
       .from("resend_email_messages")
       .select("resend_email_id,direction,message_id,from_address,to_addresses,subject,mailbox,attachment_metadata,text_body,latest_event_type,event_created_at,updated_at,thread_id,in_reply_to,reply_to_address")
-      .in("mailbox", mailbox ? [mailbox] : ["support", "security", "hello", "general", "test"])
+      .in("mailbox", mailbox ? [mailbox] : ["support", "security", "hello", "general", "dmarc", "test"])
       .order("updated_at", { ascending: false })
       .limit(100);
     if (error) return json(500, { error: "list_failed" }, origin);
@@ -462,6 +463,7 @@ Deno.serve(async (request: Request) => {
     const text = stringValue(body.text, 100_000);
     const requestId = stringValue(body.requestId, 256);
     if (!mailbox || !recipient || !subject || !text) return json(400, { error: "invalid_message" }, origin);
+    if (mailbox === "dmarc") return json(400, { error: "read_only_mailbox" }, origin);
     return await sendNew(supabase, mailbox, recipient, subject, text, requestId, origin);
   }
 
