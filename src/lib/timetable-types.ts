@@ -7,6 +7,7 @@ export type MeetingLocationType = "physical" | "tba" | "online" | "unknown";
 export const TERMS: Term[] = ["Fall", "Winter", "Summer"];
 export const WORKWEEK_DAYS: Weekday[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 export const WEEKDAYS: Weekday[] = [...WORKWEEK_DAYS, "Saturday", "Sunday"];
+export const ASSESSMENT_WINDOW_NOTE = "Reserved assessment window";
 
 const JS_WEEKDAYS: readonly Weekday[] = [
   "Sunday",
@@ -64,7 +65,7 @@ export interface Meeting {
   room: string | null;
   term: Term;
   locationUnknown: boolean;
-  /** Optional UI metadata for personal items. */
+  /** Optional UI metadata for personal items and source-backed schedule annotations. */
   notes?: string;
   color?: string;
   /** Explicit source-backed location kind. Older saved schedules may omit this field. */
@@ -124,7 +125,12 @@ export function meetingLocationType(meeting: Meeting): MeetingLocationType {
   return "unknown";
 }
 
+export function isAssessmentWindow(meeting: Meeting): boolean {
+  return meeting.notes === ASSESSMENT_WINDOW_NOTE;
+}
+
 export function locationLabel(m: Meeting): string {
+  if (isAssessmentWindow(m)) return "Reserved assessment window · location TBA";
   const type = meetingLocationType(m);
   if (type === "online") return "Online";
   if (type === "tba" || type === "unknown") return "Location TBA";
