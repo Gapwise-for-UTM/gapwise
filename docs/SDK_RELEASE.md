@@ -14,11 +14,18 @@ The release workflow is `.github/workflows/release-sdks.yml`. npm publishing is 
 <!-- prettier-ignore -->
 | Implementation | Registry | Package        | Runtime / consumer role                                                              | Release state             |
 | -------------- | -------- | -------------- | ------------------------------------------------------------------------------------ | ------------------------- |
-| TypeScript     | npm      | `@gapwise/sdk` | Node.js, Bun, browser bundlers, npm-compatible tooling                               | `0.1.1` published         |
-| TypeScript     | JSR      | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.1` published         |
-| Python         | PyPI     | `gapwise`      | Python sync + async clients                                                          | `0.1.0` published         |
+| TypeScript     | npm             | `@gapwise/sdk`         | Primary Node.js, Bun, browser-bundler, and npm-compatible distribution               | `0.1.1` published         |
+| TypeScript     | JSR             | `@gapwise/sdk`         | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.1` published         |
+| TypeScript     | GitHub Packages | `@gapwise-for-utm/sdk` | Source-adjacent GitHub registry mirror of the same JavaScript SDK artifact            | `0.1.1` published, public |
+| Python         | PyPI            | `gapwise`              | Python sync + async clients                                                          | `0.1.0` published         |
 
 The initial TypeScript `0.1.0` publication established the npm/JSR package identities and trusted-publishing paths. The current verified TypeScript release is `@gapwise/sdk@0.1.1` on both npm and JSR. Future registry claims remain evidence-based: update release-state documentation only after the relevant publish job and registry confirm the version.
+
+GitHub Packages requires the npm scope to match the GitHub organization owner, so its public mirror is named `@gapwise-for-utm/sdk` rather than `@gapwise/sdk`. This is a registry-specific package identity for the same built implementation, not a fork or a fourth SDK. npm remains the primary npm-compatible installation channel; consumers choosing GitHub Packages must configure `@gapwise-for-utm` for `https://npm.pkg.github.com` and follow GitHub's registry-authentication requirements.
+
+## GitHub Packages publishing
+
+The `github` manual target publishes the verified JavaScript SDK to GitHub Packages. The job rewrites the package name only inside its ephemeral runner workspace, retains the source-repository metadata, checks whether the exact version already exists, and publishes with the job-scoped `GITHUB_TOKEN` and `packages: write`. No long-lived GitHub package token is stored.
 
 ## npm Trusted Publishing
 
