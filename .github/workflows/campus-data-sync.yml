@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out Gapwise
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Resolve canonical data ref
         id: data-ref
@@ -41,7 +41,7 @@ jobs:
           fi
 
       - name: Check out canonical campus data
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: andrewmuratov/gapwise-data
           ref: ${{ steps.data-ref.outputs.ref }}
