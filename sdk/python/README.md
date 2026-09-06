@@ -2,11 +2,20 @@
 
 Official typed Python client for the unauthenticated Gapwise Public Campus API v1. It supports Python 3.11+ and defaults to `https://api.gapwise.ca/v1`.
 
-Published on PyPI as `gapwise`.
+The canonical Python package is published on PyPI as `gapwise`. GitHub Packages does not provide a PyPI-compatible Python registry, so tagged Python releases are additionally mirrored on GitHub Releases as the verified wheel and source distribution built from the matching `python-v*` tag.
 
 ```bash
 python -m pip install gapwise==0.1.0
 ```
+
+For direct artifact use, the matching GitHub Release contains:
+
+```text
+gapwise-0.1.0-py3-none-any.whl
+gapwise-0.1.0.tar.gz
+```
+
+PyPI remains the preferred installation channel; the GitHub release assets provide a source-adjacent mirror rather than a second Python package index.
 
 ```python
 from gapwise import Gapwise
