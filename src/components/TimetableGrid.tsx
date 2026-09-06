@@ -426,7 +426,7 @@ export const TimetableGrid = memo(function TimetableGrid({
               Week at a glance
             </p>
             <p className="text-xs text-muted-foreground">
-              Classes stay solid; reserved windows are amber; usable gaps glow in blue
+              Classes stay solid; usable time between them glows in blue
             </p>
           </div>
         </div>
