@@ -1,0 +1,66 @@
+name: Clean dead landmark styling
+
+on:
+  push:
+    branches:
+      - chore/remove-3d-model-bloat
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: chore/remove-3d-model-bloat
+      - name: Remove dead landmark selectors and docs
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          styles_path = Path("src/styles.css")
+          styles = styles_path.read_text()
+          styles, count = re.subn(
+              r'\n  \.landmark-card \{.*?\n  \.bento-step \{',
+              '\n  .bento-step {',
+              styles,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f"Expected one landmark/model CSS block, removed {count}")
+          styles_path.write_text(styles)
+
+          first_run_path = Path("src/components/onboarding/first-run.css")
+          first_run = first_run_path.read_text().replace(
+              'main.landing-stage .landing-bento > .bento-hero,\n  main.landing-stage .landing-bento > .landmark-card,\n  main.landing-stage .landing-bento > .bento-step',
+              'main.landing-stage .landing-bento > .bento-hero,\n  main.landing-stage .landing-bento > .bento-step',
+          )
+          first_run_path.write_text(first_run)
+
+          e2e_path = Path("e2e/and66.e2e.ts")
+          e2e = e2e_path.read_text().replace(
+              '  await expect(page.locator(".landmark-card")).not.toBeVisible();\n',
+              '',
+          )
+          e2e_path.write_text(e2e)
+
+          docs_path = Path("docs/DESIGN_SYSTEM.md")
+          docs = docs_path.read_text().replace(
+              '`bento-hero`, `upload-card`, `landmark-card`: landing-specific composition.',
+              '`bento-hero`, `upload-card`, `bento-step`: landing-specific composition.',
+          )
+          docs_path.write_text(docs)
+          PY
+          rm .github/workflows/cleanup-dead-landmark-css.yml
+      - name: Commit lean landing cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/styles.css src/components/onboarding/first-run.css e2e/and66.e2e.ts docs/DESIGN_SYSTEM.md .github/workflows/cleanup-dead-landmark-css.yml
+          git commit -m "Remove dead landmark styling and references"
+          git push origin HEAD:chore/remove-3d-model-bloat
