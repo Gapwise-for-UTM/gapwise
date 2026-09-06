@@ -26,6 +26,38 @@
   color: var(--meeting-accent);
 }
 
+/* Timetable dialogs and mobile drawers are rendered through portals, so the
+   route action must derive its color from the activity badge inside the portal
+   itself rather than from a mobile-shell ancestor. */
+[role="dialog"] .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-accent);
+
+  border-color: color-mix(
+    in oklab,
+    var(--route-component-accent) 72%,
+    var(--color-border)
+  ) !important;
+  background: var(--route-component-accent) !important;
+  color: var(--color-background) !important;
+  box-shadow: 0 12px 30px -18px
+    color-mix(in oklab, var(--route-component-accent) 72%, transparent) !important;
+}
+
+[role="dialog"]:has(.activity-badge[data-activity="LEC"])
+  .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-lec);
+}
+
+[role="dialog"]:has(.activity-badge[data-activity="TUT"])
+  .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-tut);
+}
+
+[role="dialog"]:has(.activity-badge[data-activity="PRA"])
+  .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-pra);
+}
+
 .meeting-card[data-assessment-window="true"] {
   border-style: dashed;
   border-left-style: solid;
