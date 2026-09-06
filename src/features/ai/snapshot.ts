@@ -4,10 +4,10 @@ import type { GapPreferences } from "@/features/gaps/types";
 import { createScheduleTransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { findGaps } from "@/lib/gaps";
-import { availableScheduleTerms, composeSchedule } from "@/lib/personal-scheduler";
+import { availableScheduleTerms } from "@/lib/personal-scheduler";
 import type { PersonalItem } from "@/lib/personal-types";
-import type { Meeting } from "@/lib/timetable-types";
-import type { AiPermissions, AiSnapshot } from "./types";
+import { isAssessmentWindow, type Meeting } from "@/lib/timetable-types";
+import { normalizeAiPermissions, type AiPermissions, type AiSnapshot } from "./types";
 
 function aiMeeting(meeting: Meeting): AiSnapshot["schedule"][number] {
   const result: AiSnapshot["schedule"][number] = {
@@ -23,6 +23,7 @@ function aiMeeting(meeting: Meeting): AiSnapshot["schedule"][number] {
     room: meeting.room,
     term: meeting.term,
     locationUnknown: meeting.locationUnknown,
+    isReservedAssessmentWindow: isAssessmentWindow(meeting),
   };
   if (meeting.locationType) result.locationType = meeting.locationType;
   if (meeting.dateRange) result.dateRange = { ...meeting.dateRange };
@@ -30,28 +31,6 @@ function aiMeeting(meeting: Meeting): AiSnapshot["schedule"][number] {
   if (meeting.recurrenceIntervalWeeks !== undefined) {
     result.recurrenceIntervalWeeks = meeting.recurrenceIntervalWeeks;
   }
-  return result;
-}
-
-function aiPersonalItem(item: PersonalItem): AiSnapshot["personalItems"][number] {
-  const result: AiSnapshot["personalItems"][number] = {
-    id: item.id,
-    title: item.title,
-    category: item.category,
-    term: item.term,
-    weekday: item.weekday,
-    flexibility: { ...item.flexibility },
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
-  };
-  if (item.startTime !== undefined) result.startTime = item.startTime;
-  if (item.endTime !== undefined) result.endTime = item.endTime;
-  if (item.locationBuildingCode !== undefined) {
-    result.locationBuildingCode = item.locationBuildingCode;
-  }
-  if (item.locationRoom !== undefined) result.locationRoom = item.locationRoom;
-  if (item.locationText !== undefined) result.locationText = item.locationText;
-  if (item.color !== undefined) result.color = item.color;
   return result;
 }
 
@@ -71,23 +50,18 @@ function aiRoutingPreferences(preferences: UserPreferences): AiSnapshot["routing
 
 function aiGapPlans(input: {
   meetings: Meeting[];
-  personalItems: PersonalItem[];
   preferences: UserPreferences;
   gapPreferences: GapPreferences;
   permissions: AiPermissions;
 }): AiSnapshot["gapPlans"] {
   if (!input.permissions.readGapPlans) return [];
 
-  // Personal items affect a delegated gap only when the user also chose to share them.
-  // This prevents a gap boundary from leaking the existence/time of a hidden personal item.
-  const combined = composeSchedule(
-    input.meetings,
-    input.permissions.readPersonal ? input.personalItems : [],
-  );
-  const planTransition = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, combined);
+  // Personal Items are retired. Gap boundaries are the same academic commitments the live
+  // timetable uses; reserved assessment placeholders are already ignored by findGaps.
+  const planTransition = createScheduleTransitionPlanner(UTM_ROUTING_GRAPH, input.meetings);
 
-  return availableScheduleTerms(combined).flatMap((term) =>
-    findGaps(combined, term).map((gap) => {
+  return availableScheduleTerms(input.meetings).flatMap((term) =>
+    findGaps(input.meetings, term).map((gap) => {
       const { assessment } = planGapAssessment(
         gap,
         input.preferences,
@@ -116,13 +90,20 @@ export function aiSnapshotContent(input: {
   gapPreferences: GapPreferences;
   permissions: AiPermissions;
 }) {
+  const permissions = normalizeAiPermissions(input.permissions);
   return {
-    permissions: input.permissions,
+    permissions,
     schedule: input.meetings.map(aiMeeting),
-    personalItems: input.permissions.readPersonal ? input.personalItems.map(aiPersonalItem) : [],
-    gapPlans: aiGapPlans(input),
-    gapPreferences: input.permissions.readGapPreferences ? input.gapPreferences : null,
-    routingPreferences: input.permissions.readRoutingPreferences
+    // Schema-v1 compatibility field. Personal Items are retired and are no longer delegated.
+    personalItems: [] as AiSnapshot["personalItems"],
+    gapPlans: aiGapPlans({
+      meetings: input.meetings,
+      preferences: input.preferences,
+      gapPreferences: input.gapPreferences,
+      permissions,
+    }),
+    gapPreferences: permissions.readGapPreferences ? input.gapPreferences : null,
+    routingPreferences: permissions.readRoutingPreferences
       ? aiRoutingPreferences(input.preferences)
       : null,
   };
