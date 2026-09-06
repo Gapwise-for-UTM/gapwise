@@ -84,11 +84,11 @@ function AiPage() {
       <section>
         <h2>Reserved assessment windows are context, not weekly classes</h2>
         <p>
-          Gapwise marks ACORN&apos;s recurring reserved assessment placeholders as RES. The connector
-          can explain that a course reserves a possible assessment window, but those placeholders do
-          not block normal availability or become route/gap boundaries unless a real assessment is
-          separately confirmed. A normal class with a TBA location is different: its time remains a
-          real academic commitment even though the room is unresolved.
+          Gapwise marks ACORN&apos;s recurring reserved assessment placeholders as RES. The
+          connector can explain that a course reserves a possible assessment window, but those
+          placeholders do not block normal availability or become route/gap boundaries unless a real
+          assessment is separately confirmed. A normal class with a TBA location is different: its
+          time remains a real academic commitment even though the room is unresolved.
         </p>
       </section>
 
@@ -145,7 +145,9 @@ function AiPage() {
           <li>“When and where is my CSC110 practical?”</li>
           <li>“Find me a 90-minute study opportunity this week.”</li>
           <li>“What is the best use of my gap after class on Tuesday?”</li>
-          <li>“Find a UTM library or study place and tell me what Gapwise actually knows about it.”</li>
+          <li>
+            “Find a UTM library or study place and tell me what Gapwise actually knows about it.”
+          </li>
           <li>“How do I get from MN to DH at UTM?”</li>
           <li>“Is that Saturday CSC110 entry a weekly class or a reserved assessment window?”</li>
         </ul>
