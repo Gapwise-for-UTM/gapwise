@@ -148,7 +148,7 @@ function MeetingDetailsSheet({
                   <span className="block text-base font-semibold leading-tight text-foreground">
                     {reserved
                       ? "To be announced if this window is used"
-                      : location?.buildingName ?? locationLabel(meeting)}
+                      : (location?.buildingName ?? locationLabel(meeting))}
                   </span>
                   {!reserved && location && (location.floorLabel || location.roomLabel) ? (
                     <span className="mt-1 block text-sm font-medium text-muted-foreground">
