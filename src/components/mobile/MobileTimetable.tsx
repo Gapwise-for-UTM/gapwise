@@ -27,6 +27,7 @@ import type { Gap, Meeting, Term, Weekday } from "@/lib/timetable-types";
 import {
   formatCompactDuration,
   formatTime,
+  isAssessmentWindow,
   locationLabel,
   meetingLocationType,
   visibleWeekdaysForMeetings,
@@ -63,6 +64,7 @@ function MeetingDetailsSheet({
   const first = meeting ? firstOccurrenceForMeeting(meeting) : null;
   const last = meeting ? lastOccurrenceForMeeting(meeting) : null;
   const next = meeting ? nextOccurrenceForMeeting(meeting, new Date()) : null;
+  const reserved = meeting ? isAssessmentWindow(meeting) : false;
   const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric" });
   const dateRange = first
     ? last
@@ -71,9 +73,10 @@ function MeetingDetailsSheet({
     : "Dates unavailable";
   const canRoute =
     meeting !== null &&
+    !reserved &&
     meetingLocationType(meeting) === "physical" &&
     Boolean(meeting.buildingCode);
-  const location = meeting ? getCampusLocationDisplay(meeting) : null;
+  const location = meeting && !reserved ? getCampusLocationDisplay(meeting) : null;
 
   return (
     <Drawer open={meeting !== null} onOpenChange={(open) => !open && onClose()}>
@@ -85,7 +88,7 @@ function MeetingDetailsSheet({
                 <DrawerTitle className="font-display text-xl font-semibold tracking-tight">
                   {meeting.courseCode}
                 </DrawerTitle>
-                <ActivityBadge type={meeting.activityType} />
+                <ActivityBadge type={reserved ? "RES" : meeting.activityType} />
                 {meeting.sectionCode ? (
                   <span className="text-xs font-medium text-muted-foreground">
                     {meeting.sectionCode}
@@ -93,7 +96,9 @@ function MeetingDetailsSheet({
                 ) : null}
               </div>
               <DrawerDescription className="text-left text-sm leading-6">
-                {meeting.courseName || "Course name unavailable"}
+                {reserved
+                  ? `Reserved assessment window · ${meeting.courseName || meeting.courseCode}`
+                  : meeting.courseName || "Course name unavailable"}
               </DrawerDescription>
             </DrawerHeader>
 
@@ -120,15 +125,17 @@ function MeetingDetailsSheet({
                 <div className="rounded-xl border border-border bg-background/45 p-3.5">
                   <dt className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                     <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                    Next occurrence
+                    {reserved ? "Status" : "Next occurrence"}
                   </dt>
                   <dd className="mt-1.5 text-sm font-medium">
-                    {next
-                      ? `${new Intl.DateTimeFormat("en-CA", {
-                          month: "short",
-                          day: "numeric",
-                        }).format(next)} · ${formatTime(meeting.startTime)}`
-                      : "None scheduled"}
+                    {reserved
+                      ? "Only active when announced"
+                      : next
+                        ? `${new Intl.DateTimeFormat("en-CA", {
+                            month: "short",
+                            day: "numeric",
+                          }).format(next)} · ${formatTime(meeting.startTime)}`
+                        : "None scheduled"}
                   </dd>
                 </div>
               </div>
@@ -139,9 +146,11 @@ function MeetingDetailsSheet({
                 </dt>
                 <dd className="mt-2">
                   <span className="block text-base font-semibold leading-tight text-foreground">
-                    {location?.buildingName ?? locationLabel(meeting)}
+                    {reserved
+                      ? "To be announced if this window is used"
+                      : location?.buildingName ?? locationLabel(meeting)}
                   </span>
-                  {location && (location.floorLabel || location.roomLabel) ? (
+                  {!reserved && location && (location.floorLabel || location.roomLabel) ? (
                     <span className="mt-1 block text-sm font-medium text-muted-foreground">
                       {[location.floorLabel, location.roomLabel].filter(Boolean).join(" · ")}
                     </span>
@@ -150,7 +159,15 @@ function MeetingDetailsSheet({
               </div>
             </dl>
 
-            {meeting.notes ? (
+            {reserved ? (
+              <div className="mt-3 rounded-xl border border-border bg-background/45 p-3.5 text-sm">
+                <p className="font-semibold">Not a weekly class</p>
+                <p className="mt-1 leading-relaxed text-muted-foreground">
+                  ACORN reserves this recurring window for possible assessments. It only becomes a
+                  real commitment when your course announces an assessment for a specific date.
+                </p>
+              </div>
+            ) : meeting.notes ? (
               <div className="mt-3 rounded-xl border border-border bg-background/45 p-3.5 text-sm">
                 <p className="font-semibold">Notes</p>
                 <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{meeting.notes}</p>
@@ -223,6 +240,11 @@ export function MobileTimetable({
         .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime),
     [meetings, selectedDay],
   );
+  const dayClasses = useMemo(
+    () => dayMeetings.filter((meeting) => !isAssessmentWindow(meeting)),
+    [dayMeetings],
+  );
+  const reservedCount = dayMeetings.length - dayClasses.length;
   const dayGaps = useMemo(
     () => gaps.filter((gap) => gap.weekday === selectedDay),
     [gaps, selectedDay],
@@ -231,8 +253,8 @@ export function MobileTimetable({
     () => new Map(dayGaps.map((gap) => [`${gap.previous.id}:${gap.next.id}`, gap])),
     [dayGaps],
   );
-  const firstTime = dayMeetings[0]?.startTime ?? null;
-  const lastTime = dayMeetings[dayMeetings.length - 1]?.endTime ?? null;
+  const firstTime = dayClasses[0]?.startTime ?? null;
+  const lastTime = dayClasses[dayClasses.length - 1]?.endTime ?? null;
 
   return (
     <div className="rise-in space-y-4">
@@ -246,9 +268,11 @@ export function MobileTimetable({
             <p className="mt-1 text-sm text-muted-foreground">
               {dayMeetings.length === 0
                 ? `Nothing scheduled in ${term}`
-                : `${dayMeetings.length} ${dayMeetings.length === 1 ? "event" : "events"} · ${formatTime(
-                    firstTime!,
-                  )} – ${formatTime(lastTime!)}`}
+                : dayClasses.length === 0
+                  ? `0 classes · ${reservedCount} ${reservedCount === 1 ? "reserved window" : "reserved windows"}`
+                  : `${dayClasses.length} ${dayClasses.length === 1 ? "class" : "classes"}${
+                      reservedCount > 0 ? ` · ${reservedCount} reserved` : ""
+                    } · ${formatTime(firstTime!)} – ${formatTime(lastTime!)}`}
             </p>
           </div>
           <div className="flex shrink-0 flex-col gap-2">{exportAction}</div>
@@ -282,7 +306,9 @@ export function MobileTimetable({
         >
           {visibleDays.map((day) => {
             const active = day === selectedDay;
-            const count = meetings.filter((meeting) => meeting.weekday === day).length;
+            const dayEvents = meetings.filter((meeting) => meeting.weekday === day);
+            const dayReserved = dayEvents.filter(isAssessmentWindow).length;
+            const count = dayEvents.length - dayReserved;
             return (
               <button
                 key={day}
@@ -296,7 +322,12 @@ export function MobileTimetable({
                 }`}
               >
                 <span>{DAY_SHORT[day]}</span>
-                <span className="mt-0.5 text-[0.62rem] font-medium opacity-70">{count || "–"}</span>
+                <span className="mt-0.5 flex items-center gap-1 text-[0.62rem] font-medium opacity-70">
+                  <span>{count || "–"}</span>
+                  {dayReserved > 0 ? (
+                    <span className="reserved-window-note font-bold">R{dayReserved}</span>
+                  ) : null}
+                </span>
               </button>
             );
           })}
@@ -317,16 +348,18 @@ export function MobileTimetable({
         <section className="surface overflow-hidden p-4" aria-label={`${selectedDay} schedule`}>
           <ol className="space-y-0">
             {dayMeetings.map((meeting, index) => {
+              const reserved = isAssessmentWindow(meeting);
               const next = dayMeetings[index + 1] ?? null;
               const gap = next ? gapByTransition.get(`${meeting.id}:${next.id}`) : null;
-              const location = getCampusLocationDisplay(meeting);
+              const location = reserved ? null : getCampusLocationDisplay(meeting);
               return (
                 <li key={meeting.id}>
                   <div className="pb-3">
                     <button
                       type="button"
                       onClick={() => setSelectedMeeting(meeting)}
-                      data-activity={meeting.activityType}
+                      data-activity={reserved ? "RES" : meeting.activityType}
+                      data-assessment-window={reserved ? "true" : undefined}
                       style={
                         meeting.color
                           ? ({ "--meeting-accent": meeting.color } as CSSProperties)
@@ -338,7 +371,7 @@ export function MobileTimetable({
                         <span className="truncate font-display text-[0.95rem] font-bold tracking-tight">
                           {meeting.courseCode}
                         </span>
-                        <ActivityBadge type={meeting.activityType} />
+                        <ActivityBadge type={reserved ? "RES" : meeting.activityType} />
                         <ChevronRight
                           className="ml-auto h-4 w-4 shrink-0 text-muted-foreground"
                           aria-hidden="true"
@@ -348,22 +381,39 @@ export function MobileTimetable({
                         <Clock3 className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
                         {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
                       </p>
-                      <div className="mt-1.5 flex items-start gap-1.5 text-xs">
-                        <MapPin
-                          className="mt-px h-3.5 w-3.5 shrink-0 text-accent"
-                          aria-hidden="true"
-                        />
-                        <p className="min-w-0">
-                          <span className="block truncate font-semibold text-foreground">
-                            {location?.compactLabel ?? locationLabel(meeting)}
-                          </span>
-                          {location?.floorLabel ? (
-                            <span className="mt-0.5 block font-medium text-muted-foreground">
-                              {location.floorLabel}
+                      {reserved ? (
+                        <div className="mt-1.5 flex items-start gap-1.5 text-xs">
+                          <Clock3
+                            className="reserved-window-note mt-px h-3.5 w-3.5 shrink-0"
+                            aria-hidden="true"
+                          />
+                          <p className="min-w-0">
+                            <span className="block font-semibold text-foreground">
+                              Reserved assessment window
                             </span>
-                          ) : null}
-                        </p>
-                      </div>
+                            <span className="reserved-window-note mt-0.5 block font-medium">
+                              Only active when announced
+                            </span>
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="mt-1.5 flex items-start gap-1.5 text-xs">
+                          <MapPin
+                            className="mt-px h-3.5 w-3.5 shrink-0 text-accent"
+                            aria-hidden="true"
+                          />
+                          <p className="min-w-0">
+                            <span className="block truncate font-semibold text-foreground">
+                              {location?.compactLabel ?? locationLabel(meeting)}
+                            </span>
+                            {location?.floorLabel ? (
+                              <span className="mt-0.5 block font-medium text-muted-foreground">
+                                {location.floorLabel}
+                              </span>
+                            ) : null}
+                          </p>
+                        </div>
+                      )}
                       {meeting.courseName ? (
                         <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
                           {meeting.courseName}
