@@ -167,7 +167,9 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
             <button
               type="button"
               disabled={controller.busy}
-              onClick={() => void controller.savePermissions(setLegacyPersonalPermissionsFalse(draft))}
+              onClick={() =>
+                void controller.savePermissions(setLegacyPersonalPermissionsFalse(draft))
+              }
               className="button-secondary min-h-10 px-3 text-sm font-semibold disabled:opacity-50"
             >
               {controller.busy ? "Saving…" : "Save AI permissions"}
