@@ -22,19 +22,27 @@ export function UtmMonumentViewer({
     >
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/55 px-3 py-2.5">
         <span className="text-sm font-medium text-foreground">Building entrances</span>
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-accent">Mapped</span>
+        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-accent">
+          Mapped
+        </span>
       </div>
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/55 px-3 py-2.5">
         <span className="text-sm font-medium text-foreground">Room-to-room context</span>
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-accent">Native</span>
+        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-accent">
+          Native
+        </span>
       </div>
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/55 px-3 py-2.5">
         <span className="text-sm font-medium text-foreground">Step-free routing</span>
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-accent">Aware</span>
+        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-accent">
+          Aware
+        </span>
       </div>
       <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-background/55 px-3 py-2.5">
         <span className="text-sm font-medium text-foreground">3D runtime</span>
-        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-muted-foreground">None</span>
+        <span className="font-mono text-[0.62rem] uppercase tracking-[0.12em] text-muted-foreground">
+          None
+        </span>
       </div>
     </div>
   );
