@@ -182,10 +182,9 @@ export async function approveAiOAuthClient(
 }
 
 export async function revokeAiOAuthClientApproval(clientId: string): Promise<boolean> {
-  const body = await aiRequest(
-    `/api/delegation/clients?clientId=${encodeURIComponent(clientId)}`,
-    { method: "DELETE" },
-  );
+  const body = await aiRequest(`/api/delegation/clients?clientId=${encodeURIComponent(clientId)}`, {
+    method: "DELETE",
+  });
   if (
     !isRecord(body) ||
     body.revoked !== true ||
