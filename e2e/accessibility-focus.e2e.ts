@@ -33,6 +33,12 @@ async function openStableDemo(page: Page) {
 async function openTimetableExport(page: Page) {
   await page.getByRole("button", { name: "Account settings" }).click();
   await page.getByRole("button", { name: "Export timetable", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Export timetable image" });
+  await expect(dialog).toBeVisible();
+  // Axe samples computed contrast. Wait until the Radix opening fade reaches its
+  // final opacity so the scan cannot observe transient, intentionally blended
+  // animation frames as if they were the steady-state UI.
+  await expect(dialog).toHaveCSS("opacity", "1");
 }
 
 test("timetable export dialog is keyboard operable and restores trigger focus", async ({
