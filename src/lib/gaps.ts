@@ -1,4 +1,10 @@
-import { isAssessmentWindow, type Gap, type Meeting, type Term, WEEKDAYS } from "./timetable-types.js";
+import {
+  isAssessmentWindow,
+  type Gap,
+  type Meeting,
+  type Term,
+  WEEKDAYS,
+} from "./timetable-types.js";
 import type { RouteResult } from "../features/routing/types.js";
 import { gapBetween, scheduleForWeekday } from "./schedule-context.js";
 
