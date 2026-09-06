@@ -58,10 +58,7 @@ describe("print-ready timetable export", () => {
       border: PRINT_EXPORT_PALETTE.strongBorder,
     });
 
-    const svg = renderTimetablePrintSvg(
-      [reserved],
-      createTimetableExportPlan([reserved], "Fall"),
-    );
+    const svg = renderTimetablePrintSvg([reserved], createTimetableExportPlan([reserved], "Fall"));
     expect(svg).toContain('id="print-reserved-hatch"');
     expect(svg).toContain('fill="url(#print-reserved-hatch)"');
     expect(svg).toContain('stroke-dasharray="5 4"');
