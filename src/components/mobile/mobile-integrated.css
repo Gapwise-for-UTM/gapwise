@@ -247,6 +247,38 @@
   color: var(--meeting-accent);
 }
 
+.mobile-integrated-app [role="dialog"] .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-accent);
+
+  border-color: color-mix(
+    in oklab,
+    var(--route-component-accent) 72%,
+    var(--color-border)
+  ) !important;
+  background: var(--route-component-accent) !important;
+  color: var(--color-background) !important;
+  box-shadow: 0 12px 30px -18px
+    color-mix(in oklab, var(--route-component-accent) 72%, transparent) !important;
+}
+
+.mobile-integrated-app
+  [role="dialog"]:has(.activity-badge[data-activity="LEC"])
+  .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-lec);
+}
+
+.mobile-integrated-app
+  [role="dialog"]:has(.activity-badge[data-activity="TUT"])
+  .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-tut);
+}
+
+.mobile-integrated-app
+  [role="dialog"]:has(.activity-badge[data-activity="PRA"])
+  .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-pra);
+}
+
 .mobile-integrated-app .mobile-gap-card,
 .mobile-integrated-app .gap-card {
   border: 0 !important;
@@ -307,6 +339,66 @@
   box-shadow: none !important;
 }
 
+.mobile-integrated-app .campus-explorer-search {
+  width: 2.75rem !important;
+  transition: width 180ms ease;
+}
+
+.mobile-integrated-app .campus-explorer-search:focus-within,
+.mobile-integrated-app
+  .campus-explorer-search:has(#campus-building-search:not(:placeholder-shown)) {
+  width: min(22rem, calc(100% - 5.75rem)) !important;
+}
+
+.mobile-integrated-app .campus-explorer-search > .relative > svg {
+  left: 0.875rem !important;
+}
+
+.mobile-integrated-app #campus-building-search {
+  cursor: pointer;
+  border-radius: 999px !important;
+  padding-right: 0 !important;
+  transition:
+    border-radius 180ms ease,
+    padding-right 180ms ease;
+}
+
+.mobile-integrated-app
+  .campus-explorer-search:not(:focus-within):not(
+    :has(#campus-building-search:not(:placeholder-shown))
+  )
+  #campus-building-search::placeholder {
+  color: transparent;
+}
+
+.mobile-integrated-app .campus-explorer-search:focus-within #campus-building-search,
+.mobile-integrated-app
+  .campus-explorer-search:has(#campus-building-search:not(:placeholder-shown))
+  #campus-building-search {
+  cursor: text;
+  border-radius: 0.75rem !important;
+  padding-right: 0.75rem !important;
+}
+
+.mobile-integrated-app .campus-map-actions > button[aria-pressed="true"] {
+  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--color-border)) !important;
+  background: color-mix(in oklab, var(--color-accent) 18%, var(--color-popover)) !important;
+  color: var(--color-accent) !important;
+}
+
+.mobile-integrated-app .campus-map-actions > p[role="status"] {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: -1px !important;
+}
+
 .mobile-integrated-app #mobile-today-title ~ .mt-4 {
   border: 0 !important;
   border-top: 1px solid var(--mobile-divider) !important;
@@ -317,7 +409,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-integrated-app .mobile-nav-item,
-  .mobile-integrated-app .meeting-card {
+  .mobile-integrated-app .meeting-card,
+  .mobile-integrated-app .campus-explorer-search,
+  .mobile-integrated-app #campus-building-search {
     transition: none;
   }
 }
