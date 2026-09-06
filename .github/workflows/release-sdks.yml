@@ -14,6 +14,7 @@ on:
           - github
           - jsr
           - pypi
+          - python-github
           - javascript
           - both
           - all
@@ -24,6 +25,7 @@ on:
       - ".github/workflows/release-sdks.yml"
       - "sdk/javascript/package.json"
       - "sdk/javascript/jsr.json"
+      - "sdk/python/pyproject.toml"
     tags:
       - "python-v*"
 
@@ -260,3 +262,85 @@ jobs:
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: sdk/python/dist
+
+  publish-python-github-release:
+    name: Publish Python SDK GitHub release assets
+    if: ${{ (github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/python-v') || github.ref == 'refs/heads/main')) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.target == 'python-github' || inputs.target == 'all')) }}
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Resolve the tagged Python release
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" == refs/tags/python-v* ]]; then
+            TAG="$GITHUB_REF_NAME"
+            VERSION="${TAG#python-v}"
+          else
+            VERSION="$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          print(tomllib.loads(Path('sdk/python/pyproject.toml').read_text())['project']['version'])
+          PY
+          )"
+            TAG="python-v$VERSION"
+            if ! git show-ref --verify --quiet "refs/tags/$TAG"; then
+              echo "No existing $TAG tag; there is no tagged Python release to mirror on GitHub yet."
+              echo "publish=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          TAG_VERSION="$(git show "$TAG:sdk/python/pyproject.toml" | python -c 'import sys, tomllib; print(tomllib.loads(sys.stdin.read())["project"]["version"])')"
+          if [ "$TAG_VERSION" != "$VERSION" ]; then
+            echo "$TAG points at Python package version $TAG_VERSION, expected $VERSION" >&2
+            exit 1
+          fi
+
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          git checkout --detach "$TAG"
+      - name: Build tagged Python distributions
+        if: ${{ steps.release.outputs.publish == 'true' }}
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade build twine
+          python -m build sdk/python
+          python -m twine check sdk/python/dist/*
+      - name: Publish wheel and source distribution on GitHub
+        if: ${{ steps.release.outputs.publish == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_VERSION: ${{ steps.release.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          WHEEL="gapwise-${RELEASE_VERSION}-py3-none-any.whl"
+          SDIST="gapwise-${RELEASE_VERSION}.tar.gz"
+          if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            ASSETS="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+            if grep -Fxq "$WHEEL" <<<"$ASSETS" && grep -Fxq "$SDIST" <<<"$ASSETS"; then
+              echo "$RELEASE_TAG already has both Python distribution assets; nothing to do."
+              exit 0
+            fi
+            gh release upload "$RELEASE_TAG" sdk/python/dist/* --clobber --repo "$GITHUB_REPOSITORY"
+            exit 0
+          fi
+
+          gh release create "$RELEASE_TAG" sdk/python/dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --verify-tag \
+            --title "Gapwise Python SDK ${RELEASE_VERSION}" \
+            --notes "Official tagged Python SDK distribution for Gapwise. The canonical Python package is gapwise==${RELEASE_VERSION} on PyPI; this GitHub release mirrors the verified wheel and source distribution from the same python-v${RELEASE_VERSION} tag."
