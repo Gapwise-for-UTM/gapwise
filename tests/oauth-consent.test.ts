@@ -115,8 +115,8 @@ describe("Gapwise AI OAuth consent finalization", () => {
         clientName: "Client",
         approveClient: async () => ({ created: true }),
         approveAuthorization: async () => ({ data: {}, error: null }),
-        revokeClient: async ({ toString }) => {
-          events.push(`client-revoked:${toString()}`);
+        revokeClient: async (clientId) => {
+          events.push(`client-revoked:${clientId}`);
         },
         revokeGrant: async ({ clientId }) => {
           events.push(`grant-revoked:${clientId}`);
