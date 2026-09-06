@@ -12,6 +12,15 @@
   --meeting-accent: var(--reserved-assessment);
 }
 
+.meeting-card[data-activity]:not([data-planned-work="true"]) .card-pin {
+  color: var(--meeting-accent);
+}
+
+.meeting-card[data-activity]:not([data-planned-work="true"]):hover .card-pin,
+.meeting-card[data-activity]:not([data-planned-work="true"]):focus-visible .card-pin {
+  color: var(--meeting-accent);
+}
+
 .meeting-card[data-assessment-window="true"] {
   border-style: dashed;
   border-left-style: solid;
