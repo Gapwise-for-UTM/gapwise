@@ -26,6 +26,25 @@
   color: var(--meeting-accent);
 }
 
+[role="dialog"] .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-accent);
+  border-color: var(--route-component-accent) !important;
+  background: var(--route-component-accent) !important;
+  color: var(--color-primary-foreground) !important;
+}
+
+[role="dialog"]:has(.activity-badge[data-activity="LEC"]) .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-lec);
+}
+
+[role="dialog"]:has(.activity-badge[data-activity="TUT"]) .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-tut);
+}
+
+[role="dialog"]:has(.activity-badge[data-activity="PRA"]) .button-primary:has(.lucide-navigation) {
+  --route-component-accent: var(--color-pra);
+}
+
 .meeting-card[data-assessment-window="true"] {
   border-style: dashed;
   border-left-style: solid;
