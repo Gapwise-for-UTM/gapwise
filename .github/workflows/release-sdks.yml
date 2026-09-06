@@ -337,10 +337,10 @@ jobs:
           if gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             ASSETS="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
             if grep -Fxq "$WHEEL" <<<"$ASSETS" && grep -Fxq "$SDIST" <<<"$ASSETS" && grep -Fxq "$CHECKSUMS" <<<"$ASSETS"; then
-              echo "$RELEASE_TAG already has the complete Python distribution mirror; nothing to do."
-              exit 0
+              echo "$RELEASE_TAG already has the complete Python distribution mirror; skipping asset upload."
+            else
+              gh release upload "$RELEASE_TAG" sdk/python/dist/* --clobber --repo "$GITHUB_REPOSITORY"
             fi
-            gh release upload "$RELEASE_TAG" sdk/python/dist/* --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$RELEASE_TAG" sdk/python/dist/* \
               --repo "$GITHUB_REPOSITORY" \
@@ -349,5 +349,10 @@ jobs:
               --notes "Official tagged Python SDK distribution for Gapwise. The canonical Python package is gapwise==${RELEASE_VERSION} on PyPI; this GitHub release mirrors the verified wheel and source distribution from the same python-v${RELEASE_VERSION} tag."
           fi
 
-          RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq '.id')"
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -f make_latest=false >/dev/null
+          PYTHON_RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq '.id')"
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$PYTHON_RELEASE_ID" -f make_latest=false >/dev/null
+
+          APP_RELEASE_ID="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --jq '[.[] | select(.draft == false and .prerelease == false and (.tag_name | startswith("python-v") | not))][0].id // empty')"
+          if [ -n "$APP_RELEASE_ID" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$APP_RELEASE_ID" -f make_latest=true >/dev/null
+          fi
