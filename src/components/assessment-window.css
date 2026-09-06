@@ -1,0 +1,54 @@
+:root {
+  --reserved-assessment: oklch(0.6 0.13 72);
+}
+
+.dark {
+  --reserved-assessment: oklch(0.79 0.14 78);
+}
+
+.activity-badge[data-activity="RES"],
+.activity-dot[data-activity="RES"],
+.meeting-card[data-activity="RES"] {
+  --meeting-accent: var(--reserved-assessment);
+}
+
+.meeting-card[data-assessment-window="true"] {
+  border-style: dashed;
+  border-left-style: solid;
+  border-left-width: 3px;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--meeting-accent) 7%, transparent) 0 7px,
+      transparent 7px 14px
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--meeting-accent) 9%, var(--color-card)) 0%,
+      color-mix(in oklab, var(--meeting-accent) 3%, var(--color-card)) 78%
+    );
+}
+
+.meeting-card[data-assessment-window="true"]:hover {
+  background:
+    repeating-linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--meeting-accent) 10%, transparent) 0 7px,
+      transparent 7px 14px
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in oklab, var(--meeting-accent) 14%, var(--color-card)) 0%,
+      color-mix(in oklab, var(--meeting-accent) 5%, var(--color-card)) 78%
+    );
+}
+
+.reserved-count-pill {
+  border: 1px solid color-mix(in oklab, var(--reserved-assessment) 34%, var(--color-border));
+  background: color-mix(in oklab, var(--reserved-assessment) 10%, var(--color-card));
+  color: var(--reserved-assessment);
+}
+
+.reserved-window-note {
+  color: color-mix(in oklab, var(--reserved-assessment) 74%, var(--color-muted-foreground));
+}
