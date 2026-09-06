@@ -8,7 +8,7 @@ export const Route = createFileRoute("/ai")({
       {
         name: "description",
         content:
-          "Connect explicitly delegated Gapwise timetable and UTM campus intelligence to compatible AI assistants through Gapwise's secure remote MCP service.",
+          "Connect explicitly delegated Gapwise timetable context and source-backed UTM campus intelligence to compatible AI assistants through Gapwise's secure remote MCP service.",
       },
     ],
   }),
@@ -23,9 +23,9 @@ function AiPage() {
       <section>
         <p>
           Gapwise AI is the permissioned integration layer that lets compatible AI assistants ask
-          Gapwise for deterministic timetable and UTM campus information. Gapwise remains the source
-          of schedule, route, and gap facts; the connected assistant supplies natural-language
-          reasoning.
+          Gapwise for source-backed timetable context and deterministic UTM campus intelligence.
+          Gapwise remains the source of schedule, route, gap, building, and campus-place facts; the
+          connected assistant supplies natural-language reasoning.
         </p>
         <p>
           The production remote MCP endpoint is <code>https://ai.gapwise.ca/api/mcp</code>. You
@@ -37,9 +37,10 @@ function AiPage() {
         <h2>What an assistant can help with</h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <div className={cardClass}>
-            <strong className="block text-foreground">Understand your day or week</strong>
+            <strong className="block text-foreground">Search and understand your schedule</strong>
             <span className="mt-1 block">
-              Read only the timetable and personal context you explicitly delegated.
+              Search delegated courses, sections, rooms, and date ranges instead of guessing from a
+              generic week.
             </span>
           </div>
           <div className={cardClass}>
@@ -50,18 +51,45 @@ function AiPage() {
             </span>
           </div>
           <div className={cardClass}>
-            <strong className="block text-foreground">Navigate UTM</strong>
+            <strong className="block text-foreground">Discover useful UTM places</strong>
             <span className="mt-1 block">
-              Reason over Gapwise building, routing, accessibility, and gap-planning facts.
+              Search source-backed study, library, dining, recreation, service, and amenity records
+              with provenance and official information links.
             </span>
           </div>
           <div className={cardClass}>
-            <strong className="block text-foreground">Manage personal planning</strong>
+            <strong className="block text-foreground">Navigate UTM</strong>
             <span className="mt-1 block">
-              When you allow writes, queue bounded personal-item and selected preference changes.
+              Resolve buildings and reason over Gapwise routing, accessibility, and transition facts
+              without upgrading approximate routes into certainty.
+            </span>
+          </div>
+          <div className={cardClass}>
+            <strong className="block text-foreground">Understand assessment placeholders</strong>
+            <span className="mt-1 block">
+              Distinguish ACORN reserved assessment windows from ordinary weekly classes and from
+              real classes whose room is simply TBA.
+            </span>
+          </div>
+          <div className={cardClass}>
+            <strong className="block text-foreground">Tune gap planning</strong>
+            <span className="mt-1 block">
+              When you explicitly allow it, queue bounded updates to supported gap-planning
+              preferences using revision-checked writes.
             </span>
           </div>
         </div>
+      </section>
+
+      <section>
+        <h2>Reserved assessment windows are context, not weekly classes</h2>
+        <p>
+          Gapwise marks ACORN&apos;s recurring reserved assessment placeholders as RES. The
+          connector can explain that a course reserves a possible assessment window, but those
+          placeholders do not block normal availability or become route/gap boundaries unless a real
+          assessment is separately confirmed. A normal class with a TBA location is different: its
+          time remains a real academic commitment even though the room is unresolved.
+        </p>
       </section>
 
       <section>
@@ -80,9 +108,19 @@ function AiPage() {
         <h2>Academic meetings are always read-only</h2>
         <p>
           AI integrations cannot create, edit, or delete imported/source-backed academic meetings.
-          Supported writes are limited to explicitly delegated personal timetable items and selected
-          planning preferences, and those writes are permission-checked, typed, revision-bound, and
-          queued for Gapwise to apply.
+          Personal Items have been retired and are no longer delegated or editable through the MCP
+          connector. The current private write surface is limited to explicitly permitted,
+          revision-bound updates to supported gap-planning preferences.
+        </p>
+      </section>
+
+      <section>
+        <h2>Public campus facts keep their uncertainty</h2>
+        <p>
+          Building, routing, and campus-place tools return Gapwise&apos;s source and verification
+          metadata. If operating hours are unknown, the connector reports them as unknown rather
+          than calling the place open or closed. If a route is approximate or unavailable, the
+          assistant is instructed to preserve that status instead of silently upgrading it.
         </p>
       </section>
 
@@ -104,10 +142,14 @@ function AiPage() {
         <h2>Example questions</h2>
         <ul>
           <li>“What does my day look like tomorrow?”</li>
+          <li>“When and where is my CSC110 practical?”</li>
           <li>“Find me a 90-minute study opportunity this week.”</li>
           <li>“What is the best use of my gap after class on Tuesday?”</li>
-          <li>“Can I fit a gym session from 3 to 4 PM Wednesday?”</li>
+          <li>
+            “Find a UTM library or study place and tell me what Gapwise actually knows about it.”
+          </li>
           <li>“How do I get from MN to DH at UTM?”</li>
+          <li>“Is that Saturday CSC110 entry a weekly class or a reserved assessment window?”</li>
         </ul>
       </section>
 
@@ -115,9 +157,9 @@ function AiPage() {
         <h2>Revoke access at any time</h2>
         <p>
           Disable/revoke the AI connection from Gapwise to remove delegated connector state and
-          queued actions. Subsequent private connector reads and writes fail until you explicitly
-          authorize again. The external AI provider&apos;s own account, conversation, and retention
-          settings remain governed by that provider.
+          pending connector authority. Subsequent private connector reads and writes fail until you
+          explicitly authorize again. The external AI provider&apos;s own account, conversation, and
+          retention settings remain governed by that provider.
         </p>
       </section>
 
