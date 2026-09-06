@@ -2,6 +2,7 @@ import geistFontUrl from "@fontsource-variable/geist/files/geist-latin-wght-norm
 import { buildTimetableModel } from "./timetable-layout";
 import {
   formatTime,
+  isAssessmentWindow,
   locationLabel,
   TERMS,
   type ActivityType,
@@ -31,6 +32,7 @@ export interface TimetableExportPalette {
   lec: string;
   tut: string;
   pra: string;
+  reserved: string;
   other: string;
   shadow: string;
   highlight: string;
@@ -53,6 +55,7 @@ export const EXPORT_PALETTES: Record<ExportTheme, TimetableExportPalette> = {
     lec: "#3769b8",
     tut: "#237a92",
     pra: "#8554a8",
+    reserved: "#a66d1d",
     other: "#687386",
     shadow: "#1720331a",
     highlight: "#ffffff",
@@ -73,6 +76,7 @@ export const EXPORT_PALETTES: Record<ExportTheme, TimetableExportPalette> = {
     lec: "#78a6e8",
     tut: "#72bdcf",
     pra: "#b18bd0",
+    reserved: "#dfad52",
     other: "#a6afbd",
     shadow: "#00000066",
     highlight: "#ffffff12",
@@ -285,6 +289,7 @@ export function meetingExportStyle(
 ) {
   const study = meeting.sectionCode === "STUDY";
   const personal = meeting.sectionCode === "PERSONAL";
+  const reserved = isAssessmentWindow(meeting);
   const activity: Record<ActivityType, string> = {
     LEC: palette.lec,
     TUT: palette.tut,
@@ -292,18 +297,33 @@ export function meetingExportStyle(
     OTHER: palette.other,
   };
   const custom = meeting.color && /^#[0-9a-f]{6}$/i.test(meeting.color) ? meeting.color : null;
-  const accent = study
-    ? palette.accent
-    : custom
-      ? exportSafeCustomAccent(custom, theme)
-      : activity[meeting.activityType];
+  const accent = reserved
+    ? palette.reserved
+    : study
+      ? palette.accent
+      : custom
+        ? exportSafeCustomAccent(custom, theme)
+        : activity[meeting.activityType];
   return {
     accent,
-    base: mixHex(palette.eventSurface, accent, theme === "dark" ? 0.12 : 0.1),
-    border: mixHex(palette.border, accent, theme === "dark" ? 0.42 : 0.5),
-    badge: mixHex(palette.eventSurface, accent, theme === "dark" ? 0.2 : 0.16),
-    dashed: study,
-    label: study ? "STUDY" : personal ? "PERSONAL" : meeting.activityType,
+    base: mixHex(
+      palette.eventSurface,
+      accent,
+      reserved ? (theme === "dark" ? 0.16 : 0.13) : theme === "dark" ? 0.12 : 0.1,
+    ),
+    border: mixHex(
+      palette.border,
+      accent,
+      reserved ? (theme === "dark" ? 0.6 : 0.64) : theme === "dark" ? 0.42 : 0.5,
+    ),
+    badge: mixHex(
+      palette.eventSurface,
+      accent,
+      reserved ? (theme === "dark" ? 0.25 : 0.21) : theme === "dark" ? 0.2 : 0.16,
+    ),
+    dashed: study || reserved,
+    reserved,
+    label: reserved ? "RES" : study ? "STUDY" : personal ? "PERSONAL" : meeting.activityType,
   };
 }
 
@@ -376,8 +396,10 @@ function renderTerm(
         8,
         Math.min(narrow ? 10.5 : 12.5, courseWidth / Math.max(1, meeting.courseCode.length * 0.6)),
       );
+      const detailLine = style.reserved ? "Reserved assessment window" : locationLabel(meeting);
+      const noteLine = style.reserved ? "Only active when announced" : meeting.courseName;
       svg += `<clipPath id="${clipId}"><rect x="${mx + 6}" y="${my + 3}" width="${mw - 12}" height="${mh - 6}" rx="7"/></clipPath>`;
-      svg += `<g filter="url(#event-shadow)"><rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="10" fill="${style.base}" stroke="${style.border}" ${style.dashed ? 'stroke-dasharray="5 4"' : ""}/><path d="M${mx + 10} ${my + 1}H${mx + mw - 10}" stroke="${palette.highlight}" stroke-linecap="round"/></g>`;
+      svg += `<g filter="url(#event-shadow)"><rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="10" fill="${style.base}" stroke="${style.border}" ${style.dashed ? 'stroke-dasharray="5 4"' : ""}/>${style.reserved ? `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="10" fill="url(#reserved-hatch)"/>` : ""}<path d="M${mx + 10} ${my + 1}H${mx + mw - 10}" stroke="${palette.highlight}" stroke-linecap="round"/></g>`;
       svg += `<g clip-path="url(#${clipId})">`;
       svg += `<text x="${textX}" y="${my + 20}" font-size="${courseFontSize}" font-weight="790" letter-spacing="-.15" fill="${palette.foreground}">${escapeExportText(meeting.courseCode)}</text>`;
       if (showBadge) {
@@ -387,9 +409,9 @@ function renderTerm(
       if (mh >= 48)
         svg += `<text x="${textX}" y="${my + 38}" font-size="${narrow ? 8.5 : 10}" font-weight="610" fill="${palette.secondaryForeground}">${timeShort(meeting.startTime)}–${timeShort(meeting.endTime)}</text>`;
       if (!narrow && mh >= 66)
-        svg += `<text x="${textX}" y="${my + 55}" font-size="10" font-weight="680" fill="${palette.secondaryForeground}">${escapeExportText(locationLabel(meeting))}</text>`;
+        svg += `<text x="${textX}" y="${my + 55}" font-size="10" font-weight="680" fill="${style.reserved ? style.accent : palette.secondaryForeground}">${escapeExportText(detailLine)}</text>`;
       if (!narrow && mh >= 87 && mw >= 145)
-        svg += `<text x="${textX}" y="${my + 72}" font-size="9.5" font-weight="520" fill="${palette.mutedForeground}">${escapeExportText(meeting.courseName)}</text>`;
+        svg += `<text x="${textX}" y="${my + 72}" font-size="9.5" font-weight="520" fill="${style.reserved ? style.accent : palette.mutedForeground}">${escapeExportText(noteLine)}</text>`;
       svg += `</g>`;
     });
   });
@@ -407,7 +429,7 @@ export function renderTimetableExportSvg(
   const fontFace = fontDataUrl
     ? `@font-face{font-family:ExportGeist;src:url('${fontDataUrl}') format('woff2');font-weight:100 900}`
     : "";
-  let body = `<defs><radialGradient id="page-glow" cx="82%" cy="0%" r="68%"><stop offset="0" stop-color="${palette.pageGlow}"/><stop offset="1" stop-color="${palette.pageBackground}"/></radialGradient><filter id="panel-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="${palette.shadow}"/></filter><filter id="event-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="${palette.shadow}"/></filter></defs>`;
+  let body = `<defs><radialGradient id="page-glow" cx="82%" cy="0%" r="68%"><stop offset="0" stop-color="${palette.pageGlow}"/><stop offset="1" stop-color="${palette.pageBackground}"/></radialGradient><pattern id="reserved-hatch" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="14" fill="${palette.reserved}" opacity="${theme === "dark" ? "0.10" : "0.08"}"/></pattern><filter id="panel-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="${palette.shadow}"/></filter><filter id="event-shadow" x="-10%" y="-10%" width="120%" height="125%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="${palette.shadow}"/></filter></defs>`;
   body += `<rect width="100%" height="100%" fill="url(#page-glow)"/>`;
   body += `<text x="${PAGE_PADDING}" y="${PAGE_PADDING + 34}" font-size="30" font-weight="780" letter-spacing="-.8" fill="${palette.foreground}">${escapeExportText(title)}</text>`;
   plan.panels.forEach((panel) => {
