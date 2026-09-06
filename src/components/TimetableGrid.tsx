@@ -26,6 +26,7 @@ import type { ActivityType, Gap, Meeting } from "@/lib/timetable-types";
 import {
   formatCompactDuration,
   formatTime,
+  isAssessmentWindow,
   locationLabel,
   meetingLocationType,
   termForMonth,
@@ -37,18 +38,26 @@ import {
   buildTimetableScale,
   isCompactMeetingCard,
 } from "@/lib/timetable-layout";
+import "./assessment-window.css";
 
 const FULL_HOUR_HEIGHT = 66;
 const COMPACT_HOUR_HEIGHT = 26;
 
-const ACTIVITY_LABELS: Record<ActivityType, string> = {
+type TimetableActivityLabel = ActivityType | "RES";
+
+const ACTIVITY_LABELS: Record<TimetableActivityLabel, string> = {
   LEC: "Lecture",
   TUT: "Tutorial",
   PRA: "Practical",
+  RES: "Reserved",
   OTHER: "Other",
 };
 
-export function ActivityBadge({ type }: { type: ActivityType }) {
+function displayActivityType(meeting: Meeting): TimetableActivityLabel {
+  return isAssessmentWindow(meeting) ? "RES" : meeting.activityType;
+}
+
+export function ActivityBadge({ type }: { type: TimetableActivityLabel }) {
   return (
     <span
       data-activity={type}
@@ -63,7 +72,7 @@ function CalendarLegend({
   activityTypes,
   gapCount,
 }: {
-  activityTypes: ActivityType[];
+  activityTypes: TimetableActivityLabel[];
   gapCount: number;
 }) {
   return (
@@ -135,15 +144,20 @@ function MeetingCard({
   onSelect: (meeting: Meeting) => void;
 }) {
   const isStudy = meeting.sectionCode === "STUDY";
+  const reserved = isAssessmentWindow(meeting);
+  const activityType = displayActivityType(meeting);
+  const accessibleDescription = reserved ? "reserved assessment window" : meeting.courseName;
+
   return (
     <div
       role="button"
       onClick={() => onSelect(meeting)}
       tabIndex={0}
       aria-haspopup="dialog"
-      aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
-      title={`${meeting.courseCode} · ${meeting.courseName}`}
-      data-activity={meeting.activityType}
+      aria-label={`View details for ${meeting.courseCode}, ${accessibleDescription}`}
+      title={`${meeting.courseCode} · ${reserved ? "Reserved assessment window" : meeting.courseName}`}
+      data-activity={activityType}
+      data-assessment-window={reserved ? "true" : undefined}
       data-planned-work={isStudy ? "true" : undefined}
       style={meeting.color ? ({ "--meeting-accent": meeting.color } as CSSProperties) : undefined}
       className={`meeting-card group relative flex h-full w-full touch-manipulation flex-col items-stretch justify-start overflow-hidden rounded-lg px-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-0 active:scale-[0.99] ${
@@ -153,6 +167,8 @@ function MeetingCard({
       <div className="flex min-w-0 items-center gap-1.5">
         {isStudy ? (
           <BookOpen className="card-pin h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+        ) : reserved ? (
+          <Clock3 className="card-pin h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         ) : (
           <MapPin
             className="card-pin h-3.5 w-3.5 shrink-0 text-muted-foreground"
@@ -167,7 +183,7 @@ function MeetingCard({
             STUDY
           </span>
         ) : (
-          <ActivityBadge type={meeting.activityType} />
+          <ActivityBadge type={activityType} />
         )}
       </div>
       <p
@@ -178,11 +194,15 @@ function MeetingCard({
         {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
       </p>
       <p className="truncate text-[0.7rem] font-semibold text-foreground">
-        {isStudy ? meeting.notes : locationLabel(meeting)}
+        {isStudy ? meeting.notes : reserved ? "Reserved assessment window" : locationLabel(meeting)}
       </p>
       {!compact ? (
-        <p className="mt-0.5 line-clamp-2 text-[0.7rem] leading-[1.25] text-muted-foreground">
-          {meeting.courseName}
+        <p
+          className={`mt-0.5 line-clamp-2 text-[0.7rem] leading-[1.25] ${
+            reserved ? "reserved-window-note" : "text-muted-foreground"
+          }`}
+        >
+          {reserved ? "Only active when announced" : meeting.courseName}
         </p>
       ) : null}
     </div>
@@ -201,6 +221,7 @@ function MeetingDetailsDialog({
   const first = meeting ? firstOccurrenceForMeeting(meeting) : null;
   const last = meeting ? lastOccurrenceForMeeting(meeting) : null;
   const next = meeting ? nextOccurrenceForMeeting(meeting, new Date()) : null;
+  const reserved = meeting ? isAssessmentWindow(meeting) : false;
   const dateFormat = new Intl.DateTimeFormat("en-CA", { month: "short", day: "numeric" });
   const dateRange = first
     ? last
@@ -209,10 +230,11 @@ function MeetingDetailsDialog({
     : "Dates unavailable";
   const canRoute =
     meeting !== null &&
+    !reserved &&
     meetingLocationType(meeting) === "physical" &&
     Boolean(meeting.buildingCode) &&
     Boolean(onRoute);
-  const location = meeting ? getCampusLocationDisplay(meeting) : null;
+  const location = meeting && !reserved ? getCampusLocationDisplay(meeting) : null;
 
   return (
     <Dialog open={meeting !== null} onOpenChange={(open) => !open && onClose()}>
@@ -221,7 +243,7 @@ function MeetingDetailsDialog({
           <DialogHeader className="pr-8">
             <div className="flex flex-wrap items-center gap-2">
               <DialogTitle>{meeting.courseCode}</DialogTitle>
-              <ActivityBadge type={meeting.activityType} />
+              <ActivityBadge type={displayActivityType(meeting)} />
               {meeting.sectionCode ? (
                 <span className="text-xs font-medium text-muted-foreground">
                   {meeting.sectionCode}
@@ -229,7 +251,9 @@ function MeetingDetailsDialog({
               ) : null}
             </div>
             <DialogDescription className="text-left text-sm leading-relaxed">
-              {meeting.courseName || "Course name unavailable"}
+              {reserved
+                ? `Reserved assessment window · ${meeting.courseName || meeting.courseCode}`
+                : meeting.courseName || "Course name unavailable"}
             </DialogDescription>
           </DialogHeader>
 
@@ -259,9 +283,11 @@ function MeetingDetailsDialog({
               </dt>
               <dd className="mt-2">
                 <span className="block text-base font-semibold leading-tight text-foreground">
-                  {location?.buildingName ?? locationLabel(meeting)}
+                  {reserved
+                    ? "To be announced if this window is used"
+                    : location?.buildingName ?? locationLabel(meeting)}
                 </span>
-                {location && (location.floorLabel || location.roomLabel) ? (
+                {!reserved && location && (location.floorLabel || location.roomLabel) ? (
                   <span className="mt-1 block text-sm font-medium text-muted-foreground">
                     {[location.floorLabel, location.roomLabel].filter(Boolean).join(" · ")}
                   </span>
@@ -274,24 +300,34 @@ function MeetingDetailsDialog({
                 Component
               </dt>
               <dd className="mt-1 text-sm font-medium text-foreground">
-                {meeting.activityType}
+                {reserved ? "RES" : meeting.activityType}
                 {meeting.sectionCode ? ` · ${meeting.sectionCode}` : ""}
               </dd>
             </div>
           </dl>
 
-          <div className="rounded-lg border border-border bg-background/40 p-3 text-sm">
-            <p className="font-medium text-foreground">Next occurrence</p>
-            <p className="mt-1 text-muted-foreground">
-              {next
-                ? `${new Intl.DateTimeFormat("en-CA", {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  }).format(next)} at ${formatTime(meeting.startTime)}`
-                : "No later occurrence in this timetable"}
-            </p>
-          </div>
+          {reserved ? (
+            <div className="rounded-lg border border-border bg-background/40 p-3 text-sm">
+              <p className="font-medium text-foreground">Not a weekly class</p>
+              <p className="mt-1 leading-relaxed text-muted-foreground">
+                ACORN reserves this recurring window for possible assessments. It only becomes a
+                real commitment when your course announces an assessment for a specific date.
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border bg-background/40 p-3 text-sm">
+              <p className="font-medium text-foreground">Next occurrence</p>
+              <p className="mt-1 text-muted-foreground">
+                {next
+                  ? `${new Intl.DateTimeFormat("en-CA", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    }).format(next)} at ${formatTime(meeting.startTime)}`
+                  : "No later occurrence in this timetable"}
+              </p>
+            </div>
+          )}
 
           {canRoute ? (
             <button
@@ -368,8 +404,8 @@ export const TimetableGrid = memo(function TimetableGrid({
   const closeMeeting = useCallback(() => setSelectedMeeting(null), []);
   const visibleActivityTypes = useMemo(
     () =>
-      (["LEC", "TUT", "PRA", "OTHER"] as const).filter((type) =>
-        meetings.some((meeting) => meeting.activityType === type),
+      (["LEC", "TUT", "PRA", "RES", "OTHER"] as const).filter((type) =>
+        meetings.some((meeting) => displayActivityType(meeting) === type),
       ),
     [meetings],
   );
@@ -390,7 +426,7 @@ export const TimetableGrid = memo(function TimetableGrid({
               Week at a glance
             </p>
             <p className="text-xs text-muted-foreground">
-              Classes stay solid; usable time between them glows in blue
+              Classes stay solid; reserved windows are amber; usable gaps glow in blue
             </p>
           </div>
         </div>
@@ -421,7 +457,9 @@ export const TimetableGrid = memo(function TimetableGrid({
               Time
             </div>
             {visibleDays.map((day) => {
-              const meetingCount = days.get(day)!.sorted.length;
+              const dayMeetings = days.get(day)!.sorted;
+              const reservedCount = dayMeetings.filter(isAssessmentWindow).length;
+              const meetingCount = dayMeetings.length - reservedCount;
               const isToday = termIsCurrent && day === currentDay;
               return (
                 <div
@@ -429,15 +467,23 @@ export const TimetableGrid = memo(function TimetableGrid({
                   className={`flex min-w-0 items-center justify-between gap-1 border-l border-border px-2.5 py-3.5 ${isToday ? "bg-accent/8" : ""}`}
                 >
                   <span className="truncate text-xs font-bold text-foreground">{day}</span>
-                  <span
-                    className={`shrink-0 rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold ${
-                      isToday
-                        ? "bg-accent text-accent-foreground"
-                        : "bg-background/65 text-muted-foreground"
-                    }`}
-                  >
-                    {isToday ? "Today" : meetingCount}
-                  </span>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[0.6rem] font-semibold ${
+                        isToday
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-background/65 text-muted-foreground"
+                      }`}
+                    >
+                      {isToday ? "Today" : meetingCount}
+                    </span>
+                    {reservedCount > 0 ? (
+                      <span className="reserved-count-pill inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[0.58rem] font-bold tracking-[0.04em]">
+                        <Clock3 className="h-2.5 w-2.5" aria-hidden="true" />
+                        {reservedCount} RES
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               );
             })}
@@ -565,6 +611,8 @@ export const TimetableGrid = memo(function TimetableGrid({
       <div className="space-y-4 md:hidden">
         {visibleDays.map((day) => {
           const dayMeetings = days.get(day)!.sorted;
+          const reservedCount = dayMeetings.filter(isAssessmentWindow).length;
+          const classCount = dayMeetings.length - reservedCount;
           return (
             <section
               key={day}
@@ -575,46 +623,69 @@ export const TimetableGrid = memo(function TimetableGrid({
                 <h3 id={`day-${day}`} className="text-sm font-medium">
                   {day}
                 </h3>
-                <span className="rounded-full bg-background/70 px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">
-                  {dayMeetings.length} {dayMeetings.length === 1 ? "class" : "classes"}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="rounded-full bg-background/70 px-2 py-0.5 text-[0.65rem] font-semibold text-muted-foreground">
+                    {classCount} {classCount === 1 ? "class" : "classes"}
+                  </span>
+                  {reservedCount > 0 ? (
+                    <span className="reserved-count-pill inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[0.62rem] font-bold tracking-[0.04em]">
+                      <Clock3 className="h-3 w-3" aria-hidden="true" />
+                      {reservedCount} RES
+                    </span>
+                  ) : null}
+                </div>
               </div>
               {dayMeetings.length === 0 ? (
                 <p className="px-4 py-4 text-sm text-muted-foreground">No classes scheduled.</p>
               ) : (
                 <ul className="space-y-2.5 p-3">
-                  {dayMeetings.map((meeting) => (
-                    <li key={meeting.id}>
-                      <button
-                        type="button"
-                        onClick={() => selectMeeting(meeting)}
-                        aria-haspopup="dialog"
-                        aria-label={`View details for ${meeting.courseCode}, ${meeting.courseName}`}
-                        data-activity={meeting.activityType}
-                        className="meeting-card group w-full touch-manipulation rounded-xl p-3.5 text-left focus-visible:outline-none active:translate-y-0 active:scale-[0.99]"
-                      >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <MapPin
-                            className="card-pin h-4 w-4 shrink-0 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                          <span className="text-sm font-extrabold tracking-[-0.01em] text-foreground">
-                            {meeting.courseCode}
-                          </span>
-                          <ActivityBadge type={meeting.activityType} />
-                          <span className="text-xs text-muted-foreground">
-                            {meeting.sectionCode}
-                          </span>
-                        </div>
-                        <p className="mt-1.5 text-sm font-medium tabular-nums text-foreground">
-                          {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
-                        </p>
-                        <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
-                          {locationLabel(meeting)} · {meeting.courseName}
-                        </p>
-                      </button>
-                    </li>
-                  ))}
+                  {dayMeetings.map((meeting) => {
+                    const reserved = isAssessmentWindow(meeting);
+                    const activityType = displayActivityType(meeting);
+                    return (
+                      <li key={meeting.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectMeeting(meeting)}
+                          aria-haspopup="dialog"
+                          aria-label={`View details for ${meeting.courseCode}, ${
+                            reserved ? "reserved assessment window" : meeting.courseName
+                          }`}
+                          data-activity={activityType}
+                          data-assessment-window={reserved ? "true" : undefined}
+                          className="meeting-card group w-full touch-manipulation rounded-xl p-3.5 text-left focus-visible:outline-none active:translate-y-0 active:scale-[0.99]"
+                        >
+                          <div className="flex flex-wrap items-center gap-2">
+                            {reserved ? (
+                              <Clock3 className="card-pin h-4 w-4 shrink-0" aria-hidden="true" />
+                            ) : (
+                              <MapPin
+                                className="card-pin h-4 w-4 shrink-0 text-muted-foreground"
+                                aria-hidden="true"
+                              />
+                            )}
+                            <span className="text-sm font-extrabold tracking-[-0.01em] text-foreground">
+                              {meeting.courseCode}
+                            </span>
+                            <ActivityBadge type={activityType} />
+                            {!reserved ? (
+                              <span className="text-xs text-muted-foreground">
+                                {meeting.sectionCode}
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1.5 text-sm font-medium tabular-nums text-foreground">
+                            {formatTime(meeting.startTime)} – {formatTime(meeting.endTime)}
+                          </p>
+                          <p className="mt-0.5 text-sm leading-snug text-muted-foreground">
+                            {reserved
+                              ? `Reserved assessment window · Only active when announced`
+                              : `${locationLabel(meeting)} · ${meeting.courseName}`}
+                          </p>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </section>
