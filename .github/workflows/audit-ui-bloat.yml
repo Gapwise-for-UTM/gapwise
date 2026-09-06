@@ -1,0 +1,35 @@
+name: Audit UI bloat
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Report UI wrapper and direct dependency usage
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json, re
+
+          root = Path('.')
+          source_files = [p for p in root.rglob('*') if p.suffix in {'.ts', '.tsx', '.js', '.jsx', '.css'} and '.git' not in p.parts and 'node_modules' not in p.parts]
+          texts = {p: p.read_text(errors='ignore') for p in source_files}
+
+          print('=== UI WRAPPERS ===')
+          ui = Path('src/components/ui')
+          for path in sorted(ui.glob('*.tsx')):
+              stem = path.stem
+              needle = f'@/components/ui/{stem}'
+              refs = [str(p) for p, text in texts.items() if p != path and needle in text]
+              print(f'{stem}: {len(refs)} refs' + (f' -> {", ".join(refs)}' if refs else ''))
+
+          print('\n=== DIRECT DEPENDENCIES ===')
+          package = json.loads(Path('package.json').read_text())
+          for dep in sorted(package.get('dependencies', {})):
+              pattern = re.compile(rf'''["']{re.escape(dep)}(?:/[^"']*)?["']''')
+              refs = [str(p) for p, text in texts.items() if pattern.search(text)]
+              print(f'{dep}: {len(refs)} refs' + (f' -> {", ".join(refs)}' if refs else ''))
+          PY
