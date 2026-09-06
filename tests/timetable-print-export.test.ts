@@ -7,6 +7,7 @@ import {
   renderTimetablePrintSvg,
   timetablePrintFilename,
 } from "@/lib/timetable-print-export";
+import { ASSESSMENT_WINDOW_NOTE } from "@/lib/timetable-types";
 import { meeting } from "./fixtures";
 
 function isGrayscaleHex(value: string) {
@@ -34,9 +35,37 @@ describe("print-ready timetable export", () => {
     expect(custom.label).toBe("PRA");
     expect(custom.base).toBe(PRINT_EXPORT_PALETTE.practiceEventSurface);
     expect(custom.base).not.toBe("#ef4444");
-    expect(study).toMatchObject({ dashed: true, label: "STUDY" });
+    expect(study).toMatchObject({ dashed: true, label: "STUDY", reserved: false });
     expect(personal.label).toBe("PERSONAL");
     expect(personal.strokeWidth).toBeGreaterThan(custom.strokeWidth);
+  });
+
+  test("renders reserved assessment windows as printer-safe RES placeholders", () => {
+    const reserved = meeting({
+      notes: ASSESSMENT_WINDOW_NOTE,
+      locationUnknown: true,
+      locationType: "tba",
+      buildingCode: null,
+      room: null,
+      startTime: 780,
+      endTime: 900,
+    });
+    const style = meetingPrintStyle(reserved);
+    expect(style).toMatchObject({
+      reserved: true,
+      dashed: true,
+      label: "RES",
+      border: PRINT_EXPORT_PALETTE.strongBorder,
+    });
+
+    const svg = renderTimetablePrintSvg([reserved], createTimetableExportPlan([reserved], "Fall"));
+    expect(svg).toContain('id="print-reserved-hatch"');
+    expect(svg).toContain('fill="url(#print-reserved-hatch)"');
+    expect(svg).toContain('stroke-dasharray="5 4"');
+    expect(svg).toContain(">RES</text>");
+    expect(svg).toContain(">Reserved assessment window</text>");
+    expect(svg).toContain(">Only active when announced</text>");
+    expect(svg).not.toContain(">LEC</text>");
   });
 
   test("renders a self-contained vector with embedded typography and no screen effects", () => {

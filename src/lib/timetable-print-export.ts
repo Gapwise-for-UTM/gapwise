@@ -11,6 +11,7 @@ import {
 } from "./timetable-export";
 import {
   formatTime,
+  isAssessmentWindow,
   locationLabel,
   type ActivityType,
   type Meeting,
@@ -58,6 +59,7 @@ export interface MeetingPrintStyle {
   dashed: boolean;
   label: string;
   strokeWidth: number;
+  reserved: boolean;
 }
 
 /** Maps event semantics to monochrome styling without relying on source/custom colors. */
@@ -65,6 +67,7 @@ export function meetingPrintStyle(
   meeting: Meeting,
   palette: TimetablePrintPalette = PRINT_EXPORT_PALETTE,
 ): MeetingPrintStyle {
+  const reserved = isAssessmentWindow(meeting);
   const study = meeting.sectionCode === "STUDY";
   const personal = meeting.sectionCode === "PERSONAL";
   const activitySurface: Record<ActivityType, string> = {
@@ -74,12 +77,17 @@ export function meetingPrintStyle(
     OTHER: palette.alternateEventSurface,
   };
   return {
-    base: personal ? palette.practiceEventSurface : activitySurface[meeting.activityType],
-    border: study || personal ? palette.strongBorder : palette.border,
-    badge: palette.badgeSurface,
-    dashed: study,
-    label: study ? "STUDY" : personal ? "PERSONAL" : meeting.activityType,
-    strokeWidth: personal ? 1.7 : study ? 1.35 : 1.1,
+    base: reserved
+      ? palette.eventSurface
+      : personal
+        ? palette.practiceEventSurface
+        : activitySurface[meeting.activityType],
+    border: reserved || study || personal ? palette.strongBorder : palette.border,
+    badge: reserved ? palette.eventSurface : palette.badgeSurface,
+    dashed: reserved || study,
+    label: reserved ? "RES" : study ? "STUDY" : personal ? "PERSONAL" : meeting.activityType,
+    strokeWidth: reserved ? 1.7 : personal ? 1.7 : study ? 1.35 : 1.1,
+    reserved,
   };
 }
 
@@ -154,8 +162,9 @@ function renderPrintTerm(
         8,
         Math.min(narrow ? 10.5 : 12.5, courseWidth / Math.max(1, meeting.courseCode.length * 0.6)),
       );
+      const cardFill = style.reserved ? "url(#print-reserved-hatch)" : style.base;
       svg += `<clipPath id="${clipId}"><rect x="${mx + 6}" y="${my + 3}" width="${mw - 12}" height="${Math.max(1, mh - 6)}" rx="6"/></clipPath>`;
-      svg += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="8" fill="${style.base}" stroke="${style.border}" stroke-width="${style.strokeWidth}" ${style.dashed ? 'stroke-dasharray="5 4"' : ""}/>`;
+      svg += `<rect x="${mx}" y="${my}" width="${mw}" height="${mh}" rx="8" fill="${cardFill}" stroke="${style.border}" stroke-width="${style.strokeWidth}" ${style.dashed ? 'stroke-dasharray="5 4"' : ""}/>`;
       svg += `<g clip-path="url(#${clipId})">`;
       svg += `<text x="${textX}" y="${my + 20}" font-size="${courseFontSize}" font-weight="800" letter-spacing="-.15" fill="${palette.foreground}">${escapeExportText(meeting.courseCode)}</text>`;
       if (showBadge) {
@@ -165,9 +174,9 @@ function renderPrintTerm(
       if (mh >= 48)
         svg += `<text x="${textX}" y="${my + 38}" font-size="${narrow ? 8.5 : 10}" font-weight="640" fill="${palette.secondaryForeground}">${timeShort(meeting.startTime)}–${timeShort(meeting.endTime)}</text>`;
       if (!narrow && mh >= 66)
-        svg += `<text x="${textX}" y="${my + 55}" font-size="10" font-weight="700" fill="${palette.secondaryForeground}">${escapeExportText(locationLabel(meeting))}</text>`;
+        svg += `<text x="${textX}" y="${my + 55}" font-size="10" font-weight="${style.reserved ? 760 : 700}" fill="${palette.secondaryForeground}">${escapeExportText(style.reserved ? "Reserved assessment window" : locationLabel(meeting))}</text>`;
       if (!narrow && mh >= 87 && mw >= 145)
-        svg += `<text x="${textX}" y="${my + 72}" font-size="9.5" font-weight="540" fill="${palette.mutedForeground}">${escapeExportText(meeting.courseName)}</text>`;
+        svg += `<text x="${textX}" y="${my + 72}" font-size="9.5" font-weight="540" fill="${palette.mutedForeground}">${escapeExportText(style.reserved ? "Only active when announced" : meeting.courseName)}</text>`;
       svg += `</g>`;
     });
   });
@@ -185,7 +194,8 @@ export function renderTimetablePrintSvg(
   const fontFace = fontDataUrl
     ? `@font-face{font-family:PrintGeist;src:url('${fontDataUrl}') format('woff2');font-weight:100 900}`
     : "";
-  let body = `<rect width="100%" height="100%" fill="${palette.pageBackground}"/>`;
+  let body = `<defs><pattern id="print-reserved-hatch" patternUnits="userSpaceOnUse" width="8" height="8"><rect width="8" height="8" fill="${palette.eventSurface}"/><path d="M-2 8L8-2M2 10L10 2" stroke="${palette.grid}" stroke-width=".75"/></pattern></defs>`;
+  body += `<rect width="100%" height="100%" fill="${palette.pageBackground}"/>`;
   body += `<text x="36" y="70" font-size="30" font-weight="800" letter-spacing="-.8" fill="${palette.foreground}">${escapeExportText(title)}</text>`;
   body += `<line x1="36" y1="82" x2="${plan.width - 36}" y2="82" stroke="${palette.strongBorder}" stroke-width="1.15"/>`;
   plan.panels.forEach((panel) => {
