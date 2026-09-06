@@ -6,6 +6,7 @@ import {
 import { getResidenceBuilding } from "@/data/utm/campus";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
+import { isAssessmentWindow } from "@/lib/timetable-types";
 import { createResidenceMeeting, isResidenceMeeting } from "./residence";
 
 const ACCESS_MEETING_PREFIX = "gapwise-campus-access:";
@@ -175,14 +176,15 @@ export function createCampusDayRouteStops(
   term: Term,
   weekday: Weekday,
 ): Meeting[] {
-  if (dayMeetings.length === 0) return [];
+  const routeMeetings = dayMeetings.filter((meeting) => !isAssessmentWindow(meeting));
+  if (routeMeetings.length === 0) return [];
   const anchor = selectedCampusDayAnchor(preferences);
-  if (!anchor) return [...dayMeetings];
-  const first = dayMeetings[0]!;
-  const last = dayMeetings.at(-1)!;
+  if (!anchor) return [...routeMeetings];
+  const first = routeMeetings[0]!;
+  const last = routeMeetings.at(-1)!;
   return [
     anchorMeeting({ anchor, term, weekday, time: first.startTime, position: "start" }),
-    ...dayMeetings,
+    ...routeMeetings,
     anchorMeeting({ anchor, term, weekday, time: last.endTime, position: "end" }),
   ];
 }

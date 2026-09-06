@@ -14,7 +14,7 @@ import {
 import { calculateLeaveBy } from "@/lib/gaps";
 import { querySchedulePosition } from "@/lib/schedule-context";
 import type { Gap, Meeting, Term } from "@/lib/timetable-types";
-import { formatTime, termForMonth } from "@/lib/timetable-types";
+import { formatTime, isAssessmentWindow, termForMonth } from "@/lib/timetable-types";
 
 export type TodayOccurrence = { date: Date; meeting: Meeting };
 
@@ -116,7 +116,10 @@ export function buildTodayState({
   now,
 }: TodayStateInput): TodayState {
   const selectedMeetings = meetings.filter(
-    (meeting) => meeting.term === selectedTerm && meeting.sectionCode !== "STUDY",
+    (meeting) =>
+      meeting.term === selectedTerm &&
+      meeting.sectionCode !== "STUDY" &&
+      !isAssessmentWindow(meeting),
   );
   const status = termStatus(selectedMeetings, selectedTerm, now);
   const minute = minutesNow(now);

@@ -1,4 +1,10 @@
-import { type Gap, type Meeting, type Term, WEEKDAYS } from "./timetable-types.js";
+import {
+  isAssessmentWindow,
+  type Gap,
+  type Meeting,
+  type Term,
+  WEEKDAYS,
+} from "./timetable-types.js";
 import type { RouteResult } from "../features/routing/types.js";
 import { gapBetween, scheduleForWeekday } from "./schedule-context.js";
 
@@ -57,8 +63,10 @@ export function calculateGapTiming(
 
 export function findGaps(meetings: Meeting[], term: Term): Gap[] {
   const gaps: Gap[] = [];
+  const gapEligibleMeetings = meetings.filter((meeting) => !isAssessmentWindow(meeting));
+
   for (const weekday of WEEKDAYS) {
-    const day = scheduleForWeekday(meetings, term, weekday).sort(
+    const day = scheduleForWeekday(gapEligibleMeetings, term, weekday).sort(
       (a, b) => a.startTime - b.startTime || b.endTime - a.endTime,
     );
 
