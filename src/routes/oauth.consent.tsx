@@ -1,7 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bot, GitBranch, ShieldCheck, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import { approveAiOAuthClient, isGapwiseAiConfigured } from "@/features/ai/client";
+import {
+  approveAiOAuthClient,
+  isGapwiseAiConfigured,
+  revokeAiOAuthClientApproval,
+} from "@/features/ai/client";
 import { finalizeOAuthApproval } from "@/features/ai/oauth-consent";
 import { useAuth } from "@/features/auth/use-auth";
 import {
@@ -154,6 +158,7 @@ function OAuthConsentPage() {
           clientName: details.clientName,
           approveAuthorization: (id) => supabase.auth.oauth.approveAuthorization(id),
           approveClient: approveAiOAuthClient,
+          revokeClient: revokeAiOAuthClientApproval,
           revokeGrant: (input) => supabase.auth.oauth.revokeGrant(input),
         });
         window.location.assign(redirectUrl);
