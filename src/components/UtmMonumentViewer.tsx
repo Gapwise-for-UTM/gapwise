@@ -1,11 +1,3 @@
-import { useEffect, useRef, useState, type ElementType } from "react";
-
-const ModelViewer = "model-viewer" as ElementType;
-
-type ModelViewerElement = HTMLElement & {
-  loaded?: boolean;
-};
-
 type UtmMonumentViewerProps = {
   className?: string;
   compact?: boolean;
@@ -17,108 +9,16 @@ export function UtmMonumentViewer({
   compact = false,
   decorative = false,
 }: UtmMonumentViewerProps) {
-  const [shouldLoadViewer, setShouldLoadViewer] = useState(false);
-  const [viewerLoaded, setViewerLoaded] = useState(false);
-  const [modelReady, setModelReady] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-  const figureRef = useRef<HTMLElement | null>(null);
-  const viewerRef = useRef<ModelViewerElement | null>(null);
-
-  useEffect(() => {
-    const figure = figureRef.current;
-    if (!figure) return;
-    if (!("IntersectionObserver" in window)) {
-      setShouldLoadViewer(true);
-      setIsVisible(true);
-      return;
-    }
-
-    const preloadObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setShouldLoadViewer(true);
-          preloadObserver.disconnect();
-        }
-      },
-      // Do not start the 3D runtime and 7 MB model while the landmark is still
-      // below the mobile viewport; the static shell remains immediately usable.
-      { rootMargin: "0px" },
-    );
-    const visibilityObserver = new IntersectionObserver(
-      ([entry]) => setIsVisible(Boolean(entry?.isIntersecting)),
-      { threshold: 0.01 },
-    );
-    preloadObserver.observe(figure);
-    visibilityObserver.observe(figure);
-    return () => {
-      preloadObserver.disconnect();
-      visibilityObserver.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!shouldLoadViewer) return;
-    let mounted = true;
-    void import("@google/model-viewer")
-      .then(() => {
-        if (mounted) setViewerLoaded(true);
-      })
-      .catch(() => {
-        if (mounted) setViewerLoaded(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, [shouldLoadViewer]);
-
-  useEffect(() => {
-    if (!viewerLoaded) return;
-    const viewer = viewerRef.current;
-    if (!viewer) return;
-
-    const markReady = () => setModelReady(true);
-    if (viewer.loaded) {
-      markReady();
-      return;
-    }
-
-    viewer.addEventListener("load", markReady);
-    return () => viewer.removeEventListener("load", markReady);
-  }, [viewerLoaded]);
-
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReducedMotion(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-
-  const initialOrbit = "0deg 70deg 120%";
-
-  const skeleton = (
-    <div className="flex h-full w-full items-center justify-center bg-foreground/[0.06]">
-      <span
-        className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground/40 border-t-primary"
-        role="status"
-        aria-label="Loading monument model"
-      />
-    </div>
-  );
-
   return (
     <figure
-      ref={figureRef}
       className={[
-        "group relative isolate overflow-hidden rounded-xl border border-border/80",
+        "relative isolate overflow-hidden rounded-xl border border-border/80",
         "bg-gradient-to-br from-card via-muted/30 to-card shadow-[var(--shadow-soft)]",
+        "[&+p]:hidden",
         compact ? "h-44 sm:h-52" : "h-72 sm:h-80 lg:h-[23rem]",
         className,
       ].join(" ")}
-      data-model-ready={modelReady ? "true" : "false"}
-      aria-label={decorative ? undefined : "Interactive model of the UTM entrance monument"}
+      aria-label={decorative ? undefined : "Stylized UTM campus landmark"}
       aria-hidden={decorative || undefined}
     >
       <div
@@ -129,44 +29,22 @@ export function UtmMonumentViewer({
         }}
       />
 
-      {viewerLoaded ? (
-        <ModelViewer
-          ref={viewerRef}
-          src="/models/utm-entrance-monument.glb?v=single-plaque-label-6"
-          alt="A detailed three-dimensional reconstruction of the University of Toronto Mississauga entrance monument"
-          loading="lazy"
-          reveal="auto"
-          camera-controls
-          auto-rotate={!reducedMotion && isVisible ? true : undefined}
-          auto-rotate-delay="5000"
-          rotation-per-second="4deg"
-          camera-orbit={initialOrbit}
-          min-camera-orbit="auto 50deg 105%"
-          max-camera-orbit="auto 88deg 220%"
-          field-of-view="31deg"
-          min-field-of-view="25deg"
-          max-field-of-view="42deg"
-          tone-mapping="aces"
-          shadow-intensity="1.35"
-          shadow-softness="0.42"
-          exposure="0.48"
-          environment-image="neutral"
-          interaction-prompt="none"
-          touch-action="pan-y"
-          style={{
-            width: "100%",
-            height: "100%",
-            background: "transparent",
-            display: "block",
-          }}
-        >
-          <div slot="poster" className="h-full w-full">
-            {skeleton}
+      <div className="absolute inset-0 flex items-center justify-center px-8" aria-hidden="true">
+        <div className="relative w-full max-w-md">
+          <div className="mx-auto h-3 w-3/4 rounded-full bg-foreground/8 blur-sm" />
+          <div className="relative mx-auto -mt-1 flex min-h-24 w-full items-center justify-center rounded-[1.25rem] border border-border/80 bg-background/75 px-8 shadow-sm backdrop-blur-sm">
+            <div className="text-center">
+              <p className="font-display text-2xl font-semibold tracking-[-0.04em] text-foreground sm:text-3xl">
+                UTM
+              </p>
+              <p className="mt-1 font-mono text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                University of Toronto Mississauga
+              </p>
+            </div>
           </div>
-        </ModelViewer>
-      ) : (
-        skeleton
-      )}
+          <div className="mx-auto h-8 w-[82%] rounded-b-2xl border-x border-b border-border/60 bg-muted/45" />
+        </div>
+      </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-background/55 to-transparent" />
     </figure>
