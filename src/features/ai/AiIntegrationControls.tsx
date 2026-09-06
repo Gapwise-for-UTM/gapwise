@@ -40,9 +40,12 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
 
   const set = (patch: Partial<AiPermissions>) => {
     setDraft((current) => {
-      const next = { ...current, ...patch };
-      if (!next.readPersonal) next.writePersonal = false;
-      if (next.writePersonal) next.readPersonal = true;
+      const next = {
+        ...current,
+        ...patch,
+        readPersonal: false,
+        writePersonal: false,
+      };
       if (!next.readGapPreferences) next.writeGapPreferences = false;
       if (next.writeGapPreferences) next.readGapPreferences = true;
       return next;
@@ -110,28 +113,14 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
           checked
           disabled
           label="Read academic timetable"
-          description="Required. Shares source-backed class times, sections, buildings/rooms, and recurrence facts — never the raw .ics file."
+          description="Required. Shares source-backed class times, sections, buildings/rooms, recurrence facts, and reserved-assessment-window semantics — never the raw .ics file."
           onChange={() => undefined}
-        />
-        <PermissionToggle
-          checked={draft.readPersonal}
-          disabled={controller.busy}
-          label="Read personal timetable items"
-          description="Lets AI reason about study blocks, meals, appointments, and other personal items. Notes are not shared."
-          onChange={(checked) => set({ readPersonal: checked })}
-        />
-        <PermissionToggle
-          checked={draft.writePersonal}
-          disabled={controller.busy}
-          label="Edit personal timetable items"
-          description="Lets AI queue create/update/delete actions for personal items only. Imported academic classes cannot be changed."
-          onChange={(checked) => set({ writePersonal: checked })}
         />
         <PermissionToggle
           checked={draft.readGapPlans}
           disabled={controller.busy}
           label="Read Gapwise gap plans"
-          description="Shares Gapwise's own deterministic gap assessments: route confidence, travel and buffer time, leave-by time, and ranked study/meal/break/home recommendations. Hidden personal items are never used as gap boundaries unless personal-item sharing is also enabled."
+          description="Shares Gapwise's deterministic gap assessments: route confidence, travel and buffer time, leave-by time, and ranked study/meal/break/home recommendations. Reserved assessment windows are not treated as weekly commitments."
           onChange={(checked) => set({ readGapPlans: checked })}
         />
         <PermissionToggle
@@ -157,12 +146,17 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
         />
       </div>
 
+      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+        Personal Items have been retired from Gapwise and are no longer delegated to or editable by
+        AI connectors.
+      </p>
+
       <div className="mt-4 flex flex-wrap gap-2">
         {!controller.status.enabled ? (
           <button
             type="button"
             disabled={controller.busy || !controller.canEnable}
-            onClick={() => void controller.enable(draft)}
+            onClick={() => void controller.enable(setLegacyPersonalPermissionsFalse(draft))}
             className="button-primary inline-flex min-h-10 items-center gap-2 px-3 text-sm font-semibold disabled:opacity-50"
           >
             <Bot className="h-4 w-4" aria-hidden="true" />
@@ -173,7 +167,9 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
             <button
               type="button"
               disabled={controller.busy}
-              onClick={() => void controller.savePermissions(draft)}
+              onClick={() =>
+                void controller.savePermissions(setLegacyPersonalPermissionsFalse(draft))
+              }
               className="button-secondary min-h-10 px-3 text-sm font-semibold disabled:opacity-50"
             >
               {controller.busy ? "Saving…" : "Save AI permissions"}
@@ -214,4 +210,8 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
       ) : null}
     </section>
   );
+}
+
+function setLegacyPersonalPermissionsFalse(permissions: AiPermissions): AiPermissions {
+  return { ...permissions, readPersonal: false, writePersonal: false };
 }

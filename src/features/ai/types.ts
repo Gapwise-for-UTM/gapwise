@@ -11,7 +11,9 @@ import type {
 
 export type AiPermissions = {
   readSchedule: true;
+  /** Legacy schema keys retained so existing delegated snapshots remain readable. */
   readPersonal: boolean;
+  /** Personal Items are retired; this is always normalized to false. */
   writePersonal: boolean;
   readGapPlans: boolean;
   readGapPreferences: boolean;
@@ -31,6 +33,16 @@ export const DEFAULT_AI_PERMISSIONS: AiPermissions = {
   readRoutingPreferences: false,
 };
 
+/** Canonicalize permissions from older AI snapshots after Personal Items were retired. */
+export function normalizeAiPermissions(permissions: AiPermissions): AiPermissions {
+  return {
+    ...permissions,
+    readSchedule: true,
+    readPersonal: false,
+    writePersonal: false,
+  };
+}
+
 export type AiMeeting = {
   id: string;
   courseCode: string;
@@ -44,12 +56,15 @@ export type AiMeeting = {
   room: string | null;
   term: Term;
   locationUnknown: boolean;
+  /** True only for ACORN's recurring placeholder windows used for possible assessments. */
+  isReservedAssessmentWindow: boolean;
   locationType?: MeetingLocationType;
   dateRange?: MeetingDateRange;
   excludedDates?: string[];
   recurrenceIntervalWeeks?: number;
 };
 
+/** @deprecated Personal Items are retired. Retained for schema-v1 compatibility only. */
 export type AiPersonalItem = Omit<PersonalItem, "notes">;
 
 export type AiRoutingPreferences = Pick<
@@ -83,6 +98,7 @@ export type AiSnapshot = {
   generatedAt: string;
   permissions: AiPermissions;
   schedule: AiMeeting[];
+  /** @deprecated Always empty. Kept so schema-v1 readers remain compatible. */
   personalItems: AiPersonalItem[];
   gapPlans: AiGapPlan[];
   gapPreferences: GapPreferences | null;
@@ -98,6 +114,7 @@ export type AiDelegationStatus =
       updatedAt: string;
     };
 
+/** @deprecated Personal Items are retired. */
 export type PersonalItemDraft = {
   title: string;
   category: PersonalCategory;
@@ -112,10 +129,13 @@ export type PersonalItemDraft = {
   flexibility: PersonalFlexibility;
 };
 
+/** @deprecated Personal Items are retired. */
 export type PersonalItemPatch = Partial<
   Omit<PersonalItemDraft, "flexibility"> & { flexibility: PersonalFlexibility }
 > & { color?: string | null };
 
+// Legacy Personal Item action variants remain parseable so an already-queued action can be
+// rejected safely by old clients instead of making the whole action feed malformed.
 export type AiAction =
   | {
       schemaVersion: 1;

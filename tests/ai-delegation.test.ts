@@ -5,7 +5,7 @@ import { DEFAULT_AI_PERMISSIONS } from "@/features/ai/types";
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
 import type { PersonalItem } from "@/lib/personal-types";
-import type { Meeting } from "@/lib/timetable-types";
+import { ASSESSMENT_WINDOW_NOTE, type Meeting } from "@/lib/timetable-types";
 
 const meeting: Meeting = {
   id: "m1",
@@ -59,7 +59,32 @@ describe("AI delegation", () => {
     expect(content.schedule).toHaveLength(1);
     expect("notes" in content.schedule[0]!).toBe(false);
     expect(content.schedule[0]!.courseCode).toBe("CSC110Y5");
+    expect(content.schedule[0]!.isReservedAssessmentWindow).toBe(false);
     expect(content.gapPlans).toEqual([]);
+  });
+
+  test("delegates reserved assessment semantics without exposing ACORN notes", () => {
+    const reserved: Meeting = {
+      ...meeting,
+      id: "reserved",
+      weekday: "Saturday",
+      startTime: 780,
+      endTime: 900,
+      buildingCode: null,
+      room: null,
+      locationUnknown: true,
+      locationType: "tba",
+      notes: ASSESSMENT_WINDOW_NOTE,
+    };
+    const content = aiSnapshotContent({
+      meetings: [reserved],
+      personalItems: [],
+      preferences: DEFAULT_USER_PREFERENCES,
+      gapPreferences: DEFAULT_GAP_PREFERENCES,
+      permissions: DEFAULT_AI_PERMISSIONS,
+    });
+    expect(content.schedule[0]!.isReservedAssessmentWindow).toBe(true);
+    expect("notes" in content.schedule[0]!).toBe(false);
   });
 
   test("delegates canonical Gapwise gap assessments only when explicitly enabled", () => {
@@ -78,18 +103,8 @@ describe("AI delegation", () => {
     expect(content.gapPlans[0]?.assessment.confidenceLabel).toBe("high");
   });
 
-  test("hidden personal items cannot leak through delegated gap boundaries", () => {
-    const hidden = aiSnapshotContent({
-      meetings: [meeting, nextMeeting],
-      personalItems: [hiddenPersonal],
-      preferences: DEFAULT_USER_PREFERENCES,
-      gapPreferences: DEFAULT_GAP_PREFERENCES,
-      permissions: { ...DEFAULT_AI_PERMISSIONS, readGapPlans: true },
-    });
-    expect(hidden.personalItems).toEqual([]);
-    expect(hidden.gapPlans.map((gap) => [gap.startTime, gap.endTime])).toEqual([[660, 780]]);
-
-    const shared = aiSnapshotContent({
+  test("retired personal items are never delegated or used as AI gap boundaries", () => {
+    const content = aiSnapshotContent({
       meetings: [meeting, nextMeeting],
       personalItems: [hiddenPersonal],
       preferences: DEFAULT_USER_PREFERENCES,
@@ -98,14 +113,14 @@ describe("AI delegation", () => {
         ...DEFAULT_AI_PERMISSIONS,
         readGapPlans: true,
         readPersonal: true,
+        writePersonal: true,
       },
     });
-    expect(shared.personalItems).toHaveLength(1);
-    expect("notes" in shared.personalItems[0]!).toBe(false);
-    expect(shared.gapPlans.map((gap) => [gap.startTime, gap.endTime])).toEqual([
-      [660, 700],
-      [720, 780],
-    ]);
+
+    expect(content.permissions.readPersonal).toBe(false);
+    expect(content.permissions.writePersonal).toBe(false);
+    expect(content.personalItems).toEqual([]);
+    expect(content.gapPlans.map((gap) => [gap.startTime, gap.endTime])).toEqual([[660, 780]]);
   });
 
   test("AI actions cannot invent an academic-meeting mutation kind", () => {
@@ -159,7 +174,7 @@ describe("AI delegation", () => {
     ]);
   });
 
-  test("create actions use deterministic ids for retry safety", () => {
+  test("legacy create actions use deterministic ids for retry safety", () => {
     const action = {
       id: "00000000-0000-4000-8000-000000000003",
       createdAt: "2026-08-18T16:30:00.000Z",
