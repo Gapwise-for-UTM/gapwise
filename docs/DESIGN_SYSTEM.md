@@ -34,7 +34,7 @@ The timetable badge, mobile class-row emphasis, Day Route sequence, map time mar
 ## Product primitives
 
 - `surface`: standard elevated container with an inner highlight and restrained blur on desktop and in contexts that actually need elevation.
-- `bento-hero`, `upload-card`, `landmark-card`: landing-specific composition.
+- `bento-hero`, `upload-card`, `bento-step`: landing-specific composition.
 - `button-primary`, `button-secondary`: shared focus, hover, and press behavior.
 - `bubble-tabs`: animated view and term switcher.
 - `meeting-card`: category-colored timetable event on desktop.

@@ -48,7 +48,6 @@ test("AND-66 first-run landing keeps activation above the fold on a narrow phone
   await expect(page.getByRole("button", { name: "Campus arrival settings" })).toHaveCount(0);
   await expect(page.locator('section[aria-labelledby="cloud-sync-title"]')).not.toBeVisible();
   await expect(page.locator(".bento-hero")).not.toBeVisible();
-  await expect(page.locator(".landmark-card")).not.toBeVisible();
   await expect(page.locator(".bento-step").first()).not.toBeVisible();
 
   const importAction = page.getByRole("button", { name: "Import ACORN" });

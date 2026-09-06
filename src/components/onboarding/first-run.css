@@ -23,7 +23,6 @@
   }
 
   main.landing-stage .landing-bento > .bento-hero,
-  main.landing-stage .landing-bento > .landmark-card,
   main.landing-stage .landing-bento > .bento-step {
     display: none;
   }
