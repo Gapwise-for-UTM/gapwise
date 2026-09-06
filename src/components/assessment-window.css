@@ -21,6 +21,11 @@
   color: var(--meeting-accent);
 }
 
+.mobile-integrated-app .meeting-card[data-activity] > p.flex > svg,
+.mobile-integrated-app .meeting-card[data-activity] > div.flex.items-start > svg {
+  color: var(--meeting-accent);
+}
+
 .meeting-card[data-assessment-window="true"] {
   border-style: dashed;
   border-left-style: solid;
