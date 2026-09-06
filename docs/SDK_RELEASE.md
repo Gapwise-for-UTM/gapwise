@@ -5,19 +5,20 @@ Gapwise ships two equal first-party SDK implementations from this repository:
 - JavaScript/TypeScript: `@gapwise/sdk` from `sdk/javascript`
 - Python: `gapwise` from `sdk/python`
 
-The JavaScript/TypeScript implementation is distributed through both npm and JSR rather than being forked into separate Node, Deno, or Bun SDKs. The Python implementation is distributed through PyPI. All releases consume the same public API v1 contract and must preserve semantic parity.
+The JavaScript/TypeScript implementation is distributed through npm and JSR, with a source-adjacent GitHub Packages npm mirror, rather than being forked into separate Node, Deno, or Bun SDKs. The Python implementation is distributed canonically through PyPI and mirrored as tagged wheel/source artifacts on GitHub Releases. GitHub Packages does not provide a PyPI-compatible Python registry. All releases consume the same public API v1 contract and must preserve semantic parity.
 
-The release workflow is `.github/workflows/release-sdks.yml`. npm publishing is manually dispatched. JSR publishing runs automatically when the JSR version configuration changes on `main` and is also available by manual dispatch for recovery. Python publishing is automated from `python-v*` Git tags and can also be manually dispatched as a recovery path. npm, JSR, and PyPI publishing use short-lived OIDC credentials rather than repository secrets.
+The release workflow is `.github/workflows/release-sdks.yml`. npm publishing is manually dispatched. JSR publishing runs automatically when the JSR version configuration changes on `main` and is also available by manual dispatch for recovery. Python publishing is automated from `python-v*` Git tags and can also be manually dispatched as a recovery path. npm, JSR, and PyPI publishing use short-lived OIDC credentials rather than repository secrets. GitHub Release assets use only the job-scoped GitHub token with `contents: write`.
 
 ## Registry and runtime matrix
 
 <!-- prettier-ignore -->
-| Implementation | Registry | Package        | Runtime / consumer role                                                              | Release state             |
-| -------------- | -------- | -------------- | ------------------------------------------------------------------------------------ | ------------------------- |
-| TypeScript     | npm             | `@gapwise/sdk`         | Primary Node.js, Bun, browser-bundler, and npm-compatible distribution               | `0.1.1` published         |
-| TypeScript     | JSR             | `@gapwise/sdk`         | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.1` published         |
-| TypeScript     | GitHub Packages | `@gapwise-for-utm/sdk` | Source-adjacent GitHub registry mirror of the same JavaScript SDK artifact            | `0.1.1` published, public |
-| Python         | PyPI            | `gapwise`              | Python sync + async clients                                                          | `0.1.0` published         |
+| Implementation | Distribution | Package / artifact | Runtime / consumer role | Release state |
+| -------------- | ------------ | ------------------ | ----------------------- | ------------- |
+| TypeScript | npm | `@gapwise/sdk` | Primary Node.js, Bun, browser-bundler, and npm-compatible distribution | `0.1.1` published |
+| TypeScript | JSR | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.1` published |
+| TypeScript | GitHub Packages | `@gapwise-for-utm/sdk` | Source-adjacent GitHub npm registry mirror of the same JavaScript SDK artifact | `0.1.1` published, public |
+| Python | PyPI | `gapwise` | Canonical Python sync + async package index distribution | `0.1.0` published |
+| Python | GitHub Releases | `gapwise-<version>-py3-none-any.whl` + source distribution | Source-adjacent mirror of the exact tagged Python release artifacts | automated from `python-v*` tags |
 
 The initial TypeScript `0.1.0` publication established the npm/JSR package identities and trusted-publishing paths. The current verified TypeScript release is `@gapwise/sdk@0.1.1` on both npm and JSR. Future registry claims remain evidence-based: update release-state documentation only after the relevant publish job and registry confirm the version.
 
@@ -26,6 +27,28 @@ GitHub Packages requires the npm scope to match the GitHub organization owner, s
 ## GitHub Packages publishing
 
 The `github` manual target publishes the verified JavaScript SDK to GitHub Packages. The job rewrites the package name only inside its ephemeral runner workspace, retains the source-repository metadata, checks whether the exact version already exists, and publishes with the job-scoped `GITHUB_TOKEN` and `packages: write`. No long-lived GitHub package token is stored.
+
+GitHub Packages does **not** expose a Python/PyPI registry. Do not publish a fake npm package, container image, or unrelated artifact merely to make Python appear as a second item on the organization Packages tab.
+
+## Python GitHub Release mirror
+
+Each tagged Python SDK release is also mirrored on GitHub Releases under the same `python-v<version>` tag. The mirror contains:
+
+- the built universal wheel, for example `gapwise-0.1.0-py3-none-any.whl`;
+- the source distribution, for example `gapwise-0.1.0.tar.gz`;
+- `SHA256SUMS.txt` covering both artifacts.
+
+The GitHub Release mirror is supplemental. `python -m pip install gapwise==<version>` from PyPI remains the canonical installation path.
+
+The release job is intentionally tag-bound and idempotent:
+
+1. It resolves the package version from the tagged `sdk/python/pyproject.toml`.
+2. Backfill runs from `main` check for an already-existing matching `python-v<version>` tag and then detach to that exact tag before building.
+3. It builds and validates the wheel and source distribution from the tagged commit.
+4. It creates or repairs the matching GitHub Release assets without changing the tag.
+5. It marks the Python SDK release as not-latest so the main Gapwise application release remains the repository's Latest release.
+
+The manual `python-github` target can repair/backfill the GitHub Release mirror for the currently tagged Python version without publishing to PyPI again.
 
 ## npm Trusted Publishing
 
@@ -99,10 +122,11 @@ To release a version:
 5. GitHub Actions runs the full SDK verification suite.
 6. The workflow checks that the tag version exactly matches the Python package version.
 7. Only after verification succeeds, the PyPI job requests a short-lived OIDC credential and publishes the built distributions.
+8. The GitHub Release mirror job builds from the same tag and publishes the wheel, source distribution, and SHA-256 checksums as release assets.
 
 A mismatched tag fails before publishing. Reusing an already-published version will also be rejected by PyPI, so every release requires a new version.
 
-The manual **Actions → Release SDKs → pypi** path remains available from `main` for recovery, but normal Python releases should use version tags.
+The manual **Actions → Release SDKs → pypi** path remains available from `main` for PyPI recovery. **Actions → Release SDKs → python-github** repairs only the GitHub Release artifact mirror. Normal Python releases should use version tags so both surfaces derive from one reviewed commit.
 
 ## Release procedure
 
@@ -112,9 +136,10 @@ The manual **Actions → Release SDKs → pypi** path remains available from `ma
 2. Confirm contract parity with `sdk/javascript` and the OpenAPI v1 contract.
 3. Confirm `main` is green and `https://api.gapwise.ca/v1` is healthy.
 4. Create and push `python-v<version>` from the matching `main` commit.
-5. Inspect **Actions → Release SDKs** and wait for verification and publishing to complete.
+5. Inspect **Actions → Release SDKs** and wait for verification, PyPI publishing, and GitHub Release mirroring to complete.
 6. Verify the PyPI project page and install the exact version into a clean environment.
-7. Exercise at least one real API call through the installed SDK before considering the release complete.
+7. Verify that the matching GitHub Release exposes the wheel, source distribution, and `SHA256SUMS.txt` built from the same tag.
+8. Exercise at least one real API call through the installed SDK before considering the release complete.
 
 ### JavaScript / TypeScript releases
 
@@ -126,7 +151,7 @@ The manual **Actions → Release SDKs → pypi** path remains available from `ma
 6. Verify each selected registry independently before updating public release claims.
 7. Confirm JSR generated docs/runtime compatibility and npm package metadata for the exact version before considering the release synchronized.
 
-Manual targets `jsr`, `javascript`, and `all` remain available for recovery or deliberately coordinated releases. `both` is retained as the legacy npm + PyPI recovery target.
+Manual targets `jsr`, `javascript`, `python-github`, and `all` remain available for recovery or deliberately coordinated releases. `both` is retained as the legacy npm + PyPI recovery target.
 
 ## Ecosystem synchronization
 
@@ -143,8 +168,9 @@ All six repositories should link back to the canonical SDK source and documentat
 
 ## Security properties
 
-- No long-lived npm, JSR, or PyPI publish token is stored in the repository.
-- Publish jobs receive `id-token: write` only when publishing.
+- No long-lived npm, JSR, PyPI, or GitHub release credential is stored in the repository.
+- Registry publish jobs receive `id-token: write` only when publishing to OIDC-capable registries.
+- The Python GitHub Release mirror receives only job-scoped `contents: write`, builds from the immutable release tag, and publishes checksums alongside the distributions.
 - Python tag releases validate that the Git tag and package metadata carry the same version before publishing.
 - The publish jobs depend on the complete SDK verification job, including tests, linting, artifact inspection, clean-environment installation, JSR dry-run validation, Deno portability checks, and package metadata checks.
 - External GitHub Actions are pinned to immutable commit SHAs.

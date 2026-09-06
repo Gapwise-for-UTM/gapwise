@@ -2,18 +2,39 @@
 
 Official dependency-free TypeScript client for the unauthenticated Gapwise Public Campus API v1. The SDK is one implementation shared across modern JavaScript runtimes rather than separate Node, Deno, and Bun clients. It defaults to `https://api.gapwise.ca/v1`.
 
+> This GitHub Packages page is specifically the **JavaScript/npm registry artifact**. GitHub Packages does not provide a PyPI-compatible Python registry. The equal first-party Python SDK is published canonically as [`gapwise`](https://pypi.org/project/gapwise/) on PyPI, and tagged wheel/source artifacts are also mirrored on GitHub Releases.
+
 ## Distribution and runtime model
 
-The canonical package identity is `@gapwise/sdk`.
+The canonical JavaScript package identity is `@gapwise/sdk`.
 
 - **npm:** `@gapwise/sdk@0.1.1` is published with provenance and is the primary package for Node.js, Bun, browser bundlers, and npm-compatible tooling.
 - **JSR:** `@gapwise/sdk@0.1.1` is published from the same TypeScript source through GitHub Actions OIDC with provenance. JSR publishes the source entry point directly from `src/index.ts`.
+- **GitHub Packages:** `@gapwise-for-utm/sdk@0.1.1` is the organization-scoped mirror of the same JavaScript package.
 - **Node.js:** supported through the npm package; package metadata requires Node 20+.
 - **Bun:** first-party test/runtime target using the same package and source.
 - **Deno:** first-party portability target using the same TypeScript source/package; release verification runs JSR validation and Deno type/runtime checks before publication.
 - **Browsers and edge-style runtimes:** the client is dependency-free and accepts an injected `fetch`; compatibility claims should stay evidence-based for each environment.
 
-Python is an equal first-party SDK, not a fallback implementation. It is maintained in [`../python`](../python) and published as `gapwise` on PyPI. Public API changes must preserve contract parity across the TypeScript and Python clients.
+## Looking for Python?
+
+Python is an equal first-party SDK, not a fallback implementation. It is maintained in [`../python`](../python), published as `gapwise` on PyPI, and mirrored as wheel/source artifacts on the matching `python-v*` GitHub Release.
+
+```bash
+python -m pip install gapwise==0.1.0
+```
+
+```python
+from gapwise import Gapwise
+
+with Gapwise() as gapwise:
+    mn = gapwise.buildings.get("MN")
+    route = gapwise.routes.calculate(from_building="MN", to_building="IB")
+```
+
+Public API changes must preserve contract parity across the TypeScript and Python clients.
+
+## JavaScript / TypeScript installation
 
 Install the released npm package with:
 
