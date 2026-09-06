@@ -1,0 +1,61 @@
+name: Remove landing landmark section
+
+on:
+  push:
+    branches:
+      - chore/remove-3d-model-bloat
+
+permissions:
+  contents: write
+
+jobs:
+  remove-landmark:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: chore/remove-3d-model-bloat
+      - name: Remove the landing landmark UI and obsolete component
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          route_path = Path("src/routes/_app.tsx")
+          route = route_path.read_text()
+          route = route.replace('import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";\n', '')
+          route, count = re.subn(
+              r'\n              <section className="bento-cell landmark-card min-h-\[18rem\] p-5 sm:p-7 lg:col-span-7">.*?</section>\n\n(?=              \{STEPS\.map)',
+              '\n',
+              route,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise SystemExit(f"Expected one landing landmark section, removed {count}")
+          route_path.write_text(route)
+
+          test_path = Path("tests/performance-regression.test.ts")
+          test = test_path.read_text()
+          test = test.replace(
+              'const [entry, route, map, importLifecycle, landingVisual] = await Promise.all([',
+              'const [entry, route, map, importLifecycle] = await Promise.all([',
+          )
+          test = test.replace('      readFile("src/components/UtmMonumentViewer.tsx", "utf8"),\n', '')
+          test = test.replace(
+              '    expect(landingVisual).not.toContain("model-viewer");\n'
+              '    expect(landingVisual).not.toContain(".glb");\n'
+              '    expect(landingVisual).not.toContain("three");\n',
+              '    expect(route).not.toContain("UtmMonumentViewer");\n',
+          )
+          test_path.write_text(test)
+          PY
+          rm -f src/components/UtmMonumentViewer.tsx
+      - name: Commit the lean landing page
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/routes/_app.tsx tests/performance-regression.test.ts src/components/UtmMonumentViewer.tsx
+          git commit -m "Remove landing landmark section entirely"
+          git push origin HEAD:chore/remove-3d-model-bloat
