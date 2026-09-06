@@ -247,7 +247,8 @@
   color: var(--meeting-accent);
 }
 
-.mobile-integrated-app [role="dialog"] .button-primary:has(.lucide-navigation) {
+/* Vaul mounts timetable drawers in a body-level portal, outside .mobile-integrated-app. */
+[role="dialog"] .button-primary:has(.lucide-navigation) {
   --route-component-accent: var(--color-accent);
 
   border-color: color-mix(
@@ -261,20 +262,17 @@
     color-mix(in oklab, var(--route-component-accent) 72%, transparent) !important;
 }
 
-.mobile-integrated-app
-  [role="dialog"]:has(.activity-badge[data-activity="LEC"])
+[role="dialog"]:has(.activity-badge[data-activity="LEC"])
   .button-primary:has(.lucide-navigation) {
   --route-component-accent: var(--color-lec);
 }
 
-.mobile-integrated-app
-  [role="dialog"]:has(.activity-badge[data-activity="TUT"])
+[role="dialog"]:has(.activity-badge[data-activity="TUT"])
   .button-primary:has(.lucide-navigation) {
   --route-component-accent: var(--color-tut);
 }
 
-.mobile-integrated-app
-  [role="dialog"]:has(.activity-badge[data-activity="PRA"])
+[role="dialog"]:has(.activity-badge[data-activity="PRA"])
   .button-primary:has(.lucide-navigation) {
   --route-component-accent: var(--color-pra);
 }
