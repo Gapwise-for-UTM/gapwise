@@ -36,7 +36,7 @@ const totals = [...files].reduce(
 );
 
 // These leave modest headroom above the measured Phase 5 baseline while still
-// catching the accidental eager loading of MapLibre, model-viewer, or parsing.
+// catching accidental eager loading of MapLibre or timetable parsing code.
 const budgets = { js: 430 * 1024, css: 45 * 1024 };
 for (const kind of ["js", "css"] as const) {
   if (totals[kind] > budgets[kind]) {

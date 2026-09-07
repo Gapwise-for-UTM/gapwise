@@ -22,7 +22,6 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
 import { TodaySummary } from "@/components/TodaySummary";
 import { UploadPanel } from "@/components/UploadPanel";
-import { UtmMonumentViewer } from "@/components/UtmMonumentViewer";
 import { MobileMoreSheet } from "@/components/mobile/MobileMoreSheet";
 import { MobileShell } from "@/components/mobile/MobileShell";
 import { MobileTimetable } from "@/components/mobile/MobileTimetable";
@@ -682,30 +681,6 @@ function AppLayout() {
                   <p className="mt-8 border-t border-border pt-5 text-center font-mono text-[0.625rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
                     Independent student project · Not affiliated with U of T
                   </p>
-                </div>
-              </section>
-
-              <section className="bento-cell landmark-card min-h-[18rem] p-5 sm:p-7 lg:col-span-7">
-                <div className="grid h-full gap-5 sm:grid-cols-[minmax(12rem,0.7fr)_minmax(0,1.3fr)] sm:items-center">
-                  <div className="relative z-10">
-                    <p className="eyebrow text-accent">A familiar landmark</p>
-                    <h2 className="mt-3 max-w-[13ch] text-xl font-medium tracking-tight">
-                      Designed for the campus you actually cross.
-                    </h2>
-                    <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                      Route context is grounded in UTM buildings, entrances, and indoor transitions.
-                    </p>
-                    <p className="mt-5 flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.11em] text-muted-foreground">
-                      <Waypoints className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-                      Mississauga · Ontario
-                    </p>
-                  </div>
-                  <div>
-                    <UtmMonumentViewer compact className="model-stage bg-none" />
-                    <p className="mt-2 text-center text-[0.68rem] text-muted-foreground">
-                      Drag to rotate · scroll or pinch to zoom
-                    </p>
-                  </div>
                 </div>
               </section>
 

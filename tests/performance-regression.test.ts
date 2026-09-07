@@ -88,13 +88,13 @@ describe("large timetable regressions", () => {
     expect(calculations).toBe(3);
   });
 
-  test("keeps Day Route and MapLibre out of the initial bundle path", async () => {
-    const [entry, route, map, importLifecycle, monument] = await Promise.all([
+  test("keeps heavy route, map, parser, and 3D paths out of the initial bundle", async () => {
+    const [entry, route, map, importLifecycle, packageManifest] = await Promise.all([
       readFile("src/main.tsx", "utf8"),
       readFile("src/routes/_app.tsx", "utf8"),
       readFile("src/components/CampusMap.tsx", "utf8"),
       readFile("src/features/timetable/import-lifecycle.ts", "utf8"),
-      readFile("src/components/UtmMonumentViewer.tsx", "utf8"),
+      readFile("package.json", "utf8"),
     ]);
 
     expect(entry).not.toContain("maplibre-gl");
@@ -106,7 +106,8 @@ describe("large timetable regressions", () => {
     expect(map).toContain("setWorkerUrl(mapLibreWorkerUrl)");
     expect(importLifecycle).toContain('await import("@/lib/ics-parser")');
     expect(importLifecycle).not.toContain("import { IcsParseError");
-    expect(monument).toContain('{ rootMargin: "0px" }');
-    expect(monument).toContain('loading="lazy"');
+    expect(route).not.toContain("@google/model-viewer");
+    expect(route).not.toContain("UtmMonumentViewer");
+    expect(packageManifest).not.toContain("@google/model-viewer");
   });
 });

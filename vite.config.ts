@@ -20,7 +20,6 @@ export default defineConfig({
       manifest: false,
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,json}"],
-        globIgnores: ["models/**"],
         navigateFallback: "/index.html",
         runtimeCaching: [
           {
@@ -28,15 +27,6 @@ export default defineConfig({
             handler: "NetworkOnly",
             options: {
               cacheName: "openfreemap-tiles",
-            },
-          },
-          {
-            urlPattern: /\/models\/.*\.(?:glb|png)$/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "models-assets",
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 6 },
             },
           },
         ],
