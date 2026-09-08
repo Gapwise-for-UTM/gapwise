@@ -77,6 +77,8 @@ export function AccountStatus({
   term,
   preferences,
   planTransition,
+  rememberOnDevice,
+  onRememberOnDeviceChange,
 }: {
   user: User | null;
   loading: boolean;
@@ -84,12 +86,13 @@ export function AccountStatus({
   hasTimetable: boolean;
   onOnboardingContinue: () => void;
   onOnboardingImport: () => void;
-  /** Monotonic app-shell action token used to open the single settings dialog directly. */
   settingsRequest?: number;
   meetings: Meeting[];
   term: Term;
   preferences: UserPreferences;
   planTransition: TransitionPlanner;
+  rememberOnDevice: boolean;
+  onRememberOnDeviceChange: (value: boolean) => void;
 }) {
   const aiController = useBridgedAiDelegationController();
   const [message, setMessage] = useState<string | null>(null);
@@ -343,6 +346,8 @@ export function AccountStatus({
           setSettingsOpen(false);
           setSignInOpen(true);
         }}
+        rememberOnDevice={rememberOnDevice}
+        onRememberOnDeviceChange={onRememberOnDeviceChange}
         aiController={aiController}
         meetings={meetings}
         term={term}
