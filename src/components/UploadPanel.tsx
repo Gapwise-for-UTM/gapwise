@@ -1,17 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { FileUp } from "lucide-react";
-import { LoadingPanel } from "@/components/ui/state-panel";
 import { clearFirstValuePending, markFirstValuePending } from "@/features/onboarding/first-value";
 import "./onboarding/first-run.css";
 
 function ScheduleSkeleton() {
   return (
-    <LoadingPanel
-      className="and66-skeleton mt-5"
-      compact
-      title="Reading your ACORN schedule…"
-      description="Building your timetable."
-    />
+    <div
+      className="and66-skeleton mt-5 rounded-lg border border-border bg-surface-low/45 p-4 text-left"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <p className="font-display text-sm font-medium">Building your timetable…</p>
+      <div className="mt-4 grid grid-cols-[3.5rem_minmax(0,1fr)] gap-3" aria-hidden="true">
+        <div className="space-y-2.5 pt-1">
+          <span className="block h-2 w-10 rounded bg-muted" />
+          <span className="block h-2 w-12 rounded bg-muted" />
+          <span className="block h-2 w-8 rounded bg-muted" />
+        </div>
+        <div className="space-y-2">
+          <span className="block h-8 w-[68%] rounded bg-muted" />
+          <span className="ml-[16%] block h-10 w-[76%] rounded bg-muted" />
+          <span className="block h-7 w-[54%] rounded bg-muted" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -163,7 +176,7 @@ export function UploadPanel({
         const file = event.dataTransfer.files?.[0];
         if (file && !loading) submitFile(file, true);
       }}
-      data-dragging={dragging ? "true" : "false"}
+      data-dragging={dragging ? "true" : undefined}
       className={`upload-dropzone group relative w-full cursor-pointer overflow-hidden border border-dashed p-7 text-center disabled:cursor-not-allowed disabled:opacity-60 sm:p-9 ${
         dragging
           ? "border-accent bg-accent/6"
