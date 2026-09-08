@@ -16,8 +16,7 @@ const viteEnv = (
   }
 ).env;
 const signInEnvironmentAvailable = Boolean(
-  viteEnv?.["VITE_SUPABASE_URL"]?.trim() &&
-    viteEnv?.["VITE_SUPABASE_PUBLISHABLE_KEY"]?.trim(),
+  viteEnv?.["VITE_SUPABASE_URL"]?.trim() && viteEnv?.["VITE_SUPABASE_PUBLISHABLE_KEY"]?.trim(),
 );
 
 type AccountStatusProps = {
@@ -95,11 +94,7 @@ export function AccountStatus(props: AccountStatusProps) {
   return (
     <Suspense
       fallback={
-        <SignInStub
-          loading
-          available={signInEnvironmentAvailable}
-          onActivate={() => undefined}
-        />
+        <SignInStub loading available={signInEnvironmentAvailable} onActivate={() => undefined} />
       }
     >
       <AccountStatusImpl {...props} settingsRequest={settingsRequest} />
