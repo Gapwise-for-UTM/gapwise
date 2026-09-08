@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term } from "@/lib/timetable-types";
+import { OPEN_ACCOUNT_SETTINGS_EVENT } from "./account-settings-trigger";
 import { OPEN_SIGN_IN_EVENT, requestGapwiseSignIn } from "./sign-in-trigger";
 
 const AccountStatusImpl = lazy(() =>
@@ -40,6 +41,7 @@ function SignInStub({ loading, onActivate }: { loading: boolean; onActivate: () 
 
 export function AccountStatus(props: AccountStatusProps) {
   const [activated, setActivated] = useState(false);
+  const [localSettingsRequest, setLocalSettingsRequest] = useState(0);
 
   useEffect(() => {
     const activate = () => setActivated(true);
@@ -47,10 +49,17 @@ export function AccountStatus(props: AccountStatusProps) {
     return () => window.removeEventListener(OPEN_SIGN_IN_EVENT, activate);
   }, []);
 
-  const shouldLoad =
-    activated ||
-    Boolean(props.user) ||
-    (props.settingsRequest !== undefined && props.settingsRequest > 0);
+  useEffect(() => {
+    const openSettings = () => {
+      setActivated(true);
+      setLocalSettingsRequest((request) => request + 1);
+    };
+    window.addEventListener(OPEN_ACCOUNT_SETTINGS_EVENT, openSettings);
+    return () => window.removeEventListener(OPEN_ACCOUNT_SETTINGS_EVENT, openSettings);
+  }, []);
+
+  const settingsRequest = (props.settingsRequest ?? 0) + localSettingsRequest;
+  const shouldLoad = activated || Boolean(props.user) || settingsRequest > 0;
 
   if (!shouldLoad) {
     return (
@@ -66,7 +75,7 @@ export function AccountStatus(props: AccountStatusProps) {
 
   return (
     <Suspense fallback={<SignInStub loading onActivate={() => undefined} />}>
-      <AccountStatusImpl {...props} />
+      <AccountStatusImpl {...props} settingsRequest={settingsRequest} />
     </Suspense>
   );
 }
