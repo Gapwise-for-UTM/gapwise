@@ -41,3 +41,112 @@ body:has(main.landing-stage)
   > button:nth-of-type(2) {
   display: none !important;
 }
+
+body:has(main.landing-stage)
+  header
+  [role="group"][aria-label="Account"]
+  > button:first-of-type {
+  min-height: 2rem !important;
+  padding-inline: 0.7rem !important;
+  border-radius: 0.42rem !important;
+  background: transparent !important;
+  font-size: 0.78rem !important;
+}
+
+body:has(main.landing-stage)
+  header
+  [role="group"][aria-label="Account"]
+  > button:first-of-type
+  svg {
+  display: none;
+}
+
+/* Landing interaction: one very cheap composited highlight instead of a
+ * canvas/WebGL hero. It makes the split surface react to intent without
+ * changing layout or adding runtime JavaScript.
+ */
+main.landing-stage .landing-bento {
+  position: relative;
+  isolation: isolate;
+}
+
+main.landing-stage .landing-bento::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    24rem 20rem at 28% 52%,
+    color-mix(in oklab, var(--color-accent) 8%, transparent),
+    transparent 72%
+  );
+  transition: opacity 220ms ease, background-position 260ms ease;
+}
+
+main.landing-stage .landing-bento:hover::before,
+main.landing-stage .landing-bento:focus-within::before {
+  opacity: 1;
+}
+
+main.landing-stage .landing-bento:has(.upload-card:hover)::before,
+main.landing-stage .landing-bento:has(.upload-card:focus-within)::before {
+  background: radial-gradient(
+    22rem 18rem at 82% 48%,
+    color-mix(in oklab, var(--color-accent) 9%, transparent),
+    transparent 72%
+  );
+}
+
+main.landing-stage .bento-hero,
+main.landing-stage .upload-card {
+  position: relative;
+  z-index: 1;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+main.landing-stage .hero-word {
+  position: relative;
+  display: inline-block;
+  transition: color 160ms ease;
+}
+
+main.landing-stage .hero-word::after {
+  content: "";
+  position: absolute;
+  left: 0.04em;
+  right: 0.02em;
+  bottom: -0.04em;
+  height: 1px;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleX(0.35);
+  transform-origin: left;
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+main.landing-stage .bento-hero:hover .hero-word::after,
+main.landing-stage .bento-hero:focus-within .hero-word::after {
+  opacity: 0.72;
+  transform: scaleX(1);
+}
+
+main.landing-stage .upload-card .button-primary {
+  transition: background-color 140ms ease, border-color 140ms ease !important;
+}
+
+main.landing-stage .upload-card:hover .button-primary,
+main.landing-stage .upload-card:focus-within .button-primary {
+  background: color-mix(in oklab, var(--color-primary) 92%, white 8%) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  main.landing-stage .landing-bento::before,
+  main.landing-stage .hero-word,
+  main.landing-stage .hero-word::after,
+  main.landing-stage .upload-card .button-primary {
+    transition: none !important;
+  }
+}
