@@ -168,11 +168,11 @@ body:has(main.landing-stage) .brand-utm-pill {
 }
 
 html[data-landing-product="gapwise"] {
-  --landing-chrome-accent: #2ea8ff;
+  --landing-chrome-accent: light-dark(#006bb3, #2ea8ff);
 }
 
 html[data-landing-product="gapwise-ai"] {
-  --landing-chrome-accent: #8b5cf6;
+  --landing-chrome-accent: light-dark(#6d28d9, #a78bfa);
 }
 
 html[data-landing-product="gapwise-docs"] {
@@ -180,11 +180,11 @@ html[data-landing-product="gapwise-docs"] {
 }
 
 html[data-landing-product="gapwise-data"] {
-  --landing-chrome-accent: #ff5a66;
+  --landing-chrome-accent: light-dark(#b42335, #ff5a66);
 }
 
 html[data-landing-product="gapwise-status"] {
-  --landing-chrome-accent: #39cf97;
+  --landing-chrome-accent: light-dark(#087a55, #39cf97);
 }
 
 html[data-landing-product] body:has(main.landing-stage) .app-shell {

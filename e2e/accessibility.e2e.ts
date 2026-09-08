@@ -22,6 +22,12 @@ async function expectNoSeriousAccessibilityViolations(page: Page) {
   ).toEqual([]);
 }
 
+async function waitForThemeTransition(page: Page) {
+  // The landing deliberately crossfades product/theme chrome over 420ms.
+  // Axe should evaluate the settled light/dark state rather than an interpolation frame.
+  await page.waitForTimeout(500);
+}
+
 test("core release journey has no serious or critical automatic a11y violations", async ({
   page,
 }, testInfo) => {
@@ -40,7 +46,7 @@ test("core release journey has no serious or critical automatic a11y violations"
 
   const viewMode = page.getByRole("group", { name: "View mode" });
   await viewMode.getByRole("button", { name: "Gap plan" }).click();
-  await expect(page.getByText("Tune gap recommendations")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Tune", exact: true })).toBeVisible();
   await expectNoSeriousAccessibilityViolations(page);
 
   await viewMode.getByRole("button", { name: "Day route" }).click();
@@ -58,12 +64,16 @@ test("dark and light themes preserve automatic accessibility checks", async ({
 
   await expectLanding(page);
   const darkToggle = page.getByRole("button", { name: "Switch to dark mode" });
-  if (await darkToggle.isVisible()) await darkToggle.click();
+  if (await darkToggle.isVisible()) {
+    await darkToggle.click();
+    await waitForThemeTransition(page);
+  }
   await expect(page.locator("html")).toHaveClass(/dark/);
   await expectNoSeriousAccessibilityViolations(page);
 
   await page.getByRole("button", { name: "Switch to light mode" }).click();
   await expect(page.locator("html")).not.toHaveClass(/dark/);
+  await waitForThemeTransition(page);
   await expectNoSeriousAccessibilityViolations(page);
   guard.assertClean();
 });
