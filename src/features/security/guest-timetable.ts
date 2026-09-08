@@ -99,6 +99,9 @@ export function saveGuestTimetable(meetings: Meeting[] | null): Promise<void> {
   return enqueueGuestWrite(async () => {
     const keys = await guestKeys();
     if (!meetings) return;
+    const timetableMeetings = meetings.filter(
+      (meeting) => meeting.sectionCode !== "STUDY" && meeting.sectionCode !== "PERSONAL",
+    );
     const selection = await securityStore();
     const [previousPrivate, previousCapsule] = await Promise.all([
       selection.store.getPrivateRecord(GUEST_DEVICE_ID),
@@ -106,7 +109,7 @@ export function saveGuestTimetable(meetings: Meeting[] | null): Promise<void> {
     ]);
     const updatedAt = new Date().toISOString();
     const payload = createPrivateDataPayload({
-      schedule: meetings,
+      schedule: timetableMeetings,
       personalItems: [],
       preferences: DEFAULT_USER_PREFERENCES,
       gapPreferences: DEFAULT_GAP_PREFERENCES,
