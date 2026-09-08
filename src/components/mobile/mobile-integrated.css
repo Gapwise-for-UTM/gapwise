@@ -1,95 +1,84 @@
 .mobile-integrated-app {
   --mobile-divider: var(--color-border);
 
-  background-color: var(--color-background);
-  background-image:
-    radial-gradient(circle at top right, rgb(10 132 255 / 8%), transparent 28rem),
-    linear-gradient(rgb(10 132 255 / 3%) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(10 132 255 / 3%) 1px, transparent 1px);
-  background-size:
-    auto,
-    24px 24px,
-    24px 24px;
-  background-attachment: fixed;
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  background: var(--color-background);
 }
 
-.mobile-integrated-app .app-nav,
+.mobile-integrated-app .mobile-topbar,
 .mobile-integrated-app .mobile-bottom-nav {
   border-color: var(--mobile-divider);
-  background: var(--color-background);
+  background: color-mix(in oklab, var(--color-background) 97%, var(--color-card));
   box-shadow: none;
-  backdrop-filter: blur(18px) saturate(125%);
-  -webkit-backdrop-filter: blur(18px) saturate(125%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .mobile-integrated-app main {
-  width: min(100%, 46rem);
+  width: 100%;
+  max-width: 46rem;
+  min-width: 0;
   margin-inline: auto;
+  overflow-x: clip;
 }
 
-.mobile-integrated-app main > .rise-in > * {
-  margin-top: 0 !important;
+.mobile-integrated-app main > * {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.mobile-integrated-app .brand-mark-shell {
+  border-color: var(--color-border);
+  border-radius: 0.55rem;
+  background: var(--color-card);
+  box-shadow: none;
+}
+
+.mobile-integrated-app .brand-mark-shell::after {
+  display: none;
 }
 
 .mobile-integrated-app .surface {
-  border-color: transparent !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0.75rem !important;
+  background: var(--color-card) !important;
   box-shadow: none !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 
-.mobile-integrated-app main > .rise-in > section.surface,
-.mobile-integrated-app main > .rise-in > .surface {
-  border-bottom: 1px solid var(--mobile-divider) !important;
+.mobile-integrated-app .button-primary,
+.mobile-integrated-app .button-secondary {
+  border-radius: 0.55rem !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
-.mobile-integrated-app [role="status"].surface {
-  border-left: 2px solid var(--color-accent) !important;
-  background: rgb(10 132 255 / 6%) !important;
+.mobile-integrated-app .button-primary:hover,
+.mobile-integrated-app .button-secondary:hover,
+.mobile-integrated-app .button-primary:active,
+.mobile-integrated-app .button-secondary:active {
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-.mobile-integrated-app .empty-state {
-  min-height: calc(
-    100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)
-  );
-  justify-content: center;
-  padding: clamp(2.75rem, 7vh, 4.5rem) 0.75rem clamp(4.5rem, 11vh, 7rem) !important;
-}
-
-.mobile-integrated-app .empty-state > .empty-state-icon {
-  margin-bottom: 1.1rem;
-}
-
-.mobile-integrated-app .empty-state > .eyebrow {
-  margin-top: 0 !important;
-}
-
-.mobile-integrated-app .empty-state > h1 {
-  max-width: 20rem;
-  margin-top: 0.4rem !important;
-  line-height: 1.08;
-}
-
-.mobile-integrated-app .empty-state > p:not(.eyebrow) {
-  max-width: 21rem;
-  margin-top: 0.6rem !important;
-  font-size: 0.93rem;
-  line-height: 1.65;
-}
-
-.mobile-integrated-app .empty-state > div {
-  margin-top: 1.4rem !important;
-  gap: 0.75rem;
-}
-
-.mobile-integrated-app .empty-state > a {
-  margin-top: 0.9rem !important;
+.mobile-integrated-app .button-primary {
+  background-image: none !important;
 }
 
 .mobile-integrated-app .mobile-nav-item {
   position: relative;
-  transition: color 160ms ease, background-color 160ms ease;
+  border-radius: 0.45rem;
+  transition:
+    color 140ms ease,
+    background-color 140ms ease;
+}
+
+.mobile-integrated-app .mobile-nav-item[aria-current="page"],
+.mobile-integrated-app .mobile-nav-item[aria-expanded="true"] {
+  background: color-mix(in oklab, var(--color-accent) 7%, transparent);
 }
 
 .mobile-integrated-app .mobile-nav-item[aria-current="page"]::before,
@@ -97,113 +86,274 @@
   position: absolute;
   top: 0;
   left: 50%;
-  width: 2.4rem;
+  width: 1.65rem;
   height: 2px;
   border-radius: 999px;
   background: var(--color-accent);
-  box-shadow: 0 0 14px rgb(10 132 255 / 55%);
   content: "";
   transform: translateX(-50%);
 }
 
-.mobile-integrated-app .today-signal > .grid,
-.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 {
-  gap: 0 !important;
-  border: 0 !important;
-  border-bottom: 1px solid var(--mobile-divider) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 0 !important;
+.mobile-page-stack {
+  display: grid;
+  min-width: 0;
+  gap: 1rem;
 }
 
-.mobile-integrated-app .today-signal > .grid > button,
-.mobile-integrated-app section:has([aria-label="Route weekday"]) > .mt-3.flex.gap-1 > button {
-  position: relative;
+.mobile-inline-status {
+  border: 1px solid color-mix(in oklab, var(--color-accent) 32%, var(--color-border));
+  border-radius: 0.65rem;
+  background: color-mix(in oklab, var(--color-accent) 7%, var(--color-card));
+  padding: 0.75rem 0.9rem;
+  color: var(--color-foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.mobile-primary-card,
+.mobile-stats-card,
+.mobile-agenda-card,
+.mobile-empty-card {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-card);
+  box-shadow: none;
+}
+
+.mobile-primary-card {
+  padding: 1.1rem;
+}
+
+.mobile-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.mobile-stats-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.mobile-stats-card > div {
+  min-width: 0;
+  padding: 0.8rem 0.55rem;
+  border-right: 1px solid var(--color-border);
+}
+
+.mobile-stats-card > div:last-child {
+  border-right: 0;
+}
+
+.mobile-stats-card span,
+.mobile-stats-card strong {
+  display: block;
+  min-width: 0;
+}
+
+.mobile-stats-card span {
+  overflow: hidden;
+  color: var(--color-muted-foreground);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-stats-card strong {
+  margin-top: 0.25rem;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-text-action {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mobile-agenda-card {
+  overflow: hidden;
+}
+
+.mobile-day-row {
+  display: grid;
+  grid-template-columns: 4.85rem minmax(0, 1fr);
+  gap: 0.85rem;
+  min-width: 0;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mobile-day-row-active {
+  background: color-mix(in oklab, var(--color-accent) 6%, var(--color-card));
+}
+
+.mobile-day-time {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.mobile-day-time strong,
+.mobile-day-time span {
+  display: block;
+  white-space: nowrap;
+}
+
+.mobile-day-time strong {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mobile-day-time span {
+  margin-top: 0.22rem;
+  color: var(--color-muted-foreground);
+  font-size: 0.66rem;
+}
+
+.mobile-mini-badge,
+.mobile-now-badge {
+  flex: none;
+  border-radius: 0.35rem;
+  padding: 0.16rem 0.35rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mobile-mini-badge {
+  border: 1px solid var(--color-border);
+  color: var(--color-muted-foreground);
+}
+
+.mobile-now-badge {
+  background: color-mix(in oklab, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+}
+
+.mobile-done-label {
+  flex: none;
+  color: var(--color-muted-foreground);
+  font-size: 0.6rem;
+  font-weight: 600;
+}
+
+.mobile-day-gap-row {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in oklab, var(--color-secondary) 32%, var(--color-card));
+  padding: 0.7rem 1rem;
+}
+
+.mobile-day-gap-row:hover,
+.mobile-day-gap-row:focus-visible {
+  background: color-mix(in oklab, var(--color-accent) 5%, var(--color-card));
+}
+
+.mobile-empty-card {
+  padding: 2.25rem 1rem;
+  text-align: center;
+}
+
+.mobile-integrated-app .empty-state {
+  min-height: calc(100dvh - 10rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  justify-content: center;
+  padding: 2.5rem 1rem 4.5rem !important;
+  overflow: visible;
+  background: var(--color-card) !important;
+}
+
+.mobile-integrated-app .empty-state-icon {
+  box-shadow: none !important;
+}
+
+.mobile-integrated-app .today-signal {
+  border-color: var(--color-border) !important;
+  background: var(--color-card) !important;
+}
+
+.mobile-integrated-app .today-signal > .grid {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0.6rem !important;
+  background: var(--color-background) !important;
+  padding: 0.2rem !important;
+  gap: 0.2rem !important;
+}
+
+.mobile-integrated-app .today-signal > .grid > button {
+  min-width: 0;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: 0.45rem !important;
   background: transparent !important;
   box-shadow: none !important;
   color: var(--color-muted-foreground) !important;
 }
 
-.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"],
-.mobile-integrated-app
-  section:has([aria-label="Route weekday"])
-  > .mt-3.flex.gap-1
-  > button[aria-pressed="true"] {
+.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--color-accent) 10%, var(--color-card)) !important;
   color: var(--color-accent) !important;
-}
-
-.mobile-integrated-app .today-signal > .grid > button[aria-pressed="true"]::after,
-.mobile-integrated-app
-  section:has([aria-label="Route weekday"])
-  > .mt-3.flex.gap-1
-  > button[aria-pressed="true"]::after {
-  position: absolute;
-  inset-inline: 22%;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--color-accent);
-  box-shadow: 0 0 12px rgb(10 132 255 / 45%);
-  content: "";
 }
 
 .mobile-integrated-app .mobile-day-tabs,
 .mobile-integrated-app [aria-label="Route weekday"] {
-  gap: 0 !important;
-  border-bottom: 1px solid var(--mobile-divider);
+  gap: 0.15rem !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0.6rem !important;
+  background: var(--color-background) !important;
+  padding: 0.2rem !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mobile-integrated-app .mobile-day-tabs::-webkit-scrollbar,
+.mobile-integrated-app [aria-label="Route weekday"]::-webkit-scrollbar {
+  display: none;
 }
 
 .mobile-integrated-app .mobile-day-tab,
 .mobile-integrated-app [aria-label="Route weekday"] > button {
   position: relative;
+  min-width: 0;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: 0.45rem !important;
   background: transparent !important;
   box-shadow: none !important;
 }
 
 .mobile-integrated-app .mobile-day-tab[aria-pressed="true"],
 .mobile-integrated-app [aria-label="Route weekday"] > button[aria-pressed="true"] {
+  background: color-mix(in oklab, var(--color-accent) 9%, var(--color-card)) !important;
   color: var(--color-accent) !important;
-}
-
-.mobile-integrated-app .mobile-day-tab[aria-pressed="true"]::after,
-.mobile-integrated-app [aria-label="Route weekday"] > button[aria-pressed="true"]::after {
-  position: absolute;
-  inset-inline: 31%;
-  bottom: -1px;
-  height: 2px;
-  border-radius: 999px;
-  background: var(--color-accent);
-  box-shadow: 0 0 12px rgb(10 132 255 / 55%);
-  content: "";
-}
-
-.mobile-integrated-app .today-signal .button-primary,
-.mobile-integrated-app
-  section:has([aria-label="Route weekday"])
-  > .flex:first-child
-  > .button-secondary {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: var(--color-accent) !important;
-  padding-inline: 0.45rem !important;
 }
 
 .mobile-integrated-app .meeting-card {
   --meeting-accent: var(--color-muted-foreground);
 
-  border: 0 !important;
-  border-bottom: 1px solid var(--mobile-divider) !important;
-  border-left: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  border: 1px solid var(--color-border) !important;
+  border-left: 2px solid var(--meeting-accent) !important;
+  border-radius: 0.65rem !important;
+  background: var(--color-card) !important;
   box-shadow: none !important;
-  padding: 1rem 0.4rem !important;
+  padding: 0.9rem !important;
   transform: none !important;
 }
 
@@ -230,85 +380,66 @@
 
 .mobile-integrated-app .meeting-card:hover,
 .mobile-integrated-app .meeting-card:focus-visible {
-  border-bottom-color: var(--meeting-accent) !important;
-  background: rgb(255 255 255 / 2%) !important;
+  border-color: color-mix(in oklab, var(--meeting-accent) 55%, var(--color-border)) !important;
+  border-left-color: var(--meeting-accent) !important;
+  background: color-mix(in oklab, var(--meeting-accent) 4%, var(--color-card)) !important;
   transform: none !important;
 }
 
-.mobile-integrated-app .meeting-card > div:first-child > span:first-child {
-  color: var(--meeting-accent);
-}
-
-.mobile-integrated-app .meeting-card > p > svg {
-  color: var(--meeting-accent) !important;
-}
-
+.mobile-integrated-app .meeting-card > div:first-child > span:first-child,
+.mobile-integrated-app .meeting-card > p > svg,
 .mobile-integrated-app .meeting-card .activity-badge {
-  color: var(--meeting-accent);
-}
-
-/* Vaul mounts timetable drawers in a body-level portal, outside .mobile-integrated-app. */
-[role="dialog"] .button-primary:has(.lucide-navigation) {
-  --route-component-accent: var(--color-accent);
-
-  border-color: color-mix(
-    in oklab,
-    var(--route-component-accent) 72%,
-    var(--color-border)
-  ) !important;
-  background: var(--route-component-accent) !important;
-  color: var(--color-background) !important;
-  box-shadow: 0 12px 30px -18px
-    color-mix(in oklab, var(--route-component-accent) 72%, transparent) !important;
-}
-
-[role="dialog"]:has(.activity-badge[data-activity="LEC"])
-  .button-primary:has(.lucide-navigation) {
-  --route-component-accent: var(--color-lec);
-}
-
-[role="dialog"]:has(.activity-badge[data-activity="TUT"])
-  .button-primary:has(.lucide-navigation) {
-  --route-component-accent: var(--color-tut);
-}
-
-[role="dialog"]:has(.activity-badge[data-activity="PRA"])
-  .button-primary:has(.lucide-navigation) {
-  --route-component-accent: var(--color-pra);
+  color: var(--meeting-accent) !important;
 }
 
 .mobile-integrated-app .mobile-gap-card,
 .mobile-integrated-app .gap-card {
-  border: 0 !important;
-  border-bottom: 1px solid var(--mobile-divider) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  border: 1px solid color-mix(in oklab, var(--color-accent) 24%, var(--color-border)) !important;
+  border-radius: 0.65rem !important;
+  background: color-mix(in oklab, var(--color-accent) 4%, var(--color-card)) !important;
   box-shadow: none !important;
 }
 
+.mobile-integrated-app .mobile-gap-card {
+  border-style: solid !important;
+}
+
+.mobile-integrated-app .dot-field {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  isolation: auto;
+}
+
+.mobile-integrated-app .dot-field::before {
+  display: none !important;
+}
+
 .mobile-integrated-app .day-route-sequence {
-  border: 0;
-  border-top: 1px solid var(--mobile-divider);
-  border-bottom: 1px solid var(--mobile-divider);
-  border-radius: 0;
-  background: transparent;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: var(--color-card);
   box-shadow: none;
-  padding: 1rem 0;
+  padding: 0.5rem;
 }
 
 .mobile-integrated-app .day-route-stop-card {
   --meeting-accent: var(--color-accent);
 
-  border: 0 !important;
-  border-bottom: 2px solid transparent !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  min-width: 0;
+  border: 1px solid var(--color-border) !important;
+  border-left: 2px solid var(--meeting-accent) !important;
+  border-radius: 0.6rem !important;
+  background: var(--color-card) !important;
   box-shadow: none !important;
 }
 
 .mobile-integrated-app .day-route-stop-card[aria-pressed="true"] {
-  border-bottom-color: var(--meeting-accent) !important;
-  background: rgb(255 255 255 / 3%) !important;
+  border-color: color-mix(in oklab, var(--meeting-accent) 55%, var(--color-border)) !important;
+  border-left-color: var(--meeting-accent) !important;
+  background: color-mix(in oklab, var(--meeting-accent) 5%, var(--color-card)) !important;
 }
 
 .mobile-integrated-app .mobile-route-stop-time,
@@ -317,70 +448,57 @@
 }
 
 .mobile-integrated-app .day-route-transition {
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
+  min-width: 0;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0.55rem !important;
+  background: var(--color-background) !important;
   box-shadow: none !important;
 }
 
 .mobile-integrated-app .day-route-transition[aria-pressed="true"] {
+  border-color: color-mix(in oklab, var(--color-accent) 45%, var(--color-border)) !important;
   color: var(--color-accent) !important;
 }
 
 .mobile-integrated-app .campus-explorer {
-  margin-inline: -0.25rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-inline: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: var(--color-card);
 }
 
 .mobile-integrated-app .campus-explorer > .campus-map {
+  width: 100%;
+  max-width: 100%;
   border: 0 !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 
 .mobile-integrated-app .campus-explorer-search {
-  width: 2.75rem !important;
-  transition: width 180ms ease;
-}
-
-.mobile-integrated-app .campus-explorer-search:focus-within,
-.mobile-integrated-app
-  .campus-explorer-search:has(#campus-building-search:not(:placeholder-shown)) {
-  width: min(22rem, calc(100% - 5.75rem)) !important;
-}
-
-.mobile-integrated-app .campus-explorer-search > .relative > svg {
-  left: 0.875rem !important;
+  width: min(100%, 22rem) !important;
+  max-width: calc(100% - 0.5rem);
 }
 
 .mobile-integrated-app #campus-building-search {
-  cursor: pointer;
-  border-radius: 999px !important;
-  padding-right: 0 !important;
-  transition:
-    border-radius 180ms ease,
-    padding-right 180ms ease;
-}
-
-.mobile-integrated-app
-  .campus-explorer-search:not(:focus-within):not(
-    :has(#campus-building-search:not(:placeholder-shown))
-  )
-  #campus-building-search::placeholder {
-  color: transparent;
-}
-
-.mobile-integrated-app .campus-explorer-search:focus-within #campus-building-search,
-.mobile-integrated-app
-  .campus-explorer-search:has(#campus-building-search:not(:placeholder-shown))
-  #campus-building-search {
   cursor: text;
-  border-radius: 0.75rem !important;
+  border-radius: 0.55rem !important;
   padding-right: 0.75rem !important;
+}
+
+.mobile-integrated-app .campus-map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .mobile-integrated-app .campus-map-actions > button[aria-pressed="true"] {
   border-color: color-mix(in oklab, var(--color-accent) 45%, var(--color-border)) !important;
-  background: color-mix(in oklab, var(--color-accent) 18%, var(--color-popover)) !important;
+  background: color-mix(in oklab, var(--color-accent) 9%, var(--color-card)) !important;
   color: var(--color-accent) !important;
 }
 
@@ -397,19 +515,45 @@
   margin: -1px !important;
 }
 
-.mobile-integrated-app #mobile-today-title ~ .mt-4 {
-  border: 0 !important;
-  border-top: 1px solid var(--mobile-divider) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding-inline: 0 !important;
+.mobile-integrated-app .glass-panel,
+.mobile-integrated-app .sign-in-panel,
+.mobile-integrated-app .status-toast {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Vaul mounts drawers in a body-level portal, outside .mobile-integrated-app. */
+[role="dialog"] .button-primary:has(.lucide-navigation) {
+  box-shadow: none !important;
+}
+
+@media (max-width: 370px) {
+  .mobile-integrated-app main {
+    padding-inline: 0.75rem !important;
+  }
+
+  .mobile-stats-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mobile-stats-card > div:nth-child(2) {
+    border-right: 0;
+  }
+
+  .mobile-stats-card > div:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .mobile-day-row {
+    grid-template-columns: 4.35rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding-inline: 0.8rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-integrated-app .mobile-nav-item,
-  .mobile-integrated-app .meeting-card,
-  .mobile-integrated-app .campus-explorer-search,
-  .mobile-integrated-app #campus-building-search {
+  .mobile-integrated-app .meeting-card {
     transition: none;
   }
 }
