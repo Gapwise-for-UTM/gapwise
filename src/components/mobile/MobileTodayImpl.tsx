@@ -4,7 +4,6 @@ import {
   BookOpen,
   CalendarClock,
   CheckCircle2,
-  Clock3,
   Home,
   MapPin,
   Navigation,
@@ -27,7 +26,6 @@ import {
   routeMinutes,
   type TodayState,
 } from "@/features/today/today-state";
-import { meetingOccursOnDate } from "@/lib/calendar-awareness";
 import { findGaps } from "@/lib/gaps";
 import type { Gap, Meeting, Term } from "@/lib/timetable-types";
 import { formatCompactDuration, formatTime, weekdayForDate } from "@/lib/timetable-types";
@@ -193,7 +191,11 @@ function AgendaItem({
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm font-semibold">{meeting.courseCode}</p>
           <span className="mobile-mini-badge">{label}</span>
-          {active ? <span className="mobile-now-badge">Now</span> : passed ? <span className="mobile-done-label">Done</span> : null}
+          {active ? (
+            <span className="mobile-now-badge">Now</span>
+          ) : passed ? (
+            <span className="mobile-done-label">Done</span>
+          ) : null}
         </div>
         {meeting.courseName ? (
           <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{meeting.courseName}</p>
@@ -242,11 +244,7 @@ function GapRow({
 export function MobileToday({
   state,
   now,
-  meetings,
   selectedTerm,
-  preferences,
-  gapPreferences,
-  planTransition,
   meetingCount,
   gapCount,
   isDemo,
@@ -255,11 +253,7 @@ export function MobileToday({
 }: {
   state: TodayState;
   now: Date;
-  meetings: Meeting[];
   selectedTerm: Term;
-  preferences: UserPreferences;
-  gapPreferences: GapPreferences;
-  planTransition: TransitionPlanner;
   meetingCount: number;
   gapCount: number;
   isDemo: boolean;
@@ -271,22 +265,23 @@ export function MobileToday({
   const { setRouteTargetId } = useMobileRouteTarget();
   const { eyebrow, title, detail, rows } = present(state, now, selectedTerm);
   const nowMinutes = minutesNow(now);
-  const todayMeetings = useMemo(
+  const todayMeetings = state.dayMeetings;
+  const classMeetings = useMemo(
     () =>
-      meetings
-        .filter((meeting) => meeting.term === selectedTerm && meetingOccursOnDate(meeting, now))
-        .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime),
-    [meetings, now, selectedTerm],
+      todayMeetings.filter(
+        (meeting) => meeting.sectionCode !== "STUDY" && meeting.sectionCode !== "PERSONAL",
+      ),
+    [todayMeetings],
   );
-  const todayGaps = useMemo(() => findGaps(todayMeetings, selectedTerm), [selectedTerm, todayMeetings]);
+  const todayGaps = useMemo(
+    () => findGaps(classMeetings, selectedTerm),
+    [classMeetings, selectedTerm],
+  );
   const gapByPreviousId = useMemo(
     () => new Map(todayGaps.map((gap) => [gap.previous.id, gap])),
     [todayGaps],
   );
-  const classCount = todayMeetings.filter(
-    (meeting) => meeting.sectionCode !== "STUDY" && meeting.sectionCode !== "PERSONAL",
-  ).length;
-  const plannedCount = todayMeetings.length - classCount;
+  const plannedCount = todayMeetings.length - classMeetings.length;
   const firstStart = todayMeetings[0]?.startTime ?? null;
   const lastEnd = todayMeetings.at(-1)?.endTime ?? null;
   const scheduledMinutes = todayMeetings.reduce(
@@ -389,7 +384,7 @@ export function MobileToday({
       <section className="mobile-stats-card">
         <div>
           <span>Classes</span>
-          <strong>{classCount}</strong>
+          <strong>{classMeetings.length}</strong>
         </div>
         <div>
           <span>Planned</span>
@@ -438,9 +433,9 @@ export function MobileToday({
                   {gap ? (
                     <GapRow
                       gap={gap}
-                      preferences={preferences}
-                      gapPreferences={gapPreferences}
-                      planTransition={planTransition}
+                      preferences={state.dayContext.preferences}
+                      gapPreferences={state.dayContext.gapPreferences}
+                      planTransition={state.dayContext.planTransition}
                       onOpen={onOpenGapPlan}
                     />
                   ) : null}
@@ -452,7 +447,9 @@ export function MobileToday({
       </section>
 
       <p className="px-1 pb-1 text-center text-[0.66rem] text-muted-foreground">
-        {isDemo ? "Sample timetable" : `${meetingCount} meetings in ${selectedTerm} · ${gapCount} gaps in the term`}
+        {isDemo
+          ? "Sample timetable"
+          : `${meetingCount} meetings in ${selectedTerm} · ${gapCount} gaps in the term`}
       </p>
     </div>
   );
