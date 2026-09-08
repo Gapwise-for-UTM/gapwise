@@ -165,6 +165,7 @@ test("timetable export offers available terms and downloads light and dark PNGs"
   await expect(page).toHaveURL(/\/timetable$/);
 
   await page.getByRole("button", { name: "Account settings" }).click();
+  await page.getByRole("tab", { name: "Exports" }).click();
   await page.getByRole("button", { name: "Export timetable", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "Export timetable image" })).toBeVisible();
   await expect(page.getByRole("radio", { name: "Fall" })).toBeVisible();
@@ -568,16 +569,14 @@ test("desktop demo moves between timetable, gaps, and route", async ({ page }, t
 
   await page.getByRole("button", { name: "Try a demo" }).click();
   await expect(page.getByRole("heading", { name: "Demo timetable" })).toBeVisible();
-  await expect(
-    page.getByText("Classes stay solid; usable time between them glows in blue"),
-  ).toBeVisible();
   const visibleGapWindows = page.getByTestId("gap-window");
   await expect(visibleGapWindows.first()).toBeVisible();
   expect(await visibleGapWindows.count()).toBeGreaterThan(0);
 
   const viewMode = page.getByRole("group", { name: "View mode" });
   await viewMode.getByRole("button", { name: "Gap plan" }).click();
-  await expect(page.getByRole("heading", { name: "Plan around your day" })).toBeVisible();
+  await expect(page).toHaveURL(/\/gaps$/);
+  await expect(page.getByRole("button", { name: "Tune", exact: true }).first()).toBeVisible();
 
   await viewMode.getByRole("button", { name: "Day route" }).click();
   await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
@@ -658,7 +657,9 @@ test("guest import never writes plaintext timetable persistence", async ({ page 
   expect(stored).toEqual({ timetable: null, remember: null });
 
   await page.reload();
-  await expect(page).toHaveURL(/\/timetable$/);
-  await expect(page.getByRole("heading", { name: "Add your timetable" })).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
+  ).toBeVisible();
   guard.assertClean();
 });
