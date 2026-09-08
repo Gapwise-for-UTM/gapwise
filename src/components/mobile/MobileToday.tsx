@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import type { TodayState } from "@/features/today/today-state";
+import type { Term } from "@/lib/timetable-types";
 
 const MobileTodayImpl = lazy(() =>
   import("./MobileTodayImpl").then((module) => ({ default: module.MobileToday })),
@@ -8,7 +9,7 @@ const MobileTodayImpl = lazy(() =>
 export type MobileTodayProps = {
   state: TodayState;
   now: Date;
-  selectedTerm: string;
+  selectedTerm: Term;
   meetingCount: number;
   gapCount: number;
   isDemo: boolean;
