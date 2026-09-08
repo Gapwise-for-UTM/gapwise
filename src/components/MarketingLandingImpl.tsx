@@ -1,11 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { UploadPanel } from "@/components/UploadPanel";
-import {
-  MARKETING_PRODUCTS,
-  type MarketingLandingProps,
-  type MarketingProductId,
-} from "./MarketingLanding";
+import type { MarketingLandingProps } from "./MarketingLanding";
+import { MARKETING_PRODUCTS, type MarketingProductId } from "./marketing-products";
 import "./marketing-landing.css";
 
 function ProductMark() {
@@ -63,10 +60,7 @@ export function MarketingLandingImpl({
             const bCenter = b.boundingClientRect.top + b.boundingClientRect.height / 2;
             return Math.abs(aCenter - viewportCenter) - Math.abs(bCenter - viewportCenter);
           });
-        const next = visible[0]?.target.getAttribute("data-product") as
-          | MarketingProductId
-          | null
-          | undefined;
+        const next = visible[0]?.target.getAttribute("data-product") as MarketingProductId | null;
         if (next) setActiveProduct(next);
       },
       { rootMargin: "-34% 0px -48% 0px", threshold: 0 },
@@ -199,7 +193,9 @@ export function MarketingLandingImpl({
               </div>
             </div>
             <div className="stage-route">
-              <span className="stage-symbol" aria-hidden="true">⌁</span>
+              <span className="stage-symbol" aria-hidden="true">
+                ⌁
+              </span>
               <span>Schedule context flows into Gap Plan and Day Route</span>
             </div>
           </div>
@@ -218,9 +214,7 @@ export function MarketingLandingImpl({
               body="The Gapwise MCP layer exposes deterministic public campus intelligence plus student context you explicitly delegate. Your connected AI client supplies the reasoning."
             />
             <div className="product-story-actions">
-              <Link className="product-story-link" to="/ai">
-                Gapwise AI <span aria-hidden="true">↗</span>
-              </Link>
+              <ExternalProductLink href="https://ai.gapwise.ca">Gapwise AI</ExternalProductLink>
               <ExternalProductLink href="https://ai.gapwise.ca/api/mcp">
                 MCP endpoint
               </ExternalProductLink>
@@ -348,7 +342,9 @@ export function MarketingLandingImpl({
               body="An independently deployed status surface tracks public Gapwise services, preserves incident history, and runs automated public-surface checks every 15 minutes."
             />
             <div className="product-story-actions">
-              <ExternalProductLink href="https://status.gapwise.ca">Open Status</ExternalProductLink>
+              <ExternalProductLink href="https://status.gapwise.ca">
+                Open Status
+              </ExternalProductLink>
               <Link className="product-story-link" to="/ops">
                 Operations <span aria-hidden="true">↗</span>
               </Link>
