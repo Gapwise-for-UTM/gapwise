@@ -9,10 +9,7 @@ import {
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
-import {
-  saveGuestTimetable,
-  type GuestTimetableRestoration,
-} from "@/features/security/guest-timetable";
+import type { GuestTimetableRestoration } from "@/features/security/guest-timetable";
 import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
 import {
@@ -124,7 +121,9 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
         latestMeetings.current = enriched;
         setMeetings(enriched);
         if (!userId && guest?.remember) {
-          void saveGuestTimetable(enriched).catch(() => undefined);
+          void import("@/features/security/guest-timetable").then(({ saveGuestTimetable }) =>
+            saveGuestTimetable(enriched).catch(() => undefined),
+          );
         }
       });
 
