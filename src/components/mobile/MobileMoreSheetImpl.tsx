@@ -23,21 +23,36 @@ export function MobileMoreSheet({
 }) {
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85dvh]">
-        <DrawerHeader className="text-left">
-          <DrawerTitle className="font-display text-lg font-semibold tracking-tight">
-            Settings
-          </DrawerTitle>
+      <DrawerContent className="max-h-[88dvh] rounded-t-2xl border-border bg-popover">
+        <DrawerHeader className="border-b border-border px-4 pb-4 text-left">
+          <DrawerTitle className="font-display text-lg font-medium tracking-tight">More</DrawerTitle>
         </DrawerHeader>
-        <div className="space-y-4 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-          <div className="flex flex-wrap items-center gap-2">{children}</div>
-          {syncControls ? <div className="border-t border-border pt-4">{syncControls}</div> : null}
-          <div className="space-y-2 border-t border-border pt-4">
+        <div className="space-y-5 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4">
+          <section>
+            <p className="mb-2 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Preferences
+            </p>
+            <div className="flex flex-wrap items-center gap-2">{children}</div>
+          </section>
+
+          {syncControls ? (
+            <section className="border-t border-border pt-4">
+              <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Sync
+              </p>
+              {syncControls}
+            </section>
+          ) : null}
+
+          <section className="space-y-2 border-t border-border pt-4">
+            <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Timetable
+            </p>
             <button
               type="button"
               disabled={loading}
               onClick={onUpdateTimetable}
-              className="button-primary inline-flex min-h-[2.875rem] w-full items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
+              className="button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
             >
               <Upload className="h-4 w-4" aria-hidden="true" />
               {loading ? "Updating…" : "Update timetable"}
@@ -46,13 +61,13 @@ export function MobileMoreSheet({
               <button
                 type="button"
                 onClick={onRemoveTimetable}
-                className="button-secondary inline-flex min-h-[2.875rem] w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-muted-foreground hover:border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+                className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-4 text-sm font-semibold text-muted-foreground hover:border-destructive/50 hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
                 Remove timetable
               </button>
             ) : null}
-          </div>
+          </section>
         </div>
       </DrawerContent>
     </Drawer>
