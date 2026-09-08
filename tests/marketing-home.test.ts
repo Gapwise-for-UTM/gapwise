@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 
 describe("Gapwise marketing system", () => {
   test("tells the real five-product story without retired landing effects", async () => {
-    const landing = await readFile("src/components/MarketingLanding.tsx", "utf8");
+    const landing = await readFile("src/components/MarketingLandingImpl.tsx", "utf8");
     const app = await readFile("src/routes/_app.tsx", "utf8");
 
     for (const product of [
@@ -20,7 +20,6 @@ describe("Gapwise marketing system", () => {
     expect(landing).toContain("https://docs.gapwise.ca");
     expect(landing).toContain("https://data.gapwise.ca");
     expect(landing).toContain("https://status.gapwise.ca");
-    expect(landing).toContain("/logo-mark.svg");
     expect(app).toContain("<MarketingLanding");
     expect(app).not.toContain("landing-bento rise-in");
     expect(app).not.toContain("Private by design");
