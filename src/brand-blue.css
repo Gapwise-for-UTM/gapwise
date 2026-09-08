@@ -132,10 +132,7 @@ body:has(main.landing-stage) header [aria-label="Campus arrival settings"] {
   display: none !important;
 }
 
-body:has(main.landing-stage)
-  header
-  [role="group"][aria-label="Account"]
-  > button:first-of-type {
+body:has(main.landing-stage) header [role="group"][aria-label="Account"] > button:first-of-type {
   min-height: 2rem !important;
   border-color: var(--color-border) !important;
   border-radius: 0.42rem !important;
@@ -152,7 +149,11 @@ body:has(main.landing-stage)
   header
   [role="group"][aria-label="Account"]
   > button:first-of-type:focus-visible {
-  border-color: color-mix(in oklab, var(--landing-chrome-accent, #2ea8ff) 42%, var(--color-border)) !important;
+  border-color: color-mix(
+    in oklab,
+    var(--landing-chrome-accent, #2ea8ff) 42%,
+    var(--color-border)
+  ) !important;
   background: var(--color-secondary) !important;
 }
 
@@ -214,11 +215,7 @@ html[data-landing-product] body:has(main.landing-stage) .desktop-app-header .bra
     var(--landing-chrome-accent) 22%,
     var(--color-border)
   ) !important;
-  background: color-mix(
-    in oklab,
-    var(--landing-chrome-accent) 6%,
-    var(--color-card)
-  ) !important;
+  background: color-mix(in oklab, var(--landing-chrome-accent) 6%, var(--color-card)) !important;
   box-shadow: none !important;
 }
 
