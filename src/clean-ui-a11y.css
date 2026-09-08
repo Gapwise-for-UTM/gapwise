@@ -1,6 +1,6 @@
 /* Keep the clean visual system readable at WCAG AA contrast levels. */
 
-:root {
+:root:not(.dark) {
   --primary: oklch(0.52 0.17 244);
   --accent: oklch(0.53 0.17 244);
   --hero-accent: oklch(0.53 0.17 244);
