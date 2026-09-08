@@ -120,7 +120,11 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
           {terms.length > 1 ? (
             <fieldset>
               <legend className="mb-2 text-sm font-semibold">Include</legend>
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Terms to export">
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="radiogroup"
+                aria-label="Terms to export"
+              >
                 {[...terms, "all" as const].map((option) => (
                   <button
                     key={option}
@@ -154,7 +158,9 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                   <Image className="h-4 w-4" aria-hidden="true" />
                   Share image
                 </span>
-                <span className="mt-1 block text-xs text-muted-foreground">High-resolution PNG</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  High-resolution PNG
+                </span>
               </button>
               <button
                 type="button"
