@@ -134,9 +134,8 @@ export function useTimetableCommands(input: TimetableCommandInput) {
   const remove = useCallback(async () => {
     try {
       if (input.userId) {
-        const { clearPrivateCloudLocalUser } = await import(
-          "@/features/sync/encrypted-sync-service"
-        );
+        const { clearPrivateCloudLocalUser } =
+          await import("@/features/sync/encrypted-sync-service");
         await clearPrivateCloudLocalUser(input.userId);
         setCloudRestoreSuppressed(input.userId, true);
       } else {
@@ -190,9 +189,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
       input.setRestorationMessage(value ? "Saving on this device…" : "Removing saved timetable…");
       void import("@/features/security/guest-timetable")
         .then(({ saveGuestTimetable, clearGuestTimetable }) =>
-          value
-            ? saveGuestTimetable(input.isDemo ? null : input.meetings)
-            : clearGuestTimetable(),
+          value ? saveGuestTimetable(input.isDemo ? null : input.meetings) : clearGuestTimetable(),
         )
         .then(() => {
           input.setGuestRestoration({
