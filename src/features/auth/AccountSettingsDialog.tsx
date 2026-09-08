@@ -8,6 +8,7 @@ import {
   LogIn,
   UserRound,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { TimetableExportDialog } from "@/components/TimetableExportDialog";
 import { TimetableHeatmapExportDialog } from "@/components/TimetableHeatmapExportDialog";
 import type { TransitionPlanner } from "@/features/routing/transition";
@@ -26,7 +27,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const GAPWISE_AI_URL = "https://ai.gapwise.ca";
 const GAPWISE_MCP_URL = `${GAPWISE_AI_URL}/api/mcp`;
+const GUEST_PERSISTENCE_EVENT = "gapwise:guest-timetable-persistence";
 export type AccountSettingsTab = "account" | "exports" | "ai";
+
+type DeviceSaveState = "checking" | "saved" | "off" | "busy" | "unavailable";
 
 export function AccountSettingsDialog({
   open,
@@ -35,8 +39,6 @@ export function AccountSettingsDialog({
   tab,
   onTabChange,
   onRequestSignIn,
-  rememberOnDevice,
-  onRememberOnDeviceChange,
   aiController,
   meetings,
   term,
@@ -49,8 +51,6 @@ export function AccountSettingsDialog({
   tab: AccountSettingsTab;
   onTabChange: (tab: AccountSettingsTab) => void;
   onRequestSignIn: () => void;
-  rememberOnDevice: boolean;
-  onRememberOnDeviceChange: (value: boolean) => void;
   aiController: AiDelegationController | null;
   meetings: Meeting[];
   term: Term;
@@ -58,6 +58,51 @@ export function AccountSettingsDialog({
   planTransition: TransitionPlanner;
 }) {
   const hasTimetable = meetings.length > 0;
+  const [deviceSaveState, setDeviceSaveState] = useState<DeviceSaveState>("checking");
+
+  useEffect(() => {
+    if (!open || identity) return;
+    let active = true;
+    setDeviceSaveState("checking");
+    void import("@/features/security/guest-timetable")
+      .then(({ loadGuestTimetable }) => loadGuestTimetable())
+      .then((record) => {
+        if (active) setDeviceSaveState(record.remember ? "saved" : "off");
+      })
+      .catch(() => {
+        if (active) setDeviceSaveState("unavailable");
+      });
+    return () => {
+      active = false;
+    };
+  }, [identity, open]);
+
+  async function setDeviceSave(enabled: boolean) {
+    if (identity || deviceSaveState === "busy") return;
+    setDeviceSaveState("busy");
+    try {
+      const { clearGuestTimetable, saveGuestTimetable } = await import(
+        "@/features/security/guest-timetable"
+      );
+      if (enabled) await saveGuestTimetable(meetings);
+      else await clearGuestTimetable();
+      const updatedAt = enabled ? new Date().toISOString() : null;
+      setDeviceSaveState(enabled ? "saved" : "off");
+      window.dispatchEvent(
+        new CustomEvent(GUEST_PERSISTENCE_EVENT, {
+          detail: {
+            remember: enabled,
+            meetings: enabled ? meetings : null,
+            updatedAt,
+          },
+        }),
+      );
+    } catch {
+      setDeviceSaveState("unavailable");
+    }
+  }
+
+  const deviceSaved = deviceSaveState === "saved";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -136,25 +181,41 @@ export function AccountSettingsDialog({
                       <button
                         type="button"
                         role="switch"
-                        aria-checked={rememberOnDevice}
-                        disabled={!hasTimetable && !rememberOnDevice}
-                        onClick={() => onRememberOnDeviceChange(!rememberOnDevice)}
+                        aria-checked={deviceSaved}
+                        disabled={
+                          deviceSaveState === "checking" ||
+                          deviceSaveState === "busy" ||
+                          deviceSaveState === "unavailable" ||
+                          (!hasTimetable && !deviceSaved)
+                        }
+                        onClick={() => void setDeviceSave(!deviceSaved)}
                         className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3 text-xs font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-45"
                       >
                         <span
                           className={`h-2 w-2 rounded-full ${
-                            rememberOnDevice ? "bg-accent" : "bg-muted-foreground/35"
+                            deviceSaved ? "bg-accent" : "bg-muted-foreground/35"
                           }`}
                           aria-hidden="true"
                         />
-                        {rememberOnDevice ? "Saved" : "Save on device"}
+                        {deviceSaveState === "checking"
+                          ? "Checking…"
+                          : deviceSaveState === "busy"
+                            ? "Saving…"
+                            : deviceSaved
+                              ? "Saved"
+                              : "Save on device"}
                       </button>
                     ) : null}
                   </div>
 
-                  {!identity && !hasTimetable && !rememberOnDevice ? (
+                  {!identity && !hasTimetable && !deviceSaved ? (
                     <p className="mt-3 text-xs text-muted-foreground">
                       Import a timetable first, then turn this on.
+                    </p>
+                  ) : null}
+                  {!identity && deviceSaveState === "unavailable" ? (
+                    <p className="mt-3 text-xs text-destructive">
+                      Secure device storage is unavailable in this browser or browsing mode.
                     </p>
                   ) : null}
 
