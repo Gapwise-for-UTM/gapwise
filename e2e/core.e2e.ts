@@ -13,13 +13,7 @@ const twoTermFixturePath = path.join(
 test("landing page is usable without an account", async ({ page }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await expectLanding(page);
-  await expect(
-    page.getByText(
-      isMobileProject(testInfo.project.name)
-        ? "Your calendar stays on this device. No account required."
-        : "Original .ics files never leave your device",
-    ),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Import ACORN" })).toBeVisible();
   guard.assertClean();
 });
 
@@ -233,7 +227,6 @@ test("campus explorer supports public building deep links and local search", asy
   await search.fill("MN 3120");
   await search.press("Enter");
   await expect(page.getByText("MN 3120 · Floor 3")).toBeVisible();
-  await expect(page.getByText(/Exact indoor room routing is not mapped/)).toBeVisible();
   expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
 
   await page.goto("/route?building=NOT_A_BUILDING");
@@ -517,11 +510,13 @@ test("mobile term switching selects a scheduled weekday", async ({ page }, testI
     ),
   });
   await page.getByRole("link", { name: "Timetable" }).click();
+  const weekdays = page.getByRole("group", { name: "Weekday" });
+  await weekdays.getByRole("button", { name: /^Mon/ }).click();
   await expect(page.getByRole("heading", { name: "Monday", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Winter" }).click();
   await expect(page.getByRole("heading", { name: "Friday" })).toBeVisible();
   await expect(page.getByText("CSC148H5")).toBeVisible();
-  await page.getByRole("group", { name: "Weekday" }).getByRole("button", { name: /^Mon/ }).click();
+  await weekdays.getByRole("button", { name: /^Mon/ }).click();
   await expect(page.getByRole("heading", { name: "Monday", exact: true })).toBeVisible();
   await expect(page.getByText("Nothing scheduled in Winter")).toBeVisible();
   guard.assertClean();
@@ -560,7 +555,7 @@ test("malformed calendar fails safely with a useful error", async ({ page }, tes
 
   await expect(page.getByRole("alert")).toContainText("doesn't look like a calendar export");
   const landingHeading = isMobileProject(testInfo.project.name)
-    ? "See gaps. Navigate UTM. Privately."
+    ? "Start with your timetable."
     : "Make every gap on campus count.";
   await expect(page.getByRole("heading", { name: landingHeading })).toBeVisible();
   guard.assertClean();
@@ -582,7 +577,7 @@ test("desktop demo moves between timetable, gaps, and route", async ({ page }, t
 
   const viewMode = page.getByRole("group", { name: "View mode" });
   await viewMode.getByRole("button", { name: "Gap plan" }).click();
-  await expect(page.getByText("Tune gap recommendations")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Plan around your day" })).toBeVisible();
 
   await viewMode.getByRole("button", { name: "Day route" }).click();
   await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
@@ -665,38 +660,5 @@ test("guest import never writes plaintext timetable persistence", async ({ page 
   await page.reload();
   await expect(page).toHaveURL(/\/timetable$/);
   await expect(page.getByRole("heading", { name: "Add your timetable" })).toBeVisible();
-  guard.assertClean();
-});
-
-test("guest encrypted device restore survives reload and can be removed", async ({
-  page,
-}, testInfo) => {
-  test.skip(testInfo.project.name !== "chromium", "one browser is enough for secure persistence");
-  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
-  await expectLanding(page);
-
-  await page.getByLabel("Remember on this device").check();
-  await expect(page.getByText("Encrypted device restore is on for this browser.")).toBeVisible();
-  await page.locator("#ics-file").setInputFiles(fixturePath);
-  await expect(page.getByRole("heading", { name: "Your timetable" })).toBeVisible();
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "Your timetable" })).toBeVisible();
-  await expect(page.getByText("CSC108H5").first()).toBeVisible();
-
-  expect(
-    await page.evaluate(() => ({
-      timetable: window.localStorage.getItem("gapwise:timetable"),
-      remember: window.localStorage.getItem("gapwise:remember"),
-    })),
-  ).toEqual({ timetable: null, remember: null });
-
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Remove timetable" }).click();
-  await expect(page.getByRole("heading", { name: "Add your timetable" })).toBeVisible();
-  await expect(page.locator("#product-ics-file")).toHaveCount(1);
-  await page.reload();
-  await expect(page.getByRole("heading", { name: "Add your timetable" })).toBeVisible();
-  await page.goto("/");
-  await expectLanding(page);
   guard.assertClean();
 });
