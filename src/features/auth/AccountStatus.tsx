@@ -23,13 +23,7 @@ type AccountStatusProps = {
   planTransition: TransitionPlanner;
 };
 
-function SignInStub({
-  loading,
-  onActivate,
-}: {
-  loading: boolean;
-  onActivate: () => void;
-}) {
+function SignInStub({ loading, onActivate }: { loading: boolean; onActivate: () => void }) {
   return (
     <div className="relative flex items-center gap-2" role="group" aria-label="Account">
       <button
@@ -54,7 +48,9 @@ export function AccountStatus(props: AccountStatusProps) {
   }, []);
 
   const shouldLoad =
-    activated || Boolean(props.user) || (props.settingsRequest !== undefined && props.settingsRequest > 0);
+    activated ||
+    Boolean(props.user) ||
+    (props.settingsRequest !== undefined && props.settingsRequest > 0);
 
   if (!shouldLoad) {
     return (
