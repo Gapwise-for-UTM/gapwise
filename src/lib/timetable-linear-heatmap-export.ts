@@ -15,27 +15,31 @@ const PALETTES = {
     background: "#f7f7f8",
     building: "#ececef",
     buildingStroke: "#d4d4d8",
-    visitedStroke: "#2563eb",
+    visitedStroke: "#5965cc",
     network: "#d7d7dc",
-    routeUnderlay: "#93c5fd",
-    route: "#2563eb",
-    heatStart: [219, 234, 254] as const,
-    heatEnd: [37, 99, 235] as const,
+    routeUnderlay: "#b9bff5",
+    route: "#5965cc",
+    heatStart: [229, 231, 250] as const,
+    heatEnd: [89, 101, 204] as const,
   },
   dark: {
     background: "#111113",
     building: "#1b1b1f",
     buildingStroke: "#2a2a2f",
-    visitedStroke: "#93c5fd",
+    visitedStroke: "#8c96ec",
     network: "#292a31",
-    routeUnderlay: "#1d4ed8",
-    route: "#60a5fa",
-    heatStart: [31, 41, 55] as const,
-    heatEnd: [96, 165, 250] as const,
+    routeUnderlay: "#363b72",
+    route: "#6975df",
+    heatStart: [35, 36, 49] as const,
+    heatEnd: [105, 117, 223] as const,
   },
 } as const;
 
-function mix(start: readonly [number, number, number], end: readonly [number, number, number], amount: number) {
+function mix(
+  start: readonly [number, number, number],
+  end: readonly [number, number, number],
+  amount: number,
+) {
   return start.map((channel, index) => Math.round(channel + (end[index]! - channel) * amount));
 }
 
