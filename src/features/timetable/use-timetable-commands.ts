@@ -79,8 +79,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
             });
           } catch {
             input.setRemember(false);
-            persistenceWarning =
-              "This browser could not keep an encrypted device copy. Your open timetable is unchanged.";
+            persistenceWarning = "This browser could not save the timetable for the next visit.";
           }
         }
         input.setMeetings(result.meetings);
@@ -98,9 +97,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
       } catch (error) {
         const message = timetableImportError(error);
         if (previousMeetings?.length) {
-          input.setRestorationMessage(
-            `Timetable update failed · Your current timetable is safe and unchanged. ${message}`,
-          );
+          input.setRestorationMessage(`Timetable update failed · ${message}`);
         } else {
           input.setMeetings(null);
           input.latestMeetings.current = null;
@@ -147,21 +144,13 @@ export function useTimetableCommands(input: TimetableCommandInput) {
       }
       clearView();
     } catch {
-      input.setRestorationMessage(
-        "This browser could not clear its encrypted local copy, so the timetable was left in place.",
-      );
+      input.setRestorationMessage("The saved timetable could not be removed. Try again.");
     }
   }, [clearView, input]);
 
   const confirmRemove = useCallback(() => {
-    const cloudNote = input.userId
-      ? " Your encrypted cloud copy will remain available from Load private data."
-      : "";
-    if (
-      window.confirm(
-        `Remove this timetable and its encrypted local copy from this browser?${cloudNote}`,
-      )
-    ) {
+    const cloudNote = input.userId ? " Your synced copy will remain available." : "";
+    if (window.confirm(`Remove this timetable from this browser?${cloudNote}`)) {
       void remove();
     }
   }, [input.userId, remove]);
@@ -195,9 +184,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
     (value: boolean) => {
       input.setRemember(value);
       if (input.userId) return;
-      input.setRestorationMessage(
-        value ? "Setting up encrypted device restore…" : "Removing the encrypted device copy…",
-      );
+      input.setRestorationMessage(value ? "Saving on this device…" : "Removing saved timetable…");
       void (
         value ? saveGuestTimetable(input.isDemo ? null : input.meetings) : clearGuestTimetable()
       )
@@ -207,15 +194,11 @@ export function useTimetableCommands(input: TimetableCommandInput) {
             meetings: value && !input.isDemo ? input.meetings : null,
             updatedAt: value && input.meetings && !input.isDemo ? new Date().toISOString() : null,
           });
-          input.setRestorationMessage(
-            value
-              ? "Encrypted device restore is on for this browser."
-              : "Encrypted device restore is off and its local copy was removed.",
-          );
+          input.setRestorationMessage(value ? "Saved on this device." : "Saved timetable removed.");
         })
         .catch(() => {
           input.setRemember(!value);
-          input.setRestorationMessage("Secure device storage is unavailable in this browser.");
+          input.setRestorationMessage("Device save is unavailable in this browser.");
         });
     },
     [input],
