@@ -1,12 +1,6 @@
 import type { ReactNode } from "react";
 import { Trash2, Upload } from "lucide-react";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 export function MobileMoreSheet({
   open,
@@ -24,9 +18,7 @@ export function MobileMoreSheet({
   onUpdateTimetable: () => void;
   onRemoveTimetable: () => void;
   canRemove?: boolean;
-  /** Existing account, theme, and residence controls, rendered unchanged. */
   children: ReactNode;
-  /** Optional post-value private-sync controls. Never shown by the caller before a timetable exists. */
   syncControls?: ReactNode;
 }) {
   return (
@@ -36,9 +28,6 @@ export function MobileMoreSheet({
           <DrawerTitle className="font-display text-lg font-semibold tracking-tight">
             Settings
           </DrawerTitle>
-          <DrawerDescription className="text-sm text-muted-foreground">
-            Account, appearance, and timetable controls.
-          </DrawerDescription>
         </DrawerHeader>
         <div className="space-y-4 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
           <div className="flex flex-wrap items-center gap-2">{children}</div>
@@ -64,9 +53,6 @@ export function MobileMoreSheet({
               </button>
             ) : null}
           </div>
-          <p className="text-center font-mono text-[0.6rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
-            Independent student project · Not affiliated with U of T
-          </p>
         </div>
       </DrawerContent>
     </Drawer>
