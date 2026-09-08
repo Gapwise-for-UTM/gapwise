@@ -81,7 +81,9 @@ export function UploadPanel({
         onChange={(event) => onRememberChange(event.target.checked)}
         className="h-4 w-4 shrink-0 accent-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-55"
       />
-      <span>{rememberAvailable ? "Remember this timetable on this device" : "Device sync is active"}</span>
+      <span>
+        {rememberAvailable ? "Remember this timetable on this device" : "Device sync is active"}
+      </span>
     </label>
   );
 
