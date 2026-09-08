@@ -49,9 +49,7 @@ describe("Gapwise marketing system", () => {
     expect(stability).toContain("--gapwise-safe-top: env(safe-area-inset-top, 0px)");
     expect(stability).toMatch(/\.desktop-app-header\s*\{[\s\S]*position:\s*fixed\s*!important/);
     expect(stability).toMatch(/\.product-story-nav\s*\{[\s\S]*position:\s*fixed\s*!important/);
-    expect(stability).toContain(
-      "padding-top: var(--gapwise-public-chrome-height) !important;",
-    );
+    expect(stability).toContain("padding-top: var(--gapwise-public-chrome-height) !important;");
     expect(stability).toContain("transform: translate3d(0, 0, 0)");
   });
 });
