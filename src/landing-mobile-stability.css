@@ -1,0 +1,125 @@
+/*
+ * Mobile landing stability and public-header alignment.
+ * Keep the product story expressive without letting sticky chrome reflow or repaint excessively.
+ */
+
+:root {
+  --gapwise-public-header-height: 4rem;
+  --gapwise-product-nav-height: 3.25rem;
+}
+
+body:has(main.landing-stage) .desktop-app-header > div {
+  min-height: var(--gapwise-public-header-height) !important;
+  max-width: 70rem !important;
+}
+
+body:has(main.landing-stage) .desktop-app-header .brand-lockup {
+  gap: 0.625rem !important;
+}
+
+body:has(main.landing-stage) .desktop-app-header .brand-mark-shell {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+
+body:has(main.landing-stage) .desktop-app-header .brand-mark-shell::before {
+  inset: 0 !important;
+}
+
+body:has(main.landing-stage) .desktop-app-header .brand-utm-pill {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding-inline: 0 !important;
+}
+
+body:has(main.landing-stage) .product-story-nav {
+  top: var(--gapwise-public-header-height) !important;
+  height: var(--gapwise-product-nav-height) !important;
+  min-height: var(--gapwise-product-nav-height) !important;
+}
+
+@media (max-width: 800px) {
+  body:has(main.landing-stage) .desktop-app-header {
+    min-height: var(--gapwise-public-header-height) !important;
+    border-color: var(--color-border) !important;
+    background: var(--color-background) !important;
+    backdrop-filter: none !important;
+  }
+
+  html[data-landing-product] body:has(main.landing-stage) .app-shell,
+  html[data-landing-product] body:has(main.landing-stage) .desktop-app-header {
+    background: var(--color-background) !important;
+  }
+
+  body:has(main.landing-stage) .desktop-app-header .brand-mark-shell,
+  body:has(main.landing-stage) .desktop-app-header .brand-utm-pill {
+    transition: color 180ms ease !important;
+  }
+
+  .marketing-home {
+    transition: none !important;
+  }
+
+  .product-story-nav {
+    overflow: hidden !important;
+    gap: 0 !important;
+    padding-inline: 0.25rem;
+    background: var(--color-background) !important;
+    transition: none !important;
+  }
+
+  .product-story-nav::after {
+    transition: background-color 180ms ease !important;
+  }
+
+  .product-story-nav > div {
+    width: 100%;
+    min-width: 0 !important;
+    flex: 1;
+    justify-content: space-between;
+    gap: 0 !important;
+    overflow: visible !important;
+  }
+
+  .product-story-nav a {
+    min-height: var(--gapwise-product-nav-height);
+    flex: 0 0 auto;
+    gap: 0 !important;
+    padding-inline: 0.3rem;
+    white-space: nowrap;
+    transition: color 160ms ease !important;
+  }
+
+  .product-story-nav a i {
+    display: none !important;
+  }
+
+  .product-story-section {
+    scroll-margin-top: calc(
+      var(--gapwise-public-header-height) + var(--gapwise-product-nav-height) + 0.75rem
+    ) !important;
+  }
+
+  .product-story-section > * {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .product-story-section::before,
+  .product-stage {
+    transition-duration: 180ms !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(main.landing-stage) .desktop-app-header .brand-mark-shell,
+  body:has(main.landing-stage) .desktop-app-header .brand-utm-pill,
+  .product-story-nav::after,
+  .product-story-nav a {
+    transition: none !important;
+  }
+}
