@@ -40,4 +40,16 @@ describe("Gapwise marketing system", () => {
     expect(brand).toContain("main.landing-stage .hero-word::after");
     expect(brand).toContain("display: none !important");
   });
+
+  test("pins the mobile public chrome instead of handing off between sticky rows", async () => {
+    const stability = await readFile("src/landing-mobile-stability.css", "utf8");
+    const html = await readFile("index.html", "utf8");
+
+    expect(html).toContain("viewport-fit=cover");
+    expect(stability).toContain("--gapwise-safe-top: env(safe-area-inset-top, 0px)");
+    expect(stability).toMatch(/\.desktop-app-header\s*\{[\s\S]*position:\s*fixed\s*!important/);
+    expect(stability).toMatch(/\.product-story-nav\s*\{[\s\S]*position:\s*fixed\s*!important/);
+    expect(stability).toContain("padding-top: var(--gapwise-public-chrome-height) !important;");
+    expect(stability).toContain("transform: translate3d(0, 0, 0)");
+  });
 });
