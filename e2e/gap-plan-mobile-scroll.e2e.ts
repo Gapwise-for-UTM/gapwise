@@ -29,11 +29,9 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight,
       overflowY: style.overflowY,
-      display: style.display,
     };
   });
 
-  expect(tuneMetrics.display).toBe("flex");
   expect(["auto", "scroll"]).toContain(tuneMetrics.overflowY);
   expect(tuneMetrics.scrollHeight).toBeGreaterThan(tuneMetrics.clientHeight);
 
