@@ -1,5 +1,4 @@
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
-import { getSupabaseClient } from "@/lib/supabase";
 
 export type AuthSnapshot = {
   user: User | null;
@@ -75,11 +74,7 @@ export function createAuthStore(auth: AuthClient | null) {
 
   function reportInitializationError() {
     blockedUserId = snapshot.user?.id ?? blockedUserId;
-    emit({
-      user: null,
-      loading: false,
-      error: "We couldn't restore your signed-in session.",
-    });
+    emit({ user: null, loading: false, error: "Sign-in is unavailable." });
   }
 
   function dispose() {
@@ -100,7 +95,70 @@ export function createAuthStore(auth: AuthClient | null) {
   };
 }
 
-const authStore = createAuthStore(getSupabaseClient()?.auth ?? null);
+function createDeferredAuthStore() {
+  let snapshot: AuthSnapshot = { user: null, loading: true, error: null };
+  let started = false;
+  let disposed = false;
+  let inner: ReturnType<typeof createAuthStore> | null = null;
+  let unsubscribeInner: (() => void) | null = null;
+  const listeners = new Set<() => void>();
+
+  const emit = (next: AuthSnapshot) => {
+    snapshot = next;
+    for (const listener of listeners) listener();
+  };
+
+  function start() {
+    if (started) return;
+    started = true;
+    void import("@/lib/supabase")
+      .then(({ getSupabaseClient }) => {
+        if (disposed) return;
+        inner = createAuthStore(getSupabaseClient()?.auth ?? null);
+        unsubscribeInner = inner.subscribe(() => emit(inner!.getSnapshot()));
+        emit(inner.getSnapshot());
+      })
+      .catch(() => {
+        if (!disposed) emit({ user: null, loading: false, error: "Sign-in is unavailable." });
+      });
+  }
+
+  function subscribe(listener: () => void) {
+    listeners.add(listener);
+    start();
+    return () => listeners.delete(listener);
+  }
+
+  function forceSignedOut() {
+    if (inner) inner.forceSignedOut();
+    else emit(SIGNED_OUT);
+  }
+
+  function reportInitializationError() {
+    if (inner) inner.reportInitializationError();
+    else emit({ user: null, loading: false, error: "Sign-in is unavailable." });
+  }
+
+  function dispose() {
+    disposed = true;
+    unsubscribeInner?.();
+    inner?.dispose();
+    unsubscribeInner = null;
+    inner = null;
+    listeners.clear();
+  }
+
+  return {
+    subscribe,
+    getSnapshot: () => snapshot,
+    getServerSnapshot: () => SIGNED_OUT,
+    forceSignedOut,
+    reportInitializationError,
+    dispose,
+  };
+}
+
+const authStore = createDeferredAuthStore();
 
 if (import.meta.hot) import.meta.hot.dispose(() => authStore.dispose());
 
