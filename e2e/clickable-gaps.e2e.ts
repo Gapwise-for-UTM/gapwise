@@ -15,7 +15,10 @@ test("a timetable gap opens Gap Plan with that exact interval selected", async (
     await expect(nav).toBeVisible();
     await nav.getByRole("link", { name: "Timetable" }).click();
     await expect(page.getByText("Day timetable")).toBeVisible();
+    const weekdays = page.getByRole("group", { name: "Weekday" });
+    await weekdays.getByRole("button", { name: /Mon/ }).click();
     const gap = page.getByRole("button", { name: /gap.*View gap plan/i }).first();
+    await expect(gap).toBeVisible();
     const label = await gap.getAttribute("aria-label");
     const duration = (label ?? "").match(/^(.*?) gap/)?.[1];
     await gap.click();
