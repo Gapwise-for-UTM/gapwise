@@ -55,7 +55,7 @@ const LINEAR_PALETTES: Record<ExportTheme, TimetableExportPalette> = {
   },
 };
 
-function renderLinearTimetableSvg(
+export function renderLinearTimetableSvg(
   meetings: readonly Meeting[],
   selection: ExportSelection,
   theme: ExportTheme,
