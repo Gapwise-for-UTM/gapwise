@@ -5,10 +5,8 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
-import { clearGuestTimetable, saveGuestTimetable } from "@/features/security/guest-timetable";
 import type { GuestTimetableRestoration } from "@/features/security/guest-timetable";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
-import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import type { RestoredSource } from "@/features/sync/restoration-decisions";
 import type { RestorationState } from "@/features/sync/restoration";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
@@ -71,6 +69,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
         let persistenceWarning: string | null = null;
         if (input.remember && !input.userId) {
           try {
+            const { saveGuestTimetable } = await import("@/features/security/guest-timetable");
             await saveGuestTimetable(result.meetings);
             input.setGuestRestoration({
               remember: true,
@@ -135,9 +134,13 @@ export function useTimetableCommands(input: TimetableCommandInput) {
   const remove = useCallback(async () => {
     try {
       if (input.userId) {
+        const { clearPrivateCloudLocalUser } = await import(
+          "@/features/sync/encrypted-sync-service"
+        );
         await clearPrivateCloudLocalUser(input.userId);
         setCloudRestoreSuppressed(input.userId, true);
       } else {
+        const { clearGuestTimetable } = await import("@/features/security/guest-timetable");
         await clearGuestTimetable();
         input.setGuestRestoration({ remember: false, meetings: null, updatedAt: null });
         input.setRemember(false);
@@ -185,9 +188,12 @@ export function useTimetableCommands(input: TimetableCommandInput) {
       input.setRemember(value);
       if (input.userId) return;
       input.setRestorationMessage(value ? "Saving on this device…" : "Removing saved timetable…");
-      void (
-        value ? saveGuestTimetable(input.isDemo ? null : input.meetings) : clearGuestTimetable()
-      )
+      void import("@/features/security/guest-timetable")
+        .then(({ saveGuestTimetable, clearGuestTimetable }) =>
+          value
+            ? saveGuestTimetable(input.isDemo ? null : input.meetings)
+            : clearGuestTimetable(),
+        )
         .then(() => {
           input.setGuestRestoration({
             remember: value,
