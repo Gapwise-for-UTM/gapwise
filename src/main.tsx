@@ -6,8 +6,6 @@ import "./clean-ui-v2.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/react";
 import { getRouter } from "./router";
 import { registerSW } from "virtual:pwa-register";
 import { removeBareHash } from "./lib/url";
@@ -33,7 +31,5 @@ const updateServiceWorker = registerSW({
 createRoot(container).render(
   <StrictMode>
     <RouterProvider router={router} />
-    <Analytics />
-    <SpeedInsights />
   </StrictMode>,
 );
