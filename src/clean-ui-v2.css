@@ -15,7 +15,10 @@
 .route-details-panel > div:first-child p,
 section[aria-live="polite"] > ul,
 section[aria-live="polite"] > p.mt-3,
-.glass-panel[class*="max-h-[85vh]"] > p:last-child {
+.glass-panel[class*="max-h-[85vh]"] > p:last-child,
+.empty-state > .eyebrow,
+.empty-state > p,
+[role="dialog"] > div.overflow-y-auto > p.mt-4.text-xs:last-child {
   display: none !important;
 }
 
