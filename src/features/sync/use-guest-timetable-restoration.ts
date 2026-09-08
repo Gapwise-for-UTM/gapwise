@@ -1,8 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  loadGuestTimetable,
-  type GuestTimetableRestoration,
-} from "@/features/security/guest-timetable";
+import type { GuestTimetableRestoration } from "@/features/security/guest-timetable";
 import { loadRememberedRecord } from "@/hooks/use-preferences";
 
 const EMPTY_GUEST_RESTORATION: GuestTimetableRestoration = {
@@ -16,10 +13,10 @@ export function useGuestTimetableRestoration() {
   const [remember, setRemember] = useState(false);
 
   useEffect(() => {
-    // Remove obsolete plaintext persistence before reading the encrypted guest record.
     loadRememberedRecord<unknown>();
     let active = true;
-    void loadGuestTimetable()
+    void import("@/features/security/guest-timetable")
+      .then(({ loadGuestTimetable }) => loadGuestTimetable())
       .then((restored) => {
         if (!active) return;
         setRecord(restored);
