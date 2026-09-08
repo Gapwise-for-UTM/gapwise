@@ -1,6 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { isMobileProject, watchForAppFailures } from "./helpers";
 
+async function expectSelectedGapDuration(page: import("@playwright/test").Page, duration?: string) {
+  if (!duration) return;
+  await expect(
+    page.locator('button[aria-pressed="true"]').filter({ hasText: duration }).first(),
+  ).toBeVisible();
+}
+
 test("a timetable gap opens Gap Plan with that exact interval selected", async ({
   page,
 }, testInfo) => {
@@ -23,11 +30,7 @@ test("a timetable gap opens Gap Plan with that exact interval selected", async (
     const duration = (label ?? "").match(/^(.*?) gap/)?.[1];
     await gap.click();
     await expect(page).toHaveURL(/\/gaps$/);
-    if (duration) {
-      await expect(
-        page.locator(".gap-card[data-selected='true']").getByText(duration).first(),
-      ).toBeVisible();
-    }
+    await expectSelectedGapDuration(page, duration);
   } else {
     const gap = page.locator("[data-gap-interactive='true']").first();
     const gapId = await gap.getAttribute("data-gap-id");
@@ -36,11 +39,7 @@ test("a timetable gap opens Gap Plan with that exact interval selected", async (
     expect(gapId).toBeTruthy();
     await gap.click();
     await expect(page).toHaveURL(/\/gaps$/);
-    if (duration) {
-      await expect(
-        page.locator(".gap-card[data-selected='true']").getByText(duration).first(),
-      ).toBeVisible();
-    }
+    await expectSelectedGapDuration(page, duration);
   }
 
   guard.assertClean();
