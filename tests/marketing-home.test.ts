@@ -52,4 +52,27 @@ describe("Gapwise marketing system", () => {
     expect(stability).toContain("padding-top: var(--gapwise-public-chrome-height) !important;");
     expect(stability).toContain("transform: translate3d(0, 0, 0)");
   });
+
+  test("keeps the mark transparent and the product switcher complete on mobile", async () => {
+    const cohesion = await readFile("src/cohesion.css", "utf8");
+
+    expect(cohesion).toMatch(
+      /\.brand-mark-shell\s*\{[\s\S]*background:\s*transparent\s*!important/,
+    );
+    expect(cohesion).toContain("grid-template-columns: repeat(5, minmax(0, 1fr))");
+    expect(cohesion).toContain("justify-content: center");
+    expect(cohesion).toContain("border-top: 1px solid var(--color-border) !important");
+    expect(cohesion).toContain("border-bottom: 1px solid var(--color-border) !important");
+  });
+
+  test("restores distinct tutorial, practical, and reserved export semantics", async () => {
+    const cohesion = await readFile("src/cohesion.css", "utf8");
+    const exportTheme = await readFile("src/lib/timetable-linear-export.ts", "utf8");
+
+    expect(cohesion).toContain("--tut: oklch(0.54 0.14 225)");
+    expect(cohesion).toContain("--pra: oklch(0.53 0.14 302)");
+    expect(exportTheme).toContain('tut: "#72bdcf"');
+    expect(exportTheme).toContain('pra: "#b18bd0"');
+    expect(exportTheme).toContain('reserved: "#dfad52"');
+  });
 });

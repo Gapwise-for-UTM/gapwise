@@ -1,0 +1,82 @@
+/*
+ * Cross-surface cohesion layer.
+ * Keeps the restrained Linear-style neutral system while preserving useful semantic color.
+ */
+
+:root {
+  /* Timetable semantics: core blue, tutorial teal, practical purple, reserved amber. */
+  --tut: oklch(0.54 0.14 225);
+  --pra: oklch(0.53 0.14 302);
+}
+
+.dark {
+  --tut: oklch(0.77 0.13 225);
+  --pra: oklch(0.74 0.14 302);
+}
+
+/* The mark itself is the brand. Do not put it on a decorative tile. */
+.brand-mark-shell {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.brand-mark-shell::after {
+  display: none !important;
+}
+
+html[data-landing-product] body:has(main.landing-stage) .desktop-app-header .brand-mark-shell {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Give the product switcher a complete, intentional frame on every viewport. */
+body:has(main.landing-stage) .product-story-nav {
+  box-sizing: border-box;
+  width: 100%;
+  border-top: 1px solid var(--color-border) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  padding-inline: clamp(0.75rem, 2vw, 1.25rem);
+  background: var(--color-background) !important;
+  box-shadow: none !important;
+}
+
+body:has(main.landing-stage) .product-story-nav > div {
+  min-width: 0;
+}
+
+body:has(main.landing-stage) .product-story-nav a {
+  transition: color 150ms ease;
+}
+
+@media (max-width: 800px) {
+  body:has(main.landing-stage) .product-story-nav {
+    padding-inline: 0.5rem !important;
+  }
+
+  body:has(main.landing-stage) .product-story-nav > div {
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0 !important;
+    gap: 0 !important;
+  }
+
+  body:has(main.landing-stage) .product-story-nav a {
+    width: 100%;
+    min-width: 0;
+    min-height: var(--gapwise-product-nav-height);
+    justify-content: center;
+    padding-inline: 0.15rem !important;
+    font-size: clamp(0.68rem, 3vw, 0.75rem);
+    text-align: center;
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(main.landing-stage) .product-story-nav a {
+    transition: none !important;
+  }
+}
