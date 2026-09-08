@@ -57,7 +57,11 @@ export type TodayState = (
     }
   | { kind: "done"; next: TodayOccurrence | null }
   | { kind: "no-classes"; next: TodayOccurrence | null }
-) & { plannedWork: PlannedWorkContext };
+) & {
+  plannedWork: PlannedWorkContext;
+  dayMeetings: Meeting[];
+  dayContext: GapDestinationContext;
+};
 
 export type TodayStateInput = {
   meetings: Meeting[];
@@ -137,7 +141,17 @@ export function buildTodayState({
     current: planned.find((meeting) => meeting.startTime <= minute) ?? null,
     next: planned.find((meeting) => meeting.startTime > minute) ?? null,
   };
-  const result = (value: object): TodayState => ({ ...value, plannedWork }) as TodayState;
+  const day = meetings
+    .filter(
+      (meeting) =>
+        meeting.term === selectedTerm &&
+        !isAssessmentWindow(meeting) &&
+        meetingOccursOnDate(meeting, now),
+    )
+    .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime);
+  const dayContext: GapDestinationContext = { preferences, gapPreferences, planTransition };
+  const result = (value: object): TodayState =>
+    ({ ...value, plannedWork, dayMeetings: day, dayContext }) as TodayState;
   const first = firstOccurrence(selectedMeetings);
   if (status === "before" && first) return result({ kind: "before", first });
   if (status === "ended") {
@@ -147,14 +161,12 @@ export function buildTodayState({
     return result({ kind: "dates-unavailable" });
   }
 
-  const day = selectedMeetings
-    .filter((meeting) => meetingOccursOnDate(meeting, now))
-    .sort((a, b) => a.startTime - b.startTime);
+  const classDay = day.filter((meeting) => meeting.sectionCode !== "STUDY");
   const {
     currentCommitment: current,
     nextCommitment: next,
     currentGap,
-  } = querySchedulePosition(day, minute);
+  } = querySchedulePosition(classDay, minute);
 
   if (current) {
     if (!next) return result({ kind: "in-class", current, next: null });
@@ -173,13 +185,13 @@ export function buildTodayState({
       kind: "gap",
       gap: currentGap,
       ...plan,
-      destinationContext: { preferences, gapPreferences, planTransition },
+      destinationContext: dayContext,
     });
   }
 
   if (next) return result({ kind: "before-first", next });
   return result({
-    kind: day.length > 0 ? "done" : "no-classes",
+    kind: classDay.length > 0 ? "done" : "no-classes",
     next: nextOccurrence(selectedMeetings, now),
   });
 }
