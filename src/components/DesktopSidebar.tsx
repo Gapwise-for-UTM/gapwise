@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { requestGapwiseAccountSettings } from "@/features/auth/account-settings-trigger";
 import type { Theme } from "@/hooks/use-preferences";
 import type { AppDestination } from "@/features/navigation/use-app-navigation";
 
@@ -18,7 +19,7 @@ type DesktopSidebarProps = {
 export function DesktopSidebar(props: DesktopSidebarProps) {
   return (
     <Suspense fallback={null}>
-      <DesktopSidebarImpl {...props} />
+      <DesktopSidebarImpl {...props} onOpenAccount={requestGapwiseAccountSettings} />
     </Suspense>
   );
 }
