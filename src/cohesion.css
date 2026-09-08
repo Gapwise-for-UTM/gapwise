@@ -25,10 +25,7 @@
   display: none !important;
 }
 
-html[data-landing-product]
-  body:has(main.landing-stage)
-  .desktop-app-header
-  .brand-mark-shell {
+html[data-landing-product] body:has(main.landing-stage) .desktop-app-header .brand-mark-shell {
   border-color: transparent !important;
   background: transparent !important;
   box-shadow: none !important;
