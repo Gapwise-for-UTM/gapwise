@@ -10,7 +10,6 @@ import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
 import type { RestoredSource } from "@/features/sync/restoration-decisions";
 import type { RestorationState } from "@/features/sync/restoration";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
-import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import type { Meeting } from "@/lib/timetable-types";
 import {
   describeTimetableChanges,
@@ -120,15 +119,21 @@ export function useTimetableCommands(input: TimetableCommandInput) {
     [importFile],
   );
 
-  const loadDemo = useCallback(() => {
+  const loadDemo = useCallback(async () => {
     input.setError(null);
     input.setWarnings([]);
-    input.setMeetings(DEMO_MEETINGS);
-    input.latestMeetings.current = DEMO_MEETINGS;
-    input.restoredSource.current = "memory";
-    input.setRestoration("restored-memory");
-    input.setRestorationMessage(null);
-    input.setIsDemo(true);
+    input.setLoading(true);
+    try {
+      const { DEMO_MEETINGS } = await import("@/lib/demo-timetable");
+      input.setMeetings(DEMO_MEETINGS);
+      input.latestMeetings.current = DEMO_MEETINGS;
+      input.restoredSource.current = "memory";
+      input.setRestoration("restored-memory");
+      input.setRestorationMessage(null);
+      input.setIsDemo(true);
+    } finally {
+      input.setLoading(false);
+    }
   }, [input]);
 
   const remove = useCallback(async () => {
