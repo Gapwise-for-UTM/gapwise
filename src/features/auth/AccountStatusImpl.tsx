@@ -36,6 +36,7 @@ import type { Meeting, Term } from "@/lib/timetable-types";
 import { shouldWritePrivateCloud } from "@/features/security/private-cloud-mode";
 import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
+import { OPEN_ACCOUNT_SETTINGS_EVENT } from "./account-settings-trigger";
 import { AccountSettingsDialog, type AccountSettingsTab } from "./AccountSettingsDialog";
 import {
   consumeOAuthError,
@@ -121,26 +122,22 @@ export function AccountStatus({
 
   useEffect(() => {
     const openSettings = () => {
-      setSettingsTab(user ? "account" : "exports");
+      setSettingsTab("account");
       setSettingsOpen(true);
     };
-    window.addEventListener("gapwise:open-account-settings", openSettings);
-    return () => window.removeEventListener("gapwise:open-account-settings", openSettings);
-  }, [user]);
+    window.addEventListener(OPEN_ACCOUNT_SETTINGS_EVENT, openSettings);
+    return () => window.removeEventListener(OPEN_ACCOUNT_SETTINGS_EVENT, openSettings);
+  }, []);
 
   useEffect(() => {
     if (settingsRequest > 0) {
-      setSettingsTab(user ? "account" : "exports");
+      setSettingsTab("account");
       setSettingsOpen(true);
     }
-  }, [settingsRequest, user]);
+  }, [settingsRequest]);
 
   useEffect(() => {
-    if (user) {
-      setSignInOpen(false);
-    } else {
-      setSettingsOpen(false);
-    }
+    if (user) setSignInOpen(false);
   }, [user]);
 
   async function removeAccount() {
@@ -326,7 +323,7 @@ export function AccountStatus({
           <button
             type="button"
             onClick={() => {
-              setSettingsTab("exports");
+              setSettingsTab("account");
               setSettingsOpen(true);
             }}
             className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium"
@@ -342,6 +339,10 @@ export function AccountStatus({
         identity={user ? getAccountIdentity(user) : null}
         tab={settingsTab}
         onTabChange={setSettingsTab}
+        onRequestSignIn={() => {
+          setSettingsOpen(false);
+          setSignInOpen(true);
+        }}
         aiController={aiController}
         meetings={meetings}
         term={term}
