@@ -19,9 +19,8 @@ test("unified timetable export exposes the print-ready vector flow", async ({ pa
   await expect(printOption).toHaveAttribute("aria-checked", "false");
   await printOption.click();
   await expect(page.getByRole("dialog", { name: "Print timetable" })).toBeVisible();
-  await expect(page.getByText("Built specifically for paper")).toBeVisible();
-  await expect(page.getByText(/Scale it to any printer DPI or page size/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Download print-ready SVG" })).toBeVisible();
+  await expect(page.getByText("Create a sharp black-and-white vector for paper.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download SVG" })).toBeVisible();
   await expect(page.getByRole("radiogroup", { name: "Export appearance" })).toHaveCount(0);
 
   await formats.getByRole("radio", { name: /Share image/ }).click();
