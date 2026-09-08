@@ -140,8 +140,8 @@ export function AccountSettingsDialog({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold">Gapwise AI</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Public Gapwise AI and the MCP endpoint are available to everyone. Sign-in is only
-                    needed when you choose to authorize private student context.
+                    Public Gapwise AI and the MCP endpoint are available to everyone. Sign-in is
+                    only needed when you choose to authorize private student context.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <a
