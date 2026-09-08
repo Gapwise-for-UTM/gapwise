@@ -49,6 +49,7 @@ export function DesktopSidebar({
   arrivalLabel,
   theme,
   onOpenArrival,
+  onOpenAccount,
   onToggleTheme,
 }: {
   destination: AppDestination;
@@ -121,7 +122,7 @@ export function DesktopSidebar({
             type="button"
             className="desktop-sidebar-utility desktop-account-settings"
             aria-label="Account settings"
-            onClick={() => window.dispatchEvent(new Event("gapwise:open-account-settings"))}
+            onClick={onOpenAccount}
           >
             <Settings aria-hidden="true" />
             <span>Account settings</span>
