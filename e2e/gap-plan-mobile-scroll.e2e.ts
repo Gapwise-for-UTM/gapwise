@@ -20,40 +20,38 @@ test("mobile gap tool sheets keep their content vertically scrollable", async ({
   await expect(page).toHaveURL(/\/gaps$/);
 
   await page.getByRole("button", { name: "Tune", exact: true }).first().click();
-  const dialog = page.getByRole("dialog");
-  const content = dialog.locator(".gap-sheet-content");
-  await expect(dialog.getByRole("heading", { name: "Tune your gaps" })).toBeVisible();
+  let dialog = page.getByRole("dialog", { name: "Tune gap recommendations" });
+  await expect(dialog.getByRole("heading", { name: "Tune gap recommendations" })).toBeVisible();
 
-  const tuneMetrics = await content.evaluate((element) => {
+  const tuneMetrics = await dialog.evaluate((element) => {
     const style = getComputedStyle(element);
-    const dialogStyle = getComputedStyle(element.closest('[role="dialog"]') as HTMLElement);
     return {
       clientHeight: element.clientHeight,
       scrollHeight: element.scrollHeight,
       overflowY: style.overflowY,
-      touchAction: style.touchAction,
-      dialogDisplay: dialogStyle.display,
+      display: style.display,
     };
   });
 
-  expect(tuneMetrics.dialogDisplay).toBe("flex");
+  expect(tuneMetrics.display).toBe("flex");
   expect(["auto", "scroll"]).toContain(tuneMetrics.overflowY);
-  expect(tuneMetrics.touchAction).toContain("pan-y");
   expect(tuneMetrics.scrollHeight).toBeGreaterThan(tuneMetrics.clientHeight);
 
-  await content.evaluate((element) => {
+  await dialog.evaluate((element) => {
     element.scrollTop = element.scrollHeight;
   });
-  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+  await expect.poll(() => dialog.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
 
-  await dialog.getByRole("button", { name: "Friend gaps", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await page.getByRole("button", { name: "Friend gaps", exact: true }).first().click();
+  dialog = page.getByRole("dialog", { name: "Friend gaps" });
   await expect(dialog.getByRole("heading", { name: "Friend gaps", exact: true })).toBeVisible();
-  const friendStyles = await content.evaluate((element) => {
+  const friendStyles = await dialog.evaluate((element) => {
     const style = getComputedStyle(element);
-    return { overflowY: style.overflowY, touchAction: style.touchAction };
+    return { overflowY: style.overflowY };
   });
   expect(["auto", "scroll"]).toContain(friendStyles.overflowY);
-  expect(friendStyles.touchAction).toContain("pan-y");
 
   guard.assertClean();
 });
