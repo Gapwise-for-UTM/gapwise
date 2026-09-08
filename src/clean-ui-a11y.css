@@ -8,6 +8,11 @@
   --sidebar-primary: oklch(0.52 0.17 244);
 }
 
+.dark {
+  /* White button text needs a quieter blue than the bright accent used for links and indicators. */
+  --primary: oklch(0.53 0.13 243);
+}
+
 html:not(.dark)[data-landing-product="gapwise"] {
   --landing-chrome-accent: #006ec2;
 }
@@ -68,15 +73,13 @@ html:not(.dark)[data-landing-product="gapwise-status"] {
   --section-accent: #167553;
 }
 
-/* View-timeline motion must not temporarily lower text contrast. */
-@keyframes product-story-reveal {
-  from {
-    opacity: 1;
-    transform: translateY(8px);
-  }
+/* Lazy marketing CSS declares a view-timeline opacity animation after this file loads.
+ * Disable it rather than letting off-screen product copy become low-contrast while axe scans. */
+.product-story-section > * {
+  animation: none !important;
+}
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Preserve a proper touch target even though the global compact button rule is !important. */
+.marketing-import .and66-first-run .button-primary {
+  min-height: 2.75rem !important;
 }
