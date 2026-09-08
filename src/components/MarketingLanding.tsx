@@ -13,17 +13,12 @@ import "./marketing-landing.css";
 
 type UploadProps = Pick<
   ComponentProps<typeof UploadPanel>,
-  | "onFile"
-  | "onDemo"
-  | "loading"
-  | "error"
-  | "remember"
-  | "onRememberChange"
-  | "rememberAvailable"
+  "onFile" | "onDemo" | "loading" | "error" | "remember" | "onRememberChange"
 >;
 
 type MarketingLandingProps = UploadProps & {
   isOnline: boolean;
+  rememberAvailable: boolean;
 };
 
 const PRODUCTS = [
