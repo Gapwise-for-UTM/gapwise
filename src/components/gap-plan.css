@@ -1,0 +1,43 @@
+.dot-field {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible;
+  isolation: auto;
+}
+
+.dot-field::before {
+  display: none !important;
+  content: none !important;
+}
+
+.gap-plan-root,
+.gap-plan-root > *,
+.gap-plan-root section,
+.gap-plan-root aside {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.gap-plan-root button,
+.gap-plan-root p,
+.gap-plan-root h1,
+.gap-plan-root h2,
+.gap-plan-root h3,
+.gap-plan-root h4 {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 767px) {
+  .gap-plan-root {
+    gap: 0.85rem;
+  }
+
+  .gap-plan-overview {
+    padding-bottom: 1rem;
+  }
+
+  .gap-plan-root section[aria-labelledby^="gaps-"] {
+    padding: 0.9rem;
+  }
+}
