@@ -54,7 +54,9 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
     case "ended":
       return {
         eyebrow: `${selectedTerm} has finished`,
-        title: state.next ? `${state.next.meeting.term} is next` : "No later classes in this timetable",
+        title: state.next
+          ? `${state.next.meeting.term} is next`
+          : "No later classes in this timetable",
         detail: state.next
           ? occurrenceLead(state.next.date, state.next.meeting, now)
           : "Upload a new ACORN calendar when your next timetable is ready.",
@@ -233,7 +235,8 @@ function GapRow({
           {formatCompactDuration(gap.durationMinutes)} gap · {result.assessment.primary.title}
         </span>
         <span className="mt-0.5 block text-[0.7rem] text-muted-foreground">
-          {formatCompactDuration(result.assessment.primary.activityMinutes)} usable · leave by {formatTime(result.assessment.leaveByMinutes)}
+          {formatCompactDuration(result.assessment.primary.activityMinutes)} usable · leave by{" "}
+          {formatTime(result.assessment.leaveByMinutes)}
         </span>
       </span>
       <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -312,7 +315,9 @@ export function MobileToday({
         </p>
       ) : null}
 
-      <section className={`mobile-primary-card ${firstValue.emphasize ? "first-value-emphasis" : ""}`}>
+      <section
+        className={`mobile-primary-card ${firstValue.emphasize ? "first-value-emphasis" : ""}`}
+      >
         <p className="mobile-kicker">
           <CalendarClock className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
           {eyebrow}
@@ -327,7 +332,10 @@ export function MobileToday({
             {rows.map((row) => {
               const Icon = row.icon;
               return (
-                <li key={row.text} className="flex items-start gap-2.5 text-sm leading-6 text-muted-foreground">
+                <li
+                  key={row.text}
+                  className="flex items-start gap-2.5 text-sm leading-6 text-muted-foreground"
+                >
                   <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                   <span className="min-w-0">{row.text}</span>
                 </li>

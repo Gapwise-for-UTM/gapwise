@@ -64,7 +64,9 @@ export function MobileShell({
                 Gapwise
               </p>
             </div>
-            <p className="truncate text-xs font-semibold text-muted-foreground">{PAGE_LABEL[tab]}</p>
+            <p className="truncate text-xs font-semibold text-muted-foreground">
+              {PAGE_LABEL[tab]}
+            </p>
           </div>
         </header>
 

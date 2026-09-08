@@ -25,7 +25,9 @@ export function MobileMoreSheet({
     <Drawer open={open} onOpenChange={onOpenChange}>
       <DrawerContent className="max-h-[88dvh] rounded-t-2xl border-border bg-popover">
         <DrawerHeader className="border-b border-border px-4 pb-4 text-left">
-          <DrawerTitle className="font-display text-lg font-medium tracking-tight">More</DrawerTitle>
+          <DrawerTitle className="font-display text-lg font-medium tracking-tight">
+            More
+          </DrawerTitle>
         </DrawerHeader>
         <div className="space-y-5 overflow-y-auto px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4">
           <section>

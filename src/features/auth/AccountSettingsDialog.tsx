@@ -81,9 +81,8 @@ export function AccountSettingsDialog({
     if (identity || deviceSaveState === "busy") return;
     setDeviceSaveState("busy");
     try {
-      const { clearGuestTimetable, saveGuestTimetable } = await import(
-        "@/features/security/guest-timetable"
-      );
+      const { clearGuestTimetable, saveGuestTimetable } =
+        await import("@/features/security/guest-timetable");
       if (enabled) await saveGuestTimetable(meetings);
       else await clearGuestTimetable();
       const updatedAt = enabled ? new Date().toISOString() : null;
@@ -221,7 +220,10 @@ export function AccountSettingsDialog({
 
                   {!identity ? (
                     <div className="mt-4 flex items-start gap-2 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
-                      <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                      <LockKeyhole
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
+                        aria-hidden="true"
+                      />
                       <p>
                         The encryption key stays in browser-managed secure storage and is marked
                         non-extractable. Clearing this site&apos;s browser data removes both the key

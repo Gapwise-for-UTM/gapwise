@@ -113,7 +113,9 @@ function DayAgenda({
                 </p>
               </div>
               <div className="text-xs text-muted-foreground sm:text-right">
-                {index < meetings.length - 1 ? `${formatCompactDuration(meeting.endTime - meeting.startTime)}` : "Last item"}
+                {index < meetings.length - 1
+                  ? `${formatCompactDuration(meeting.endTime - meeting.startTime)}`
+                  : "Last item"}
               </div>
             </div>
 
@@ -128,7 +130,8 @@ function DayAgenda({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold">
-                    {formatCompactDuration(gap.durationMinutes)} gap · {gapResult.assessment.primary.title}
+                    {formatCompactDuration(gap.durationMinutes)} gap ·{" "}
+                    {gapResult.assessment.primary.title}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {formatCompactDuration(gapResult.assessment.primary.activityMinutes)} usable ·
@@ -182,13 +185,14 @@ export const TodaySummary = memo(function TodaySummary({
   const todayMeetings = useMemo(
     () =>
       meetings
-        .filter(
-          (meeting) => meeting.term === selectedTerm && meetingOccursOnDate(meeting, now),
-        )
+        .filter((meeting) => meeting.term === selectedTerm && meetingOccursOnDate(meeting, now))
         .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime),
     [meetings, now, selectedTerm],
   );
-  const todayGaps = useMemo(() => findGaps(todayMeetings, selectedTerm), [selectedTerm, todayMeetings]);
+  const todayGaps = useMemo(
+    () => findGaps(todayMeetings, selectedTerm),
+    [selectedTerm, todayMeetings],
+  );
   const classMeetings = todayMeetings.filter(
     (meeting) => meeting.sectionCode !== "STUDY" && meeting.sectionCode !== "PERSONAL",
   );
@@ -197,7 +201,8 @@ export const TodaySummary = memo(function TodaySummary({
   );
   const firstStart = todayMeetings[0]?.startTime ?? null;
   const lastEnd = todayMeetings.at(-1)?.endTime ?? null;
-  const spanMinutes = firstStart !== null && lastEnd !== null ? Math.max(0, lastEnd - firstStart) : 0;
+  const spanMinutes =
+    firstStart !== null && lastEnd !== null ? Math.max(0, lastEnd - firstStart) : 0;
   const scheduledMinutes = todayMeetings.reduce(
     (sum, meeting) => sum + Math.max(0, meeting.endTime - meeting.startTime),
     0,

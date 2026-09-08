@@ -102,7 +102,9 @@ function TunePanel({
             type="time"
             value={minutesToTimeInput(value.lunchWindowStart)}
             onChange={(event) =>
-              update({ lunchWindowStart: timeInputToMinutes(event.target.value, value.lunchWindowStart) })
+              update({
+                lunchWindowStart: timeInputToMinutes(event.target.value, value.lunchWindowStart),
+              })
             }
             className="w-full rounded-lg border border-input bg-background px-3 py-2"
           />
@@ -113,7 +115,9 @@ function TunePanel({
             type="time"
             value={minutesToTimeInput(value.lunchWindowEnd)}
             onChange={(event) =>
-              update({ lunchWindowEnd: timeInputToMinutes(event.target.value, value.lunchWindowEnd) })
+              update({
+                lunchWindowEnd: timeInputToMinutes(event.target.value, value.lunchWindowEnd),
+              })
             }
             className="w-full rounded-lg border border-input bg-background px-3 py-2"
           />
@@ -129,7 +133,12 @@ function TunePanel({
               value={value.mealDurationMinutes}
               onChange={(event) =>
                 update({
-                  mealDurationMinutes: numericInput(event.target.value, value.mealDurationMinutes, 15, 90),
+                  mealDurationMinutes: numericInput(
+                    event.target.value,
+                    value.mealDurationMinutes,
+                    15,
+                    90,
+                  ),
                 })
               }
               className="w-full rounded-lg border border-input bg-background px-3 py-2"
@@ -160,7 +169,9 @@ function TunePanel({
               max={20}
               value={value.setupMinutes}
               onChange={(event) =>
-                update({ setupMinutes: numericInput(event.target.value, value.setupMinutes, 0, 20) })
+                update({
+                  setupMinutes: numericInput(event.target.value, value.setupMinutes, 0, 20),
+                })
               }
               className="w-full rounded-lg border border-input bg-background px-3 py-2"
             />
@@ -176,7 +187,9 @@ function TunePanel({
               max={20}
               value={value.packUpMinutes}
               onChange={(event) =>
-                update({ packUpMinutes: numericInput(event.target.value, value.packUpMinutes, 0, 20) })
+                update({
+                  packUpMinutes: numericInput(event.target.value, value.packUpMinutes, 0, 20),
+                })
               }
               className="w-full rounded-lg border border-input bg-background px-3 py-2"
             />
@@ -302,7 +315,8 @@ function GapInspector({
 }) {
   const recommendations = recommendationsFor(result);
   const selected =
-    recommendations.find((item) => item.id === selectedRecommendationId) ?? result.assessment.primary;
+    recommendations.find((item) => item.id === selectedRecommendationId) ??
+    result.assessment.primary;
   const meta = ACTION_META[selected.action];
   const ActionIcon = meta.icon;
   const previousLocation = getLocationPresentation({ meeting: gap.previous });
@@ -313,7 +327,10 @@ function GapInspector({
     route: result.route,
   });
   const RouteIcon = routePresentation.icon;
-  const usablePercent = Math.min(100, (selected.activityMinutes / Math.max(1, gap.durationMinutes)) * 100);
+  const usablePercent = Math.min(
+    100,
+    (selected.activityMinutes / Math.max(1, gap.durationMinutes)) * 100,
+  );
 
   return (
     <div className="mt-3 min-w-0 rounded-lg border border-border bg-card p-4 sm:p-5">
@@ -337,7 +354,10 @@ function GapInspector({
           </div>
 
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
-            <span className="block h-full rounded-full bg-accent" style={{ width: `${usablePercent}%` }} />
+            <span
+              className="block h-full rounded-full bg-accent"
+              style={{ width: `${usablePercent}%` }}
+            />
           </div>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span>{formatDuration(selected.activityMinutes)} usable</span>
@@ -380,7 +400,10 @@ function GapInspector({
               <ul className="mt-2 space-y-1.5 text-muted-foreground">
                 {selected.reasons.map((reason) => (
                   <li key={reason} className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                    <CheckCircle2
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent"
+                      aria-hidden="true"
+                    />
                     <span>{reason}</span>
                   </li>
                 ))}
@@ -404,12 +427,16 @@ function GapInspector({
               <p className="mt-0.5 break-words font-medium">
                 {gap.next.courseCode} · {nextLocation.label}
               </p>
-              <p className="mt-0.5 text-muted-foreground">starts {formatTime(gap.next.startTime)}</p>
+              <p className="mt-0.5 text-muted-foreground">
+                starts {formatTime(gap.next.startTime)}
+              </p>
             </div>
             <div className="flex min-w-0 items-start gap-2 border-t border-border pt-3">
               <RouteIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
               <div className="min-w-0">
-                <p className="font-medium">Leave by {formatTime(result.assessment.leaveByMinutes)}</p>
+                <p className="font-medium">
+                  Leave by {formatTime(result.assessment.leaveByMinutes)}
+                </p>
                 <p className="mt-0.5 break-words leading-5 text-muted-foreground">
                   {routePresentation.detail}
                 </p>
@@ -459,7 +486,8 @@ export const GapPlan = memo(function GapPlan({
   const residence = selectedResidence(preferences);
   const assessments = useMemo(() => {
     const map = new Map<string, GapAssessmentResult>();
-    for (const gap of gaps) map.set(gap.id, planGapAssessment(gap, preferences, gapPreferences, planTransition));
+    for (const gap of gaps)
+      map.set(gap.id, planGapAssessment(gap, preferences, gapPreferences, planTransition));
     return map;
   }, [gapPreferences, gaps, planTransition, preferences]);
   const totalUsableMinutes = useMemo(
@@ -484,7 +512,8 @@ export const GapPlan = memo(function GapPlan({
     setSelectedByDay((current) => {
       const next = { ...current };
       for (const group of groups) {
-        if (!group.gaps.some((gap) => gap.id === next[group.weekday])) next[group.weekday] = group.gaps[0]!.id;
+        if (!group.gaps.some((gap) => gap.id === next[group.weekday]))
+          next[group.weekday] = group.gaps[0]!.id;
       }
       return next;
     });
@@ -536,7 +565,8 @@ export const GapPlan = memo(function GapPlan({
               <h1 className="mt-1 font-display text-2xl font-medium tracking-tight">Gap plan</h1>
             </div>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground md:mt-0">
-              See what actually fits after walking time, setup, and the buffer before your next class.
+              See what actually fits after walking time, setup, and the buffer before your next
+              class.
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -570,7 +600,9 @@ export const GapPlan = memo(function GapPlan({
             <p className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
               Usable
             </p>
-            <p className="mt-1 truncate text-lg font-semibold">{formatCompactDuration(totalUsableMinutes)}</p>
+            <p className="mt-1 truncate text-lg font-semibold">
+              {formatCompactDuration(totalUsableMinutes)}
+            </p>
           </div>
           <div className="min-w-0 p-3">
             <p className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
@@ -581,7 +613,10 @@ export const GapPlan = memo(function GapPlan({
         </div>
       </section>
 
-      <Dialog open={activeOverlay !== null} onOpenChange={(open) => !open && setActiveOverlay(null)}>
+      <Dialog
+        open={activeOverlay !== null}
+        onOpenChange={(open) => !open && setActiveOverlay(null)}
+      >
         <DialogContent className="max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl overflow-y-auto rounded-2xl">
           {activeOverlay === "tune" ? (
             <>
@@ -635,7 +670,10 @@ export const GapPlan = memo(function GapPlan({
             className="min-w-0 rounded-lg border border-border bg-background/30 p-4 sm:p-5"
           >
             <div className="flex min-w-0 items-baseline justify-between gap-3">
-              <h3 id={`gaps-${group.weekday}`} className="truncate font-display text-lg font-medium">
+              <h3
+                id={`gaps-${group.weekday}`}
+                className="truncate font-display text-lg font-medium"
+              >
                 {group.weekday}
               </h3>
               <span className="shrink-0 text-xs text-muted-foreground">
