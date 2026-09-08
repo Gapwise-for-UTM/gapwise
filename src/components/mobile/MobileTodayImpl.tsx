@@ -1,10 +1,24 @@
 import { useLocation } from "@tanstack/react-router";
-import { CalendarClock, Clock3, Home, MapPin, Navigation, type LucideIcon } from "lucide-react";
-import { GapDestinationChecker } from "@/components/GapDestinationChecker";
-import { GapPlannerPreview } from "@/components/GapPlannerPreview";
+import {
+  ArrowRight,
+  BookOpen,
+  CalendarClock,
+  CheckCircle2,
+  Clock3,
+  Home,
+  MapPin,
+  Navigation,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
+import { useMemo } from "react";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
+import { planGapAssessment } from "@/features/gaps/assess-gap";
+import type { GapPreferences } from "@/features/gaps/types";
 import { useFirstValueArrival } from "@/features/onboarding/first-value";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
+import type { TransitionPlanner } from "@/features/routing/transition";
+import type { UserPreferences } from "@/features/sync/preferences";
 import {
   formatOccurrenceDate,
   minutesNow,
@@ -13,6 +27,9 @@ import {
   routeMinutes,
   type TodayState,
 } from "@/features/today/today-state";
+import { meetingOccursOnDate } from "@/lib/calendar-awareness";
+import { findGaps } from "@/lib/gaps";
+import type { Gap, Meeting, Term } from "@/lib/timetable-types";
 import { formatCompactDuration, formatTime, weekdayForDate } from "@/lib/timetable-types";
 
 type Row = { icon: LucideIcon; text: string };
@@ -39,9 +56,7 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
     case "ended":
       return {
         eyebrow: `${selectedTerm} has finished`,
-        title: state.next
-          ? `${state.next.meeting.term} is next`
-          : "No later classes in this timetable",
+        title: state.next ? `${state.next.meeting.term} is next` : "No later classes in this timetable",
         detail: state.next
           ? occurrenceLead(state.next.date, state.next.meeting, now)
           : "Upload a new ACORN calendar when your next timetable is ready.",
@@ -80,9 +95,6 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
           icon: presentation.icon,
           text: `Next: ${state.next.courseCode} at ${formatTime(state.next.startTime)} · ${routeCopy(state.current, state.next, state.route)}`,
         });
-        if (state.leaveBy !== null && state.leaveBy !== undefined) {
-          rows.push({ icon: Clock3, text: `Leave by ${formatTime(state.leaveBy)}` });
-        }
       }
       return {
         eyebrow: `Today · ${weekdayLabel}`,
@@ -108,7 +120,7 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
       ) {
         rows.push({
           icon: Home,
-          text: `~${outbound + inbound} min campus round trip · leave home by ${formatTime(
+          text: `~${outbound + inbound} min round trip · leave home by ${formatTime(
             state.gap.next.startTime - inbound - state.assessment.bufferMinutes,
           )}`,
         });
@@ -120,19 +132,15 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
         });
         rows.push({
           icon: presentation.icon,
-          text: routeCopy(state.gap.previous, state.gap.next, state.route),
-        });
-        rows.push({
-          icon: Clock3,
-          text: `Leave by ${formatTime(state.assessment.leaveByMinutes)}`,
+          text: `${routeCopy(state.gap.previous, state.gap.next, state.route)} · leave by ${formatTime(
+            state.assessment.leaveByMinutes,
+          )}`,
         });
       }
       return {
         eyebrow: `Today · ${weekdayLabel}`,
         title: state.assessment.primary.title,
-        detail: `${formatCompactDuration(state.assessment.primary.activityMinutes)} usable · ${formatTime(
-          state.gap.startTime,
-        )} – ${formatTime(state.gap.endTime)}`,
+        detail: `${formatCompactDuration(state.assessment.primary.activityMinutes)} usable`,
         rows,
       };
     }
@@ -157,10 +165,88 @@ function present(state: TodayState, now: Date, selectedTerm: string): Presentati
   }
 }
 
+function AgendaItem({
+  meeting,
+  active,
+  passed,
+}: {
+  meeting: Meeting;
+  active: boolean;
+  passed: boolean;
+}) {
+  const location = getLocationPresentation({ meeting });
+  const label =
+    meeting.sectionCode === "STUDY"
+      ? "Study"
+      : meeting.sectionCode === "PERSONAL"
+        ? "Personal"
+        : meeting.activityType === "OTHER"
+          ? "Class"
+          : meeting.activityType;
+  return (
+    <div className={`mobile-day-row ${active ? "mobile-day-row-active" : ""}`}>
+      <div className="mobile-day-time">
+        <strong>{formatTime(meeting.startTime)}</strong>
+        <span>{formatTime(meeting.endTime)}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="truncate text-sm font-semibold">{meeting.courseCode}</p>
+          <span className="mobile-mini-badge">{label}</span>
+          {active ? <span className="mobile-now-badge">Now</span> : passed ? <span className="mobile-done-label">Done</span> : null}
+        </div>
+        {meeting.courseName ? (
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{meeting.courseName}</p>
+        ) : null}
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{location.label}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function GapRow({
+  gap,
+  preferences,
+  gapPreferences,
+  planTransition,
+  onOpen,
+}: {
+  gap: Gap;
+  preferences: UserPreferences;
+  gapPreferences: GapPreferences;
+  planTransition: TransitionPlanner;
+  onOpen: () => void;
+}) {
+  const result = planGapAssessment(gap, preferences, gapPreferences, planTransition);
+  return (
+    <button type="button" onClick={onOpen} className="mobile-day-gap-row">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/8 text-accent">
+        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+      </span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block text-xs font-semibold">
+          {formatCompactDuration(gap.durationMinutes)} gap · {result.assessment.primary.title}
+        </span>
+        <span className="mt-0.5 block text-[0.7rem] text-muted-foreground">
+          {formatCompactDuration(result.assessment.primary.activityMinutes)} usable · leave by {formatTime(result.assessment.leaveByMinutes)}
+        </span>
+      </span>
+      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+    </button>
+  );
+}
+
 export function MobileToday({
   state,
   now,
+  meetings,
   selectedTerm,
+  preferences,
+  gapPreferences,
+  planTransition,
   meetingCount,
   gapCount,
   isDemo,
@@ -169,7 +255,11 @@ export function MobileToday({
 }: {
   state: TodayState;
   now: Date;
-  selectedTerm: string;
+  meetings: Meeting[];
+  selectedTerm: Term;
+  preferences: UserPreferences;
+  gapPreferences: GapPreferences;
+  planTransition: TransitionPlanner;
   meetingCount: number;
   gapCount: number;
   isDemo: boolean;
@@ -180,6 +270,33 @@ export function MobileToday({
   const firstValue = useFirstValueArrival(location.pathname.replace(/\/$/, "") === "/today");
   const { setRouteTargetId } = useMobileRouteTarget();
   const { eyebrow, title, detail, rows } = present(state, now, selectedTerm);
+  const nowMinutes = minutesNow(now);
+  const todayMeetings = useMemo(
+    () =>
+      meetings
+        .filter((meeting) => meeting.term === selectedTerm && meetingOccursOnDate(meeting, now))
+        .sort((a, b) => a.startTime - b.startTime || a.endTime - b.endTime),
+    [meetings, now, selectedTerm],
+  );
+  const todayGaps = useMemo(() => findGaps(todayMeetings, selectedTerm), [selectedTerm, todayMeetings]);
+  const gapByPreviousId = useMemo(
+    () => new Map(todayGaps.map((gap) => [gap.previous.id, gap])),
+    [todayGaps],
+  );
+  const classCount = todayMeetings.filter(
+    (meeting) => meeting.sectionCode !== "STUDY" && meeting.sectionCode !== "PERSONAL",
+  ).length;
+  const plannedCount = todayMeetings.length - classCount;
+  const firstStart = todayMeetings[0]?.startTime ?? null;
+  const lastEnd = todayMeetings.at(-1)?.endTime ?? null;
+  const scheduledMinutes = todayMeetings.reduce(
+    (sum, meeting) => sum + Math.max(0, meeting.endTime - meeting.startTime),
+    0,
+  );
+  const openMinutes =
+    firstStart !== null && lastEnd !== null
+      ? Math.max(0, lastEnd - firstStart - scheduledMinutes)
+      : 0;
   const plannedWork = state.plannedWork.current ?? state.plannedWork.next;
   const canOpenRoute =
     state.kind === "gap" || state.kind === "before-first" || state.kind === "in-class";
@@ -193,44 +310,29 @@ export function MobileToday({
           : null;
 
   return (
-    <div className="rise-in space-y-4">
+    <div className="rise-in mobile-page-stack">
       {firstValue.showSuccess ? (
-        <p
-          role="status"
-          aria-live="polite"
-          className="surface border-accent/25 bg-accent/6 px-4 py-3 text-sm font-medium"
-        >
+        <p role="status" aria-live="polite" className="mobile-inline-status">
           Schedule ready — {meetingCount} {meetingCount === 1 ? "class" : "classes"} imported.
         </p>
       ) : null}
 
-      <section
-        className={`surface overflow-hidden p-5 ${firstValue.emphasize ? "first-value-emphasis" : ""}`}
-        aria-labelledby="mobile-today-title"
-      >
-        <p className="flex items-center gap-2 font-mono text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      <section className={`mobile-primary-card ${firstValue.emphasize ? "first-value-emphasis" : ""}`}>
+        <p className="mobile-kicker">
           <CalendarClock className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
           {eyebrow}
         </p>
-        <h1
-          id="mobile-today-title"
-          className="mt-3 text-balance font-display text-[1.55rem] font-medium leading-[1.1] tracking-[-0.03em]"
-        >
+        <h1 className="mt-3 text-balance font-display text-[1.7rem] font-medium leading-[1.05] tracking-[-0.04em]">
           {title}
         </h1>
-        {detail ? (
-          <p className="mt-2 text-[0.9rem] leading-6 text-muted-foreground">{detail}</p>
-        ) : null}
+        {detail ? <p className="mt-2 text-sm leading-6 text-muted-foreground">{detail}</p> : null}
 
         {rows.length > 0 ? (
           <ul className="mt-4 space-y-2.5 border-t border-border pt-4">
             {rows.map((row) => {
               const Icon = row.icon;
               return (
-                <li
-                  key={row.text}
-                  className="flex items-start gap-2.5 text-[0.875rem] leading-6 text-muted-foreground"
-                >
+                <li key={row.text} className="flex items-start gap-2.5 text-sm leading-6 text-muted-foreground">
                   <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                   <span className="min-w-0">{row.text}</span>
                 </li>
@@ -240,11 +342,12 @@ export function MobileToday({
         ) : null}
 
         {plannedWork ? (
-          <div className="mt-4 border-t border-border pt-4 text-sm" aria-label="Planned study work">
-            <p className="font-mono text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+          <div className="mt-4 rounded-lg border border-border bg-secondary/30 p-3">
+            <p className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+              <BookOpen className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
               {state.plannedWork.current ? "Planned now" : "Planned next"}
             </p>
-            <p className="mt-1 font-medium">
+            <p className="mt-1.5 text-sm font-medium">
               {plannedWork.courseCode} · {plannedWork.courseName}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -253,55 +356,103 @@ export function MobileToday({
           </div>
         ) : null}
 
-        {state.kind === "gap" ? (
-          <div className="mt-5 space-y-3">
-            <GapPlannerPreview
-              assessment={state.assessment}
-              onOpenGapPlan={() => {
-                firstValue.acknowledge();
-                onOpenGapPlan();
-              }}
-            />
-            <GapDestinationChecker
-              gap={state.gap}
-              preferences={state.destinationContext.preferences}
-              gapPreferences={state.destinationContext.gapPreferences}
-              planTransition={state.destinationContext.planTransition}
-            />
-          </div>
-        ) : null}
-
-        {canOpenRoute ? (
-          <div className="mt-5 flex flex-col gap-2">
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          {state.kind === "gap" ? (
             <button
               type="button"
               onClick={() => {
                 firstValue.acknowledge();
-                setRouteTargetId(routeTargetId);
-                onOpenDayRoute();
+                onOpenGapPlan();
               }}
-              className={`inline-flex min-h-[2.875rem] items-center justify-center gap-2 px-4 text-sm font-semibold ${
-                state.kind === "gap" ? "button-secondary" : "button-primary"
-              }`}
+              className="button-primary inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold"
             >
-              <Navigation className="h-4 w-4" aria-hidden="true" />
-              Navigate
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Plan gap
             </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => {
+              firstValue.acknowledge();
+              setRouteTargetId(routeTargetId);
+              onOpenDayRoute();
+            }}
+            disabled={!canOpenRoute && todayMeetings.length === 0}
+            className={`${state.kind === "gap" ? "button-secondary" : "button-primary col-span-2"} inline-flex min-h-11 items-center justify-center gap-2 px-3 text-sm font-semibold disabled:opacity-45`}
+          >
+            <Navigation className="h-4 w-4" aria-hidden="true" />
+            Day route
+          </button>
+        </div>
+      </section>
+
+      <section className="mobile-stats-card">
+        <div>
+          <span>Classes</span>
+          <strong>{classCount}</strong>
+        </div>
+        <div>
+          <span>Planned</span>
+          <strong>{plannedCount}</strong>
+        </div>
+        <div>
+          <span>Gaps</span>
+          <strong>{todayGaps.length}</strong>
+        </div>
+        <div>
+          <span>Open</span>
+          <strong>{formatCompactDuration(openMinutes)}</strong>
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-3 flex items-end justify-between gap-3 px-1">
+          <div>
+            <p className="mobile-kicker">My day</p>
+            <h2 className="mt-1 font-display text-xl font-medium tracking-tight">Timeline</h2>
           </div>
-        ) : null}
+          {todayGaps.length > 0 ? (
+            <button type="button" onClick={onOpenGapPlan} className="mobile-text-action">
+              All gaps <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          ) : null}
+        </div>
+
+        {todayMeetings.length === 0 ? (
+          <div className="mobile-empty-card">
+            <CheckCircle2 className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
+            <p className="mt-3 font-medium">Nothing scheduled today</p>
+            <p className="mt-1 text-sm text-muted-foreground">Your day is open.</p>
+          </div>
+        ) : (
+          <div className="mobile-agenda-card">
+            {todayMeetings.map((meeting) => {
+              const gap = gapByPreviousId.get(meeting.id);
+              return (
+                <div key={meeting.id}>
+                  <AgendaItem
+                    meeting={meeting}
+                    active={meeting.startTime <= nowMinutes && nowMinutes < meeting.endTime}
+                    passed={meeting.endTime <= nowMinutes}
+                  />
+                  {gap ? (
+                    <GapRow
+                      gap={gap}
+                      preferences={preferences}
+                      gapPreferences={gapPreferences}
+                      planTransition={planTransition}
+                      onOpen={onOpenGapPlan}
+                    />
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      <section className="surface p-5">
-        <p className="eyebrow text-muted-foreground">
-          {isDemo ? "Sample data" : "Campus day plan"}
-        </p>
-        <p className="mt-2 text-[0.875rem] leading-6 text-muted-foreground">
-          {meetingCount} meetings in {selectedTerm} · {gapCount} gaps detected
-        </p>
-      </section>
-
-      <p className="px-1 pb-2 text-center font-mono text-[0.6rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
-        Independent student project · Not affiliated with U of T
+      <p className="px-1 pb-1 text-center text-[0.66rem] text-muted-foreground">
+        {isDemo ? "Sample timetable" : `${meetingCount} meetings in ${selectedTerm} · ${gapCount} gaps in the term`}
       </p>
     </div>
   );
