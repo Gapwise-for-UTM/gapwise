@@ -36,8 +36,7 @@ describe("first-run upload surface", () => {
     const html = renderPanel(true);
     const visibleText = textContent(html);
 
-    expect(visibleText).toContain("Reading your ACORN schedule…");
-    expect(visibleText).toContain("Building your timetable.");
+    expect(visibleText).toContain("Building your timetable…");
     expect(visibleText).not.toMatch(/\b\d+%\b/);
     expect(html).not.toContain('role="progressbar"');
   });

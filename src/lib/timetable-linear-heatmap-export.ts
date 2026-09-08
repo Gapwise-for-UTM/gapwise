@@ -17,7 +17,7 @@ const PALETTES = {
     buildingStroke: "#d4d4d8",
     visitedStroke: "#2563eb",
     network: "#d7d7dc",
-    routeUnderlay: "#bfdbfe",
+    routeUnderlay: "#dbeafe",
     route: "#2563eb",
     heatStart: [219, 234, 254] as const,
     heatEnd: [37, 99, 235] as const,
@@ -26,11 +26,11 @@ const PALETTES = {
     background: "#111113",
     building: "#1b1b1f",
     buildingStroke: "#2a2a2f",
-    visitedStroke: "#7fb0ff",
+    visitedStroke: "#4c8dff",
     network: "#292a31",
-    routeUnderlay: "#20365d",
+    routeUnderlay: "#1c2b45",
     route: "#4c8dff",
-    heatStart: [25, 38, 58] as const,
+    heatStart: [26, 31, 40] as const,
     heatEnd: [76, 141, 255] as const,
   },
 } as const;
@@ -55,11 +55,20 @@ function applyLinearHeatmapTheme(svg: string, theme: TimetableHeatmapTheme) {
     .replaceAll("#263852", palette.network)
     .replaceAll("#2563eb", palette.routeUnderlay)
     .replaceAll("#67b7ff", palette.route)
+    .replaceAll("#60a5fa", palette.route)
     .replaceAll(' filter="url(#building-glow)"', "")
     .replaceAll('stroke-width="13"', 'stroke-width="8"')
     .replaceAll('stroke-width="4.8"', 'stroke-width="3.4"')
     .replaceAll('stroke-width="2.6"', 'stroke-width="1.8"')
     .replaceAll('stroke-width="1.8"', 'stroke-width="1.25"');
+
+  next = next
+    .replace(/<radialGradient id="map-glow"[\s\S]*?<\/radialGradient>/, "")
+    .replace(/<filter id="building-glow"[\s\S]*?<\/filter>/, "")
+    .replace(
+      '<rect width="100%" height="100%" fill="url(#map-glow)"/>',
+      `<rect width="100%" height="100%" fill="${palette.background}"/>`,
+    );
 
   next = next.replace(/fill="rgb\((\d+) (\d+) (\d+)\)"/g, (_match, red) => {
     const amount = Math.max(0, Math.min(1, (Number(red) - 37) / (224 - 37)));

@@ -37,6 +37,9 @@ describe("clean export theme", () => {
     expect(svg).not.toContain("#6975df");
     expect(svg).not.toContain("#5965cc");
     expect(svg).not.toContain("#040912");
+    expect(svg).not.toContain("#60a5fa");
+    expect(svg).not.toContain("radialGradient");
+    expect(svg).not.toContain("building-glow");
     expect(svg).not.toContain('filter="url(#building-glow)"');
   });
 });
