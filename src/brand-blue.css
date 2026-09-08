@@ -1,0 +1,43 @@
+/*
+ * Gapwise brand accent layer.
+ * Keep the clean Linear-style neutral surfaces, but make interactive emphasis
+ * unmistakably Gapwise blue instead of indigo/purple.
+ */
+
+:root {
+  --primary: oklch(0.56 0.18 244);
+  --primary-foreground: oklch(0.99 0.002 255);
+  --accent: oklch(0.62 0.17 243);
+  --accent-foreground: oklch(0.99 0.002 255);
+  --ring: oklch(0.62 0.17 243);
+  --hero-accent: oklch(0.62 0.17 243);
+  --sidebar-primary: oklch(0.56 0.18 244);
+  --sidebar-ring: oklch(0.62 0.17 243);
+  --lec: oklch(0.57 0.16 244);
+}
+
+.dark {
+  --primary: oklch(0.65 0.18 244);
+  --primary-foreground: oklch(0.99 0.002 255);
+  --accent: oklch(0.73 0.15 243);
+  --accent-foreground: oklch(0.13 0.02 255);
+  --ring: oklch(0.73 0.15 243);
+  --hero-accent: oklch(0.73 0.15 243);
+  --sidebar-primary: oklch(0.66 0.16 244);
+  --sidebar-ring: oklch(0.73 0.15 243);
+  --lec: oklch(0.7 0.15 244);
+}
+
+/* The first-run page should still offer account access. Keep only the compact
+ * sign-in action on the landing header so the chrome stays Linear-like.
+ */
+body:has(main.landing-stage) header [role="group"][aria-label="Account"] {
+  display: flex !important;
+}
+
+body:has(main.landing-stage)
+  header
+  [role="group"][aria-label="Account"]
+  > button:nth-of-type(2) {
+  display: none !important;
+}
