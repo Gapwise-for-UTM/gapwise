@@ -1,5 +1,10 @@
 /* Gapwise clean interface pass II: denser, flatter, and quieter. */
 
+.dark {
+  --primary: #5965cc;
+  --primary-foreground: #f9fafb;
+}
+
 .hero-kicker,
 .hero-proof,
 .landing-bento > .bento-step,
@@ -91,6 +96,10 @@ section[aria-live="polite"] > p.mt-3,
 .upload-card .button-primary,
 .upload-card .button-secondary {
   min-height: 2.75rem !important;
+}
+
+.upload-card .button-primary {
+  min-height: 3.25rem !important;
 }
 
 .upload-card > div > p:last-child {
