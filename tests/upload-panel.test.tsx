@@ -21,29 +21,28 @@ function textContent(html: string) {
     .trim();
 }
 
-describe("AND-66 first-run upload surface", () => {
-  test("puts the local-first import action ahead of demo and account decisions", () => {
+describe("first-run upload surface", () => {
+  test("keeps the landing action focused on import and demo", () => {
     const html = renderPanel(false);
 
-    expect(html).toContain("See gaps. Navigate UTM. Privately.");
+    expect(html).toContain("Start with your timetable.");
     expect(html).toContain("Import ACORN");
-    expect(html).toContain("Your calendar stays on this device. No account required.");
-    expect(html).toContain("Choose the .ics file you downloaded from ACORN.");
     expect(html).toContain("Try Demo Schedule");
     expect(html).toContain('accept=".ics,text/calendar"');
+    expect(html).not.toContain("Your calendar stays on this device");
   });
 
-  test("uses a schedule-shaped local parsing state without fake progress", () => {
+  test("uses a schedule-shaped loading state without fake progress", () => {
     const html = renderPanel(true);
     const visibleText = textContent(html);
 
     expect(visibleText).toContain("Reading your ACORN schedule…");
-    expect(visibleText).toContain("The original .ics file is parsed locally and never uploaded.");
+    expect(visibleText).toContain("Building your timetable.");
     expect(visibleText).not.toMatch(/\b\d+%\b/);
     expect(html).not.toContain('role="progressbar"');
   });
 
-  test("explains import failure, state safety, and the best recovery action", () => {
+  test("explains import failure and the recovery action", () => {
     const html = renderToStaticMarkup(
       <UploadPanel
         {...baseProps}
@@ -55,7 +54,7 @@ describe("AND-66 first-run upload surface", () => {
     const visibleText = textContent(html);
 
     expect(visibleText).toContain("The calendar could not be imported.");
-    expect(visibleText).toContain("Any timetable already in this browser is safe.");
     expect(visibleText).toContain("Choose another ACORN .ics file to try again.");
+    expect(visibleText).not.toContain("already in this browser is safe");
   });
 });

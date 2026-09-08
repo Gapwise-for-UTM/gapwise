@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { FileUp, ShieldCheck } from "lucide-react";
+import { FileUp } from "lucide-react";
 import { LoadingPanel } from "@/components/ui/state-panel";
-import { requestGapwiseSignIn } from "@/features/auth/sign-in-trigger";
 import { clearFirstValuePending, markFirstValuePending } from "@/features/onboarding/first-value";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import "./onboarding/first-run.css";
 
 function ScheduleSkeleton() {
@@ -12,7 +10,7 @@ function ScheduleSkeleton() {
       className="and66-skeleton mt-5"
       compact
       title="Reading your ACORN schedule…"
-      description="The original .ics file is parsed locally and never uploaded."
+      description="Building your timetable."
     />
   );
 }
@@ -73,7 +71,7 @@ export function UploadPanel({
   );
 
   const rememberControl = (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/35 p-3">
+    <label className="flex items-center gap-2.5 rounded-lg border border-border bg-muted/25 p-3 text-xs text-muted-foreground">
       <input
         id="remember"
         name="remember"
@@ -81,14 +79,10 @@ export function UploadPanel({
         checked={rememberAvailable && remember}
         disabled={!rememberAvailable}
         onChange={(event) => onRememberChange(event.target.checked)}
-        className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-55"
+        className="h-4 w-4 shrink-0 accent-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-55"
       />
-      <label htmlFor="remember" className="text-xs leading-5 text-muted-foreground">
-        {rememberAvailable
-          ? "Remember on this device — stores only an encrypted timetable copy in this browser. Off by default."
-          : "Signed-in device restore is managed by encrypted private-data sync."}
-      </label>
-    </div>
+      <span>{rememberAvailable ? "Remember this timetable on this device" : "Device sync is active"}</span>
+    </label>
   );
 
   const errorMessage = error ? (
@@ -98,9 +92,7 @@ export function UploadPanel({
     >
       <p className="font-semibold">The calendar could not be imported.</p>
       <p className="mt-1 leading-6">{error}</p>
-      <p className="mt-1 leading-6">
-        Any timetable already in this browser is safe. Choose another ACORN .ics file to try again.
-      </p>
+      <p className="mt-1 leading-6">Choose another ACORN .ics file to try again.</p>
     </div>
   ) : null;
 
@@ -108,45 +100,30 @@ export function UploadPanel({
     return (
       <section aria-labelledby="upload-heading" className="and66-first-run">
         {fileInput}
-        <p className="eyebrow text-accent">Start with ACORN</p>
+        <p className="eyebrow">Import timetable</p>
         <h2
           id="upload-heading"
           className="mt-2 text-balance font-display text-[1.8rem] font-medium leading-tight tracking-[-0.04em]"
         >
-          See gaps. Navigate UTM. Privately.
+          Start with your timetable.
         </h2>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Import your ACORN calendar to see what&apos;s next, how much time is usable, and where to
-          go.
+          Upload the .ics export from ACORN or open a demo schedule.
         </p>
 
         {loading ? (
           <ScheduleSkeleton />
         ) : (
           <>
-            <p
-              id="first-run-privacy"
-              className="mt-4 flex items-start gap-2 text-xs leading-5 text-muted-foreground"
-            >
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-              <span>Your calendar stays on this device. No account required.</span>
-            </p>
-            <div className="mt-5 space-y-2">
+            <div className="mt-6 space-y-2">
               <button
                 type="button"
                 onClick={openNativePicker}
                 className="button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-5 text-sm font-semibold"
-                aria-describedby="first-run-import-help first-run-privacy"
               >
                 <FileUp className="h-4 w-4" aria-hidden="true" />
                 Import ACORN
               </button>
-              <p
-                id="first-run-import-help"
-                className="text-center text-xs leading-5 text-muted-foreground"
-              >
-                Choose the .ics file you downloaded from ACORN.
-              </p>
               <button
                 type="button"
                 aria-label="Try a demo"
@@ -159,22 +136,7 @@ export function UploadPanel({
               >
                 Try Demo Schedule
               </button>
-              <button
-                type="button"
-                onClick={requestGapwiseSignIn}
-                disabled={!isSupabaseConfigured}
-                aria-label="Sign in to sync across devices"
-                title={
-                  isSupabaseConfigured
-                    ? "Sign in to sync"
-                    : "Sign-in is unavailable in this environment"
-                }
-                className="inline-flex min-h-9 w-full items-center justify-center rounded-md px-4 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                Sign in to sync
-              </button>
             </div>
-            <div className="mt-4">{rememberControl}</div>
             {errorMessage ? <div className="mt-3">{errorMessage}</div> : null}
           </>
         )}
@@ -222,12 +184,9 @@ export function UploadPanel({
     <section aria-labelledby="upload-heading" className="surface p-5 sm:p-7">
       {fileInput}
       <h2 id="upload-heading" className="font-display text-xl font-medium">
-        Upload your ACORN calendar
+        Upload your timetable
       </h2>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Your calendar is parsed in your browser. Cloud sync is optional and never uploads the
-        original ACORN file.
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">Choose the .ics export from ACORN.</p>
       {loading ? (
         <ScheduleSkeleton />
       ) : (

@@ -19,11 +19,6 @@ export function watchForAppFailures(page: Page, baseURL: string) {
 
   page.on("console", (message) => {
     if (message.type() !== "error") return;
-
-    // Browsers emit a generic console error for failed resource loads without
-    // including the URL. Response/request failure listeners below provide the
-    // actionable first-party URL instead and avoid treating third-party assets
-    // (or deliberately offline PWA requests) as app runtime exceptions.
     if (message.text().startsWith("Failed to load resource:")) return;
 
     const location = message.location().url;
@@ -59,7 +54,7 @@ export async function expectLanding(page: Page) {
   const mobile = (page.viewportSize()?.width ?? 1280) < 768;
   await expect(
     page.getByRole("heading", {
-      name: mobile ? "See gaps. Navigate UTM. Privately." : "Make every gap on campus count.",
+      name: mobile ? "Start with your timetable." : "Make every gap on campus count.",
     }),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Try a demo" })).toBeVisible();

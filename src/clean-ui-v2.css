@@ -1,0 +1,397 @@
+/* Gapwise clean interface pass II: denser, flatter, and quieter. */
+
+.hero-kicker,
+.hero-proof,
+.landing-bento > .bento-step,
+.upload-card > div > .glass-panel,
+.gap-day-legend,
+.gap-card details,
+.route-details-panel > ul,
+.route-details-panel > div:first-child p,
+section[aria-live="polite"] > ul,
+section[aria-live="polite"] > p.mt-3,
+.glass-panel[class*="max-h-[85vh]"] > p:last-child {
+  display: none !important;
+}
+
+/* Landing page */
+.landing-stage {
+  display: grid;
+  align-items: center;
+  min-height: calc(100dvh - 3.5rem);
+  padding-block: clamp(1rem, 4vw, 3.5rem) !important;
+}
+
+.landing-bento {
+  width: min(72rem, 100%);
+  margin-inline: auto;
+  gap: 1px !important;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  background: var(--color-border);
+}
+
+.bento-hero,
+.upload-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.bento-hero > div:first-child {
+  min-height: 1.25rem;
+}
+
+.bento-hero > div:first-child > span:last-child {
+  color: var(--color-muted-foreground) !important;
+  font-family: var(--font-code);
+  font-size: 0.64rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+}
+
+.hero-title {
+  max-width: 9.5ch !important;
+  margin-top: clamp(3rem, 7vw, 6rem) !important;
+  font-size: clamp(3.2rem, 6vw, 5.6rem) !important;
+  font-weight: 560 !important;
+  line-height: 0.95 !important;
+}
+
+.hero-word {
+  color: var(--color-accent) !important;
+}
+
+.bento-hero > p {
+  max-width: 31rem !important;
+  margin-top: 1.5rem !important;
+  color: var(--color-muted-foreground) !important;
+  font-size: 0.96rem !important;
+  line-height: 1.65 !important;
+}
+
+.upload-card {
+  align-self: stretch;
+}
+
+.upload-card .and66-first-run > .eyebrow {
+  color: var(--color-muted-foreground) !important;
+}
+
+.upload-card #upload-heading {
+  font-size: clamp(1.6rem, 2.2vw, 2rem) !important;
+  font-weight: 560 !important;
+}
+
+.upload-card #upload-heading + p {
+  max-width: 27rem;
+  color: var(--color-muted-foreground) !important;
+}
+
+.upload-card .button-primary,
+.upload-card .button-secondary {
+  min-height: 2.75rem !important;
+}
+
+.upload-card > div > p:last-child {
+  margin-top: 1.25rem !important;
+  padding-top: 1rem !important;
+  border-color: var(--color-border) !important;
+  opacity: 0.68;
+}
+
+@media (min-width: 64rem) {
+  .landing-bento {
+    grid-template-columns: minmax(0, 1.4fr) minmax(21rem, 0.8fr) !important;
+  }
+
+  .landing-bento > .bento-hero {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-height: 34rem !important;
+    padding: clamp(2.5rem, 4.5vw, 4.5rem) !important;
+  }
+
+  .landing-bento > .upload-card {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    min-height: 34rem;
+    padding: clamp(2rem, 3.4vw, 3.25rem) !important;
+  }
+}
+
+/* Product chrome */
+.desktop-page-heading .eyebrow {
+  color: var(--color-muted-foreground) !important;
+}
+
+.desktop-page-heading h1 {
+  font-weight: 560 !important;
+}
+
+.desktop-product-shell .surface,
+.desktop-product-shell .timetable-shell,
+.desktop-product-shell .today-signal,
+.desktop-product-shell .gap-card {
+  box-shadow: none !important;
+}
+
+.desktop-product-shell .empty-state > p {
+  display: none !important;
+}
+
+/* Gap Plan: turn the selected recommendation into a compact inspector row. */
+.gap-plan-layout {
+  --gap-plan-compact-border: color-mix(in oklab, var(--color-border) 88%, transparent);
+}
+
+.gap-plan-layout > * + * {
+  margin-top: 0.8rem !important;
+}
+
+.gap-plan-layout > div:first-child {
+  gap: 0.75rem !important;
+}
+
+.gap-plan-layout > div:first-child .eyebrow {
+  display: none;
+}
+
+.gap-plan-layout > div:first-child h2 {
+  margin-top: 0 !important;
+  font-size: 1.35rem !important;
+  font-weight: 560 !important;
+}
+
+.gap-plan-tools {
+  gap: 0.35rem !important;
+}
+
+.gap-plan-tools > button {
+  min-height: 2rem !important;
+  gap: 0.35rem !important;
+  border-radius: 0.42rem !important;
+  padding-inline: 0.6rem !important;
+  font-size: 0.68rem !important;
+  font-weight: 560 !important;
+}
+
+.gap-plan-layout > section > h3 {
+  margin: 0 0 0.3rem !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.gap-plan-layout > section > h3 span {
+  font-size: 0.66rem !important;
+}
+
+.gap-day-strip {
+  margin-top: 0 !important;
+  padding: 0.45rem 0.65rem 0.5rem !important;
+  border-color: var(--gap-plan-compact-border) !important;
+  border-radius: 0.48rem !important;
+}
+
+.gap-day-hours {
+  height: 0.85rem !important;
+  margin-inline: 0.15rem !important;
+  font-size: 0.5rem !important;
+}
+
+.gap-day-track {
+  height: 2rem !important;
+  margin-inline: 0.15rem !important;
+  border-radius: 0.3rem !important;
+  background: var(--color-surface-low) !important;
+}
+
+.gap-day-class {
+  opacity: 0.32 !important;
+}
+
+.gap-day-interval {
+  border-radius: 0.28rem !important;
+  box-shadow: none !important;
+}
+
+.gap-day-interval > span {
+  font-size: 0.56rem !important;
+  font-weight: 650 !important;
+}
+
+.gap-selected-surface {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0.4rem 0 0 !important;
+}
+
+.gap-card {
+  display: grid !important;
+  grid-template-columns: 7.5rem minmax(0, 1fr) minmax(10rem, auto);
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0.45rem 0.85rem !important;
+  width: 100%;
+  padding: 0.7rem 0.8rem !important;
+  border-color: var(--gap-plan-compact-border) !important;
+  border-radius: 0.48rem !important;
+}
+
+.gap-card::before,
+.gap-card .gap-usable-meter,
+.gap-card > .mt-3,
+.gap-fill-track {
+  display: none !important;
+}
+
+.gap-card-select {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  min-width: 0;
+  padding-right: 0.75rem !important;
+  border-right: 1px solid var(--color-border);
+}
+
+.gap-card-select strong {
+  font-size: 1.15rem !important;
+  font-weight: 620 !important;
+  letter-spacing: -0.035em;
+}
+
+.gap-card-select span {
+  margin-top: 0.08rem !important;
+  font-size: 0.62rem !important;
+  line-height: 1.25 !important;
+}
+
+.gap-card-recommendation {
+  grid-column: 2;
+  grid-row: 1;
+  gap: 0.55rem !important;
+}
+
+.gap-card-icon {
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  border-radius: 0.38rem !important;
+}
+
+.gap-card-icon svg {
+  width: 0.9rem !important;
+  height: 0.9rem !important;
+}
+
+.gap-card-recommendation h4 {
+  font-size: 0.93rem !important;
+  font-weight: 600 !important;
+}
+
+.gap-card-recommendation p {
+  margin-top: 0.1rem !important;
+  font-size: 0.62rem !important;
+}
+
+.gap-route-context {
+  grid-column: 2;
+  grid-row: 2;
+  margin-top: 0 !important;
+  font-size: 0.68rem !important;
+}
+
+.gap-route-context > p {
+  margin-top: 0 !important;
+}
+
+.gap-route-context > p:nth-of-type(n + 3) {
+  display: none !important;
+}
+
+.gap-route-context p + p {
+  margin-top: 0.1rem !important;
+  padding-left: 1.35rem !important;
+  font-size: 0.6rem !important;
+}
+
+.gap-card-actions {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  justify-content: flex-end;
+  gap: 0.3rem !important;
+  margin-top: 0 !important;
+}
+
+.gap-card-actions button {
+  border-color: var(--color-border) !important;
+  border-radius: 0.38rem !important;
+  padding: 0.28rem 0.48rem !important;
+  font-size: 0.62rem !important;
+  font-weight: 560 !important;
+}
+
+.gap-friend-context {
+  grid-column: 2;
+  grid-row: 3;
+  margin-top: 0 !important;
+}
+
+/* Route detail panels should show decisions, not internal confidence diagnostics. */
+.route-details-panel {
+  padding: 0.8rem !important;
+  border-radius: 0.5rem !important;
+}
+
+.route-details-panel dl {
+  margin-top: 0.7rem !important;
+  gap: 0.45rem !important;
+}
+
+.route-details-panel dl > div:nth-child(n + 4) {
+  display: none !important;
+}
+
+.route-details-panel .metric-value {
+  font-size: 0.82rem !important;
+}
+
+/* Flat dialogs: no frosted-glass mismatch with the rest of the product. */
+[role="dialog"].glass-panel,
+.glass-panel[role="dialog"] {
+  background: var(--color-card) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 10px 40px rgb(0 0 0 / 16%) !important;
+}
+
+@media (max-width: 47.999rem) {
+  .landing-stage {
+    min-height: auto;
+  }
+
+  .landing-bento {
+    border-radius: 0.65rem;
+  }
+
+  .gap-card {
+    grid-template-columns: 6.6rem minmax(0, 1fr) !important;
+  }
+
+  .gap-card-select {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .gap-card-recommendation,
+  .gap-route-context,
+  .gap-friend-context {
+    grid-column: 2;
+  }
+
+  .gap-card-actions {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    justify-content: flex-start;
+    padding-top: 0.35rem;
+    border-top: 1px solid var(--color-border);
+  }
+}

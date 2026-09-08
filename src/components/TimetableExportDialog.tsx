@@ -66,8 +66,8 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
       const resolvedGapwiseTheme = document.documentElement.classList.contains("dark")
         ? "dark"
         : "light";
-      const { generateTimetablePng } = await import("@/lib/timetable-export");
-      const { blob, filename } = await generateTimetablePng(
+      const { generateLinearTimetablePng } = await import("@/lib/timetable-linear-export");
+      const { blob, filename } = await generateLinearTimetablePng(
         meetings,
         selection,
         resolveExportTheme(appearance, resolvedGapwiseTheme),
@@ -81,9 +81,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
       setOpen(false);
     } catch (cause) {
       if (cause instanceof DOMException && cause.name === "AbortError") return;
-      setError(
-        "The timetable export could not be created. Your timetable is safe and unchanged — try exporting again.",
-      );
+      setError("The timetable export could not be created. Try again.");
     } finally {
       setExporting(false);
     }
@@ -115,18 +113,14 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
             </DialogTitle>
             <DialogDescription className="leading-6">
               {output === "print"
-                ? "Create a razor-sharp black-and-white vector for paper entirely in this browser. Your schedule is not uploaded."
-                : "Create a private, high-resolution PNG entirely in this browser. Your schedule is not uploaded."}
+                ? "Create a sharp black-and-white vector for paper."
+                : "Create a high-resolution PNG that matches Gapwise."}
             </DialogDescription>
           </DialogHeader>
           {terms.length > 1 ? (
             <fieldset>
               <legend className="mb-2 text-sm font-semibold">Include</legend>
-              <div
-                className="grid grid-cols-2 gap-2"
-                role="radiogroup"
-                aria-label="Terms to export"
-              >
+              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Terms to export">
                 {[...terms, "all" as const].map((option) => (
                   <button
                     key={option}
@@ -134,7 +128,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                     role="radio"
                     aria-checked={selection === option}
                     onClick={() => setSelection(option)}
-                    className={`min-h-11 rounded-xl border px-3 text-sm font-semibold ${selection === option ? "border-accent bg-accent text-accent-foreground" : "border-border text-muted-foreground"}`}
+                    className={`min-h-11 rounded-lg border px-3 text-sm font-semibold ${selection === option ? "border-accent bg-accent text-accent-foreground" : "border-border text-muted-foreground"}`}
                   >
                     {option === "all" ? "All available terms" : option}
                   </button>
@@ -142,7 +136,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
               </div>
             </fieldset>
           ) : (
-            <p className="rounded-xl border border-border bg-background/50 p-3 text-sm">
+            <p className="rounded-lg border border-border bg-background/50 p-3 text-sm">
               {terms[0]} timetable
             </p>
           )}
@@ -154,30 +148,26 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                 role="radio"
                 aria-checked={output === "image"}
                 onClick={() => setOutput("image")}
-                className={`min-h-20 rounded-xl border p-3 text-left transition-colors ${output === "image" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
+                className={`min-h-16 rounded-lg border p-3 text-left transition-colors ${output === "image" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold">
                   <Image className="h-4 w-4" aria-hidden="true" />
                   Share image
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  High-resolution PNG for screens
-                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">High-resolution PNG</span>
               </button>
               <button
                 type="button"
                 role="radio"
                 aria-checked={output === "print"}
                 onClick={() => setOutput("print")}
-                className={`min-h-20 rounded-xl border p-3 text-left transition-colors ${output === "print" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
+                className={`min-h-16 rounded-lg border p-3 text-left transition-colors ${output === "print" ? "border-accent bg-accent/10" : "border-border bg-background/35"}`}
               >
                 <span className="flex items-center gap-2 text-sm font-semibold">
                   <Printer className="h-4 w-4" aria-hidden="true" />
                   Print-ready B&amp;W
                 </span>
-                <span className="mt-1 block text-xs leading-5 text-muted-foreground">
-                  Vector SVG · unlimited sharpness
-                </span>
+                <span className="mt-1 block text-xs text-muted-foreground">Vector SVG</span>
               </button>
             </div>
           </fieldset>
@@ -185,7 +175,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
             <fieldset>
               <legend className="mb-2 text-sm font-semibold">Appearance</legend>
               <div
-                className="grid grid-cols-3 rounded-xl border border-border bg-background/45 p-1"
+                className="grid grid-cols-3 rounded-lg border border-border bg-background/45 p-1"
                 role="radiogroup"
                 aria-label="Export appearance"
               >
@@ -202,30 +192,18 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
                     role="radio"
                     aria-checked={appearance === value}
                     onClick={() => setAppearance(value)}
-                    className={`min-h-10 rounded-lg px-2 text-xs font-semibold transition-colors ${appearance === value ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                    className={`min-h-9 rounded-md px-2 text-xs font-semibold transition-colors ${appearance === value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     {label}
                   </button>
                 ))}
               </div>
             </fieldset>
-          ) : (
-            <div className="rounded-xl border border-border bg-background/45 p-3">
-              <p className="flex items-center gap-2 text-sm font-semibold">
-                <Printer className="h-4 w-4" aria-hidden="true" />
-                Built specifically for paper
-              </p>
-              <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                Pure monochrome vector artwork with embedded typography, crisp grid lines, and no
-                screen-only shadows or gradients. Scale it to any printer DPI or page size without
-                losing sharpness.
-              </p>
-            </div>
-          )}
+          ) : null}
           {error ? (
             <p
               role="alert"
-              className="rounded-xl border border-destructive/35 bg-destructive/10 p-3 text-sm text-destructive"
+              className="rounded-lg border border-destructive/35 bg-destructive/10 p-3 text-sm text-destructive"
             >
               {error}
             </p>
@@ -234,7 +212,7 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
             type="button"
             disabled={exporting}
             onClick={() => void exportTimetable()}
-            className="button-primary inline-flex min-h-12 w-full items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
+            className="button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-4 text-sm font-semibold disabled:opacity-60"
           >
             {exporting ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -247,10 +225,10 @@ export function TimetableExportDialog({ meetings }: { meetings: Meeting[] }) {
             )}
             {exporting
               ? output === "print"
-                ? "Preparing print-ready vector…"
-                : "Generating high-resolution PNG…"
+                ? "Preparing vector…"
+                : "Generating PNG…"
               : output === "print"
-                ? "Download print-ready SVG"
+                ? "Download SVG"
                 : "Generate image"}
           </button>
           <p aria-live="polite" className="sr-only">

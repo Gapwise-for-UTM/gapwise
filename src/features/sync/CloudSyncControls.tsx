@@ -9,7 +9,6 @@ import type { AcademicState } from "@/features/academic/state";
 import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
-import { emitClickSpark } from "@/lib/micro-interactions";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import {
   deleteEncryptedPrivateCloud,
@@ -62,7 +61,7 @@ export function CloudSyncControls({
     try {
       setMessage(await action());
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Cloud sync failed.");
+      setMessage(error instanceof Error ? error.message : "Sync failed.");
     } finally {
       setBusy(false);
     }
@@ -77,42 +76,38 @@ export function CloudSyncControls({
               Sync across devices
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Your private Gapwise data is encrypted in your browser before it is stored. Sync is
-              optional. The original .ics file is never uploaded.
+              Keep your timetable, preferences, and planning data in sync.
             </p>
             <p className="mt-1 text-[0.68rem] text-muted-foreground">
               {restorationState === "checking-cloud"
-                ? "Checking for an encrypted copy…"
+                ? "Checking sync…"
                 : restorationState === "restored-cloud"
-                  ? "Encrypted private data restored in this browser."
+                  ? "Synced data loaded."
                   : restorationState === "cloud-version-available"
-                    ? "An encrypted cloud version is available."
-                    : "This browser is currently using local data."}
+                    ? "A newer sync is available."
+                    : "Using this device’s copy."}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={!enabled || busy}
-              onClick={(event) => {
-                emitClickSpark(event);
+              onClick={() =>
                 void run(async () => {
-                  const result = await saveEncryptedPrivateState(user!.id, {
+                  await saveEncryptedPrivateState(user!.id, {
                     schedule: meetings ?? [],
                     personalItems,
                     preferences,
                     gapPreferences,
                   });
                   setCloudRestoreSuppressed(user!.id, false);
-                  return result.persistentKeys
-                    ? "Private data encrypted, synced, and verified."
-                    : "Private data encrypted and synced. Secure restore is available only while this page stays open on this browser.";
-                });
-              }}
-              className="button-primary click-spark inline-flex min-h-11 items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  return "Synced.";
+                })
+              }
+              className="button-primary inline-flex min-h-10 items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CloudUpload className="h-3.5 w-3.5" aria-hidden="true" />
-              Sync private data
+              Sync now
             </button>
             <button
               type="button"
@@ -120,42 +115,35 @@ export function CloudSyncControls({
               onClick={() =>
                 void run(async () => {
                   const restored = await loadEncryptedPrivateState(user!.id, undefined, true);
-                  if (!restored) return "No encrypted cloud data was found.";
+                  if (!restored) return "No sync found.";
                   setCloudRestoreSuppressed(user!.id, false);
                   onLoadPrivate(restored.payload);
-                  return "Encrypted private data loaded into this browser.";
+                  return "Loaded.";
                 })
               }
-              className="button-secondary inline-flex min-h-11 items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+              className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CloudDownload className="h-3.5 w-3.5" aria-hidden="true" />
-              Load private data
+              Load sync
             </button>
             <button
               type="button"
               disabled={!enabled || busy}
               onClick={() => {
-                if (!window.confirm("Delete your synced encrypted private data from your account?"))
-                  return;
+                if (!window.confirm("Delete synced Gapwise data from your account?")) return;
                 void run(async () => {
                   await deleteEncryptedPrivateCloud(user!.id);
-                  return "Cloud encrypted private data deleted. Local browser data was not changed.";
+                  return "Deleted.";
                 });
               }}
-              className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-destructive/40 bg-card px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex min-h-10 items-center gap-2 rounded-md border border-destructive/40 bg-card px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-              Delete cloud data
+              Delete sync
             </button>
           </div>
         </div>
-        {!user ? (
-          <p className="mt-3 text-xs text-muted-foreground">
-            {isSupabaseConfigured
-              ? "Sign in only if you want cross-device sync. Guest mode remains fully functional."
-              : "Cloud controls are disabled on this deployment. Guest mode remains fully functional."}
-          </p>
-        ) : null}
+        {!user ? <p className="mt-3 text-xs text-muted-foreground">Sign in to use sync.</p> : null}
         {message ? (
           <p role="status" className="mt-3 text-xs text-muted-foreground">
             {message}
