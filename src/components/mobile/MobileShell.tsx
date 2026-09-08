@@ -1,4 +1,4 @@
-import { CalendarClock, LayoutGrid, MapPinned, Menu } from "lucide-react";
+import { CalendarClock, CalendarRange, LayoutGrid, MapPinned, Menu } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import "./mobile-integrated.css";
@@ -26,8 +26,16 @@ const NAV_ITEMS = [
     label: "Timetable",
     icon: LayoutGrid,
   },
+  { tab: "gaps" as MobileTab, to: "/gaps" as const, label: "Gaps", icon: CalendarRange },
   { tab: "route" as MobileTab, to: "/route" as const, label: "Map", icon: MapPinned },
 ];
+
+const PAGE_LABEL: Record<MobileTab, string> = {
+  today: "My day",
+  timetable: "Timetable",
+  gaps: "Gap plan",
+  route: "Campus map",
+};
 
 export function MobileShell({
   tab,
@@ -46,18 +54,21 @@ export function MobileShell({
   return (
     <MobileRouteTargetContext.Provider value={routeTargetContext}>
       <div className="app-shell mobile-integrated-app flex min-h-[100dvh] flex-col bg-background text-foreground">
-        <header className="app-nav sticky top-0 z-30 border-b" data-scrolled="true">
-          <div className="flex min-h-[3.25rem] items-center gap-3 px-4 pt-[env(safe-area-inset-top)]">
-            <span className="brand-mark-shell h-7 w-7">
-              <img src="/logo-mark.svg" alt="" aria-hidden="true" />
-            </span>
-            <p className="flex min-w-0 items-center gap-2 truncate font-display text-[0.95rem] font-semibold tracking-[-0.035em]">
-              Gapwise <span className="brand-utm-pill">UTM</span>
-            </p>
+        <header className="mobile-topbar sticky top-0 z-30 border-b border-border">
+          <div className="mx-auto flex min-h-[3.5rem] w-full max-w-[46rem] items-center justify-between gap-3 px-4 pt-[env(safe-area-inset-top)]">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="brand-mark-shell h-7 w-7">
+                <img src="/logo-mark.svg" alt="" aria-hidden="true" />
+              </span>
+              <p className="truncate font-display text-[0.95rem] font-semibold tracking-[-0.035em]">
+                Gapwise
+              </p>
+            </div>
+            <p className="truncate text-xs font-semibold text-muted-foreground">{PAGE_LABEL[tab]}</p>
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-[calc(4.75rem+env(safe-area-inset-bottom))] pt-4">
+        <main className="flex-1 px-4 pb-[calc(5.25rem+env(safe-area-inset-bottom))] pt-4">
           {children}
         </main>
 
@@ -65,10 +76,10 @@ export function MobileShell({
           aria-label="Main"
           className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-border pb-[env(safe-area-inset-bottom)]"
         >
-          <ul className="grid grid-cols-4">
+          <ul className="mx-auto grid max-w-[46rem] grid-cols-5">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const active = tab === item.tab || (item.tab === "timetable" && tab === "gaps");
+              const active = tab === item.tab;
               return (
                 <li key={item.tab}>
                   <Link
@@ -77,11 +88,11 @@ export function MobileShell({
                       if (item.tab === "route") setRouteTargetId(null);
                     }}
                     aria-current={active ? "page" : undefined}
-                    className={`mobile-nav-item flex min-h-[3.5rem] w-full flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold ${
+                    className={`mobile-nav-item flex min-h-[3.75rem] w-full flex-col items-center justify-center gap-1 text-[0.64rem] font-semibold ${
                       active ? "text-accent" : "text-muted-foreground"
                     }`}
                   >
-                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    <Icon className="h-[1.15rem] w-[1.15rem]" aria-hidden="true" />
                     {item.label}
                   </Link>
                 </li>
@@ -92,11 +103,11 @@ export function MobileShell({
                 type="button"
                 onClick={onOpenMore}
                 aria-expanded={moreOpen}
-                className={`mobile-nav-item flex min-h-[3.5rem] w-full flex-col items-center justify-center gap-1 text-[0.68rem] font-semibold ${
+                className={`mobile-nav-item flex min-h-[3.75rem] w-full flex-col items-center justify-center gap-1 text-[0.64rem] font-semibold ${
                   moreOpen ? "text-accent" : "text-muted-foreground"
                 }`}
               >
-                <Menu className="h-5 w-5" aria-hidden="true" />
+                <Menu className="h-[1.15rem] w-[1.15rem]" aria-hidden="true" />
                 More
               </button>
             </li>
