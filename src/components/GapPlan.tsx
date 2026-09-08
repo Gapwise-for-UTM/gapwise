@@ -4,6 +4,7 @@ import type { GapPreferences } from "@/features/gaps/types";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Gap, Term } from "@/lib/timetable-types";
+import "./gap-plan.css";
 
 const GapPlanImpl = lazy(() =>
   import("./GapPlanImpl").then((module) => ({ default: module.GapPlan })),
