@@ -10,6 +10,15 @@ const AccountStatusImpl = lazy(() =>
   import("./AccountStatusImpl").then((module) => ({ default: module.AccountStatus })),
 );
 
+const viteEnv = (
+  import.meta as ImportMeta & {
+    env?: Record<string, string | undefined>;
+  }
+).env;
+const signInEnvironmentAvailable = Boolean(
+  viteEnv?.["VITE_SUPABASE_URL"]?.trim() && viteEnv?.["VITE_SUPABASE_PUBLISHABLE_KEY"]?.trim(),
+);
+
 type AccountStatusProps = {
   user: User | null;
   loading: boolean;
@@ -24,12 +33,20 @@ type AccountStatusProps = {
   planTransition: TransitionPlanner;
 };
 
-function SignInStub({ loading, onActivate }: { loading: boolean; onActivate: () => void }) {
+function SignInStub({
+  loading,
+  available,
+  onActivate,
+}: {
+  loading: boolean;
+  available: boolean;
+  onActivate: () => void;
+}) {
   return (
     <div className="relative flex items-center gap-2" role="group" aria-label="Account">
       <button
         type="button"
-        disabled={loading}
+        disabled={loading || !available}
         onClick={onActivate}
         className="button-secondary inline-flex min-h-9 items-center px-3 text-sm font-medium disabled:opacity-50"
       >
@@ -65,6 +82,7 @@ export function AccountStatus(props: AccountStatusProps) {
     return (
       <SignInStub
         loading={props.loading}
+        available={signInEnvironmentAvailable}
         onActivate={() => {
           setActivated(true);
           requestGapwiseSignIn();
@@ -74,7 +92,9 @@ export function AccountStatus(props: AccountStatusProps) {
   }
 
   return (
-    <Suspense fallback={<SignInStub loading onActivate={() => undefined} />}>
+    <Suspense
+      fallback={<SignInStub loading available={signInEnvironmentAvailable} onActivate={() => undefined} />}
+    >
       <AccountStatusImpl {...props} settingsRequest={settingsRequest} />
     </Suspense>
   );
