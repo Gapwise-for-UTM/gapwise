@@ -93,7 +93,7 @@ body:has(main.landing-stage) .product-story-nav {
     padding-top: var(--gapwise-safe-top) !important;
   }
 
-  /* Keep the main Gapwise chrome blue and stop section changes repainting the fixed row. */
+  /* Keep fixed chrome stable while both brand accents track the active product section. */
   html[data-landing-product] .app-shell,
   html[data-landing-product] .desktop-app-header {
     background: var(--color-background) !important;
@@ -102,7 +102,7 @@ body:has(main.landing-stage) .product-story-nav {
 
   .desktop-app-header .brand-mark-shell,
   .desktop-app-header .brand-utm-pill {
-    color: var(--color-accent) !important;
+    color: var(--landing-chrome-accent, var(--color-accent)) !important;
     transition: none !important;
   }
 
