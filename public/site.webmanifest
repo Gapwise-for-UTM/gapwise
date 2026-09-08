@@ -1,11 +1,11 @@
 {
   "name": "Gapwise",
   "short_name": "Gapwise",
-  "description": "Privacy-first timetable, gap planning, and campus routing for University of Toronto Mississauga students.",
+  "description": "UTM timetable, gap planning, and campus routing in one focused student app.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8f6ef",
-  "theme_color": "#203b62",
+  "background_color": "#111113",
+  "theme_color": "#2563eb",
   "icons": [
     {
       "src": "/logo-mark.svg",
