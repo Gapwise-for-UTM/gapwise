@@ -61,9 +61,8 @@ body:has(main.landing-stage)
   display: none;
 }
 
-/* Landing interaction: one very cheap composited highlight instead of a
- * canvas/WebGL hero. It makes the split surface react to intent without
- * changing layout or adding runtime JavaScript.
+/* Landing interaction: cheap composited highlights instead of canvas/WebGL.
+ * The split reacts to intent without changing layout or adding runtime JS.
  */
 main.landing-stage .landing-bento {
   position: relative;
@@ -83,12 +82,40 @@ main.landing-stage .landing-bento::before {
     color-mix(in oklab, var(--color-accent) 8%, transparent),
     transparent 72%
   );
-  transition: opacity 220ms ease, background-position 260ms ease;
+  transition: opacity 220ms ease;
+}
+
+main.landing-stage .landing-bento::after {
+  content: "";
+  position: absolute;
+  z-index: 4;
+  top: 10%;
+  bottom: 10%;
+  left: 63.6%;
+  width: 1px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--color-accent) 76%, transparent) 36%,
+    color-mix(in oklab, var(--color-accent) 76%, transparent) 64%,
+    transparent
+  );
+  transform: scaleY(0.18);
+  transition: opacity 180ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 main.landing-stage .landing-bento:hover::before,
-main.landing-stage .landing-bento:focus-within::before {
+main.landing-stage .landing-bento:focus-within::before,
+main.landing-stage .landing-bento:hover::after,
+main.landing-stage .landing-bento:focus-within::after {
   opacity: 1;
+}
+
+main.landing-stage .landing-bento:hover::after,
+main.landing-stage .landing-bento:focus-within::after {
+  transform: scaleY(1);
 }
 
 main.landing-stage .landing-bento:has(.upload-card:hover)::before,
@@ -105,6 +132,15 @@ main.landing-stage .upload-card {
   position: relative;
   z-index: 1;
   transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+main.landing-stage .hero-title {
+  font-weight: 520 !important;
+  letter-spacing: -0.06em !important;
+}
+
+main.landing-stage .upload-card #upload-heading {
+  font-weight: 540 !important;
 }
 
 main.landing-stage .hero-word {
@@ -142,8 +178,15 @@ main.landing-stage .upload-card:focus-within .button-primary {
   background: color-mix(in oklab, var(--color-primary) 92%, white 8%) !important;
 }
 
+@media (max-width: 63.999rem) {
+  main.landing-stage .landing-bento::after {
+    display: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   main.landing-stage .landing-bento::before,
+  main.landing-stage .landing-bento::after,
   main.landing-stage .hero-word,
   main.landing-stage .hero-word::after,
   main.landing-stage .upload-card .button-primary {
