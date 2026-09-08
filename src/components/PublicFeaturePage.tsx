@@ -1,4 +1,4 @@
-import { ArrowRight, ExternalLink, ShieldCheck } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import type { PublicFeaturePage as PublicFeaturePageData } from "@/content/public-feature-pages";
 
 const RESOURCE_LINKS = [
@@ -13,7 +13,7 @@ const RESOURCE_LINKS = [
 export function PublicFeaturePage({ page }: { page: PublicFeaturePageData }) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-background/92 backdrop-blur">
+      <header className="border-b border-border bg-background">
         <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
           <a href="/" className="brand-lockup flex items-center gap-3" aria-label="Gapwise home">
             <span className="brand-mark-shell">
@@ -96,20 +96,6 @@ export function PublicFeaturePage({ page }: { page: PublicFeaturePageData }) {
           ))}
         </div>
 
-        <aside className="mt-8 surface flex gap-4 p-5 sm:p-6">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
-          <div>
-            <h2 className="font-display font-semibold">
-              Independent, privacy-first, and explicit about limits
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Gapwise is an independent student-built project for University of Toronto Mississauga.
-              It is not an official University of Toronto service and is not affiliated with or
-              endorsed by the University.
-            </p>
-          </div>
-        </aside>
-
         <section className="mt-14 border-t border-border pt-8">
           <p className="eyebrow text-muted-foreground">Explore Gapwise</p>
           <nav className="mt-4 flex flex-wrap gap-2" aria-label="Related Gapwise pages">
@@ -130,12 +116,6 @@ export function PublicFeaturePage({ page }: { page: PublicFeaturePageData }) {
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-xs text-muted-foreground sm:px-6 md:flex-row md:items-center md:justify-between">
           <span>Gapwise · Make the time between classes count.</span>
           <nav className="flex flex-wrap gap-4" aria-label="Gapwise resources">
-            <a href="/privacy" className="hover:text-foreground">
-              Privacy
-            </a>
-            <a href="/trust" className="hover:text-foreground">
-              Trust
-            </a>
             <a href="/support" className="hover:text-foreground">
               Support
             </a>
