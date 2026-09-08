@@ -1,44 +1,134 @@
 /*
- * Gapwise brand accent layer.
- * Neutral Linear-style surfaces with a focused Gapwise-blue identity.
+ * Final Gapwise visual-system layer.
+ * Neutral surfaces, one restrained blue accent family, and low-noise depth.
  */
 
 :root {
+  --background: oklch(0.985 0.002 255);
+  --foreground: oklch(0.18 0.006 255);
+  --card: oklch(0.997 0.001 255);
+  --card-foreground: oklch(0.18 0.006 255);
+  --popover: oklch(0.997 0.001 255);
+  --popover-foreground: oklch(0.18 0.006 255);
   --primary: oklch(0.56 0.18 244);
   --primary-foreground: oklch(0.99 0.002 255);
-  --accent: oklch(0.62 0.17 243);
+  --secondary: oklch(0.955 0.004 255);
+  --secondary-foreground: oklch(0.27 0.006 255);
+  --muted: oklch(0.955 0.004 255);
+  --muted-foreground: oklch(0.49 0.008 255);
+  --accent: oklch(0.57 0.17 244);
   --accent-foreground: oklch(0.99 0.002 255);
-  --ring: oklch(0.62 0.17 243);
-  --hero-accent: oklch(0.62 0.17 243);
+  --border: oklch(0.89 0.005 255);
+  --input: oklch(0.89 0.005 255);
+  --ring: oklch(0.6 0.16 244);
+  --hero-background: oklch(0.985 0.002 255);
+  --hero-foreground: oklch(0.18 0.006 255);
+  --hero-accent: oklch(0.57 0.17 244);
+  --sidebar-background: oklch(0.975 0.003 255);
+  --sidebar-foreground: oklch(0.25 0.006 255);
   --sidebar-primary: oklch(0.56 0.18 244);
-  --sidebar-ring: oklch(0.62 0.17 243);
+  --sidebar-primary-foreground: oklch(0.99 0.002 255);
+  --sidebar-accent: oklch(0.94 0.008 244);
+  --sidebar-accent-foreground: oklch(0.25 0.006 255);
+  --sidebar-border: oklch(0.89 0.005 255);
+  --sidebar-ring: oklch(0.6 0.16 244);
   --lec: oklch(0.57 0.16 244);
+  --tut: oklch(0.58 0.08 221);
+  --pra: oklch(0.58 0.06 248);
+  --gap: oklch(0.58 0.15 244);
+  --accent-glow: transparent;
+  --gap-glow: transparent;
+  --shadow-lift: 0 7px 24px rgb(18 24 35 / 0.06);
 }
 
 .dark {
-  --primary: oklch(0.65 0.18 244);
+  color-scheme: dark;
+  --background: oklch(0.108 0.004 255);
+  --foreground: oklch(0.94 0.004 255);
+  --card: oklch(0.135 0.004 255);
+  --card-foreground: oklch(0.94 0.004 255);
+  --popover: oklch(0.145 0.004 255);
+  --popover-foreground: oklch(0.94 0.004 255);
+  --primary: oklch(0.66 0.17 244);
   --primary-foreground: oklch(0.99 0.002 255);
-  --accent: oklch(0.73 0.15 243);
-  --accent-foreground: oklch(0.13 0.02 255);
-  --ring: oklch(0.73 0.15 243);
-  --hero-accent: oklch(0.73 0.15 243);
-  --sidebar-primary: oklch(0.66 0.16 244);
-  --sidebar-ring: oklch(0.73 0.15 243);
-  --lec: oklch(0.7 0.15 244);
+  --secondary: oklch(0.175 0.005 255);
+  --secondary-foreground: oklch(0.9 0.004 255);
+  --muted: oklch(0.175 0.005 255);
+  --muted-foreground: oklch(0.64 0.007 255);
+  --accent: oklch(0.69 0.15 244);
+  --accent-foreground: oklch(0.99 0.002 255);
+  --border: oklch(0.235 0.006 255);
+  --input: oklch(0.245 0.006 255);
+  --ring: oklch(0.68 0.15 244);
+  --hero-background: oklch(0.108 0.004 255);
+  --hero-foreground: oklch(0.94 0.004 255);
+  --hero-accent: oklch(0.69 0.15 244);
+  --sidebar-background: oklch(0.122 0.004 255);
+  --sidebar-foreground: oklch(0.84 0.005 255);
+  --sidebar-primary: oklch(0.66 0.17 244);
+  --sidebar-primary-foreground: oklch(0.99 0.002 255);
+  --sidebar-accent: oklch(0.19 0.012 244);
+  --sidebar-accent-foreground: oklch(0.92 0.004 255);
+  --sidebar-border: oklch(0.235 0.006 255);
+  --sidebar-ring: oklch(0.68 0.15 244);
+  --lec: oklch(0.69 0.15 244);
+  --tut: oklch(0.66 0.08 221);
+  --pra: oklch(0.65 0.055 248);
+  --gap: oklch(0.69 0.14 244);
+  --accent-glow: transparent;
+  --gap-glow: transparent;
+  --shadow-lift: 0 8px 24px rgb(0 0 0 / 0.2);
 }
 
-/* Landing chrome stays as sparse as Linear's: brand, theme, sign in. */
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 24%, transparent);
+}
+
+.surface,
+.glass-panel {
+  box-shadow: none !important;
+}
+
+.glass-panel {
+  border-color: var(--color-border) !important;
+  background: var(--color-card) !important;
+  backdrop-filter: none !important;
+}
+
+.button-primary,
+.button-secondary,
+.surface,
+.empty-state {
+  border-radius: 0.55rem;
+}
+
+.button-primary,
+.button-secondary {
+  box-shadow: none !important;
+}
+
+.button-primary {
+  background: var(--color-primary);
+}
+
+.button-primary:hover {
+  background: color-mix(in oklab, var(--color-primary) 88%, white 12%);
+}
+
+.dark .button-primary:hover {
+  background: color-mix(in oklab, var(--color-primary) 92%, white 8%);
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline-color: var(--color-ring);
+}
+
+/* Landing chrome: brand, appearance, and an unmistakable account action. */
 body:has(main.landing-stage) header [role="group"][aria-label="Account"] {
   display: flex !important;
 }
 
-body:has(main.landing-stage)
-  header
-  [role="group"][aria-label="Account"]
-  > button:nth-of-type(2),
-body:has(main.landing-stage) header [aria-label="Campus arrival settings"],
-body:has(main.landing-stage) .upload-card > div > p:last-child,
-body:has(main.landing-stage) footer {
+body:has(main.landing-stage) header [aria-label="Campus arrival settings"] {
   display: none !important;
 }
 
@@ -47,10 +137,10 @@ body:has(main.landing-stage)
   [role="group"][aria-label="Account"]
   > button:first-of-type {
   min-height: 2rem !important;
-  padding-inline: 0.7rem !important;
-  border-color: transparent !important;
+  border-color: var(--color-border) !important;
   border-radius: 0.42rem !important;
-  background: transparent !important;
+  padding-inline: 0.78rem !important;
+  background: var(--color-card) !important;
   font-size: 0.78rem !important;
 }
 
@@ -62,152 +152,35 @@ body:has(main.landing-stage)
   header
   [role="group"][aria-label="Account"]
   > button:first-of-type:focus-visible {
-  border-color: var(--color-border) !important;
+  border-color: color-mix(in oklab, var(--color-accent) 42%, var(--color-border)) !important;
   background: var(--color-secondary) !important;
 }
 
-body:has(main.landing-stage)
-  header
-  [role="group"][aria-label="Account"]
-  > button:first-of-type
-  svg {
-  display: none;
-}
-
-/* Landing interaction: cheap composited highlights instead of canvas/WebGL.
- * The split reacts to intent without changing layout or adding runtime JS.
- */
-main.landing-stage .landing-bento {
-  position: relative;
-  isolation: isolate;
-}
-
-main.landing-stage .landing-bento::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  opacity: 0;
-  border-radius: inherit;
-  background: radial-gradient(
-    24rem 20rem at 28% 52%,
-    color-mix(in oklab, var(--color-accent) 8%, transparent),
-    transparent 72%
-  );
-  transition: opacity 220ms ease;
-}
-
-main.landing-stage .landing-bento::after {
-  content: "";
-  position: absolute;
-  z-index: 4;
-  top: 10%;
-  bottom: 10%;
-  left: 63.6%;
-  width: 1px;
-  pointer-events: none;
-  opacity: 0;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    color-mix(in oklab, var(--color-accent) 76%, transparent) 36%,
-    color-mix(in oklab, var(--color-accent) 76%, transparent) 64%,
-    transparent
-  );
-  transform: scaleY(0.18);
-  transition: opacity 180ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-main.landing-stage .landing-bento:hover::before,
-main.landing-stage .landing-bento:focus-within::before,
-main.landing-stage .landing-bento:hover::after,
-main.landing-stage .landing-bento:focus-within::after {
-  opacity: 1;
-}
-
-main.landing-stage .landing-bento:hover::after,
-main.landing-stage .landing-bento:focus-within::after {
-  transform: scaleY(1);
-}
-
-main.landing-stage .landing-bento:has(.upload-card:hover)::before,
-main.landing-stage .landing-bento:has(.upload-card:focus-within)::before {
-  background: radial-gradient(
-    22rem 18rem at 82% 48%,
-    color-mix(in oklab, var(--color-accent) 9%, transparent),
-    transparent 72%
-  );
-}
-
-main.landing-stage .bento-hero,
-main.landing-stage .upload-card {
-  position: relative;
-  z-index: 1;
-  transition: background-color 180ms ease, border-color 180ms ease;
-}
-
-main.landing-stage .hero-title {
-  font-weight: 520 !important;
-  letter-spacing: -0.06em !important;
-}
-
-main.landing-stage .upload-card #upload-heading {
-  font-weight: 540 !important;
+/* Retired marketing effects stay retired even if stale markup reappears. */
+main.landing-stage .landing-bento::before,
+main.landing-stage .landing-bento::after,
+main.landing-stage .hero-word::after {
+  display: none !important;
 }
 
 main.landing-stage .hero-word {
-  position: relative;
-  display: inline-block;
-  transition: color 160ms ease;
+  color: var(--color-accent);
 }
 
-main.landing-stage .hero-word::after {
-  content: "";
-  position: absolute;
-  left: 0.04em;
-  right: 0.02em;
-  bottom: -0.04em;
-  height: 1px;
-  background: currentColor;
-  opacity: 0;
-  transform: scaleX(0.35);
-  transform-origin: left;
-  transition: opacity 180ms ease, transform 220ms ease;
-}
-
-main.landing-stage .bento-hero:hover .hero-word::after,
-main.landing-stage .bento-hero:focus-within .hero-word::after {
-  opacity: 0.72;
-  transform: scaleX(1);
-}
-
-main.landing-stage .upload-card .button-primary {
-  transition: background-color 140ms ease, border-color 140ms ease !important;
-}
-
-main.landing-stage .upload-card:hover .button-primary,
-main.landing-stage .upload-card:focus-within .button-primary {
-  background: color-mix(in oklab, var(--color-primary) 92%, white 8%) !important;
-}
-
-/* Confidence-first product presentation: setup dialogs don't narrate security. */
+/* Confidence-first product presentation: settings don't narrate architecture. */
 .residence-settings-dialog > div:first-child > p {
   display: none;
 }
 
-@media (max-width: 63.999rem) {
-  main.landing-stage .landing-bento::after {
-    display: none;
-  }
+.status-toast {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  box-shadow: var(--shadow-lift);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  main.landing-stage .landing-bento::before,
-  main.landing-stage .landing-bento::after,
-  main.landing-stage .hero-word,
-  main.landing-stage .hero-word::after,
-  main.landing-stage .upload-card .button-primary {
+  .button-primary,
+  .button-secondary {
     transition: none !important;
   }
 }

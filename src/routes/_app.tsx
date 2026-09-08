@@ -3,25 +3,21 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import {
   CalendarRange,
   CalendarClock,
-  Download,
-  FileCheck2,
   LayoutGrid,
   MapPinned,
-  ShieldCheck,
   Trash2,
   Upload,
-  Waypoints,
   X,
 } from "lucide-react";
 import { BubbleTabs } from "@/components/BubbleTabs";
 import { GapPlan } from "@/components/GapPlan";
+import { MarketingLanding } from "@/components/MarketingLanding";
 import { loadPersonalItems } from "@/features/personal/persistence";
 import { useAppNavigation, type AppDestination } from "@/features/navigation/use-app-navigation";
 import { useSelectedScheduleContext } from "@/features/schedule/use-selected-schedule-context";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { TimetableGrid } from "@/components/TimetableGrid";
 import { TodaySummary } from "@/components/TodaySummary";
-import { UploadPanel } from "@/components/UploadPanel";
 import { MobileMoreSheet } from "@/components/mobile/MobileMoreSheet";
 import { MobileShell } from "@/components/mobile/MobileShell";
 import { MobileTimetable } from "@/components/mobile/MobileTimetable";
@@ -76,24 +72,6 @@ export const Route = createFileRoute("/_app")({
   component: AppLayout,
 });
 
-const STEPS = [
-  {
-    title: "Export from ACORN",
-    body: "Download your timetable as a .ics calendar file.",
-    icon: Download,
-  },
-  {
-    title: "Upload the .ics file",
-    body: "It is parsed locally in your browser.",
-    icon: FileCheck2,
-  },
-  {
-    title: "Review your weekly gap plan",
-    body: "See every gap, how long it is, and where you are.",
-    icon: Waypoints,
-  },
-];
-
 function ProductEmptyState({
   destination,
   loading,
@@ -116,14 +94,14 @@ function ProductEmptyState({
       ? "Gapwise needs your class times to identify useful windows between meetings."
       : destination === "today"
         ? "Import your ACORN calendar to see the next class, current gap, and leave-by guidance."
-        : "Import your ACORN calendar to build a private weekly view on this device.";
+        : "Import your ACORN calendar to build your weekly view.";
 
   return (
     <section className="empty-state surface rise-in mx-auto flex max-w-2xl flex-col items-center p-8 text-center sm:p-12">
-      <span className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8">
+      <span className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-xl border border-accent/20 bg-accent/8">
         <CalendarRange className="h-6 w-6 text-accent" aria-hidden="true" />
       </span>
-      <p className="eyebrow mt-5 text-accent">Private browser import</p>
+      <p className="eyebrow mt-5 text-accent">Timetable import</p>
       <h1 className="mt-2 font-display text-2xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">{description}</p>
       <div className="mt-6 flex w-full max-w-sm flex-col gap-2 sm:flex-row sm:justify-center">
@@ -257,36 +235,10 @@ function AppLayout() {
   });
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setIsScrolled(window.scrollY > 10);
-      return;
-    }
-    let frame = 0;
-    let previousScrolled = false;
-    const updateScrollState = () => {
-      frame = 0;
-      const scrollY = Math.min(window.scrollY, 4_000);
-      document.documentElement.style.setProperty("--parallax-far", `${scrollY * -0.012}px`);
-      document.documentElement.style.setProperty("--parallax-field", `${scrollY * -0.035}px`);
-      document.documentElement.style.setProperty("--parallax-glow", `${scrollY * 0.008}px`);
-      const nextScrolled = scrollY > 10;
-      if (nextScrolled !== previousScrolled) {
-        previousScrolled = nextScrolled;
-        setIsScrolled(nextScrolled);
-      }
-    };
-    const requestUpdate = () => {
-      if (!frame) frame = window.requestAnimationFrame(updateScrollState);
-    };
+    const updateScrollState = () => setIsScrolled(window.scrollY > 10);
     updateScrollState();
-    window.addEventListener("scroll", requestUpdate, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", requestUpdate);
-      if (frame) window.cancelAnimationFrame(frame);
-      document.documentElement.style.removeProperty("--parallax-far");
-      document.documentElement.style.removeProperty("--parallax-field");
-      document.documentElement.style.removeProperty("--parallax-glow");
-    };
+    window.addEventListener("scroll", updateScrollState, { passive: true });
+    return () => window.removeEventListener("scroll", updateScrollState);
   }, []);
 
   useEffect(() => {
@@ -314,10 +266,7 @@ function AppLayout() {
     isDemo,
     isOnline,
     restoredFingerprint: lastEncryptedFingerprint,
-    onFailure: () =>
-      setRestorationMessage(
-        "Encrypted local data was kept, but cloud sync could not finish. Try again when connected.",
-      ),
+    onFailure: () => setRestorationMessage("Sync paused. Changes are saved on this device."),
   });
 
   function updateGapPreferences(next: GapPreferences) {
@@ -612,116 +561,29 @@ function AppLayout() {
       </header>
 
       <main
-        className={`desktop-main mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 ${destination === "home" ? "landing-stage" : ""}`}
+        className={`desktop-main mx-auto max-w-7xl px-4 sm:px-6 ${
+          destination === "home" ? "landing-stage py-0" : "py-6 sm:py-8"
+        }`}
       >
-        {destination === "home" ? <div className="topography-field" aria-hidden="true" /> : null}
         {(authLoading || guestRestoration === null || restoration === "checking-cloud") &&
         !meetings &&
         destination !== "route" ? (
           <div className="py-16" role="status" aria-live="polite">
             <div className="h-4 w-36 animate-pulse rounded bg-muted" />
-            <div className="mt-4 h-24 max-w-xl animate-pulse rounded-xl bg-muted" />
+            <div className="mt-4 h-24 max-w-xl animate-pulse rounded-lg bg-muted" />
             <span className="sr-only">Checking for your timetable…</span>
           </div>
         ) : destination === "home" ? (
-          <>
-            <div className="landing-bento rise-in">
-              <section className="bento-cell bento-hero flex flex-col p-7 text-hero-foreground sm:p-11 lg:col-span-7 lg:p-14">
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="hero-kicker">
-                    <ShieldCheck className="h-3.5 w-3.5 text-hero-accent" aria-hidden="true" />
-                    <span className="eyebrow">Private by design</span>
-                  </p>
-                  <span className="eyebrow text-hero-foreground/52">Built for UTM</span>
-                </div>
-
-                <h1 className="hero-title mt-12 font-display sm:mt-14">
-                  Make every <span className="hero-word">gap</span> on campus count.
-                </h1>
-
-                <p className="relative mt-7 max-w-[35rem] text-[0.96rem] leading-7 text-hero-foreground/70 sm:text-[1.05rem] sm:leading-8">
-                  Turn your ACORN export into a precise weekly timetable, useful gap plan, and
-                  route-aware guide for moving across UTM.
-                </p>
-
-                <div className="hero-proof relative mt-auto pt-12 text-xs text-hero-foreground/62">
-                  <p className="flex items-center gap-2.5">
-                    <span className="hero-proof-dot" aria-hidden="true" />
-                    Original .ics files never leave your device
-                  </p>
-                  <p className="flex items-center gap-2.5">
-                    <span className="hero-proof-dot" aria-hidden="true" />
-                    Campus-aware routes, room to room
-                  </p>
-                </div>
-              </section>
-
-              <section className="bento-cell upload-card flex flex-col justify-center p-6 sm:p-9 lg:col-span-5 lg:row-span-2 lg:p-11">
-                <div className="mx-auto w-full max-w-md">
-                  {!isOnline ? (
-                    <div className="glass-panel mb-6 rounded-xl p-5 text-left text-foreground">
-                      <p className="font-semibold">You’re offline</p>
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        Gapwise can still parse ACORN .ics files locally and display any timetable
-                        you have already loaded. Some map tiles may not be available until your
-                        device reconnects.
-                      </p>
-                    </div>
-                  ) : null}
-                  <UploadPanel
-                    variant="hero"
-                    onFile={timetableCommands.importFile}
-                    onDemo={timetableCommands.loadDemo}
-                    loading={loading}
-                    error={error}
-                    remember={remember}
-                    onRememberChange={timetableCommands.setRemembered}
-                    rememberAvailable={!authenticatedUserId}
-                  />
-                  <p className="mt-8 border-t border-border pt-5 text-center font-mono text-[0.625rem] uppercase leading-relaxed tracking-[0.13em] text-muted-foreground">
-                    Independent student project · Not affiliated with U of T
-                  </p>
-                </div>
-              </section>
-
-              {STEPS.map((step, i) => {
-                const StepIcon = step.icon;
-                return (
-                  <article
-                    key={step.title}
-                    data-step={`0${i + 1}`}
-                    className={`bento-cell bento-step p-5 sm:p-6 ${
-                      i === 0 ? "lg:col-span-5" : i === 1 ? "lg:col-span-4" : "lg:col-span-3"
-                    }`}
-                  >
-                    <span className="step-icon-shell">
-                      <StepIcon className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <h2 className="mt-7 max-w-[18rem] font-display text-base font-medium tracking-tight">
-                      {step.title}
-                    </h2>
-                    <p className="mt-1.5 max-w-[20rem] text-sm leading-6 text-muted-foreground">
-                      {step.body}
-                    </p>
-                  </article>
-                );
-              })}
-            </div>
-
-            <div className="mt-6">
-              <CloudSyncControls
-                user={user}
-                meetings={meetings}
-                personalItems={personalItems}
-                preferences={preferences}
-                gapPreferences={gapPreferences}
-                academic={academic}
-                onLoad={timetableCommands.loadCloud}
-                onLoadPrivate={timetableCommands.loadPrivate}
-                restorationState={restoration}
-              />
-            </div>
-          </>
+          <MarketingLanding
+            isOnline={isOnline}
+            onFile={timetableCommands.importFile}
+            onDemo={timetableCommands.loadDemo}
+            loading={loading}
+            error={error}
+            remember={remember}
+            onRememberChange={timetableCommands.setRemembered}
+            rememberAvailable={!authenticatedUserId}
+          />
         ) : !meetings && destination !== "route" ? (
           <>
             <input
@@ -774,12 +636,12 @@ function AppLayout() {
         ) : (
           <>
             {!dismissed ? (
-              <div className="surface mb-6 flex items-start justify-between gap-4 bg-secondary/50 p-4">
+              <div className="surface mb-5 flex items-start justify-between gap-4 bg-secondary/50 p-3.5">
                 <p className="text-sm text-muted-foreground">
-                  Switch between <strong className="text-foreground">Weekly timetable</strong>,{" "}
+                  Use <strong className="text-foreground">Today</strong>,{" "}
+                  <strong className="text-foreground">Timetable</strong>,{" "}
                   <strong className="text-foreground">Gap plan</strong>, and{" "}
-                  <strong className="text-foreground">Day route</strong>. Verified route data is
-                  used where available; estimates are labelled.
+                  <strong className="text-foreground">Day route</strong> to move through your week.
                 </p>
                 <button
                   type="button"
@@ -792,7 +654,7 @@ function AppLayout() {
               </div>
             ) : null}
 
-            <div className="desktop-page-heading rise-in flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-6">
+            <div className="desktop-page-heading rise-in flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between sm:gap-5">
               <div className="min-w-0">
                 <p className="eyebrow text-accent">
                   {isDemo
@@ -805,7 +667,7 @@ function AppLayout() {
                           ? "Campus map"
                           : "Today overview"}
                 </p>
-                <h1 className="mt-1.5 font-display text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
+                <h1 className="mt-1 font-display text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
                   {destination === "today"
                     ? "Today"
                     : destination === "gaps"
@@ -850,7 +712,7 @@ function AppLayout() {
             </div>
 
             {warnings.length > 0 ? (
-              <div className="surface mt-6 border-accent/40 p-4">
+              <div className="surface mt-5 border-accent/40 p-4">
                 <h2 className="text-sm font-semibold">A few things to double-check</h2>
                 <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-muted-foreground">
                   {warnings.map((warning) => (
@@ -870,7 +732,7 @@ function AppLayout() {
               onOpenDayRoute={openDayRoute}
             />
 
-            <div className="desktop-view-controls mt-6 flex flex-wrap items-center gap-3">
+            <div className="desktop-view-controls mt-5 flex flex-wrap items-center gap-3">
               {terms.length > 1 ? (
                 <BubbleTabs
                   label="Term"
@@ -916,14 +778,14 @@ function AppLayout() {
               />
             </div>
 
-            <div className="mt-6">
+            <div className="mt-5">
               {destination === "today" ? null : termMeetings.length === 0 &&
                 destination !== "route" ? (
-                <div className="empty-state surface flex flex-col items-center p-10 text-center sm:p-14">
-                  <span className="empty-state-icon flex h-12 w-12 items-center justify-center rounded-2xl border border-accent/20 bg-accent/8">
-                    <CalendarRange className="h-6 w-6 text-accent" aria-hidden="true" />
+                <div className="empty-state surface flex flex-col items-center p-9 text-center sm:p-12">
+                  <span className="empty-state-icon flex h-11 w-11 items-center justify-center rounded-xl border border-accent/20 bg-accent/8">
+                    <CalendarRange className="h-5 w-5 text-accent" aria-hidden="true" />
                   </span>
-                  <h2 className="mt-5 font-display text-lg font-semibold tracking-tight">
+                  <h2 className="mt-4 font-display text-lg font-semibold tracking-tight">
                     Nothing scheduled in {term}
                   </h2>
                   <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
@@ -998,7 +860,7 @@ function AppLayout() {
               )}
             </div>
 
-            <div className="mt-6">
+            <div className="mt-5">
               <CloudSyncControls
                 user={user}
                 meetings={meetings}
@@ -1015,7 +877,7 @@ function AppLayout() {
         )}
         {restorationMessage ? (
           <div
-            className="status-toast glass-panel fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 rounded-xl px-4 py-3 text-sm"
+            className="status-toast surface fixed bottom-4 left-1/2 z-40 flex max-w-[calc(100%-2rem)] -translate-x-1/2 items-center gap-3 px-4 py-3 text-sm"
             role="status"
           >
             <span>{restorationMessage}</span>
@@ -1039,68 +901,46 @@ function AppLayout() {
         meetings={termMeetings}
       />
 
-      <footer className="mt-4 border-t border-border bg-card/30">
-        <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 text-sm text-muted-foreground sm:grid-cols-[minmax(0,1fr)_auto] sm:px-6">
-          <div className="min-w-0 space-y-2">
-            <p className="inline-flex items-center gap-2 font-medium text-foreground">
-              <Upload className="h-4 w-4 text-accent" aria-hidden="true" />
-              Your calendar is parsed in your browser. Cloud sync is optional.
-            </p>
-            <p className="max-w-xl leading-relaxed">
-              Gapwise for UTM is an independent student project and is not affiliated with the
-              University of Toronto. It is free, open-source software on{" "}
-              <a
-                href="https://github.com/Gapwise-for-UTM/gapwise"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-foreground underline decoration-border underline-offset-4 hover:text-accent"
-              >
-                GitHub
-              </a>{" "}
-              under the{" "}
-              <a
-                href="https://github.com/Gapwise-for-UTM/gapwise/blob/main/LICENSE"
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-foreground underline decoration-border underline-offset-4 hover:text-accent"
-              >
-                MIT License
-              </a>
-              .
-            </p>
-            <nav
-              aria-label="Explore Gapwise"
-              className="mt-2 flex flex-nowrap gap-x-3 overflow-x-auto whitespace-nowrap text-[0.65rem] font-semibold leading-none [scrollbar-width:none] sm:mt-4 sm:flex-wrap sm:gap-x-4 sm:gap-y-2 sm:overflow-visible sm:whitespace-normal sm:text-xs sm:leading-normal"
-            >
-              <Link to="/about" className="hover:text-accent hover:underline">
-                About
-              </Link>
-              <Link to="/utm-timetable" className="hover:text-accent hover:underline">
-                UTM timetable
-              </Link>
-              <Link to="/gap-planner" className="hover:text-accent hover:underline">
-                Gap planner
-              </Link>
-              <Link to="/campus-map" className="hover:text-accent hover:underline">
-                Campus map
-              </Link>
-              <Link to="/campus-routing" className="hover:text-accent hover:underline">
-                Campus routing
-              </Link>
-              <Link to="/acorn-import" className="hover:text-accent hover:underline">
-                ACORN import
-              </Link>
-              <Link to="/developers" className="hover:text-accent hover:underline">
-                Developers
-              </Link>
-              <Link to="/support" className="hover:text-accent hover:underline">
-                Support
-              </Link>
-            </nav>
+      {destination === "home" ? (
+        <footer className="border-t border-border">
+          <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-7 text-xs text-muted-foreground sm:px-6">
+            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+              <p className="flex items-center gap-2 font-display font-semibold text-foreground">
+                <img src="/logo-mark.svg" alt="" aria-hidden="true" className="h-4 w-4" />
+                Gapwise <span className="font-normal text-muted-foreground">Built for UTM</span>
+              </p>
+              <nav aria-label="Gapwise ecosystem" className="flex flex-wrap gap-x-4 gap-y-2">
+                <Link to="/about" className="hover:text-foreground">
+                  About
+                </Link>
+                <Link to="/ai" className="hover:text-foreground">
+                  AI
+                </Link>
+                <a href="https://docs.gapwise.ca" className="hover:text-foreground">
+                  Docs
+                </a>
+                <a href="https://data.gapwise.ca" className="hover:text-foreground">
+                  Data
+                </a>
+                <a href="https://status.gapwise.ca" className="hover:text-foreground">
+                  Status
+                </a>
+                <Link to="/support" className="hover:text-foreground">
+                  Support
+                </Link>
+                <a
+                  href="https://github.com/Gapwise-for-UTM/gapwise"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:text-foreground"
+                >
+                  GitHub
+                </a>
+              </nav>
+            </div>
           </div>
-          <p className="eyebrow self-end text-muted-foreground">Built for UTM students</p>
-        </div>
-      </footer>
+        </footer>
+      ) : null}
     </div>
   );
 }

@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 const TITLE = "Gapwise for UTM";
-const DESCRIPTION =
-  "Plan UTM timetables, useful gaps, and campus routes with private browser-based calendar parsing.";
+const DESCRIPTION = "Plan UTM timetables, useful gaps, and campus routes in one precise workspace.";
 
 export const Route = createFileRoute("/_app/")({
   head: () => ({
