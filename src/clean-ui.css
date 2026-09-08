@@ -1,0 +1,511 @@
+/*
+ * Gapwise clean interface pass.
+ * Flat, fast, neutral UI inspired by the restraint of tools like Linear and Notion.
+ * Keep product semantics and activity colors; remove decorative rendering work.
+ */
+
+:root {
+  --radius: 0.55rem;
+  --motion-fast: 100ms;
+  --motion-base: 140ms;
+  --motion-slow: 180ms;
+  --ease-bouncy: cubic-bezier(0.2, 0, 0, 1);
+  --shadow-soft: 0 1px 2px oklch(0.18 0.01 255 / 5%);
+  --shadow-lift: 0 1px 2px oklch(0.18 0.01 255 / 8%);
+  --shadow-panel: none;
+  --accent-glow: none;
+  --gap-glow: none;
+
+  --background: oklch(0.985 0.002 255);
+  --foreground: oklch(0.19 0.01 255);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.19 0.01 255);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.01 255);
+  --secondary: oklch(0.955 0.003 255);
+  --secondary-foreground: oklch(0.24 0.01 255);
+  --muted: oklch(0.96 0.003 255);
+  --muted-foreground: oklch(0.48 0.012 255);
+  --border: oklch(0.89 0.006 255);
+  --input: oklch(0.84 0.008 255);
+  --surface-low: oklch(0.97 0.003 255);
+  --surface-high: oklch(1 0 0);
+  --hero: oklch(1 0 0);
+  --hero-foreground: oklch(0.19 0.01 255);
+  --hero-muted: oklch(0.955 0.004 255);
+  --sidebar: oklch(0.97 0.003 255);
+  --sidebar-foreground: oklch(0.24 0.01 255);
+  --sidebar-accent: oklch(0.94 0.006 255);
+  --sidebar-accent-foreground: oklch(0.2 0.01 255);
+  --sidebar-border: oklch(0.89 0.006 255);
+}
+
+.dark {
+  --background: oklch(0.11 0.004 260);
+  --foreground: oklch(0.94 0.004 255);
+  --card: oklch(0.135 0.005 260);
+  --card-foreground: oklch(0.94 0.004 255);
+  --popover: oklch(0.145 0.006 260);
+  --popover-foreground: oklch(0.94 0.004 255);
+  --primary: oklch(0.6 0.16 250);
+  --primary-foreground: oklch(0.985 0.002 255);
+  --secondary: oklch(0.17 0.006 260);
+  --secondary-foreground: oklch(0.92 0.004 255);
+  --muted: oklch(0.16 0.006 260);
+  --muted-foreground: oklch(0.68 0.012 255);
+  --accent: oklch(0.71 0.14 250);
+  --accent-foreground: oklch(0.985 0.002 255);
+  --border: oklch(0.94 0.006 255 / 10%);
+  --input: oklch(0.94 0.006 255 / 16%);
+  --ring: oklch(0.71 0.14 250);
+  --surface-low: oklch(0.125 0.005 260);
+  --surface-high: oklch(0.155 0.006 260);
+  --hero: oklch(0.125 0.005 260);
+  --hero-foreground: oklch(0.94 0.004 255);
+  --hero-muted: oklch(0.17 0.006 260);
+  --hero-accent: oklch(0.71 0.14 250);
+  --sidebar: oklch(0.122 0.005 260);
+  --sidebar-foreground: oklch(0.9 0.004 255);
+  --sidebar-primary: oklch(0.71 0.14 250);
+  --sidebar-primary-foreground: oklch(0.985 0.002 255);
+  --sidebar-accent: oklch(0.17 0.006 260);
+  --sidebar-accent-foreground: oklch(0.94 0.004 255);
+  --sidebar-border: oklch(0.94 0.006 255 / 10%);
+}
+
+body {
+  background: var(--color-background);
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.035em;
+}
+
+.app-shell,
+.desktop-product-shell {
+  background: var(--color-background) !important;
+  background-image: none !important;
+}
+
+.app-shell::before,
+.app-shell::after,
+.topography-field,
+.bento-hero::before,
+.bento-hero::after,
+.upload-dropzone::after,
+.brand-mark-shell::after {
+  display: none !important;
+}
+
+.rise-in,
+.landing-bento > *,
+.status-toast {
+  animation: none !important;
+}
+
+.app-nav {
+  border-color: var(--color-border) !important;
+  background: var(--color-background) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.app-nav[data-scrolled="true"] {
+  background: var(--color-background) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.brand-lockup,
+.brand-lockup:hover {
+  transform: none !important;
+}
+
+.brand-mark-shell {
+  width: 1.85rem;
+  height: 1.85rem;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 0.45rem !important;
+  background: var(--color-card) !important;
+  box-shadow: none !important;
+}
+
+.brand-mark-shell img {
+  width: 1.2rem;
+  height: 1.2rem;
+}
+
+.brand-utm-pill {
+  border-color: var(--color-border) !important;
+  border-radius: 0.35rem !important;
+  background: var(--color-secondary) !important;
+  color: var(--color-muted-foreground) !important;
+  box-shadow: none !important;
+}
+
+.surface,
+.bento-cell,
+.glass-panel,
+.timetable-shell,
+.today-signal,
+.gap-card,
+.empty-state,
+.sign-in-panel,
+.mobile-gap-card {
+  border-color: var(--color-border) !important;
+  background: var(--color-card) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.surface,
+.bento-cell {
+  border-radius: 0.65rem !important;
+}
+
+.surface-interactive:hover,
+.bento-step:hover,
+.gap-card:hover {
+  border-color: var(--color-input) !important;
+  background: var(--color-card) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.landing-stage {
+  padding-top: clamp(1.5rem, 4vw, 4rem) !important;
+  padding-bottom: clamp(1.5rem, 4vw, 3rem) !important;
+}
+
+.landing-bento {
+  gap: 0.75rem !important;
+  align-items: stretch;
+}
+
+.landing-bento > .bento-step {
+  display: none !important;
+}
+
+.landing-bento > .upload-card {
+  grid-row: auto !important;
+}
+
+.bento-hero {
+  min-height: 0 !important;
+  border-color: var(--color-border) !important;
+  background: var(--color-card) !important;
+  box-shadow: none !important;
+  padding: clamp(2rem, 4vw, 4.25rem) !important;
+}
+
+.hero-kicker {
+  gap: 0.5rem !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.hero-kicker::before,
+.hero-proof-dot {
+  display: none !important;
+}
+
+.hero-title {
+  max-width: 10.5ch !important;
+  margin-top: clamp(2rem, 5vw, 4.5rem) !important;
+  font-size: clamp(3rem, 5.5vw, 5.15rem) !important;
+  font-weight: 560 !important;
+  letter-spacing: -0.065em !important;
+  line-height: 0.98 !important;
+}
+
+.hero-proof {
+  display: none !important;
+}
+
+.upload-card {
+  border-color: var(--color-border) !important;
+  background: var(--color-card) !important;
+  padding: clamp(1.5rem, 3vw, 2.5rem) !important;
+}
+
+.upload-dropzone {
+  min-height: 9rem !important;
+  border-color: var(--color-input) !important;
+  border-radius: 0.55rem !important;
+  background: var(--color-surface-low) !important;
+  box-shadow: none !important;
+}
+
+.upload-dropzone:hover,
+.upload-dropzone[data-dragging="true"] {
+  border-color: var(--color-accent) !important;
+  background: var(--color-secondary) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.upload-orbit {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  border-color: var(--color-border) !important;
+  border-radius: 0.5rem !important;
+  background: var(--color-card) !important;
+  box-shadow: none !important;
+}
+
+.upload-orbit::after {
+  box-shadow: none !important;
+}
+
+.button-primary,
+.button-secondary {
+  min-height: 2.4rem !important;
+  border-radius: 0.48rem !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.button-primary {
+  border-color: var(--color-primary) !important;
+  background: var(--color-primary) !important;
+}
+
+.button-primary:hover {
+  background: color-mix(in oklab, var(--color-primary) 90%, white 10%) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.button-secondary {
+  border-color: var(--color-border) !important;
+  background: var(--color-card) !important;
+}
+
+.button-secondary:hover {
+  border-color: var(--color-input) !important;
+  background: var(--color-secondary) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.theme-toggle svg,
+.theme-toggle:hover svg,
+.card-pin,
+.gap-card-icon,
+.meeting-card:hover .card-pin,
+.meeting-card:focus-visible .card-pin,
+.gap-card:hover .gap-card-icon,
+.gap-card:focus-within .gap-card-icon {
+  transform: none !important;
+}
+
+.click-spark-burst {
+  display: none !important;
+}
+
+.bubble-tabs,
+.mobile-day-tabs {
+  min-height: 2.45rem !important;
+  border-color: var(--color-border) !important;
+  border-radius: 0.55rem !important;
+  background: var(--color-surface-low) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.bubble-tabs-indicator {
+  border-color: var(--color-border) !important;
+  border-radius: 0.4rem !important;
+  background: var(--color-card) !important;
+  box-shadow: none !important;
+}
+
+.bubble-tab[aria-pressed="true"] {
+  color: var(--color-foreground) !important;
+}
+
+.timetable-toolbar-icon {
+  border-color: var(--color-border) !important;
+  background: var(--color-surface-low) !important;
+  color: var(--color-muted-foreground) !important;
+  box-shadow: none !important;
+}
+
+.timetable-day-header,
+.calendar-time-label {
+  background: var(--color-surface-low) !important;
+}
+
+.weekday-column,
+.weekday-column:nth-of-type(even) {
+  background: var(--color-card) !important;
+}
+
+.meeting-card {
+  border-left-width: 2px !important;
+  border-radius: 0.45rem !important;
+  box-shadow: none !important;
+}
+
+.meeting-card:hover {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.gap-window {
+  border-color: color-mix(in oklab, var(--color-gap) 30%, var(--color-border)) !important;
+  border-radius: 0.45rem !important;
+  background: color-mix(in oklab, var(--color-gap) 7%, var(--color-card)) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.gap-window-label,
+.gap-legend::before,
+.gap-card::before {
+  box-shadow: none !important;
+}
+
+.gap-card::before {
+  width: 1px !important;
+  background: var(--color-gap) !important;
+}
+
+.mobile-bottom-nav {
+  border-top: 1px solid var(--color-border) !important;
+  background: var(--color-background) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.mobile-nav-item[aria-current="page"]::before,
+.mobile-nav-item[aria-expanded="true"]::before {
+  height: 1px !important;
+  background: var(--color-accent) !important;
+  box-shadow: none !important;
+}
+
+.desktop-view-controls {
+  background: var(--color-background) !important;
+  backdrop-filter: none !important;
+}
+
+.campus-building-card,
+.campus-map .maplibregl-ctrl-group,
+.campus-map .maplibregl-ctrl-attrib.maplibregl-compact .maplibregl-ctrl-attrib-button {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+@media (min-width: 68.75rem) {
+  .desktop-product-shell {
+    background: var(--color-background) !important;
+  }
+
+  .desktop-sidebar {
+    width: 12.5rem !important;
+    border-right-color: var(--color-border) !important;
+    background: var(--color-sidebar) !important;
+    padding: 1rem 0.75rem !important;
+  }
+
+  .desktop-brand {
+    min-height: 2.35rem !important;
+    padding: 0 0.5rem !important;
+    font-size: 0.95rem !important;
+  }
+
+  .desktop-sidebar nav {
+    gap: 0.15rem !important;
+    margin-top: 1.65rem !important;
+  }
+
+  .desktop-nav-link {
+    min-height: 2.4rem !important;
+    gap: 0.65rem !important;
+    border-radius: 0.45rem !important;
+    padding: 0 0.65rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 520 !important;
+  }
+
+  .desktop-nav-link:hover {
+    background: var(--color-secondary) !important;
+  }
+
+  .desktop-nav-link[aria-current="page"] {
+    background: var(--color-secondary) !important;
+    color: var(--color-foreground) !important;
+  }
+
+  .desktop-nav-link[aria-current="page"]::after {
+    right: -0.75rem !important;
+    width: 1px !important;
+    height: 1.15rem !important;
+    background: var(--color-accent) !important;
+    box-shadow: none !important;
+  }
+
+  .desktop-nav-copy small {
+    display: none !important;
+  }
+
+  .desktop-sidebar-utility,
+  .desktop-theme-toggle {
+    border-color: var(--color-border) !important;
+    border-radius: 0.45rem !important;
+    background: transparent !important;
+    color: var(--color-muted-foreground) !important;
+    box-shadow: none !important;
+  }
+
+  .desktop-sidebar-utility:hover,
+  .desktop-sidebar-utility:focus-visible,
+  .desktop-theme-toggle:hover,
+  .desktop-theme-toggle:focus-visible {
+    border-color: var(--color-border) !important;
+    background: var(--color-secondary) !important;
+    color: var(--color-foreground) !important;
+  }
+
+  .desktop-product-shell .desktop-main {
+    margin-left: 12.5rem !important;
+    padding: 1.75rem clamp(1.5rem, 2.4vw, 2.75rem) 2.5rem !important;
+  }
+
+  .desktop-product-shell > footer {
+    margin-left: 12.5rem !important;
+  }
+
+  .desktop-page-heading {
+    padding-bottom: 1rem !important;
+  }
+
+  .desktop-page-heading h1 {
+    font-size: clamp(1.8rem, 2.25vw, 2.35rem) !important;
+  }
+
+  .desktop-product-shell .surface,
+  .desktop-product-shell .timetable-shell,
+  .desktop-product-shell .meeting-card,
+  .desktop-product-shell .campus-explorer {
+    border-radius: 0.5rem !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (max-width: 47.999rem) {
+  .landing-stage {
+    padding-top: 0.75rem !important;
+  }
+
+  .upload-card {
+    padding: 1rem !important;
+  }
+}

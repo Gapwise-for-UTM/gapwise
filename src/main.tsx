@@ -1,6 +1,7 @@
 import "./styles.css";
 import "./accessibility.css";
 import "./gap-plan-overlays.css";
+import "./clean-ui.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "@tanstack/react-router";

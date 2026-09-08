@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { FileUp, LogIn, ShieldCheck, Sparkles } from "lucide-react";
+import { FileUp, ShieldCheck } from "lucide-react";
 import { LoadingPanel } from "@/components/ui/state-panel";
 import { requestGapwiseSignIn } from "@/features/auth/sign-in-trigger";
 import { clearFirstValuePending, markFirstValuePending } from "@/features/onboarding/first-value";
-import { emitClickSpark } from "@/lib/micro-interactions";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import "./onboarding/first-run.css";
 
@@ -73,44 +72,8 @@ export function UploadPanel({
     />
   );
 
-  const dropzone = (
-    <button
-      type="button"
-      aria-describedby="ics-file-help"
-      disabled={loading}
-      onClick={openNativePicker}
-      onDragOver={(event) => {
-        event.preventDefault();
-        if (!loading) setDragging(true);
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(event) => {
-        event.preventDefault();
-        setDragging(false);
-        const file = event.dataTransfer.files?.[0];
-        if (file && !loading) submitFile(file, true);
-      }}
-      data-dragging={dragging ? "true" : "false"}
-      className={`upload-dropzone group relative w-full cursor-pointer overflow-hidden border border-dashed p-7 text-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 sm:p-9 ${
-        dragging
-          ? "scale-[1.01] border-accent bg-accent/8 shadow-[var(--accent-glow)]"
-          : "border-input bg-muted/30 hover:border-accent/60 hover:bg-secondary/45"
-      }`}
-    >
-      <span className="upload-orbit mx-auto flex items-center justify-center transition-transform duration-200 group-hover:-translate-y-0.5">
-        <FileUp className="h-5 w-5 text-accent" aria-hidden="true" />
-      </span>
-      <span className="mt-5 block font-display text-[0.95rem] font-semibold tracking-tight">
-        {dragging ? "Release to build your timetable" : "Drop your .ics file here"}
-      </span>
-      <span id="ics-file-help" className="mt-1.5 block text-xs leading-5 text-muted-foreground">
-        Choose from your device · 2 MB maximum
-      </span>
-    </button>
-  );
-
   const rememberControl = (
-    <div className="flex items-start gap-3 rounded-xl border border-border bg-surface-low/55 p-3.5">
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/35 p-3">
       <input
         id="remember"
         name="remember"
@@ -163,19 +126,16 @@ export function UploadPanel({
           <>
             <p
               id="first-run-privacy"
-              className="mt-4 flex items-start gap-2 rounded-lg border border-accent/20 bg-accent/6 px-3.5 py-3 text-xs leading-5 text-muted-foreground"
+              className="mt-4 flex items-start gap-2 text-xs leading-5 text-muted-foreground"
             >
               <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
               <span>Your calendar stays on this device. No account required.</span>
             </p>
-            <div className="mt-5 space-y-2.5">
+            <div className="mt-5 space-y-2">
               <button
                 type="button"
-                onClick={(event) => {
-                  emitClickSpark(event);
-                  openNativePicker();
-                }}
-                className="button-primary click-spark inline-flex min-h-14 w-full items-center justify-center gap-2 px-5 text-sm font-semibold"
+                onClick={openNativePicker}
+                className="button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-5 text-sm font-semibold"
                 aria-describedby="first-run-import-help first-run-privacy"
               >
                 <FileUp className="h-4 w-4" aria-hidden="true" />
@@ -195,10 +155,9 @@ export function UploadPanel({
                   clearFirstValuePending();
                   onDemo();
                 }}
-                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-secondary/55 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="button-secondary inline-flex min-h-10 w-full items-center justify-center px-4 text-sm font-medium text-muted-foreground"
               >
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                <span>Try Demo Schedule</span>
+                Try Demo Schedule
               </button>
               <button
                 type="button"
@@ -210,13 +169,11 @@ export function UploadPanel({
                     ? "Sign in to sync"
                     : "Sign-in is unavailable in this environment"
                 }
-                className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold text-accent transition-colors hover:bg-accent/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
+                className="inline-flex min-h-9 w-full items-center justify-center rounded-md px-4 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-45"
               >
-                <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Sign in to sync</span>
+                Sign in to sync
               </button>
             </div>
-            <div className="mt-5 hidden sm:block">{dropzone}</div>
             <div className="mt-4">{rememberControl}</div>
             {errorMessage ? <div className="mt-3">{errorMessage}</div> : null}
           </>
@@ -224,6 +181,42 @@ export function UploadPanel({
       </section>
     );
   }
+
+  const dropzone = (
+    <button
+      type="button"
+      aria-describedby="ics-file-help"
+      disabled={loading}
+      onClick={openNativePicker}
+      onDragOver={(event) => {
+        event.preventDefault();
+        if (!loading) setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragging(false);
+        const file = event.dataTransfer.files?.[0];
+        if (file && !loading) submitFile(file, true);
+      }}
+      data-dragging={dragging ? "true" : "false"}
+      className={`upload-dropzone group relative w-full cursor-pointer overflow-hidden border border-dashed p-7 text-center disabled:cursor-not-allowed disabled:opacity-60 sm:p-9 ${
+        dragging
+          ? "border-accent bg-accent/6"
+          : "border-input bg-muted/20 hover:border-accent/60 hover:bg-secondary/45"
+      }`}
+    >
+      <span className="upload-orbit mx-auto flex items-center justify-center">
+        <FileUp className="h-5 w-5 text-accent" aria-hidden="true" />
+      </span>
+      <span className="mt-5 block font-display text-[0.95rem] font-semibold tracking-tight">
+        {dragging ? "Release to build your timetable" : "Drop your .ics file here"}
+      </span>
+      <span id="ics-file-help" className="mt-1.5 block text-xs leading-5 text-muted-foreground">
+        Choose from your device · 2 MB maximum
+      </span>
+    </button>
+  );
 
   return (
     <section aria-labelledby="upload-heading" className="surface p-5 sm:p-7">
@@ -243,11 +236,8 @@ export function UploadPanel({
           <div className="mt-5 space-y-3">
             <button
               type="button"
-              onClick={(event) => {
-                emitClickSpark(event);
-                openNativePicker();
-              }}
-              className="button-primary click-spark inline-flex min-h-12 w-full items-center justify-center gap-2 px-5 text-sm font-semibold"
+              onClick={openNativePicker}
+              className="button-primary inline-flex min-h-11 w-full items-center justify-center gap-2 px-5 text-sm font-semibold"
             >
               <FileUp className="h-4 w-4" aria-hidden="true" />
               Import ACORN
@@ -260,10 +250,9 @@ export function UploadPanel({
                 clearFirstValuePending();
                 onDemo();
               }}
-              className="button-secondary inline-flex min-h-11 w-full items-center justify-center gap-2 px-5 text-sm font-semibold"
+              className="button-secondary inline-flex min-h-10 w-full items-center justify-center px-5 text-sm font-medium"
             >
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-              <span>Try Demo Schedule</span>
+              Try Demo Schedule
             </button>
             {rememberControl}
             {errorMessage}
