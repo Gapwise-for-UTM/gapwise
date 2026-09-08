@@ -22,8 +22,6 @@ type AccountStatusProps = {
   term: Term;
   preferences: UserPreferences;
   planTransition: TransitionPlanner;
-  rememberOnDevice: boolean;
-  onRememberOnDeviceChange: (value: boolean) => void;
 };
 
 function SignInStub({ loading, onActivate }: { loading: boolean; onActivate: () => void }) {
