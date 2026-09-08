@@ -1,7 +1,6 @@
 /*
  * Gapwise brand accent layer.
- * Keep the clean Linear-style neutral surfaces, but make interactive emphasis
- * unmistakably Gapwise blue instead of indigo/purple.
+ * Neutral Linear-style surfaces with a focused Gapwise-blue identity.
  */
 
 :root {
@@ -28,9 +27,7 @@
   --lec: oklch(0.7 0.15 244);
 }
 
-/* The first-run page should still offer account access. Keep only the compact
- * sign-in action on the landing header so the chrome stays Linear-like.
- */
+/* Landing chrome stays as sparse as Linear's: brand, theme, sign in. */
 body:has(main.landing-stage) header [role="group"][aria-label="Account"] {
   display: flex !important;
 }
@@ -38,7 +35,10 @@ body:has(main.landing-stage) header [role="group"][aria-label="Account"] {
 body:has(main.landing-stage)
   header
   [role="group"][aria-label="Account"]
-  > button:nth-of-type(2) {
+  > button:nth-of-type(2),
+body:has(main.landing-stage) header [aria-label="Campus arrival settings"],
+body:has(main.landing-stage) .upload-card > div > p:last-child,
+body:has(main.landing-stage) footer {
   display: none !important;
 }
 
@@ -48,9 +48,22 @@ body:has(main.landing-stage)
   > button:first-of-type {
   min-height: 2rem !important;
   padding-inline: 0.7rem !important;
+  border-color: transparent !important;
   border-radius: 0.42rem !important;
   background: transparent !important;
   font-size: 0.78rem !important;
+}
+
+body:has(main.landing-stage)
+  header
+  [role="group"][aria-label="Account"]
+  > button:first-of-type:hover,
+body:has(main.landing-stage)
+  header
+  [role="group"][aria-label="Account"]
+  > button:first-of-type:focus-visible {
+  border-color: var(--color-border) !important;
+  background: var(--color-secondary) !important;
 }
 
 body:has(main.landing-stage)
@@ -176,6 +189,11 @@ main.landing-stage .upload-card .button-primary {
 main.landing-stage .upload-card:hover .button-primary,
 main.landing-stage .upload-card:focus-within .button-primary {
   background: color-mix(in oklab, var(--color-primary) 92%, white 8%) !important;
+}
+
+/* Confidence-first product presentation: setup dialogs don't narrate security. */
+.residence-settings-dialog > div:first-child > p {
+  display: none;
 }
 
 @media (max-width: 63.999rem) {
