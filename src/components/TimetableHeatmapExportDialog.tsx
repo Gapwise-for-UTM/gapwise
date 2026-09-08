@@ -68,9 +68,8 @@ export function TimetableHeatmapExportDialog({
     setError(null);
     try {
       const { createTimetableHeatmapData } = await import("@/lib/timetable-heatmap-export");
-      const { generateLinearTimetableHeatmapPng } = await import(
-        "@/lib/timetable-linear-heatmap-export"
-      );
+      const { generateLinearTimetableHeatmapPng } =
+        await import("@/lib/timetable-linear-heatmap-export");
       const data = createTimetableHeatmapData({
         meetings,
         selection,
@@ -140,7 +139,11 @@ export function TimetableHeatmapExportDialog({
           {terms.length > 1 ? (
             <fieldset>
               <legend className="mb-2 text-sm font-semibold">Include</legend>
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Terms to export">
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="radiogroup"
+                aria-label="Terms to export"
+              >
                 {[...terms, "all" as const].map((option) => (
                   <button
                     key={option}
@@ -197,7 +200,11 @@ export function TimetableHeatmapExportDialog({
             ) : (
               <Download className="h-4 w-4" aria-hidden="true" />
             )}
-            {exporting ? "Generating heatmap…" : supportsShare ? "Generate and share" : "Generate image"}
+            {exporting
+              ? "Generating heatmap…"
+              : supportsShare
+                ? "Generate and share"
+                : "Generate image"}
           </button>
           <p aria-live="polite" className="sr-only">
             {exporting ? "Generating timetable heatmap image" : (error ?? "")}
