@@ -36,9 +36,9 @@ export const TimetableGrid = memo(function TimetableGrid({
       <TimetableGridImpl
         meetings={meetings}
         gaps={gaps}
-        onRouteToMeeting={onRouteToMeeting}
-        onOpenGap={onOpenGap}
-        headerAction={headerAction}
+        {...(onRouteToMeeting ? { onRouteToMeeting } : {})}
+        {...(onOpenGap ? { onOpenGap } : {})}
+        {...(headerAction !== undefined ? { headerAction } : {})}
       />
     </Suspense>
   );
