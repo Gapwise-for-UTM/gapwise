@@ -1,12 +1,9 @@
 import type { User } from "@supabase/supabase-js";
 import { CloudDownload, CloudUpload, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { registerAiDelegationController } from "@/features/ai/controller-bridge";
-import { useAiDelegation } from "@/features/ai/use-ai-delegation";
+import { lazy, Suspense, useState } from "react";
 import type { GapPreferences } from "@/features/gaps/types";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
 import type { AcademicState } from "@/features/academic/state";
-import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -18,6 +15,10 @@ import {
 import type { UserPreferences } from "./preferences";
 import type { RestorationState } from "./restoration";
 import { setCloudRestoreSuppressed } from "./restore-preference";
+
+const CloudAiBridge = lazy(() =>
+  import("./CloudAiBridge").then((module) => ({ default: module.CloudAiBridge })),
+);
 
 export function CloudSyncControls({
   user,
@@ -42,18 +43,6 @@ export function CloudSyncControls({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const enabled = isSupabaseConfigured && Boolean(user);
-  const aiController = useAiDelegation({
-    userId: user?.id ?? null,
-    meetings,
-    personalItems,
-    preferences,
-    gapPreferences,
-    academic,
-    isDemo: meetings === DEMO_MEETINGS,
-    onPrivateDataChange: onLoadPrivate,
-  });
-
-  useEffect(() => registerAiDelegationController(aiController), [aiController]);
 
   async function run(action: () => Promise<string>) {
     setBusy(true);
@@ -69,6 +58,19 @@ export function CloudSyncControls({
 
   return (
     <div className="space-y-3">
+      {user ? (
+        <Suspense fallback={null}>
+          <CloudAiBridge
+            user={user}
+            meetings={meetings}
+            personalItems={personalItems}
+            preferences={preferences}
+            gapPreferences={gapPreferences}
+            academic={academic}
+            onLoadPrivate={onLoadPrivate}
+          />
+        </Suspense>
+      ) : null}
       <section className="surface p-4 sm:p-5" aria-labelledby="cloud-sync-title">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
