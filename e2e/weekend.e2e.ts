@@ -22,9 +22,9 @@ test("weekend classes flow through timetable, gaps, and day route", async ({ pag
   const viewMode = page.getByRole("group", { name: "View mode" });
   await viewMode.getByRole("button", { name: "Gap plan" }).click();
   await expect(page).toHaveURL(/\/gaps$/);
-  const gapPlan = page.locator(".dot-field:not([hidden])");
-  await expect(gapPlan).toBeVisible();
-  await expect(gapPlan.getByRole("button", { name: /2h gap/i })).toBeVisible();
+  const saturdayGaps = page.getByRole("region", { name: "Saturday" });
+  await expect(saturdayGaps).toBeVisible();
+  await expect(saturdayGaps.getByRole("button", { name: /2h/i })).toBeVisible();
 
   await viewMode.getByRole("button", { name: "Day route" }).click();
   await expect(page).toHaveURL(/\/route\/?$/);
