@@ -1,67 +1,81 @@
 import geistFontUrl from "@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url";
 import {
   createTimetableExportPlan,
+  EXPORT_PALETTES,
   renderTimetableExportSvg,
   timetableExportFilename,
   type ExportSelection,
   type ExportTheme,
+  type TimetableExportPalette,
 } from "./timetable-export";
 import type { Meeting } from "./timetable-types";
 
-const COLOR_REMAP: Record<ExportTheme, Record<string, string>> = {
+const LINEAR_PALETTES: Record<ExportTheme, TimetableExportPalette> = {
   light: {
-    "#f4f6fa": "#f7f7f8",
-    "#e7efff": "#f7f7f8",
-    "#fdfdfe": "#ffffff",
-    "#f5f7fb": "#fafafa",
-    "#ffffff": "#ffffff",
-    "#202735": "#1f2024",
-    "#46536a": "#45464d",
-    "#6b7587": "#73757d",
-    "#d7dde7": "#e4e4e7",
-    "#e4e8ef": "#eeeeef",
-    "#2866c7": "#2563eb",
-    "#e8f0ff": "#eff6ff",
-    "#3769b8": "#3b82f6",
-    "#237a92": "#0891b2",
-    "#8554a8": "#8b5cf6",
-    "#a66d1d": "#b7791f",
-    "#687386": "#71717a",
-    "#1720331a": "#00000000",
+    pageBackground: "#f7f7f8",
+    pageGlow: "#f7f7f8",
+    timetableBackground: "#ffffff",
+    headerSurface: "#fafafa",
+    eventSurface: "#ffffff",
+    foreground: "#202124",
+    secondaryForeground: "#4b4c52",
+    mutedForeground: "#77787f",
+    border: "#e2e2e5",
+    grid: "#eeeeef",
+    accent: "#5965cc",
+    accentSoft: "#eef0ff",
+    lec: "#5965cc",
+    tut: "#2f8c91",
+    pra: "#8066b3",
+    reserved: "#9b6a1f",
+    other: "#74757c",
+    shadow: "#00000000",
+    highlight: "#ffffff",
   },
   dark: {
-    "#090c13": "#111113",
-    "#12203b": "#111113",
-    "#111621": "#151518",
-    "#151b27": "#18181b",
-    "#171d29": "#1b1b1f",
-    "#f2f4f7": "#f3f3f4",
-    "#c3cad5": "#d2d2d6",
-    "#9ba5b4": "#8b8b93",
-    "#293140": "#2a2a2f",
-    "#252c39": "#232329",
-    "#78a9f2": "#60a5fa",
-    "#182a46": "#18233a",
-    "#78a6e8": "#6ea8fe",
-    "#72bdcf": "#55c2cf",
-    "#b18bd0": "#a78bfa",
-    "#dfad52": "#e0a84e",
-    "#a6afbd": "#8b8b93",
-    "#00000066": "#00000000",
-    "#ffffff12": "#ffffff0a",
+    pageBackground: "#111113",
+    pageGlow: "#111113",
+    timetableBackground: "#151518",
+    headerSurface: "#18181b",
+    eventSurface: "#19191c",
+    foreground: "#f2f2f3",
+    secondaryForeground: "#c8c8cd",
+    mutedForeground: "#8b8b93",
+    border: "#2a2a2f",
+    grid: "#242429",
+    accent: "#6975df",
+    accentSoft: "#20233a",
+    lec: "#6975df",
+    tut: "#4d9fa5",
+    pra: "#9679c5",
+    reserved: "#c59642",
+    other: "#8b8b93",
+    shadow: "#00000000",
+    highlight: "#ffffff08",
   },
 };
 
-function applyLinearTheme(svg: string, theme: ExportTheme) {
-  let next = svg;
-  for (const [from, to] of Object.entries(COLOR_REMAP[theme])) {
-    next = next.replaceAll(from, to);
+function renderLinearTimetableSvg(
+  meetings: readonly Meeting[],
+  selection: ExportSelection,
+  theme: ExportTheme,
+  ratio: number,
+  fontDataUrl: string,
+) {
+  const plan = createTimetableExportPlan(meetings, selection, ratio);
+  const palette = EXPORT_PALETTES[theme];
+  const previous = { ...palette };
+  Object.assign(palette, LINEAR_PALETTES[theme]);
+  try {
+    const svg = renderTimetableExportSvg(meetings, plan, theme, fontDataUrl)
+      .replaceAll(' filter="url(#panel-shadow)"', "")
+      .replaceAll(' filter="url(#event-shadow)"', "")
+      .replaceAll('rx="24"', 'rx="12"')
+      .replaceAll('rx="10"', 'rx="7"');
+    return { svg, plan };
+  } finally {
+    Object.assign(palette, previous);
   }
-  return next
-    .replaceAll(' filter="url(#panel-shadow)"', "")
-    .replaceAll(' filter="url(#event-shadow)"', "")
-    .replaceAll('rx="24"', 'rx="12"')
-    .replaceAll('rx="10"', 'rx="7"');
 }
 
 let geistDataPromise: Promise<string> | null = null;
@@ -90,10 +104,9 @@ export async function generateLinearTimetablePng(
   imageFactory: () => HTMLImageElement = () => new Image(),
   objectUrls: Pick<typeof URL, "createObjectURL" | "revokeObjectURL"> = URL,
 ): Promise<{ blob: Blob; filename: string }> {
-  const plan = createTimetableExportPlan(meetings, selection, ratio);
   if (typeof document !== "undefined" && "fonts" in document) await document.fonts.ready;
   const fontDataUrl = await embeddedGeistDataUrl();
-  const svg = applyLinearTheme(renderTimetableExportSvg(meetings, plan, theme, fontDataUrl), theme);
+  const { svg, plan } = renderLinearTimetableSvg(meetings, selection, theme, ratio, fontDataUrl);
   const url = objectUrls.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
   let canvas: HTMLCanvasElement | null = null;
   try {
