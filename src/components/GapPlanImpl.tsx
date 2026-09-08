@@ -20,7 +20,7 @@ import { FriendOverlapPanel } from "@/features/friends/FriendOverlapPanel";
 import type { FriendGapOverlap } from "@/features/friends/types";
 import { planGapAssessment } from "@/features/gaps/assess-gap";
 import { DEFAULT_GAP_PREFERENCES, sanitizeGapPreferences } from "@/features/gaps/preferences";
-import type { GapAction, GapPreferences, GapRecommendation } from "@/features/gaps/types";
+import type { GapAction, GapPreferences } from "@/features/gaps/types";
 import {
   clearQueuedGapPlanSelection,
   peekQueuedGapPlanSelection,
@@ -36,7 +36,6 @@ import { formatCompactDuration, formatDuration, formatTime } from "@/lib/timetab
 
 const EMPTY_FRIEND_OVERLAPS: FriendGapOverlap[] = [];
 type GapPlanOverlay = "tune" | "friends" | null;
-
 type GapAssessmentResult = ReturnType<typeof planGapAssessment>;
 
 const ACTION_META: Record<GapAction, { label: string; icon: LucideIcon }> = {
@@ -72,12 +71,12 @@ function numericInput(value: string, fallback: number, minimum: number, maximum:
   return Math.min(maximum, Math.max(minimum, Math.round(number)));
 }
 
-function uniqueRecommendations(result: GapAssessmentResult) {
+function recommendationsFor(result: GapAssessmentResult) {
   const seen = new Set<string>();
   return [result.assessment.primary, ...result.assessment.alternatives].filter((item) => {
-    const key = ACTION_META[item.action].label;
-    if (seen.has(key)) return false;
-    seen.add(key);
+    const label = ACTION_META[item.action].label;
+    if (seen.has(label)) return false;
+    seen.add(label);
     return true;
   });
 }
@@ -103,9 +102,7 @@ function TunePanel({
             type="time"
             value={minutesToTimeInput(value.lunchWindowStart)}
             onChange={(event) =>
-              update({
-                lunchWindowStart: timeInputToMinutes(event.target.value, value.lunchWindowStart),
-              })
+              update({ lunchWindowStart: timeInputToMinutes(event.target.value, value.lunchWindowStart) })
             }
             className="w-full rounded-lg border border-input bg-background px-3 py-2"
           />
@@ -132,12 +129,7 @@ function TunePanel({
               value={value.mealDurationMinutes}
               onChange={(event) =>
                 update({
-                  mealDurationMinutes: numericInput(
-                    event.target.value,
-                    value.mealDurationMinutes,
-                    15,
-                    90,
-                  ),
+                  mealDurationMinutes: numericInput(event.target.value, value.mealDurationMinutes, 15, 90),
                 })
               }
               className="w-full rounded-lg border border-input bg-background px-3 py-2"
@@ -184,9 +176,7 @@ function TunePanel({
               max={20}
               value={value.packUpMinutes}
               onChange={(event) =>
-                update({
-                  packUpMinutes: numericInput(event.target.value, value.packUpMinutes, 0, 20),
-                })
+                update({ packUpMinutes: numericInput(event.target.value, value.packUpMinutes, 0, 20) })
               }
               className="w-full rounded-lg border border-input bg-background px-3 py-2"
             />
@@ -208,7 +198,7 @@ function TunePanel({
             <span className="mt-1 block text-xs leading-5 text-muted-foreground">
               {residenceName
                 ? `Gapwise uses the route to ${residenceName} and back.`
-                : "Set a commute estimate if Gapwise cannot calculate a residence route."}
+                : "Add a commute estimate when a residence route is unavailable."}
             </span>
           </span>
         </label>
@@ -265,28 +255,31 @@ function GapOption({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const recommendation = result.assessment.primary;
   return (
     <button
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      className={`min-w-[13rem] flex-1 rounded-xl border p-3 text-left transition-colors ${
+      className={`min-w-0 rounded-lg border p-3 text-left transition-colors ${
         selected
-          ? "border-accent/60 bg-accent/8"
-          : "border-border bg-card hover:border-accent/30 hover:bg-secondary/35"
+          ? "border-accent/55 bg-accent/8"
+          : "border-border bg-card hover:border-accent/30 hover:bg-secondary/30"
       }`}
     >
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold">{formatCompactDuration(gap.durationMinutes)}</span>
-        <span className="text-[0.68rem] font-medium text-muted-foreground">
-          {formatCompactDuration(result.assessment.primary.activityMinutes)} usable
+      <div className="flex min-w-0 items-center justify-between gap-3">
+        <span className="truncate text-sm font-semibold">
+          {formatTime(gap.startTime)}–{formatTime(gap.endTime)}
+        </span>
+        <span className="shrink-0 text-[0.68rem] font-semibold text-muted-foreground">
+          {formatCompactDuration(gap.durationMinutes)}
         </span>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        {formatTime(gap.startTime)}–{formatTime(gap.endTime)}
-      </p>
       <p className="mt-2 line-clamp-1 text-xs font-medium text-foreground">
-        {result.assessment.primary.title}
+        {recommendation.title}
+      </p>
+      <p className="mt-1 text-[0.68rem] text-muted-foreground">
+        {formatCompactDuration(recommendation.activityMinutes)} usable
       </p>
     </button>
   );
@@ -307,10 +300,9 @@ function GapInspector({
   onRecommendationChange: (id: string) => void;
   onOpenFriends: () => void;
 }) {
-  const recommendations = uniqueRecommendations(result);
+  const recommendations = recommendationsFor(result);
   const selected =
-    recommendations.find((item) => item.id === selectedRecommendationId) ??
-    result.assessment.primary;
+    recommendations.find((item) => item.id === selectedRecommendationId) ?? result.assessment.primary;
   const meta = ACTION_META[selected.action];
   const ActionIcon = meta.icon;
   const previousLocation = getLocationPresentation({ meeting: gap.previous });
@@ -321,39 +313,35 @@ function GapInspector({
     route: result.route,
   });
   const RouteIcon = routePresentation.icon;
-  const usablePercent = Math.min(
-    100,
-    (selected.activityMinutes / Math.max(1, gap.durationMinutes)) * 100,
-  );
+  const usablePercent = Math.min(100, (selected.activityMinutes / Math.max(1, gap.durationMinutes)) * 100);
 
   return (
-    <div className="mt-3 rounded-xl border border-border bg-card p-4 sm:p-5">
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_17rem]">
+    <div className="mt-3 min-w-0 rounded-lg border border-border bg-card p-4 sm:p-5">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="min-w-0">
-          <div className="flex items-start gap-3">
+          <div className="flex min-w-0 items-start gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/8 text-accent">
               <ActionIcon className="h-4 w-4" aria-hidden="true" />
             </span>
             <div className="min-w-0">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Best use of this gap
+              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.11em] text-muted-foreground">
+                Recommended
               </p>
-              <h4 className="mt-1 font-display text-xl font-medium tracking-tight">
+              <h4 className="mt-1 text-balance font-display text-xl font-medium tracking-tight">
                 {selected.title}
               </h4>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">{selected.summary}</p>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                {selected.summary}
+              </p>
             </div>
           </div>
 
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-secondary">
-            <span
-              className="block h-full rounded-full bg-accent"
-              style={{ width: `${usablePercent}%` }}
-            />
+            <span className="block h-full rounded-full bg-accent" style={{ width: `${usablePercent}%` }} />
           </div>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span>{formatDuration(selected.activityMinutes)} usable</span>
-            <span>{formatDuration(result.assessment.bufferMinutes)} transition buffer</span>
+            <span>{formatDuration(result.assessment.bufferMinutes)} buffer</span>
             <span>
               {result.assessment.travelMinutes === null
                 ? routePresentation.label
@@ -361,52 +349,68 @@ function GapInspector({
             </span>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {recommendations.map((recommendation) => {
-              const active = recommendation.id === selected.id;
-              return (
-                <button
-                  key={recommendation.id}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => onRecommendationChange(recommendation.id)}
-                  className={`rounded-lg border px-3 py-1.5 text-xs font-semibold ${
-                    active
-                      ? "border-accent/60 bg-accent/10 text-foreground"
-                      : "border-input bg-background text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {ACTION_META[recommendation.action].label}
-                </button>
-              );
-            })}
-          </div>
+          {recommendations.length > 1 ? (
+            <div className="mt-4 flex min-w-0 flex-wrap gap-2">
+              {recommendations.map((recommendation) => {
+                const active = recommendation.id === selected.id;
+                return (
+                  <button
+                    key={recommendation.id}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => onRecommendationChange(recommendation.id)}
+                    className={`max-w-full rounded-md border px-2.5 py-1.5 text-xs font-semibold ${
+                      active
+                        ? "border-accent/55 bg-accent/9 text-foreground"
+                        : "border-input bg-background text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {ACTION_META[recommendation.action].label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          {selected.reasons.length > 0 ? (
+            <details className="mt-4 border-t border-border pt-3 text-xs">
+              <summary className="cursor-pointer font-semibold text-muted-foreground hover:text-foreground">
+                Why this fits
+              </summary>
+              <ul className="mt-2 space-y-1.5 text-muted-foreground">
+                {selected.reasons.map((reason) => (
+                  <li key={reason} className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                    <span>{reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
         </div>
 
-        <aside className="rounded-lg border border-border bg-background/45 p-3.5">
+        <aside className="min-w-0 rounded-lg border border-border bg-background/45 p-3.5">
           <p className="flex items-center gap-2 text-xs font-semibold text-foreground">
             <Route className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            Before the next class
+            Transition
           </p>
           <div className="mt-3 space-y-3 text-xs">
-            <div>
+            <div className="min-w-0">
               <p className="text-muted-foreground">From</p>
-              <p className="mt-0.5 font-medium">{previousLocation.label}</p>
+              <p className="mt-0.5 break-words font-medium">{previousLocation.label}</p>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-muted-foreground">Next</p>
-              <p className="mt-0.5 font-medium">
+              <p className="mt-0.5 break-words font-medium">
                 {gap.next.courseCode} · {nextLocation.label}
               </p>
-              <p className="mt-0.5 text-muted-foreground">
-                starts {formatTime(gap.next.startTime)}
-              </p>
+              <p className="mt-0.5 text-muted-foreground">starts {formatTime(gap.next.startTime)}</p>
             </div>
-            <div className="flex items-start gap-2 border-t border-border pt-3">
+            <div className="flex min-w-0 items-start gap-2 border-t border-border pt-3">
               <RouteIcon className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
-              <div>
+              <div className="min-w-0">
                 <p className="font-medium">Leave by {formatTime(result.assessment.leaveByMinutes)}</p>
-                <p className="mt-0.5 leading-5 text-muted-foreground">
+                <p className="mt-0.5 break-words leading-5 text-muted-foreground">
                   {routePresentation.detail}
                 </p>
               </div>
@@ -417,33 +421,19 @@ function GapInspector({
             <button
               type="button"
               onClick={onOpenFriends}
-              className="mt-3 flex w-full items-center justify-between gap-2 border-t border-border pt-3 text-xs font-semibold text-accent"
+              className="mt-3 flex w-full min-w-0 items-center justify-between gap-2 border-t border-border pt-3 text-xs font-semibold text-accent"
             >
-              <span className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                {friendOverlaps.length} friend overlap{friendOverlaps.length === 1 ? "" : "s"}
+              <span className="flex min-w-0 items-center gap-2">
+                <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                <span className="truncate">
+                  {friendOverlaps.length} friend overlap{friendOverlaps.length === 1 ? "" : "s"}
+                </span>
               </span>
-              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             </button>
           ) : null}
         </aside>
       </div>
-
-      {selected.reasons.length > 0 ? (
-        <details className="mt-4 border-t border-border pt-3 text-xs">
-          <summary className="cursor-pointer font-semibold text-muted-foreground hover:text-foreground">
-            Why this recommendation
-          </summary>
-          <ul className="mt-2 space-y-1.5 text-muted-foreground">
-            {selected.reasons.map((reason) => (
-              <li key={reason} className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
-                <span>{reason}</span>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
     </div>
   );
 }
@@ -469,12 +459,9 @@ export const GapPlan = memo(function GapPlan({
   const residence = selectedResidence(preferences);
   const assessments = useMemo(() => {
     const map = new Map<string, GapAssessmentResult>();
-    for (const gap of gaps) {
-      map.set(gap.id, planGapAssessment(gap, preferences, gapPreferences, planTransition));
-    }
+    for (const gap of gaps) map.set(gap.id, planGapAssessment(gap, preferences, gapPreferences, planTransition));
     return map;
   }, [gapPreferences, gaps, planTransition, preferences]);
-
   const totalUsableMinutes = useMemo(
     () =>
       gaps.reduce(
@@ -497,9 +484,7 @@ export const GapPlan = memo(function GapPlan({
     setSelectedByDay((current) => {
       const next = { ...current };
       for (const group of groups) {
-        if (!group.gaps.some((gap) => gap.id === next[group.weekday])) {
-          next[group.weekday] = group.gaps[0]!.id;
-        }
+        if (!group.gaps.some((gap) => gap.id === next[group.weekday])) next[group.weekday] = group.gaps[0]!.id;
       }
       return next;
     });
@@ -540,20 +525,21 @@ export const GapPlan = memo(function GapPlan({
   }, [friendOverlapState, gaps, userId]);
 
   return (
-    <div className="space-y-5">
-      <section className="rounded-xl border border-border bg-card p-4 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              Between classes
-            </p>
-            <h2 className="mt-1 font-display text-2xl font-medium tracking-tight">Your gap plan</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-              Pick a gap to see what actually fits after walking, setup, and the buffer before your
-              next class.
+    <div className="gap-plan-root min-w-0 space-y-4">
+      <section className="gap-plan-overview min-w-0 border-b border-border pb-5">
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="md:hidden">
+              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Between classes
+              </p>
+              <h1 className="mt-1 font-display text-2xl font-medium tracking-tight">Gap plan</h1>
+            </div>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground md:mt-0">
+              See what actually fits after walking time, setup, and the buffer before your next class.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex shrink-0 flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setActiveOverlay("tune")}
@@ -573,17 +559,23 @@ export const GapPlan = memo(function GapPlan({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-2 border-t border-border pt-4 sm:grid-cols-3">
-          <div className="rounded-lg bg-secondary/35 p-3">
-            <p className="text-[0.68rem] uppercase tracking-[0.1em] text-muted-foreground">Gaps</p>
+        <div className="mt-4 grid min-w-0 grid-cols-3 overflow-hidden rounded-lg border border-border bg-card">
+          <div className="min-w-0 border-r border-border p-3">
+            <p className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+              Gaps
+            </p>
             <p className="mt-1 text-lg font-semibold">{gaps.length}</p>
           </div>
-          <div className="rounded-lg bg-secondary/35 p-3">
-            <p className="text-[0.68rem] uppercase tracking-[0.1em] text-muted-foreground">Usable time</p>
-            <p className="mt-1 text-lg font-semibold">{formatCompactDuration(totalUsableMinutes)}</p>
+          <div className="min-w-0 border-r border-border p-3">
+            <p className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+              Usable
+            </p>
+            <p className="mt-1 truncate text-lg font-semibold">{formatCompactDuration(totalUsableMinutes)}</p>
           </div>
-          <div className="rounded-lg bg-secondary/35 p-3">
-            <p className="text-[0.68rem] uppercase tracking-[0.1em] text-muted-foreground">Days</p>
+          <div className="min-w-0 p-3">
+            <p className="truncate text-[0.62rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+              Days
+            </p>
             <p className="mt-1 text-lg font-semibold">{groups.length}</p>
           </div>
         </div>
@@ -595,7 +587,7 @@ export const GapPlan = memo(function GapPlan({
             <>
               <DialogTitle>Tune gap recommendations</DialogTitle>
               <DialogDescription>
-                These controls change usable time and recommendations immediately.
+                Changes update usable time and recommendations immediately.
               </DialogDescription>
               <TunePanel
                 value={gapPreferences}
@@ -623,7 +615,7 @@ export const GapPlan = memo(function GapPlan({
       </Dialog>
 
       {groups.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
           <Clock3 className="mx-auto h-5 w-5 text-muted-foreground" aria-hidden="true" />
           <h3 className="mt-3 font-semibold">No gaps in this term</h3>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -640,18 +632,21 @@ export const GapPlan = memo(function GapPlan({
           <section
             key={group.weekday}
             aria-labelledby={`gaps-${group.weekday}`}
-            className="rounded-xl border border-border bg-background/30 p-4 sm:p-5"
+            className="min-w-0 rounded-lg border border-border bg-background/30 p-4 sm:p-5"
           >
-            <div className="flex items-baseline justify-between gap-3">
-              <h3 id={`gaps-${group.weekday}`} className="font-display text-lg font-medium">
+            <div className="flex min-w-0 items-baseline justify-between gap-3">
+              <h3 id={`gaps-${group.weekday}`} className="truncate font-display text-lg font-medium">
                 {group.weekday}
               </h3>
-              <span className="text-xs text-muted-foreground">
+              <span className="shrink-0 text-xs text-muted-foreground">
                 {group.gaps.length} gap{group.gaps.length === 1 ? "" : "s"}
               </span>
             </div>
 
-            <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            <div
+              className="mt-3 grid min-w-0 gap-2"
+              style={{ gridTemplateColumns: "repeat(auto-fit, minmax(min(13rem, 100%), 1fr))" }}
+            >
               {group.gaps.map((gap) => (
                 <GapOption
                   key={gap.id}
