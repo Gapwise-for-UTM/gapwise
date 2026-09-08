@@ -56,7 +56,9 @@ describe("Gapwise marketing system", () => {
   test("keeps the mark transparent and the product switcher complete on mobile", async () => {
     const cohesion = await readFile("src/cohesion.css", "utf8");
 
-    expect(cohesion).toMatch(/\.brand-mark-shell\s*\{[\s\S]*background:\s*transparent\s*!important/);
+    expect(cohesion).toMatch(
+      /\.brand-mark-shell\s*\{[\s\S]*background:\s*transparent\s*!important/,
+    );
     expect(cohesion).toContain("grid-template-columns: repeat(5, minmax(0, 1fr))");
     expect(cohesion).toContain("justify-content: center");
     expect(cohesion).toContain("border-top: 1px solid var(--color-border) !important");
