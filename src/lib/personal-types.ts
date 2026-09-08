@@ -1,4 +1,4 @@
-import { Weekday, Term } from "./timetable-types";
+import type { Weekday, Term } from "./timetable-types";
 
 export type PersonalCategory =
   | "Study"
@@ -22,8 +22,8 @@ export interface PersonalItem {
   category: PersonalCategory;
   term: Term;
   weekday: Weekday;
-  startTime?: number; // minutes from midnight; present for fixed items
-  endTime?: number; // minutes from midnight; present for fixed items
+  startTime?: number;
+  endTime?: number;
   locationBuildingCode?: string | null;
   locationRoom?: string | null;
   locationText?: string | null;

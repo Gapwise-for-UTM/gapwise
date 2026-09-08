@@ -51,11 +51,6 @@ function ordinalFloor(value: string): string {
   return `${floor}${suffix} floor`;
 }
 
-/**
- * Turns parsed ACORN location fields into UI-ready parts. Floor text is sourced
- * from the resolver, which only returns verified floors or conservative
- * room-number inferences for recognized buildings.
- */
 export function getCampusLocationDisplay(meeting: Meeting): CampusLocationDisplay | null {
   const resolution = resolveMeetingLocation(meeting);
   if (resolution.status !== "known") return null;
@@ -83,19 +78,19 @@ const UNRESOLVED_PRESENTATIONS: Record<Exclude<LocationStatus, "known">, Locatio
   tba: {
     status: "tba",
     label: "Location TBA",
-    detail: "The physical location is still TBA.",
+    detail: "Location to be announced.",
     icon: CircleHelp,
   },
   unknown: {
     status: "unknown",
-    label: "Location unavailable",
-    detail: "This class location could not be resolved.",
+    label: "Location",
+    detail: "Location unavailable.",
     icon: CircleHelp,
   },
   online: {
     status: "online",
-    label: "Online class",
-    detail: "This class is online, so no campus route is needed.",
+    label: "Online",
+    detail: "Online class.",
     icon: Monitor,
   },
 };
@@ -106,7 +101,7 @@ function meetingPresentation(meeting: Meeting): LocationPresentation {
     return {
       status: "known",
       label: accessPoint.label,
-      detail: "Verified campus arrival point.",
+      detail: "Campus stop.",
       icon: MapPin,
     };
   }
@@ -116,9 +111,8 @@ function meetingPresentation(meeting: Meeting): LocationPresentation {
   return {
     status: "known",
     label:
-      [resolution.buildingCode, resolution.room].filter(Boolean).join(" ") ||
-      "Location unavailable",
-    detail: "Campus location resolved.",
+      [resolution.buildingCode, resolution.room].filter(Boolean).join(" ") || "Campus location",
+    detail: "Campus location.",
     icon: MapPin,
   };
 }
@@ -139,28 +133,28 @@ export function getLocationPresentation(input: LocationPresentationInput): Locat
       return {
         status: "known",
         label: "Same room",
-        detail: "No walk is needed between these classes.",
+        detail: "No walk needed.",
         icon: MapPin,
       };
     case "routed":
       return {
         status: "known",
-        label: "Route available",
-        detail: input.route.accuracy,
+        label: "Route",
+        detail: "Campus route.",
         icon: RouteIcon,
       };
     case "approximate":
       return {
         status: "approximate",
-        label: "Approximate route",
-        detail: "Timing is approximate because a verified path is not mapped.",
+        label: "Route",
+        detail: "Campus route.",
         icon: RouteIcon,
       };
     case "unavailable":
       return {
         status: "unavailable",
-        label: "Route not yet mapped",
-        detail: "A verified route is not available yet.",
+        label: "Campus map",
+        detail: "Open the map to continue.",
         icon: RouteOff,
       };
   }

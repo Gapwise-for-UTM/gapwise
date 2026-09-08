@@ -21,6 +21,8 @@ export default defineConfig({
   outputDir: "test-results",
   use: {
     baseURL,
+    timezoneId: "America/Toronto",
+    locale: "en-CA",
     serviceWorkers: "allow",
     screenshot: "only-on-failure",
     trace: process.env.CI ? "on-first-retry" : "retain-on-failure",

@@ -29,9 +29,9 @@ describe("retired Personal Items surface", () => {
 
   test("desktop and mobile gaps are actionable and exact-selection aware", async () => {
     const [grid, mobile, gapPlan] = await Promise.all([
-      readFile("src/components/TimetableGrid.tsx", "utf8"),
-      readFile("src/components/mobile/MobileTimetable.tsx", "utf8"),
-      readFile("src/components/GapPlan.tsx", "utf8"),
+      readFile("src/components/TimetableGridImpl.tsx", "utf8"),
+      readFile("src/components/mobile/MobileTimetableImpl.tsx", "utf8"),
+      readFile("src/components/GapPlanImpl.tsx", "utf8"),
     ]);
     expect(grid).toContain('data-gap-interactive="true"');
     expect(grid).toContain("onOpenGap?.(gap)");

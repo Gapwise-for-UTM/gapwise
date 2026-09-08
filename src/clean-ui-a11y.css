@@ -1,0 +1,85 @@
+/* Keep the clean visual system readable at WCAG AA contrast levels. */
+
+:root:not(.dark) {
+  --primary: oklch(0.52 0.17 244);
+  --accent: oklch(0.53 0.17 244);
+  --hero-accent: oklch(0.53 0.17 244);
+  --ring: oklch(0.56 0.16 244);
+  --sidebar-primary: oklch(0.52 0.17 244);
+}
+
+.dark {
+  /* White button text needs a quieter blue than the bright accent used for links and indicators. */
+  --primary: oklch(0.53 0.13 243);
+}
+
+html:not(.dark)[data-landing-product="gapwise"] {
+  --landing-chrome-accent: #006ec2;
+}
+
+html:not(.dark)[data-landing-product="gapwise-ai"] {
+  --landing-chrome-accent: #6d3fc2;
+}
+
+html:not(.dark)[data-landing-product="gapwise-docs"] {
+  --landing-chrome-accent: #17181b;
+}
+
+html:not(.dark)[data-landing-product="gapwise-data"] {
+  --landing-chrome-accent: #bd3443;
+}
+
+html:not(.dark)[data-landing-product="gapwise-status"] {
+  --landing-chrome-accent: #167553;
+}
+
+:root:not(.dark) .marketing-home {
+  --story-accent: #006ec2;
+}
+
+:root:not(.dark) .marketing-home[data-active-product="gapwise-ai"] {
+  --story-accent: #6d3fc2;
+}
+
+:root:not(.dark) .marketing-home[data-active-product="gapwise-docs"] {
+  --story-accent: #17181b;
+}
+
+:root:not(.dark) .marketing-home[data-active-product="gapwise-data"] {
+  --story-accent: #bd3443;
+}
+
+:root:not(.dark) .marketing-home[data-active-product="gapwise-status"] {
+  --story-accent: #167553;
+}
+
+:root:not(.dark) .product-story-section {
+  --section-accent: #006ec2;
+}
+
+:root:not(.dark) .product-story-section[data-product="gapwise-ai"] {
+  --section-accent: #6d3fc2;
+}
+
+:root:not(.dark) .product-story-section[data-product="gapwise-docs"] {
+  --section-accent: #17181b;
+}
+
+:root:not(.dark) .product-story-section[data-product="gapwise-data"] {
+  --section-accent: #bd3443;
+}
+
+:root:not(.dark) .product-story-section[data-product="gapwise-status"] {
+  --section-accent: #167553;
+}
+
+/* Lazy marketing CSS declares a view-timeline opacity animation after this file loads.
+ * Disable it rather than letting off-screen product copy become low-contrast while axe scans. */
+.product-story-section > * {
+  animation: none !important;
+}
+
+/* Preserve a proper touch target even though the global compact button rule is !important. */
+.marketing-import .and66-first-run .button-primary {
+  min-height: 2.75rem !important;
+}

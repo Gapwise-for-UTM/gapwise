@@ -5,14 +5,11 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
-import { clearGuestTimetable, saveGuestTimetable } from "@/features/security/guest-timetable";
 import type { GuestTimetableRestoration } from "@/features/security/guest-timetable";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
-import { clearPrivateCloudLocalUser } from "@/features/sync/encrypted-sync-service";
 import type { RestoredSource } from "@/features/sync/restoration-decisions";
 import type { RestorationState } from "@/features/sync/restoration";
 import { setCloudRestoreSuppressed } from "@/features/sync/restore-preference";
-import { DEMO_MEETINGS } from "@/lib/demo-timetable";
 import type { Meeting } from "@/lib/timetable-types";
 import {
   describeTimetableChanges,
@@ -71,6 +68,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
         let persistenceWarning: string | null = null;
         if (input.remember && !input.userId) {
           try {
+            const { saveGuestTimetable } = await import("@/features/security/guest-timetable");
             await saveGuestTimetable(result.meetings);
             input.setGuestRestoration({
               remember: true,
@@ -79,8 +77,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
             });
           } catch {
             input.setRemember(false);
-            persistenceWarning =
-              "This browser could not keep an encrypted device copy. Your open timetable is unchanged.";
+            persistenceWarning = "This browser could not save the timetable for the next visit.";
           }
         }
         input.setMeetings(result.meetings);
@@ -98,9 +95,7 @@ export function useTimetableCommands(input: TimetableCommandInput) {
       } catch (error) {
         const message = timetableImportError(error);
         if (previousMeetings?.length) {
-          input.setRestorationMessage(
-            `Timetable update failed · Your current timetable is safe and unchanged. ${message}`,
-          );
+          input.setRestorationMessage(`Timetable update failed · ${message}`);
         } else {
           input.setMeetings(null);
           input.latestMeetings.current = null;
@@ -124,44 +119,45 @@ export function useTimetableCommands(input: TimetableCommandInput) {
     [importFile],
   );
 
-  const loadDemo = useCallback(() => {
+  const loadDemo = useCallback(async () => {
     input.setError(null);
     input.setWarnings([]);
-    input.setMeetings(DEMO_MEETINGS);
-    input.latestMeetings.current = DEMO_MEETINGS;
-    input.restoredSource.current = "memory";
-    input.setRestoration("restored-memory");
-    input.setRestorationMessage(null);
-    input.setIsDemo(true);
+    input.setLoading(true);
+    try {
+      const { DEMO_MEETINGS } = await import("@/lib/demo-timetable");
+      input.setMeetings(DEMO_MEETINGS);
+      input.latestMeetings.current = DEMO_MEETINGS;
+      input.restoredSource.current = "memory";
+      input.setRestoration("restored-memory");
+      input.setRestorationMessage(null);
+      input.setIsDemo(true);
+    } finally {
+      input.setLoading(false);
+    }
   }, [input]);
 
   const remove = useCallback(async () => {
     try {
       if (input.userId) {
+        const { clearPrivateCloudLocalUser } =
+          await import("@/features/sync/encrypted-sync-service");
         await clearPrivateCloudLocalUser(input.userId);
         setCloudRestoreSuppressed(input.userId, true);
       } else {
+        const { clearGuestTimetable } = await import("@/features/security/guest-timetable");
         await clearGuestTimetable();
         input.setGuestRestoration({ remember: false, meetings: null, updatedAt: null });
         input.setRemember(false);
       }
       clearView();
     } catch {
-      input.setRestorationMessage(
-        "This browser could not clear its encrypted local copy, so the timetable was left in place.",
-      );
+      input.setRestorationMessage("The saved timetable could not be removed. Try again.");
     }
   }, [clearView, input]);
 
   const confirmRemove = useCallback(() => {
-    const cloudNote = input.userId
-      ? " Your encrypted cloud copy will remain available from Load private data."
-      : "";
-    if (
-      window.confirm(
-        `Remove this timetable and its encrypted local copy from this browser?${cloudNote}`,
-      )
-    ) {
+    const cloudNote = input.userId ? " Your synced copy will remain available." : "";
+    if (window.confirm(`Remove this timetable from this browser?${cloudNote}`)) {
       void remove();
     }
   }, [input.userId, remove]);
@@ -195,27 +191,22 @@ export function useTimetableCommands(input: TimetableCommandInput) {
     (value: boolean) => {
       input.setRemember(value);
       if (input.userId) return;
-      input.setRestorationMessage(
-        value ? "Setting up encrypted device restore…" : "Removing the encrypted device copy…",
-      );
-      void (
-        value ? saveGuestTimetable(input.isDemo ? null : input.meetings) : clearGuestTimetable()
-      )
+      input.setRestorationMessage(value ? "Saving on this device…" : "Removing saved timetable…");
+      void import("@/features/security/guest-timetable")
+        .then(({ saveGuestTimetable, clearGuestTimetable }) =>
+          value ? saveGuestTimetable(input.isDemo ? null : input.meetings) : clearGuestTimetable(),
+        )
         .then(() => {
           input.setGuestRestoration({
             remember: value,
             meetings: value && !input.isDemo ? input.meetings : null,
             updatedAt: value && input.meetings && !input.isDemo ? new Date().toISOString() : null,
           });
-          input.setRestorationMessage(
-            value
-              ? "Encrypted device restore is on for this browser."
-              : "Encrypted device restore is off and its local copy was removed.",
-          );
+          input.setRestorationMessage(value ? "Saved on this device." : "Saved timetable removed.");
         })
         .catch(() => {
           input.setRemember(!value);
-          input.setRestorationMessage("Secure device storage is unavailable in this browser.");
+          input.setRestorationMessage("Device save is unavailable in this browser.");
         });
     },
     [input],

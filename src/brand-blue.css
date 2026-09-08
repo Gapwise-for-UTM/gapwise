@@ -1,0 +1,283 @@
+/*
+ * Final Gapwise visual-system layer.
+ * Neutral surfaces, one restrained blue core accent, and section-local product identities.
+ */
+
+:root {
+  --background: oklch(0.985 0.002 255);
+  --foreground: oklch(0.18 0.006 255);
+  --card: oklch(0.997 0.001 255);
+  --card-foreground: oklch(0.18 0.006 255);
+  --popover: oklch(0.997 0.001 255);
+  --popover-foreground: oklch(0.18 0.006 255);
+  --primary: oklch(0.56 0.18 244);
+  --primary-foreground: oklch(0.99 0.002 255);
+  --secondary: oklch(0.955 0.004 255);
+  --secondary-foreground: oklch(0.27 0.006 255);
+  --muted: oklch(0.955 0.004 255);
+  --muted-foreground: oklch(0.49 0.008 255);
+  --accent: oklch(0.57 0.17 244);
+  --accent-foreground: oklch(0.99 0.002 255);
+  --border: oklch(0.89 0.005 255);
+  --input: oklch(0.89 0.005 255);
+  --ring: oklch(0.6 0.16 244);
+  --hero-background: oklch(0.985 0.002 255);
+  --hero-foreground: oklch(0.18 0.006 255);
+  --hero-accent: oklch(0.57 0.17 244);
+  --sidebar-background: oklch(0.975 0.003 255);
+  --sidebar-foreground: oklch(0.25 0.006 255);
+  --sidebar-primary: oklch(0.56 0.18 244);
+  --sidebar-primary-foreground: oklch(0.99 0.002 255);
+  --sidebar-accent: oklch(0.94 0.008 244);
+  --sidebar-accent-foreground: oklch(0.25 0.006 255);
+  --sidebar-border: oklch(0.89 0.005 255);
+  --sidebar-ring: oklch(0.6 0.16 244);
+  --lec: oklch(0.57 0.16 244);
+  --tut: oklch(0.58 0.08 221);
+  --pra: oklch(0.58 0.06 248);
+  --gap: oklch(0.58 0.15 244);
+  --accent-glow: transparent;
+  --gap-glow: transparent;
+  --shadow-lift: 0 7px 24px rgb(18 24 35 / 0.06);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.108 0.004 255);
+  --foreground: oklch(0.94 0.004 255);
+  --card: oklch(0.135 0.004 255);
+  --card-foreground: oklch(0.94 0.004 255);
+  --popover: oklch(0.145 0.004 255);
+  --popover-foreground: oklch(0.94 0.004 255);
+  --primary: oklch(0.66 0.17 244);
+  --primary-foreground: oklch(0.99 0.002 255);
+  --secondary: oklch(0.175 0.005 255);
+  --secondary-foreground: oklch(0.9 0.004 255);
+  --muted: oklch(0.175 0.005 255);
+  --muted-foreground: oklch(0.64 0.007 255);
+  --accent: oklch(0.69 0.15 244);
+  --accent-foreground: oklch(0.99 0.002 255);
+  --border: oklch(0.235 0.006 255);
+  --input: oklch(0.245 0.006 255);
+  --ring: oklch(0.68 0.15 244);
+  --hero-background: oklch(0.108 0.004 255);
+  --hero-foreground: oklch(0.94 0.004 255);
+  --hero-accent: oklch(0.69 0.15 244);
+  --sidebar-background: oklch(0.122 0.004 255);
+  --sidebar-foreground: oklch(0.84 0.005 255);
+  --sidebar-primary: oklch(0.66 0.17 244);
+  --sidebar-primary-foreground: oklch(0.99 0.002 255);
+  --sidebar-accent: oklch(0.19 0.012 244);
+  --sidebar-accent-foreground: oklch(0.92 0.004 255);
+  --sidebar-border: oklch(0.235 0.006 255);
+  --sidebar-ring: oklch(0.68 0.15 244);
+  --lec: oklch(0.69 0.15 244);
+  --tut: oklch(0.66 0.08 221);
+  --pra: oklch(0.65 0.055 248);
+  --gap: oklch(0.69 0.14 244);
+  --accent-glow: transparent;
+  --gap-glow: transparent;
+  --shadow-lift: 0 8px 24px rgb(0 0 0 / 0.2);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-accent) 24%, transparent);
+}
+
+.surface,
+.glass-panel {
+  box-shadow: none !important;
+}
+
+.glass-panel {
+  border-color: var(--color-border) !important;
+  background: var(--color-card) !important;
+  backdrop-filter: none !important;
+}
+
+.button-primary,
+.button-secondary,
+.surface,
+.empty-state {
+  border-radius: 0.55rem;
+}
+
+.button-primary,
+.button-secondary {
+  box-shadow: none !important;
+}
+
+.button-primary {
+  background: var(--color-primary);
+}
+
+.button-primary:hover {
+  background: color-mix(in oklab, var(--color-primary) 88%, white 12%);
+}
+
+.dark .button-primary:hover {
+  background: color-mix(in oklab, var(--color-primary) 92%, white 8%);
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline-color: var(--color-ring);
+}
+
+/* Landing chrome: brand, appearance, and an unmistakable account action. */
+body:has(main.landing-stage) header [role="group"][aria-label="Account"] {
+  display: flex !important;
+}
+
+body:has(main.landing-stage) header [aria-label="Campus arrival settings"] {
+  display: none !important;
+}
+
+body:has(main.landing-stage) header [role="group"][aria-label="Account"] > button:first-of-type {
+  min-height: 2rem !important;
+  border-color: var(--color-border) !important;
+  border-radius: 0.42rem !important;
+  padding-inline: 0.78rem !important;
+  background: var(--color-card) !important;
+  font-size: 0.78rem !important;
+}
+
+body:has(main.landing-stage)
+  header
+  [role="group"][aria-label="Account"]
+  > button:first-of-type:hover,
+body:has(main.landing-stage)
+  header
+  [role="group"][aria-label="Account"]
+  > button:first-of-type:focus-visible {
+  border-color: color-mix(
+    in oklab,
+    var(--landing-chrome-accent, #2ea8ff) 42%,
+    var(--color-border)
+  ) !important;
+  background: var(--color-secondary) !important;
+}
+
+body:has(main.landing-stage) .app-shell,
+body:has(main.landing-stage) .desktop-app-header,
+body:has(main.landing-stage) .brand-mark-shell,
+body:has(main.landing-stage) .brand-utm-pill {
+  transition:
+    background-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html[data-landing-product="gapwise"] {
+  --landing-chrome-accent: light-dark(#006bb3, #2ea8ff);
+}
+
+html[data-landing-product="gapwise-ai"] {
+  --landing-chrome-accent: light-dark(#6d28d9, #a78bfa);
+}
+
+html[data-landing-product="gapwise-docs"] {
+  --landing-chrome-accent: light-dark(#17181b, #f4f4f5);
+}
+
+html[data-landing-product="gapwise-data"] {
+  --landing-chrome-accent: light-dark(#b42335, #ff5a66);
+}
+
+html[data-landing-product="gapwise-status"] {
+  --landing-chrome-accent: light-dark(#087a55, #39cf97);
+}
+
+html[data-landing-product] body:has(main.landing-stage) .app-shell {
+  background: color-mix(
+    in oklab,
+    var(--landing-chrome-accent) 1.8%,
+    var(--color-background)
+  ) !important;
+}
+
+html[data-landing-product] body:has(main.landing-stage) .desktop-app-header {
+  border-color: color-mix(
+    in oklab,
+    var(--landing-chrome-accent) 14%,
+    var(--color-border)
+  ) !important;
+  background: color-mix(
+    in oklab,
+    var(--landing-chrome-accent) 1.6%,
+    var(--color-background)
+  ) !important;
+}
+
+html[data-landing-product] body:has(main.landing-stage) .desktop-app-header .brand-mark-shell {
+  color: var(--landing-chrome-accent);
+  border-color: color-mix(
+    in oklab,
+    var(--landing-chrome-accent) 22%,
+    var(--color-border)
+  ) !important;
+  background: color-mix(in oklab, var(--landing-chrome-accent) 6%, var(--color-card)) !important;
+  box-shadow: none !important;
+}
+
+body:has(main.landing-stage) .desktop-app-header .brand-mark-shell::after {
+  display: none !important;
+}
+
+body:has(main.landing-stage) .desktop-app-header .brand-mark-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0.34rem;
+  background: currentColor;
+  mask: url("/logo-mark.svg") center / contain no-repeat;
+  -webkit-mask: url("/logo-mark.svg") center / contain no-repeat;
+}
+
+body:has(main.landing-stage) .desktop-app-header .brand-mark-shell img {
+  opacity: 0;
+}
+
+html[data-landing-product] body:has(main.landing-stage) .brand-utm-pill {
+  color: var(--landing-chrome-accent) !important;
+  border-color: color-mix(
+    in oklab,
+    var(--landing-chrome-accent) 20%,
+    var(--color-border)
+  ) !important;
+}
+
+body:has(main.landing-stage) .brand-lockup:hover {
+  transform: none !important;
+}
+
+/* Retired marketing effects stay retired even if stale markup reappears. */
+main.landing-stage .landing-bento::before,
+main.landing-stage .landing-bento::after,
+main.landing-stage .hero-word::after {
+  display: none !important;
+}
+
+main.landing-stage .hero-word {
+  color: var(--color-accent);
+}
+
+/* Confidence-first product presentation: settings don't narrate architecture. */
+.residence-settings-dialog > div:first-child > p {
+  display: none;
+}
+
+.status-toast {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  box-shadow: var(--shadow-lift);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-primary,
+  .button-secondary,
+  body:has(main.landing-stage) .app-shell,
+  body:has(main.landing-stage) .desktop-app-header,
+  body:has(main.landing-stage) .brand-mark-shell,
+  body:has(main.landing-stage) .brand-utm-pill {
+    transition: none !important;
+  }
+}

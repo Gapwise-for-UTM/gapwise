@@ -70,7 +70,7 @@ describe("location presentation", () => {
     expect(meetingState).toMatchObject({
       status: "tba",
       label: "Location TBA",
-      detail: "The physical location is still TBA.",
+      detail: "Location to be announced.",
     });
     expect(routeState).toMatchObject({
       status: "tba",
@@ -80,7 +80,7 @@ describe("location presentation", () => {
     expect(routeState.icon).toBe(meetingState.icon);
   });
 
-  test("maps resolved, approximate, and unmapped routes using existing statuses", () => {
+  test("maps route states into concise product labels", () => {
     expect(getLocationPresentation({ meeting: meeting() })).toMatchObject({
       status: "known",
       label: "MN 1270",
@@ -91,14 +91,14 @@ describe("location presentation", () => {
         to: meeting({ id: "next", buildingCode: "IB", room: "340" }),
         route: { ...unavailableRoute, status: "approximate" },
       }),
-    ).toMatchObject({ status: "approximate", label: "Approximate route" });
+    ).toMatchObject({ status: "approximate", label: "Route", detail: "Campus route." });
     expect(
       getLocationPresentation({
         from: meeting(),
         to: meeting({ id: "next", room: null }),
         route: unavailableRoute,
       }),
-    ).toMatchObject({ status: "unavailable", label: "Route not yet mapped" });
+    ).toMatchObject({ status: "unavailable", label: "Campus map" });
   });
 
   test("maps the remaining existing location and route statuses", () => {
@@ -106,7 +106,7 @@ describe("location presentation", () => {
       getLocationPresentation({
         meeting: meeting({ locationType: "online", buildingCode: null, room: null }),
       }),
-    ).toMatchObject({ status: "online", label: "Online class" });
+    ).toMatchObject({ status: "online", label: "Online" });
     expect(
       getLocationPresentation({
         meeting: meeting({
@@ -116,14 +116,14 @@ describe("location presentation", () => {
           room: "101",
         }),
       }),
-    ).toMatchObject({ status: "unknown", label: "Location unavailable" });
+    ).toMatchObject({ status: "unknown", label: "Location" });
     expect(
       getLocationPresentation({
         from: meeting(),
         to: meeting({ id: "next", room: "1290" }),
         route: { ...unavailableRoute, status: "routed" },
       }),
-    ).toMatchObject({ status: "known", label: "Route available" });
+    ).toMatchObject({ status: "known", label: "Route" });
     expect(
       getLocationPresentation({
         from: meeting(),

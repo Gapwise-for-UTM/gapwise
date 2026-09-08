@@ -183,6 +183,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.day-route-stop-card .mobile-route-stop-time {
+  color: light-dark(#0068ad, var(--color-accent));
+}
+
 @media (max-width: 639px) {
   .map-time-marker {
     min-width: 3.4rem;

@@ -9,10 +9,7 @@ import {
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
-import {
-  saveGuestTimetable,
-  type GuestTimetableRestoration,
-} from "@/features/security/guest-timetable";
+import type { GuestTimetableRestoration } from "@/features/security/guest-timetable";
 import { cloudRestoration, isRestorationAbort } from "@/features/sync/cloud-restoration";
 import { DEFAULT_USER_PREFERENCES, type UserPreferences } from "@/features/sync/preferences";
 import {
@@ -24,7 +21,6 @@ import {
 import { chooseRestoration, type RestorationState } from "@/features/sync/restoration";
 import { isCloudRestoreSuppressed } from "@/features/sync/restore-preference";
 import type { GapPreferences } from "@/features/gaps/types";
-import { enrichCourseTitles } from "@/lib/course-title-catalog";
 import type { PersonalItem } from "@/lib/personal-types";
 import type { Meeting } from "@/lib/timetable-types";
 import type { AcademicState } from "@/features/academic/state";
@@ -46,10 +42,7 @@ type RestorationInput = {
   setAcademic: Dispatch<SetStateAction<AcademicState>>;
 };
 
-/**
- * Owns auth generations and persistence-source selection. The returned meeting ref is the
- * browser's active operational schedule; cloud and guest records are restoration inputs only.
- */
+/** Owns auth generations and persistence-source selection for the active schedule. */
 export function useAuthenticatedRestoration(input: RestorationInput) {
   const {
     authLoading,
@@ -90,7 +83,6 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
       setWarnings([]);
       setError(null);
       setIsDemo(false);
-      // Prevent autosave from echoing an unchanged restored payload back to persistence.
       lastEncryptedFingerprint.current = JSON.stringify(payload);
     },
     [
@@ -117,25 +109,23 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
 
     let cancelled = false;
     const sourceMeetings = meetings;
-    void enrichCourseTitles(sourceMeetings).then((enriched) => {
-      if (cancelled) return;
-      const changed = enriched.some(
-        (meeting, index) => meeting.courseName !== sourceMeetings[index]?.courseName,
-      );
-      if (!changed) return;
+    void import("@/lib/course-title-catalog")
+      .then(({ enrichCourseTitles }) => enrichCourseTitles(sourceMeetings))
+      .then((enriched) => {
+        if (cancelled) return;
+        const changed = enriched.some(
+          (meeting, index) => meeting.courseName !== sourceMeetings[index]?.courseName,
+        );
+        if (!changed) return;
 
-      // PR #211 enriched only the import path, which left already-restored encrypted
-      // timetables displaying ACORN's abbreviated DESCRIPTION text. Canonicalize the
-      // active browser schedule too so existing users receive the same full titles.
-      latestMeetings.current = enriched;
-      setMeetings(enriched);
-
-      // Signed-in schedules flow through encrypted autosave after this state update.
-      // Keep remembered guest schedules upgraded as well so they stay canonical offline.
-      if (!userId && guest?.remember) {
-        void saveGuestTimetable(enriched).catch(() => undefined);
-      }
-    });
+        latestMeetings.current = enriched;
+        setMeetings(enriched);
+        if (!userId && guest?.remember) {
+          void import("@/features/security/guest-timetable").then(({ saveGuestTimetable }) =>
+            saveGuestTimetable(enriched).catch(() => undefined),
+          );
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -181,9 +171,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
       restoredSource.current = choice.source;
       setRestoration(authError ? "failed" : choice.state);
       if (authError) {
-        setRestorationMessage(
-          "Your signed-in session could not be restored. Any local timetable is safe; sign in again to retry cloud restore.",
-        );
+        setRestorationMessage("Session restore failed. Sign in again to retry sync.");
       } else if (returningFromAccount) {
         setRestorationMessage(null);
       }
@@ -213,9 +201,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
     if (isCloudRestoreSuppressed(userId)) {
       requestedUser.current = userId;
       setRestoration("no-cloud-data");
-      setRestorationMessage(
-        "Automatic cloud restore is paused on this browser. Use Load private data when you want it back.",
-      );
+      setRestorationMessage(null);
       return;
     }
     if (latestMeetings.current?.length && restoredSource.current === "memory") {
@@ -259,13 +245,9 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
         if (choice.source === "cloud" && cloud?.privateData) applyPrivateData(cloud.privateData);
         restoredSource.current = choice.source;
         setRestoration(choice.state);
-        if (choice.state === "cloud-version-available") {
-          setRestorationMessage("A cloud version is available; your local timetable was kept.");
-        } else if (choice.source === "cloud" && cloud?.persistentKeys === false) {
-          setRestorationMessage(
-            "Encrypted data restored. This browser cannot persist non-extractable keys, so another broker check will be needed after reload.",
-          );
-        }
+        setRestorationMessage(
+          choice.state === "cloud-version-available" ? "A newer sync is available." : null,
+        );
       })
       .catch((error: unknown) => {
         if (isRestorationAbort(error)) return;
@@ -296,9 +278,7 @@ export function useAuthenticatedRestoration(input: RestorationInput) {
         }
         restoredSource.current = choice.source;
         setRestoration("failed");
-        setRestorationMessage(
-          "Encrypted cloud restore failed. Your local timetable is safe and unchanged; use Load private data to try again.",
-        );
+        setRestorationMessage("Sync restore failed. Try again from account settings.");
       });
   }, [
     applyPrivateData,

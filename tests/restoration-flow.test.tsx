@@ -243,7 +243,7 @@ describe("route-level encrypted timetable restoration", () => {
     await setAuth({ user: authenticatedUser, loading: false, error: null });
     await waitFor(() => loadCalls.length === 1, "the first account restore");
     await waitFor(
-      () => pageText().includes("A cloud version is available"),
+      () => pageText().includes("A newer sync is available."),
       "the local precedence notice",
     );
 
@@ -261,7 +261,7 @@ describe("route-level encrypted timetable restoration", () => {
     await waitFor(() => pageText().includes("SAFE101H5"), "the guest timetable");
     await setAuth({ user: authenticatedUser, loading: false, error: null });
     await waitFor(
-      () => pageText().includes("Encrypted cloud restore failed"),
+      () => pageText().includes("Sync restore failed. Try again from account settings."),
       "the interrupted restore warning",
     );
 
@@ -380,7 +380,7 @@ describe("route-level encrypted timetable restoration", () => {
 
     await mountRoute();
     await waitFor(
-      () => pageText().includes("Encrypted cloud restore failed."),
+      () => pageText().includes("Sync restore failed. Try again from account settings."),
       "the restore error",
     );
     expect(pageText()).toContain("Import ACORN");
@@ -395,7 +395,7 @@ describe("route-level encrypted timetable restoration", () => {
 
     await mountRoute();
     await waitFor(
-      () => pageText().includes("Your signed-in session could not be restored."),
+      () => pageText().includes("Session restore failed. Sign in again to retry sync."),
       "the auth initialization error",
     );
     expect(loadCalls).toHaveLength(0);
@@ -410,7 +410,7 @@ describe("route-level encrypted timetable restoration", () => {
     expect(pageText()).not.toContain("Import ACORN");
     query.resolve(null);
     await waitFor(() => pageText().includes("Import ACORN"), "the empty state");
-    expect(pageText()).not.toContain("Encrypted cloud restore failed.");
+    expect(pageText()).not.toContain("Sync restore failed. Try again from account settings.");
   });
 
   test("ignores and removes legacy plaintext remembered timetable state", async () => {

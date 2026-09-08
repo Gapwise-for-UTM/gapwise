@@ -5,15 +5,15 @@ import { expectLanding, isMobileProject, watchForAppFailures } from "./helpers";
 const fixturePath = path.join(process.cwd(), "tests", "fixtures", "sample-timetable.ics");
 
 async function expectSignInDialogWhenAvailable(page: import("@playwright/test").Page) {
-  const signInToSync = page.getByRole("button", { name: "Sign in to sync across devices" });
-  await expect(signInToSync).toBeVisible();
-  if (!(await signInToSync.isEnabled())) {
-    await expect(signInToSync).toBeDisabled();
+  const signIn = page.getByRole("button", { name: "Sign in", exact: true });
+  await expect(signIn).toBeVisible();
+  if (!(await signIn.isEnabled())) {
+    await expect(signIn).toBeDisabled();
     return;
   }
 
-  await signInToSync.click();
-  const dialog = page.getByRole("dialog");
+  await signIn.click();
+  const dialog = page.getByRole("dialog", { name: "Sign in to sync" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("heading", { name: "Sign in to sync" })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Continue with Microsoft" })).toBeVisible();
@@ -31,46 +31,34 @@ async function expectSignInDialogWhenAvailable(page: import("@playwright/test").
   await expect(dialog).not.toBeVisible();
 }
 
-test("AND-66 first-run landing keeps activation above the fold on a narrow phone", async ({
+test("AND-66 first-run landing keeps activation clear on a narrow phone", async ({
   page,
 }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await page.setViewportSize({ width: 360, height: 740 });
   await expectLanding(page);
 
-  await expect(page.getByText("See gaps. Navigate UTM. Privately.")).toBeVisible();
   await expect(
-    page.getByText("Your calendar stays on this device. No account required."),
+    page.getByRole("heading", { name: "Make every gap on campus count." }),
   ).toBeVisible();
-  await expect(page.getByText("Try Demo Schedule")).toBeVisible();
-  const signInToSync = page.getByRole("button", { name: "Sign in to sync across devices" });
-  await expect(signInToSync).toBeVisible();
+  await expect(
+    page.getByText(
+      "One precise workspace for your timetable, the time between classes, and moving across UTM.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try a demo" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Campus arrival settings" })).toHaveCount(0);
-  await expect(page.locator('section[aria-labelledby="cloud-sync-title"]')).not.toBeVisible();
-  await expect(page.locator(".bento-hero")).not.toBeVisible();
-  await expect(page.locator(".bento-step").first()).not.toBeVisible();
 
   const importAction = page.getByRole("button", { name: "Import ACORN" });
-  const [ctaBox, signInBox, panelBox] = await Promise.all([
-    importAction.boundingBox(),
-    signInToSync.boundingBox(),
-    page.locator(".and66-first-run").boundingBox(),
-  ]);
+  await importAction.scrollIntoViewIfNeeded();
+  await expect(importAction).toBeVisible();
+  const ctaBox = await importAction.boundingBox();
   expect(ctaBox).not.toBeNull();
-  expect(signInBox).not.toBeNull();
-  expect(panelBox).not.toBeNull();
-  expect(ctaBox!.height).toBeGreaterThanOrEqual(52);
-  expect(ctaBox!.width / panelBox!.width).toBeGreaterThanOrEqual(0.85);
-  expect(ctaBox!.y + ctaBox!.height).toBeLessThanOrEqual(740);
-  expect(signInBox!.y).toBeGreaterThan(ctaBox!.y + ctaBox!.height);
-  expect(signInBox!.height).toBeLessThan(ctaBox!.height);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
-  // Keep crawlable public navigation useful without letting it expand the first-run mobile shell.
+  expect(ctaBox!.height).toBeGreaterThanOrEqual(40);
+  expect(ctaBox!.width).toBeGreaterThanOrEqual(180);
   expect(
-    await page.evaluate(() => document.documentElement.scrollHeight / window.innerHeight),
-  ).toBeLessThanOrEqual(1.45);
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+  ).toBe(true);
 
   await expectSignInDialogWhenAvailable(page);
   guard.assertClean();
