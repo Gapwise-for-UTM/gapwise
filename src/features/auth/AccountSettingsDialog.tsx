@@ -1,4 +1,4 @@
-import { Bot, Download, Link2, UserRound } from "lucide-react";
+import { Bot, Download, ExternalLink, Link2, LogIn, UserRound } from "lucide-react";
 import { TimetableExportDialog } from "@/components/TimetableExportDialog";
 import { TimetableHeatmapExportDialog } from "@/components/TimetableHeatmapExportDialog";
 import type { TransitionPlanner } from "@/features/routing/transition";
@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const GAPWISE_MCP_URL = "https://ai.gapwise.ca/api/mcp";
+const GAPWISE_AI_URL = "https://ai.gapwise.ca";
+const GAPWISE_MCP_URL = `${GAPWISE_AI_URL}/api/mcp`;
 export type AccountSettingsTab = "account" | "exports" | "ai";
 
 export function AccountSettingsDialog({
@@ -24,6 +25,7 @@ export function AccountSettingsDialog({
   identity,
   tab,
   onTabChange,
+  onRequestSignIn,
   aiController,
   meetings,
   term,
@@ -35,6 +37,7 @@ export function AccountSettingsDialog({
   identity: string | null;
   tab: AccountSettingsTab;
   onTabChange: (tab: AccountSettingsTab) => void;
+  onRequestSignIn: () => void;
   aiController: AiDelegationController | null;
   meetings: Meeting[];
   term: Term;
@@ -47,8 +50,7 @@ export function AccountSettingsDialog({
         <DialogHeader className="border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
           <DialogTitle>Account settings</DialogTitle>
           <DialogDescription>
-            Manage your account, private exports, and exactly what authorized AI connectors may
-            access.
+            Manage optional account sync, local exports, and Gapwise AI connections.
           </DialogDescription>
         </DialogHeader>
 
@@ -78,14 +80,25 @@ export function AccountSettingsDialog({
               {identity ? (
                 <p className="mt-1 break-words text-sm text-muted-foreground">{identity}</p>
               ) : (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Sign in from the app header when you want encrypted sync. Exports remain available
-                  locally without an account.
-                </p>
+                <>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    An account is optional. Your timetable, exports, campus tools, and public AI
+                    links remain available without signing in.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={onRequestSignIn}
+                    className="button-secondary mt-4 inline-flex min-h-10 items-center gap-2 px-3 text-sm font-medium"
+                  >
+                    <LogIn className="h-4 w-4" aria-hidden="true" />
+                    Sign in to sync
+                  </button>
+                </>
               )}
               <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                Your account is used for optional encrypted sync, private friend features, and AI
-                authorization. Your original ACORN .ics file is not stored in your account.
+                Signing in adds optional encrypted sync, private friend features, and authorization
+                for delegated student context. Your original ACORN .ics file is not stored in your
+                account.
               </p>
             </section>
           </TabsContent>
@@ -95,7 +108,7 @@ export function AccountSettingsDialog({
               <p className="text-sm font-semibold">Timetable</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 Export any available term or combine every term in one private image or print-ready
-                vector.
+                vector. No account is required.
               </p>
               <div className="mt-4">
                 <TimetableExportDialog meetings={meetings} />
@@ -105,7 +118,7 @@ export function AccountSettingsDialog({
               <p className="text-sm font-semibold">UTM map heatmap</p>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
                 Export a campus-focused building and route heatmap for one term or all terms
-                together.
+                together. This also stays local and does not require an account.
               </p>
               <div className="mt-4">
                 <TimetableHeatmapExportDialog
@@ -124,14 +137,23 @@ export function AccountSettingsDialog({
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-accent/20 bg-accent/8">
                   <Link2 className="h-4 w-4 text-accent" aria-hidden="true" />
                 </span>
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">
-                    Connect ChatGPT, Claude, or another MCP client
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">Gapwise AI</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Add the Gapwise MCP endpoint in your AI client. OAuth sign-in and the
-                    permissions below decide what that client can actually read or change.
+                    Public Gapwise AI and the MCP endpoint are available to everyone. Sign-in is only
+                    needed when you choose to authorize private student context.
                   </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={GAPWISE_AI_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="button-secondary inline-flex min-h-10 items-center gap-2 px-3 text-sm font-medium"
+                    >
+                      Open Gapwise AI
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                    </a>
+                  </div>
                   <code className="mt-3 block overflow-x-auto rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-xs text-foreground">
                     {GAPWISE_MCP_URL}
                   </code>
@@ -144,19 +166,33 @@ export function AccountSettingsDialog({
                 <AiIntegrationControls controller={aiController} />
               ) : (
                 <section className="rounded-xl border border-border/70 p-4 sm:p-5">
-                  <p className="text-sm font-semibold">AI integrations unavailable</p>
+                  <p className="text-sm font-semibold">Private AI delegation unavailable</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    AI integration is not configured on this Gapwise deployment yet.
+                    Public Gapwise AI still works. Private delegated student context is not
+                    configured on this deployment yet.
                   </p>
                 </section>
               )
             ) : (
               <section className="rounded-xl border border-border/70 p-4 sm:p-5">
-                <p className="text-sm font-semibold">Load your timetable to manage AI access</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  Gapwise needs your signed-in, real ACORN timetable in this browser before it can
-                  create or update the minimized AI snapshot. Demo schedules are never delegated.
+                <p className="text-sm font-semibold">
+                  {identity ? "Private AI access is not active" : "Private AI access is optional"}
                 </p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {identity
+                    ? "Load a real ACORN timetable in this browser to manage a minimized private AI snapshot. Demo schedules are never delegated."
+                    : "You can use the public AI site and MCP endpoint above without an account. Sign in only if you want to authorize private timetable or student context."}
+                </p>
+                {!identity ? (
+                  <button
+                    type="button"
+                    onClick={onRequestSignIn}
+                    className="button-secondary mt-4 inline-flex min-h-10 items-center gap-2 px-3 text-sm font-medium"
+                  >
+                    <LogIn className="h-4 w-4" aria-hidden="true" />
+                    Sign in for private delegation
+                  </button>
+                ) : null}
               </section>
             )}
           </TabsContent>
