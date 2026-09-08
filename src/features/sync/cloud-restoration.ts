@@ -1,6 +1,5 @@
 import type { Meeting } from "@/lib/timetable-types";
 import type { PrivateDataPayloadV1 } from "@/features/security/private-data";
-import { loadEncryptedPrivateState } from "./encrypted-sync-service";
 
 export type CloudScheduleRecord = {
   meetings: Meeting[];
@@ -56,6 +55,7 @@ export function isRestorationAbort(error: unknown): boolean {
 }
 
 export const cloudRestoration = createCloudRestorationCoordinator(async (userId, signal) => {
+  const { loadEncryptedPrivateState } = await import("./encrypted-sync-service");
   const restored = await loadEncryptedPrivateState(userId, signal);
   if (!restored) return null;
   return {
