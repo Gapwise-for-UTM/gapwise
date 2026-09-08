@@ -30,8 +30,14 @@ async function openStableDemo(page: Page) {
   await expect(page.getByRole("button", { name: "Update timetable" })).toBeEnabled();
 }
 
-async function openTimetableExport(page: Page) {
+async function openAccountExports(page: Page) {
   await page.getByRole("button", { name: "Account settings" }).click();
+  await page.getByRole("tab", { name: "Exports" }).click();
+  await expect(page.getByRole("tabpanel", { name: "Exports" })).toBeVisible();
+}
+
+async function openTimetableExport(page: Page) {
+  await openAccountExports(page);
   await page.getByRole("button", { name: "Export timetable", exact: true }).click();
 }
 
@@ -43,7 +49,7 @@ test("timetable export dialog is keyboard operable and restores trigger focus", 
 
   await openStableDemo(page);
 
-  await page.getByRole("button", { name: "Account settings" }).click();
+  await openAccountExports(page);
   const exportTrigger = page.getByRole("button", { name: "Export timetable", exact: true });
   await exportTrigger.focus();
   await expect(exportTrigger).toBeFocused();
