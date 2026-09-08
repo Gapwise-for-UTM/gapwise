@@ -1,4 +1,13 @@
-import { Bot, Download, ExternalLink, Link2, LogIn, UserRound } from "lucide-react";
+import {
+  Bot,
+  Download,
+  ExternalLink,
+  HardDrive,
+  Link2,
+  LockKeyhole,
+  LogIn,
+  UserRound,
+} from "lucide-react";
 import { TimetableExportDialog } from "@/components/TimetableExportDialog";
 import { TimetableHeatmapExportDialog } from "@/components/TimetableHeatmapExportDialog";
 import type { TransitionPlanner } from "@/features/routing/transition";
@@ -26,6 +35,8 @@ export function AccountSettingsDialog({
   tab,
   onTabChange,
   onRequestSignIn,
+  rememberOnDevice,
+  onRememberOnDeviceChange,
   aiController,
   meetings,
   term,
@@ -38,19 +49,23 @@ export function AccountSettingsDialog({
   tab: AccountSettingsTab;
   onTabChange: (tab: AccountSettingsTab) => void;
   onRequestSignIn: () => void;
+  rememberOnDevice: boolean;
+  onRememberOnDeviceChange: (value: boolean) => void;
   aiController: AiDelegationController | null;
   meetings: Meeting[];
   term: Term;
   preferences: UserPreferences;
   planTransition: TransitionPlanner;
 }) {
+  const hasTimetable = meetings.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[88vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl p-0">
         <DialogHeader className="border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
           <DialogTitle>Account settings</DialogTitle>
           <DialogDescription>
-            Manage optional account sync, local exports, and Gapwise AI connections.
+            Manage optional account sync, local device storage, exports, and Gapwise AI.
           </DialogDescription>
         </DialogHeader>
 
@@ -74,7 +89,7 @@ export function AccountSettingsDialog({
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="account" className="mt-4">
+          <TabsContent value="account" className="mt-4 space-y-3">
             <section className="rounded-xl border border-border/70 p-4 sm:p-5">
               <p className="text-sm font-semibold">{identity ? "Signed in as" : "Guest mode"}</p>
               {identity ? (
@@ -82,8 +97,8 @@ export function AccountSettingsDialog({
               ) : (
                 <>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    An account is optional. Your timetable, exports, campus tools, and public AI
-                    links remain available without signing in.
+                    An account is optional. Timetable planning, device storage, exports, campus
+                    tools, and public AI remain available without signing in.
                   </p>
                   <button
                     type="button"
@@ -100,6 +115,62 @@ export function AccountSettingsDialog({
                 for delegated student context. Your original ACORN .ics file is not stored in your
                 account.
               </p>
+            </section>
+
+            <section className="rounded-xl border border-border/70 p-4 sm:p-5">
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/45">
+                  <HardDrive className="h-4 w-4 text-accent" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold">Keep timetable on this device</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        {identity
+                          ? "Your signed-in data uses the account sync path. Guest device storage is only used while signed out."
+                          : "Reopen Gapwise without uploading your ACORN file again. The normalized timetable is encrypted in this browser with a non-extractable device key."}
+                      </p>
+                    </div>
+                    {!identity ? (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={rememberOnDevice}
+                        disabled={!hasTimetable && !rememberOnDevice}
+                        onClick={() => onRememberOnDeviceChange(!rememberOnDevice)}
+                        className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border border-input bg-card px-3 text-xs font-semibold text-foreground disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        <span
+                          className={`h-2 w-2 rounded-full ${
+                            rememberOnDevice ? "bg-accent" : "bg-muted-foreground/35"
+                          }`}
+                          aria-hidden="true"
+                        />
+                        {rememberOnDevice ? "Saved" : "Save on device"}
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {!identity && !hasTimetable && !rememberOnDevice ? (
+                    <p className="mt-3 text-xs text-muted-foreground">
+                      Import a timetable first, then turn this on.
+                    </p>
+                  ) : null}
+
+                  {!identity ? (
+                    <div className="mt-4 flex items-start gap-2 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
+                      <LockKeyhole className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                      <p>
+                        The encryption key stays in browser-managed secure storage and is marked
+                        non-extractable. Clearing this site&apos;s browser data removes both the key
+                        and saved timetable. This is local device protection, not account sync or a
+                        password-protected backup.
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </section>
           </TabsContent>
 
