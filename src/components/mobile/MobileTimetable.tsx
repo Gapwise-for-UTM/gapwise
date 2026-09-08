@@ -19,7 +19,7 @@ export type MobileTimetableProps = {
 export function MobileTimetable(props: MobileTimetableProps) {
   return (
     <Suspense fallback={<div className="surface h-72" aria-hidden="true" />}>
-      <MobileTimetableImpl {...props} />
+      <MobileTimetableImpl key={props.term} {...props} />
     </Suspense>
   );
 }
