@@ -5,9 +5,12 @@ const SHARED_CACHE_MS = 4_000;
 const MAX_FEED_BYTES = 2_000_000;
 const MAX_VEHICLES = 96;
 const MAX_DISTANCE_FROM_UTM_KM = 12;
+const FALLBACK_NEAR_UTM_KM = 2.5;
+const AT_UTM_RADIUS_KM = 0.15;
 const UTM_CENTER = { lat: 43.5483, lng: -79.6627 };
 const UTM_ROUTE_IDS = new Set(["1", "44", "48", "101", "110", "126"]);
 const UTM_STOP_IDS = new Set(["0991", "0910", "0490", "4800"]);
+const VEHICLE_STOPPED_AT = 1;
 
 type WireValue = number | bigint | Uint8Array;
 type WireField = { field: number; wire: number; value: WireValue };
@@ -259,17 +262,30 @@ function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number) {
   const dLng = (bLng - aLng) * toRad;
   const sinLat = Math.sin(dLat / 2);
   const sinLng = Math.sin(dLng / 2);
-  const h =
-    sinLat * sinLat +
-    Math.cos(aLat * toRad) * Math.cos(bLat * toRad) * sinLng * sinLng;
+  const h = sinLat * sinLat + Math.cos(aLat * toRad) * Math.cos(bLat * toRad) * sinLng * sinLng;
   return 6371 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function finiteTimestamp(value: number | undefined, nowSeconds: number) {
+  return Number.isFinite(value) && value! > 0 && value! <= nowSeconds + 60 ? value! : null;
+}
+
+function observedTimestamp(feed: ParsedFeed<VehiclePosition>, nowSeconds: number) {
+  const candidates = [
+    finiteTimestamp(feed.timestamp, nowSeconds),
+    ...feed.items.map((vehicle) => finiteTimestamp(vehicle.timestamp, nowSeconds)),
+  ].filter((value): value is number => value !== null);
+  return candidates.length > 0 ? Math.max(...candidates) : null;
+}
+
+function predictedAt(stop: StopPrediction) {
+  return stop.arrival ?? stop.departure ?? null;
 }
 
 async function fetchBytes(url: string, signal: AbortSignal): Promise<Uint8Array> {
   const response = await fetch(url, {
     signal,
     headers: {
-      Accept: "application/x-protobuf, application/protobuf, application/octet-stream",
       "User-Agent": "Gapwise/1.0 (+https://gapwise.ca)",
     },
   });
@@ -289,80 +305,91 @@ async function buildSnapshot(): Promise<MiWaySnapshot> {
   try {
     const [vehicleBytes, tripBytes] = await Promise.all([
       fetchBytes(VEHICLE_POSITIONS_URL, controller.signal),
-      fetchBytes(TRIP_UPDATES_URL, controller.signal),
+      fetchBytes(TRIP_UPDATES_URL, controller.signal).catch(() => null),
     ]);
     const vehicleFeed = parseVehicleFeed(vehicleBytes);
-    const tripFeed = parseTripFeed(tripBytes);
+    const tripFeed = tripBytes
+      ? parseTripFeed(tripBytes)
+      : ({ timestamp: undefined, items: [] } satisfies ParsedFeed<TripUpdate>);
     const updatesByTrip = new Map(
       tripFeed.items
         .filter((update) => update.trip.tripId)
         .map((update) => [update.trip.tripId!, update] as const),
     );
     const nowSeconds = Math.floor(Date.now() / 1000);
-    const sourceTimestamp =
-      Math.max(vehicleFeed.timestamp ?? 0, tripFeed.timestamp ?? 0) || undefined;
-    const sourceAge = sourceTimestamp ? nowSeconds - sourceTimestamp : Infinity;
+    const sourceTimestamp = observedTimestamp(vehicleFeed, nowSeconds);
+    const sourceAge = sourceTimestamp === null ? Infinity : nowSeconds - sourceTimestamp;
+    const hasTripUpdates = tripFeed.items.length > 0;
+
     const vehicles = vehicleFeed.items
       .map((vehicle) => ({
         vehicle,
         update: vehicle.trip.tripId ? updatesByTrip.get(vehicle.trip.tripId) : undefined,
       }))
-      .map(({ vehicle, update }) => ({
-        vehicle,
-        update,
-        routeId: vehicle.trip.routeId ?? update?.trip.routeId,
-      }))
-      .filter(
-        ({ vehicle, routeId }) =>
-          Boolean(
-            routeId &&
-              UTM_ROUTE_IDS.has(routeId) &&
-              Number.isFinite(vehicle.lat) &&
-              Number.isFinite(vehicle.lng) &&
-              distanceKm(vehicle.lat!, vehicle.lng!, UTM_CENTER.lat, UTM_CENTER.lng) <=
-                MAX_DISTANCE_FROM_UTM_KM,
-          ),
-      )
-      .map(({ vehicle, update, routeId }) => {
-        const utmStop = update?.stops.find(
-          (stop) =>
-            stop.stopId &&
-            UTM_STOP_IDS.has(stop.stopId) &&
-            (stop.arrival ?? stop.departure ?? 0) >= nowSeconds - 90,
-        );
-        const etaAt = utmStop?.arrival ?? utmStop?.departure;
-        const eta = etaAt && etaAt >= nowSeconds - 90 ? Math.max(0, etaAt - nowSeconds) : null;
+      .map(({ vehicle, update }) => {
+        const routeId = vehicle.trip.routeId ?? update?.trip.routeId;
+        const lat = vehicle.lat;
+        const lng = vehicle.lng;
+        if (!routeId || !Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+        const distanceFromUtm = distanceKm(lat!, lng!, UTM_CENTER.lat, UTM_CENTER.lng);
+        if (distanceFromUtm > MAX_DISTANCE_FROM_UTM_KM) return null;
+
+        const utmStops =
+          update?.stops.filter((stop) => stop.stopId && UTM_STOP_IDS.has(stop.stopId)) ?? [];
+        const futureUtmStop = utmStops.find((stop) => {
+          const predicted = predictedAt(stop);
+          return predicted !== null && predicted >= nowSeconds - 90;
+        });
         const atUtm =
-          (vehicle.stopId ? UTM_STOP_IDS.has(vehicle.stopId) : false) ||
-          distanceKm(vehicle.lat!, vehicle.lng!, UTM_CENTER.lat, UTM_CENTER.lng) < 0.22;
+          distanceFromUtm <= AT_UTM_RADIUS_KM ||
+          (vehicle.currentStatus === VEHICLE_STOPPED_AT &&
+            Boolean(vehicle.stopId && UTM_STOP_IDS.has(vehicle.stopId)));
+        const knownUtmRoute = UTM_ROUTE_IDS.has(routeId);
+        const tripServesUtm = utmStops.length > 0;
+        const fallbackNearUtm = knownUtmRoute && !update && distanceFromUtm <= FALLBACK_NEAR_UTM_KM;
+
+        if (!atUtm && !futureUtmStop && !fallbackNearUtm) return null;
+        if (!knownUtmRoute && !tripServesUtm && !atUtm) return null;
+        if (hasTripUpdates && update && !atUtm && !futureUtmStop) return null;
+
+        const etaAt = futureUtmStop ? predictedAt(futureUtmStop) : null;
+        const eta = etaAt === null ? null : Math.max(0, etaAt - nowSeconds);
+        const vehicleObservedAt = finiteTimestamp(vehicle.timestamp, nowSeconds) ?? sourceTimestamp;
+
         return {
           id:
             vehicle.vehicleId ??
             `${vehicle.trip.tripId ?? routeId}-${vehicle.label ?? "vehicle"}`,
-          route: routeId!,
+          route: routeId,
           tripId: vehicle.trip.tripId ?? null,
           label: vehicle.label ?? null,
-          lat: vehicle.lat!,
-          lng: vehicle.lng!,
+          lat: lat!,
+          lng: lng!,
           bearing: Number.isFinite(vehicle.bearing) ? vehicle.bearing! : null,
           speedMps: Number.isFinite(vehicle.speed) ? vehicle.speed! : null,
-          observedAt: vehicle.timestamp
-            ? new Date(vehicle.timestamp * 1000).toISOString()
-            : null,
-          utmEtaSeconds: eta,
+          observedAt: vehicleObservedAt === null ? null : new Date(vehicleObservedAt * 1000).toISOString(),
+          utmEtaSeconds: atUtm ? 0 : eta,
           atUtm,
+          distanceFromUtm,
         };
       })
-      .sort(
-        (a, b) =>
+      .filter((vehicle): vehicle is NonNullable<typeof vehicle> => vehicle !== null)
+      .sort((a, b) => {
+        if (a.atUtm !== b.atUtm) return a.atUtm ? -1 : 1;
+        const etaDifference =
           (a.utmEtaSeconds ?? Number.MAX_SAFE_INTEGER) -
-          (b.utmEtaSeconds ?? Number.MAX_SAFE_INTEGER),
-      )
-      .slice(0, MAX_VEHICLES);
+          (b.utmEtaSeconds ?? Number.MAX_SAFE_INTEGER);
+        return etaDifference !== 0 ? etaDifference : a.distanceFromUtm - b.distanceFromUtm;
+      })
+      .slice(0, MAX_VEHICLES)
+      .map(({ distanceFromUtm: _distanceFromUtm, ...vehicle }) => vehicle);
+
     return {
       status: sourceAge <= 45 ? "live" : sourceAge <= 120 ? "stale" : "unavailable",
       generatedAt: new Date().toISOString(),
-      sourceObservedAt: sourceTimestamp ? new Date(sourceTimestamp * 1000).toISOString() : null,
+      sourceObservedAt:
+        sourceTimestamp === null ? null : new Date(sourceTimestamp * 1000).toISOString(),
       vehicles,
     };
   } finally {

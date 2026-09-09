@@ -1,4 +1,4 @@
-import type { Map as MapLibreMap, Marker } from "maplibre-gl";
+import type { Map as MapLibreMap, Marker, Popup } from "maplibre-gl";
 import "./miway-live-layer.css";
 
 type MapLibreModule = typeof import("maplibre-gl");
@@ -26,9 +26,12 @@ export type MiWaySnapshot = {
 
 type MarkerRecord = {
   marker: Marker;
+  popup: Popup;
   element: HTMLButtonElement;
   vehicle: MiWayVehicle;
-  frame: number | null;
+  from: [number, number];
+  to: [number, number];
+  moveStartedAt: number | null;
 };
 
 type StartOptions = {
@@ -37,10 +40,11 @@ type StartOptions = {
   onSnapshot: (snapshot: MiWaySnapshot) => void;
 };
 
-const POLL_MS = 7_500;
-const MOVE_MS = 6_500;
-const REQUEST_TIMEOUT_MS = 4_000;
+const POLL_MS = 5_000;
+const MOVE_MS = 4_500;
+const REQUEST_TIMEOUT_MS = 6_000;
 const MAX_MARKERS = 40;
+const STALE_LIMIT_MS = 120_000;
 
 function etaLabel(vehicle: MiWayVehicle) {
   if (vehicle.atUtm) return "at UTM";
@@ -88,147 +92,230 @@ function applyVehicleElement(element: HTMLButtonElement, vehicle: MiWayVehicle) 
   );
 }
 
-function animateMarker(record: MarkerRecord, next: MiWayVehicle) {
-  if (record.frame !== null) cancelAnimationFrame(record.frame);
-  const start = record.marker.getLngLat();
-  const startedAt = performance.now();
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    record.marker.setLngLat([next.lng, next.lat]);
-    record.vehicle = next;
-    return;
-  }
-  const frame = (now: number) => {
-    const progress = Math.min(1, (now - startedAt) / MOVE_MS);
-    const eased = 1 - (1 - progress) ** 3;
-    record.marker.setLngLat([
-      start.lng + (next.lng - start.lng) * eased,
-      start.lat + (next.lat - start.lat) * eased,
-    ]);
-    if (progress < 1) record.frame = requestAnimationFrame(frame);
-    else {
-      record.frame = null;
-      record.vehicle = next;
-    }
-  };
-  record.frame = requestAnimationFrame(frame);
-}
-
 function normalizedSnapshot(value: unknown): MiWaySnapshot | null {
   if (!value || typeof value !== "object") return null;
   const payload = value as Partial<MiWaySnapshot>;
+  const status = payload.status;
   if (
-    (payload.status !== "live" && payload.status !== "stale" && payload.status !== "unavailable") ||
+    (status !== "live" && status !== "stale" && status !== "unavailable") ||
     typeof payload.generatedAt !== "string" ||
     !Array.isArray(payload.vehicles)
-  ) return null;
+  ) {
+    return null;
+  }
   const vehicles = payload.vehicles
     .filter((vehicle): vehicle is MiWayVehicle => {
       if (!vehicle || typeof vehicle !== "object") return false;
       const item = vehicle as Partial<MiWayVehicle>;
-      return typeof item.id === "string" && typeof item.route === "string" && typeof item.lat === "number" && Number.isFinite(item.lat) && typeof item.lng === "number" && Number.isFinite(item.lng);
+      return (
+        typeof item.id === "string" &&
+        typeof item.route === "string" &&
+        typeof item.lat === "number" &&
+        Number.isFinite(item.lat) &&
+        typeof item.lng === "number" &&
+        Number.isFinite(item.lng)
+      );
     })
     .slice(0, MAX_MARKERS);
   return {
-    status: payload.status,
+    status,
     generatedAt: payload.generatedAt,
-    sourceObservedAt: typeof payload.sourceObservedAt === "string" ? payload.sourceObservedAt : null,
+    sourceObservedAt:
+      typeof payload.sourceObservedAt === "string" ? payload.sourceObservedAt : null,
     vehicles,
+  };
+}
+
+function degradedSnapshot(previous: MiWaySnapshot | null): MiWaySnapshot {
+  const now = Date.now();
+  if (previous?.sourceObservedAt) {
+    const observedAt = Date.parse(previous.sourceObservedAt);
+    if (Number.isFinite(observedAt) && now - observedAt <= STALE_LIMIT_MS) {
+      return {
+        ...previous,
+        status: "stale",
+        generatedAt: new Date(now).toISOString(),
+      };
+    }
+  }
+  return {
+    status: "unavailable",
+    generatedAt: new Date(now).toISOString(),
+    sourceObservedAt: previous?.sourceObservedAt ?? null,
+    vehicles: [],
   };
 }
 
 export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOptions) {
   const markers = new Map<string, MarkerRecord>();
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let activeRequest: AbortController | null = null;
+  let animationFrame: number | null = null;
+  let lastSnapshot: MiWaySnapshot | null = null;
+
   const clearTimer = () => {
     if (timer) clearTimeout(timer);
     timer = null;
   };
+
+  const stopAnimation = () => {
+    if (animationFrame !== null) cancelAnimationFrame(animationFrame);
+    animationFrame = null;
+  };
+
   const removeMarkers = () => {
-    for (const record of markers.values()) {
-      if (record.frame !== null) cancelAnimationFrame(record.frame);
-      record.marker.remove();
-    }
+    stopAnimation();
+    for (const record of markers.values()) record.marker.remove();
     markers.clear();
   };
+
+  const animate = (now: number) => {
+    animationFrame = null;
+    let stillMoving = false;
+    for (const record of markers.values()) {
+      if (record.moveStartedAt === null) continue;
+      const progress = Math.min(1, (now - record.moveStartedAt) / MOVE_MS);
+      record.marker.setLngLat([
+        record.from[0] + (record.to[0] - record.from[0]) * progress,
+        record.from[1] + (record.to[1] - record.from[1]) * progress,
+      ]);
+      if (progress < 1) {
+        stillMoving = true;
+      } else {
+        record.moveStartedAt = null;
+      }
+    }
+    if (stillMoving && !stopped) animationFrame = requestAnimationFrame(animate);
+  };
+
+  const ensureAnimation = () => {
+    if (animationFrame === null && !reducedMotion.matches) {
+      animationFrame = requestAnimationFrame(animate);
+    }
+  };
+
   const syncMarkers = (snapshot: MiWaySnapshot) => {
     if (snapshot.status === "unavailable") {
       removeMarkers();
       return;
     }
+
     const nextIds = new Set(snapshot.vehicles.map((vehicle) => vehicle.id));
     for (const [id, record] of markers) {
       if (!nextIds.has(id)) {
-        if (record.frame !== null) cancelAnimationFrame(record.frame);
         record.marker.remove();
         markers.delete(id);
       }
     }
+
+    let hasMovement = false;
     for (const vehicle of snapshot.vehicles) {
       const existing = markers.get(vehicle.id);
       if (existing) {
         applyVehicleElement(existing.element, vehicle);
-        animateMarker(existing, vehicle);
+        existing.popup.setDOMContent(popupContent(vehicle));
+        const current = existing.marker.getLngLat();
+        existing.from = [current.lng, current.lat];
+        existing.to = [vehicle.lng, vehicle.lat];
+        existing.vehicle = vehicle;
+        if (reducedMotion.matches) {
+          existing.marker.setLngLat(existing.to);
+          existing.moveStartedAt = null;
+        } else if (current.lng !== vehicle.lng || current.lat !== vehicle.lat) {
+          existing.moveStartedAt = performance.now();
+          hasMovement = true;
+        } else {
+          existing.moveStartedAt = null;
+        }
         continue;
       }
+
       const element = document.createElement("button");
       element.type = "button";
       element.className = "map-miway-marker";
       applyVehicleElement(element, vehicle);
-      const popup = new maplibregl.Popup({ offset: 18, closeButton: true, closeOnClick: true, maxWidth: "15rem" }).setDOMContent(popupContent(vehicle));
+      const popup = new maplibregl.Popup({
+        offset: 18,
+        closeButton: true,
+        closeOnClick: true,
+        maxWidth: "15rem",
+      }).setDOMContent(popupContent(vehicle));
       const marker = new maplibregl.Marker({ element, anchor: "center" })
         .setLngLat([vehicle.lng, vehicle.lat])
         .setPopup(popup)
         .addTo(map);
-      markers.set(vehicle.id, { marker, element, vehicle, frame: null });
+      markers.set(vehicle.id, {
+        marker,
+        popup,
+        element,
+        vehicle,
+        from: [vehicle.lng, vehicle.lat],
+        to: [vehicle.lng, vehicle.lat],
+        moveStartedAt: null,
+      });
     }
+
+    if (hasMovement) ensureAnimation();
   };
+
+  const publishSnapshot = (snapshot: MiWaySnapshot) => {
+    lastSnapshot = snapshot;
+    syncMarkers(snapshot);
+    onSnapshot(snapshot);
+  };
+
   const schedule = (delay = POLL_MS) => {
     clearTimer();
-    if (!stopped && document.visibilityState === "visible") timer = setTimeout(() => void refresh(), delay);
+    if (!stopped && document.visibilityState === "visible") {
+      timer = setTimeout(() => void refresh(), delay);
+    }
   };
+
   const refresh = async () => {
     if (stopped || document.visibilityState !== "visible") return;
     activeRequest?.abort();
     const controller = new AbortController();
     activeRequest = controller;
-    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    let timedOut = false;
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, REQUEST_TIMEOUT_MS);
+
     try {
       const response = await fetch("/api/health?view=miway", {
         method: "GET",
         credentials: "omit",
-        cache: "no-store",
         signal: controller.signal,
         headers: { Accept: "application/json" },
       });
       const snapshot = normalizedSnapshot(await response.json());
       if (!snapshot) throw new Error("Invalid MiWay snapshot.");
-      if (!stopped) {
-        syncMarkers(snapshot);
-        onSnapshot(snapshot);
-      }
+      if (!stopped) publishSnapshot(snapshot);
     } catch {
-      if (!stopped && !controller.signal.aborted) {
-        const unavailable: MiWaySnapshot = { status: "unavailable", generatedAt: new Date().toISOString(), sourceObservedAt: null, vehicles: [] };
-        syncMarkers(unavailable);
-        onSnapshot(unavailable);
-      }
+      const intentionallyAborted =
+        controller.signal.aborted && !timedOut && document.visibilityState !== "visible";
+      if (!stopped && !intentionallyAborted) publishSnapshot(degradedSnapshot(lastSnapshot));
     } finally {
       clearTimeout(timeout);
       if (activeRequest === controller) activeRequest = null;
       schedule();
     }
   };
+
   const onVisibility = () => {
     if (document.visibilityState === "hidden") {
       clearTimer();
       activeRequest?.abort();
       activeRequest = null;
+      stopAnimation();
       return;
     }
     schedule(0);
   };
+
   document.addEventListener("visibilitychange", onVisibility);
   void refresh();
   return () => {

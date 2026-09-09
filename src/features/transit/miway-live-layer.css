@@ -13,11 +13,9 @@
   line-height: 1;
   letter-spacing: -0.02em;
   cursor: pointer;
-  backdrop-filter: blur(10px);
   transition:
     border-color var(--motion-fast) var(--ease-out),
-    background var(--motion-fast) var(--ease-out),
-    transform var(--motion-fast) var(--ease-out);
+    background var(--motion-fast) var(--ease-out);
 }
 
 .map-miway-marker::before {
@@ -39,7 +37,6 @@
 .map-miway-marker:focus-visible {
   border-color: var(--color-accent);
   background: var(--color-popover);
-  transform: translateY(-1px);
   outline: none;
 }
 

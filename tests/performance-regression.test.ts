@@ -88,7 +88,7 @@ describe("large timetable regressions", () => {
     expect(calculations).toBe(3);
   });
 
-  test("keeps heavy route, map, parser, and 3D paths out of the initial bundle", async () => {
+  test("keeps heavy map, parser, transit, route, and 3D paths lazy", async () => {
     const [entry, route, map, importLifecycle, packageManifest] = await Promise.all([
       readFile("src/main.tsx", "utf8"),
       readFile("src/routes/_app.tsx", "utf8"),
@@ -101,6 +101,7 @@ describe("large timetable regressions", () => {
     expect(route).toContain('lazy(() =>\n  import("@/components/DayRoute")');
     expect(route).toContain('hidden={view !== "route"}');
     expect(map).toContain('void import("maplibre-gl")');
+    expect(map).toContain('void import("@/features/transit/miway-live-layer")');
     expect(map).toContain('import "maplibre-gl/dist/maplibre-gl.css"');
     expect(map).toContain("maplibre-gl-worker.mjs?worker&url");
     expect(map).toContain("setWorkerUrl(mapLibreWorkerUrl)");

@@ -1430,7 +1430,9 @@ export function CampusMap({
             title={liveBusesEnabled ? "Hide live buses" : "Live buses"}
           >
             <BusFront className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden md:inline">{liveBusesEnabled ? "Hide buses" : "Live buses"}</span>
+            <span className="hidden md:inline">
+              {liveBusesEnabled ? "Hide buses" : "Live buses"}
+            </span>
           </button>
           <button
             type="button"
@@ -1471,7 +1473,10 @@ export function CampusMap({
               key={vehicle.id}
               className="shrink-0 rounded-md border border-border/80 bg-background/70 px-2 py-1 font-mono font-semibold text-popover-foreground"
             >
-              {vehicle.route} {vehicle.atUtm ? "now" : `${Math.max(1, Math.round((vehicle.utmEtaSeconds ?? 60) / 60))}m`}
+              {vehicle.route}{" "}
+              {vehicle.atUtm
+                ? "now"
+                : `${Math.max(1, Math.round((vehicle.utmEtaSeconds ?? 60) / 60))}m`}
             </span>
           ))}
         </div>
