@@ -970,6 +970,7 @@ export function CampusMap({
   const [attempt, setAttempt] = useState(0);
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [liveBusesEnabled, setLiveBusesEnabled] = useState(false);
+  const liveBusesEnabledRef = useRef(liveBusesEnabled);
   const [miWaySnapshot, setMiWaySnapshot] = useState<MiWaySnapshot | null>(null);
   const [liveLocation, setLiveLocation] = useState<LocationControlState>({
     status: "disabled",
@@ -996,6 +997,10 @@ export function CampusMap({
   useEffect(() => {
     liveLocationRef.current = liveLocation;
   }, [liveLocation]);
+
+  useEffect(() => {
+    liveBusesEnabledRef.current = liveBusesEnabled;
+  }, [liveBusesEnabled]);
 
   useEffect(() => {
     themeRef.current = mapTheme;
@@ -1130,7 +1135,9 @@ export function CampusMap({
           attributionControl: false,
         });
         const syncCampusCameraLimits = () => {
-          if (!liveBusesEnabled) map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));
+          if (!liveBusesEnabledRef.current) {
+            map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));
+          }
         };
         syncCampusCameraLimits();
         map.on("resize", syncCampusCameraLimits);
@@ -1276,7 +1283,7 @@ export function CampusMap({
       maplibreRef.current = null;
       appliedThemeRef.current = null;
     };
-  }, [attempt, liveBusesEnabled]);
+  }, [attempt]);
 
   useEffect(() => {
     const map = mapRef.current;
