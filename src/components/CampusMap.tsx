@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
-import { LocateFixed, Maximize2 } from "lucide-react";
+import { BusFront, LocateFixed, Maximize2 } from "lucide-react";
 import type { GeoJSONSource, Map as MapLibreMap, Marker } from "maplibre-gl";
 import mapLibreWorkerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -22,6 +22,7 @@ import {
 import { isCampusDayAnchorMeeting, type CampusDayAnchor } from "@/features/routing/campus-day";
 import { watchCampusLocation, type LiveLocationState } from "@/features/routing/live-location";
 import type { TransitionRoute } from "@/features/routing/types";
+import type { MiWaySnapshot } from "@/features/transit/miway-live-layer";
 import { formatTime, type Meeting } from "@/lib/timetable-types";
 import type { BuildingEntrance } from "@/data/utm/routing-buildings";
 
@@ -97,6 +98,10 @@ const BUILDING_HOVER_LINE_LAYER_ID = "gapwise-building-hover-line";
 const BUILDING_SELECTED_SOURCE_ID = "gapwise-building-selected";
 const BUILDING_SELECTED_FILL_LAYER_ID = "gapwise-building-selected-fill";
 const BUILDING_SELECTED_LINE_LAYER_ID = "gapwise-building-selected-line";
+const MIWAY_LIVE_BOUNDS: [[number, number], [number, number]] = [
+  [-79.82, 43.45],
+  [-79.48, 43.69],
+];
 
 function mapAccentColor(theme: MapTheme) {
   return theme === "dark" ? "#60a5fa" : "#146bb8";
@@ -712,6 +717,13 @@ function locationStatusLabel(status: LocationControlState["status"]) {
   return null;
 }
 
+function miWayStatusLabel(snapshot: MiWaySnapshot | null) {
+  if (!snapshot) return "Connecting…";
+  if (snapshot.status === "unavailable") return "MiWay live data unavailable";
+  if (snapshot.status === "stale") return "MiWay data delayed";
+  return "LIVE";
+}
+
 function entranceAccessibilityLabel(accessibility: string) {
   if (accessibility === "accessible") return "accessible";
   if (accessibility === "not_accessible") return "not marked accessible";
@@ -945,6 +957,7 @@ export function CampusMap({
   const markersRef = useRef<Marker[]>([]);
   const userLocationMarkerRef = useRef<Marker | null>(null);
   const entranceMarkersRef = useRef<EntranceMarkerRecord[]>([]);
+  const stopMiWayLayerRef = useRef<(() => void) | null>(null);
   const lastFitKeyRef = useRef<string>("");
   const userHasMovedRef = useRef(false);
   const lastFocusedBuildingRef = useRef<string | null>(null);
@@ -956,6 +969,8 @@ export function CampusMap({
   const [status, setStatus] = useState<MapStatus>("loading");
   const [attempt, setAttempt] = useState(0);
   const [locationEnabled, setLocationEnabled] = useState(false);
+  const [liveBusesEnabled, setLiveBusesEnabled] = useState(false);
+  const [miWaySnapshot, setMiWaySnapshot] = useState<MiWaySnapshot | null>(null);
   const [liveLocation, setLiveLocation] = useState<LocationControlState>({
     status: "disabled",
     point: null,
@@ -1044,6 +1059,40 @@ export function CampusMap({
   }, [locationEnabled]);
 
   useEffect(() => {
+    const map = mapRef.current;
+    const maplibregl = maplibreRef.current;
+    stopMiWayLayerRef.current?.();
+    stopMiWayLayerRef.current = null;
+    if (!liveBusesEnabled) {
+      setMiWaySnapshot(null);
+      if (map) {
+        const campusBounds = getCampusCameraBounds(UTM_ROUTING_GRAPH);
+        map.setMaxBounds(campusBounds);
+        map.setMinZoom(campusMinimumZoom(map, campusBounds));
+      }
+      return;
+    }
+    if (!map || !maplibregl || status !== "ready") return;
+
+    map.setMaxBounds(MIWAY_LIVE_BOUNDS);
+    map.setMinZoom(11.5);
+    let cancelled = false;
+    void import("@/features/transit/miway-live-layer").then(({ startMiWayLiveLayer }) => {
+      if (cancelled || mapRef.current !== map || !liveBusesEnabled) return;
+      stopMiWayLayerRef.current = startMiWayLiveLayer({
+        map,
+        maplibregl,
+        onSnapshot: setMiWaySnapshot,
+      });
+    });
+    return () => {
+      cancelled = true;
+      stopMiWayLayerRef.current?.();
+      stopMiWayLayerRef.current = null;
+    };
+  }, [liveBusesEnabled, status]);
+
+  useEffect(() => {
     if (!containerRef.current) return;
     if (!supportsWebGl2()) {
       setStatus("unsupported");
@@ -1081,7 +1130,7 @@ export function CampusMap({
           attributionControl: false,
         });
         const syncCampusCameraLimits = () => {
-          map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));
+          if (!liveBusesEnabled) map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));
         };
         syncCampusCameraLimits();
         map.on("resize", syncCampusCameraLimits);
@@ -1210,6 +1259,8 @@ export function CampusMap({
     return () => {
       disposed = true;
       if (loadTimeout) clearTimeout(loadTimeout);
+      stopMiWayLayerRef.current?.();
+      stopMiWayLayerRef.current = null;
       if (routeAnimationFrameRef.current !== null) {
         cancelAnimationFrame(routeAnimationFrameRef.current);
       }
@@ -1225,7 +1276,7 @@ export function CampusMap({
       maplibreRef.current = null;
       appliedThemeRef.current = null;
     };
-  }, [attempt]);
+  }, [attempt, liveBusesEnabled]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1323,6 +1374,10 @@ export function CampusMap({
     meetings.some((meeting) => mapBuildingAnchor(meeting.buildingCode)) ||
     segments.some((segment) => segment.route.displayCoordinates.length > 0) ||
     Boolean(dayAnchor);
+  const upcomingMiWay =
+    miWaySnapshot?.vehicles
+      .filter((vehicle) => vehicle.atUtm || vehicle.utmEtaSeconds !== null)
+      .slice(0, 4) ?? [];
 
   function resetCamera() {
     const map = mapRef.current;
@@ -1361,6 +1416,17 @@ export function CampusMap({
           </button>
           <button
             type="button"
+            onClick={() => setLiveBusesEnabled((enabled) => !enabled)}
+            aria-label={liveBusesEnabled ? "Hide live MiWay buses" : "Show live MiWay buses"}
+            aria-pressed={liveBusesEnabled}
+            className="button-secondary inline-flex min-h-10 min-w-10 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-semibold shadow-lg md:px-3"
+            title={liveBusesEnabled ? "Hide live buses" : "Live buses"}
+          >
+            <BusFront className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden md:inline">{liveBusesEnabled ? "Hide buses" : "Live buses"}</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setLocationEnabled((enabled) => !enabled)}
             aria-label={locationEnabled ? "Hide my location" : "Show my location"}
             aria-pressed={locationEnabled}
@@ -1381,6 +1447,26 @@ export function CampusMap({
               {locationStatusLabel(liveLocation.status)}
             </p>
           ) : null}
+        </div>
+      ) : null}
+      {status === "ready" && liveBusesEnabled ? (
+        <div
+          className="absolute bottom-3 left-3 z-10 flex max-w-[calc(100%-5.5rem)] items-center gap-2 overflow-x-auto rounded-lg border border-border bg-popover/95 px-2.5 py-2 text-[0.68rem] shadow-lg backdrop-blur"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="shrink-0 font-mono font-semibold text-popover-foreground">
+            {miWaySnapshot?.status === "live" ? "● " : ""}
+            {miWayStatusLabel(miWaySnapshot)}
+          </span>
+          {upcomingMiWay.map((vehicle) => (
+            <span
+              key={vehicle.id}
+              className="shrink-0 rounded-md border border-border/80 bg-background/70 px-2 py-1 font-mono font-semibold text-popover-foreground"
+            >
+              {vehicle.route} {vehicle.atUtm ? "now" : `${Math.max(1, Math.round((vehicle.utmEtaSeconds ?? 60) / 60))}m`}
+            </span>
+          ))}
         </div>
       ) : null}
       {status === "loading" ? (
