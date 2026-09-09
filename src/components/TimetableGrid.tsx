@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, type ReactNode } from "react";
 import type { ActivityType, Gap, Meeting } from "@/lib/timetable-types";
+import "./assessment-window.css";
 
 type TimetableActivityLabel = ActivityType | "RES";
 
