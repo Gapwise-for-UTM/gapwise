@@ -25,28 +25,38 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           p = Path('src/components/CampusMap.tsx')
           s = p.read_text()
-          old = '  const stopMiWayLayerRef = useRef<(() => void) | null>(null);\n'
-          new = old + '  const liveBusesEnabledRef = useRef(false);\n'
-          if old not in s:
-              raise SystemExit('missing stopMiWayLayerRef anchor')
-          s = s.replace(old, new, 1)
-          old = '  useEffect(() => {\n    liveLocationRef.current = liveLocation;\n  }, [liveLocation]);\n'
-          new = old + '\n  useEffect(() => {\n    liveBusesEnabledRef.current = liveBusesEnabled;\n  }, [liveBusesEnabled]);\n'
-          if old not in s:
-              raise SystemExit('missing liveLocationRef effect anchor')
-          s = s.replace(old, new, 1)
-          old = '          if (!liveBusesEnabled) map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));'
-          new = '          if (!liveBusesEnabledRef.current) {\n            map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));\n          }'
-          if old not in s:
+
+          anchor = '  const stopMiWayLayerRef = useRef<(() => void) | null>(null);\n'
+          if 'const liveBusesEnabledRef = useRef(false);' not in s:
+              if anchor not in s:
+                  raise SystemExit('missing stopMiWayLayerRef anchor')
+              s = s.replace(anchor, anchor + '  const liveBusesEnabledRef = useRef(false);\n', 1)
+
+          effect = '  useEffect(() => {\n    liveLocationRef.current = liveLocation;\n  }, [liveLocation]);\n'
+          if 'liveBusesEnabledRef.current = liveBusesEnabled;' not in s:
+              if effect not in s:
+                  raise SystemExit('missing liveLocationRef effect anchor')
+              s = s.replace(
+                  effect,
+                  effect + '\n  useEffect(() => {\n    liveBusesEnabledRef.current = liveBusesEnabled;\n  }, [liveBusesEnabled]);\n',
+                  1,
+              )
+
+          pattern = r'if \(!liveBusesEnabled\)\s+map\.setMinZoom\(campusMinimumZoom\(map, campusCameraBounds\)\);'
+          replacement = 'if (!liveBusesEnabledRef.current) {\n            map.setMinZoom(campusMinimumZoom(map, campusCameraBounds));\n          }'
+          s, count = re.subn(pattern, replacement, s, count=1)
+          if count != 1 and 'if (!liveBusesEnabledRef.current)' not in s:
               raise SystemExit('missing camera-limit anchor')
-          s = s.replace(old, new, 1)
-          old = '  }, [attempt, liveBusesEnabled]);'
-          new = '  }, [attempt]);'
-          if old not in s:
+
+          if '  }, [attempt, liveBusesEnabled]);' in s:
+              s = s.replace('  }, [attempt, liveBusesEnabled]);', '  }, [attempt]);', 1)
+          elif '  }, [attempt]);' not in s:
               raise SystemExit('missing map-effect dependency anchor')
-          s = s.replace(old, new, 1)
+
           p.write_text(s)
           PY
       - name: Format touched source
