@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "self": "gapwise",
   "githubOrganization": "Gapwise-for-UTM",
+  "githubOrganizationUrl": "https://gapwise.ca/github",
   "canonical": {
     "app": "https://gapwise.ca",
     "api": "https://api.gapwise.ca/v1",
@@ -13,12 +14,12 @@
     "status": "https://status.gapwise.ca"
   },
   "repositories": {
-    "core": "https://github.com/Gapwise-for-UTM/gapwise",
-    "mobile": "https://github.com/Gapwise-for-UTM/gapwise-mobile",
-    "ai": "https://github.com/Gapwise-for-UTM/gapwise-ai",
-    "data": "https://github.com/Gapwise-for-UTM/gapwise-data",
-    "docs": "https://github.com/Gapwise-for-UTM/gapwise-docs",
-    "status": "https://github.com/Gapwise-for-UTM/gapwise-status"
+    "core": "https://gapwise.ca/github/app",
+    "mobile": "https://gapwise.ca/github/mobile",
+    "ai": "https://gapwise.ca/github/ai",
+    "data": "https://gapwise.ca/github/data",
+    "docs": "https://gapwise.ca/github/docs",
+    "status": "https://gapwise.ca/github/status"
   },
   "ownership": {
     "core": [
