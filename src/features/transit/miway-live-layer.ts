@@ -52,7 +52,6 @@ function etaLabel(vehicle: MiWayVehicle) {
 function popupContent(vehicle: MiWayVehicle) {
   const wrapper = document.createElement("section");
   wrapper.className = "map-miway-popover";
-
   const heading = document.createElement("div");
   heading.className = "map-miway-popover-heading";
   const route = document.createElement("strong");
@@ -61,7 +60,6 @@ function popupContent(vehicle: MiWayVehicle) {
   live.textContent = "MiWay live";
   heading.append(route, live);
   wrapper.append(heading);
-
   const eta = etaLabel(vehicle);
   if (eta) {
     const row = document.createElement("p");
@@ -94,13 +92,11 @@ function animateMarker(record: MarkerRecord, next: MiWayVehicle) {
   if (record.frame !== null) cancelAnimationFrame(record.frame);
   const start = record.marker.getLngLat();
   const startedAt = performance.now();
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduceMotion) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     record.marker.setLngLat([next.lng, next.lat]);
     record.vehicle = next;
     return;
   }
-
   const frame = (now: number) => {
     const progress = Math.min(1, (now - startedAt) / MOVE_MS);
     const eased = 1 - (1 - progress) ** 3;
@@ -108,9 +104,8 @@ function animateMarker(record: MarkerRecord, next: MiWayVehicle) {
       start.lng + (next.lng - start.lng) * eased,
       start.lat + (next.lat - start.lat) * eased,
     ]);
-    if (progress < 1) {
-      record.frame = requestAnimationFrame(frame);
-    } else {
+    if (progress < 1) record.frame = requestAnimationFrame(frame);
+    else {
       record.frame = null;
       record.vehicle = next;
     }
@@ -125,21 +120,12 @@ function normalizedSnapshot(value: unknown): MiWaySnapshot | null {
     (payload.status !== "live" && payload.status !== "stale" && payload.status !== "unavailable") ||
     typeof payload.generatedAt !== "string" ||
     !Array.isArray(payload.vehicles)
-  ) {
-    return null;
-  }
+  ) return null;
   const vehicles = payload.vehicles
     .filter((vehicle): vehicle is MiWayVehicle => {
       if (!vehicle || typeof vehicle !== "object") return false;
       const item = vehicle as Partial<MiWayVehicle>;
-      return (
-        typeof item.id === "string" &&
-        typeof item.route === "string" &&
-        typeof item.lat === "number" &&
-        Number.isFinite(item.lat) &&
-        typeof item.lng === "number" &&
-        Number.isFinite(item.lng)
-      );
+      return typeof item.id === "string" && typeof item.route === "string" && typeof item.lat === "number" && Number.isFinite(item.lat) && typeof item.lng === "number" && Number.isFinite(item.lng);
     })
     .slice(0, MAX_MARKERS);
   return {
@@ -155,12 +141,10 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let activeRequest: AbortController | null = null;
-
   const clearTimer = () => {
     if (timer) clearTimeout(timer);
     timer = null;
   };
-
   const removeMarkers = () => {
     for (const record of markers.values()) {
       if (record.frame !== null) cancelAnimationFrame(record.frame);
@@ -168,7 +152,6 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
     }
     markers.clear();
   };
-
   const syncMarkers = (snapshot: MiWaySnapshot) => {
     if (snapshot.status === "unavailable") {
       removeMarkers();
@@ -182,7 +165,6 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
         markers.delete(id);
       }
     }
-
     for (const vehicle of snapshot.vehicles) {
       const existing = markers.get(vehicle.id);
       if (existing) {
@@ -194,12 +176,7 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
       element.type = "button";
       element.className = "map-miway-marker";
       applyVehicleElement(element, vehicle);
-      const popup = new maplibregl.Popup({
-        offset: 18,
-        closeButton: true,
-        closeOnClick: true,
-        maxWidth: "15rem",
-      }).setDOMContent(popupContent(vehicle));
+      const popup = new maplibregl.Popup({ offset: 18, closeButton: true, closeOnClick: true, maxWidth: "15rem" }).setDOMContent(popupContent(vehicle));
       const marker = new maplibregl.Marker({ element, anchor: "center" })
         .setLngLat([vehicle.lng, vehicle.lat])
         .setPopup(popup)
@@ -207,14 +184,10 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
       markers.set(vehicle.id, { marker, element, vehicle, frame: null });
     }
   };
-
   const schedule = (delay = POLL_MS) => {
     clearTimer();
-    if (!stopped && document.visibilityState === "visible") {
-      timer = setTimeout(() => void refresh(), delay);
-    }
+    if (!stopped && document.visibilityState === "visible") timer = setTimeout(() => void refresh(), delay);
   };
-
   const refresh = async () => {
     if (stopped || document.visibilityState !== "visible") return;
     activeRequest?.abort();
@@ -222,7 +195,7 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
     activeRequest = controller;
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
-      const response = await fetch("/api/miway", {
+      const response = await fetch("/api/health?view=miway", {
         method: "GET",
         credentials: "omit",
         cache: "no-store",
@@ -237,12 +210,7 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
       }
     } catch {
       if (!stopped && !controller.signal.aborted) {
-        const unavailable: MiWaySnapshot = {
-          status: "unavailable",
-          generatedAt: new Date().toISOString(),
-          sourceObservedAt: null,
-          vehicles: [],
-        };
+        const unavailable: MiWaySnapshot = { status: "unavailable", generatedAt: new Date().toISOString(), sourceObservedAt: null, vehicles: [] };
         syncMarkers(unavailable);
         onSnapshot(unavailable);
       }
@@ -252,7 +220,6 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
       schedule();
     }
   };
-
   const onVisibility = () => {
     if (document.visibilityState === "hidden") {
       clearTimer();
@@ -262,10 +229,8 @@ export function startMiWayLiveLayer({ map, maplibregl, onSnapshot }: StartOption
     }
     schedule(0);
   };
-
   document.addEventListener("visibilitychange", onVisibility);
   void refresh();
-
   return () => {
     stopped = true;
     clearTimer();
