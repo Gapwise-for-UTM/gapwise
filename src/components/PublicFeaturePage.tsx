@@ -119,7 +119,7 @@ export function PublicFeaturePage({ page }: { page: PublicFeaturePageData }) {
             <a href="/support" className="hover:text-foreground">
               Support
             </a>
-            <a href="https://github.com/Gapwise-for-UTM" className="hover:text-foreground">
+            <a href="https://gapwise.ca/github" className="hover:text-foreground">
               GitHub
             </a>
           </nav>
