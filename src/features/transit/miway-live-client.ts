@@ -1,4 +1,9 @@
-import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import type {
+  GeoJSONSource,
+  Map as MapLibreMap,
+  MapGeoJSONFeature,
+  MapMouseEvent,
+} from "maplibre-gl";
 import type * as MapLibre from "maplibre-gl";
 import type {
   MiWayLiveClientStatus,
@@ -7,6 +12,7 @@ import type {
 } from "./miway-live-types";
 
 type MapTheme = "light" | "dark";
+type LayerMouseEvent = MapMouseEvent & { features?: MapGeoJSONFeature[] };
 
 type StartOptions = {
   map: MapLibreMap;
@@ -63,7 +69,8 @@ function popupContent(vehicle: MiWayLiveVehicle, snapshot: MiWayLiveSnapshot) {
   const freshness = document.createElement("p");
   freshness.className = "font-mono text-[0.68rem] text-muted-foreground";
   const age = Math.max(0, Math.floor(Date.now() / 1000) - snapshot.sourceTimestamp);
-  freshness.textContent = snapshot.status === "fresh" ? `updated ${age}s ago` : `data delayed · ${age}s old`;
+  freshness.textContent =
+    snapshot.status === "fresh" ? `updated ${age}s ago` : `data delayed · ${age}s old`;
   root.append(title, arrival, freshness);
   return root;
 }
@@ -196,7 +203,8 @@ export function startMiWayLiveLayer({
     const frame = (now: number) => {
       let moving = false;
       for (const state of rendered.values()) {
-        const progress = state.duration <= 0 ? 1 : Math.min(1, (now - state.startedAt) / state.duration);
+        const progress =
+          state.duration <= 0 ? 1 : Math.min(1, (now - state.startedAt) / state.duration);
         const eased = 1 - (1 - progress) ** 3;
         state.rendered = [
           state.from[0] + (state.to[0] - state.from[0]) * eased,
@@ -270,7 +278,10 @@ export function startMiWayLiveLayer({
       const value: unknown = await response.json();
       if (!validSnapshot(value)) throw new Error("MiWay live endpoint returned an invalid snapshot");
       const age = Math.max(0, Math.floor(Date.now() / 1000) - value.sourceTimestamp);
-      applySnapshot({ ...value, status: value.status === "fresh" && age <= FRESH_SECONDS ? "fresh" : "stale" });
+      applySnapshot({
+        ...value,
+        status: value.status === "fresh" && age <= FRESH_SECONDS ? "fresh" : "stale",
+      });
     } catch (error) {
       if (stopped || request?.signal.aborted) return;
       const age = snapshot
@@ -320,14 +331,19 @@ export function startMiWayLiveLayer({
     syncSource();
   }
 
-  function onVehicleClick(event: Parameters<Parameters<MapLibreMap["on"]>[2]>[0]) {
+  function onVehicleClick(event: LayerMouseEvent) {
     const feature = event.features?.[0];
     const tripId = feature?.properties?.["tripId"];
     if (typeof tripId !== "string" || !snapshot) return;
     const vehicle = snapshot.vehicles.find((item) => item.tripId === tripId);
     if (!vehicle) return;
     popup?.remove();
-    popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true, offset: 16, maxWidth: "15rem" })
+    popup = new maplibregl.Popup({
+      closeButton: true,
+      closeOnClick: true,
+      offset: 16,
+      maxWidth: "15rem",
+    })
       .setLngLat([vehicle.longitude, vehicle.latitude])
       .setDOMContent(popupContent(vehicle, snapshot))
       .addTo(map);
