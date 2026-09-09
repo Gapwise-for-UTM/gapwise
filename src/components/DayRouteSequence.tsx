@@ -128,7 +128,7 @@ export function DayRouteSequence({
                   aria-pressed={selectedSegmentId === after.id}
                   className={`day-route-transition inline-flex min-w-14 flex-col items-center justify-center rounded-xl border px-2 text-center text-[0.65rem] font-semibold transition-colors ${
                     selectedSegmentId === after.id
-                      ? "border-accent/55 bg-accent/10 text-accent"
+                      ? "border-accent/55 bg-accent/10 text-foreground"
                       : "border-border/70 bg-background/45 text-muted-foreground hover:text-foreground"
                   }`}
                 >

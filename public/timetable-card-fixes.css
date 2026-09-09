@@ -1,4 +1,4 @@
-.meeting-card {
+html .meeting-card {
   border-left-width: 1px !important;
   border-left-color: color-mix(
     in oklab,
@@ -7,7 +7,7 @@
   ) !important;
 }
 
-.meeting-card:hover {
+html .meeting-card:hover {
   border-left-color: color-mix(
     in oklab,
     var(--meeting-accent) var(--meeting-card-hover-border-strength),
@@ -15,7 +15,7 @@
   ) !important;
 }
 
-.meeting-card:focus-visible {
+html .meeting-card:focus-visible {
   border-left-color: color-mix(
     in oklab,
     var(--meeting-accent) var(--meeting-card-border-strength),
@@ -23,8 +23,29 @@
   ) !important;
 }
 
+html .meeting-card[data-assessment-window="true"] {
+  border-left-style: dashed !important;
+}
+
 @media (max-width: 47.999rem) {
-  .mobile-integrated-app .meeting-card {
-    border-left-width: 0 !important;
+  html .mobile-integrated-app .meeting-card,
+  html .mobile-integrated-app .day-route-stop-card,
+  html .mobile-integrated-app .map-meeting-popover {
+    border-left-width: 1px !important;
+    border-left-color: var(--color-border) !important;
+  }
+
+  html .mobile-integrated-app .meeting-card:hover,
+  html .mobile-integrated-app .meeting-card:focus-visible,
+  html .mobile-integrated-app .day-route-stop-card[aria-pressed="true"] {
+    border-left-color: color-mix(
+      in oklab,
+      var(--meeting-accent) 55%,
+      var(--color-border)
+    ) !important;
+  }
+
+  html .mobile-integrated-app .meeting-card[data-assessment-window="true"] {
+    border-left-style: dashed !important;
   }
 }
