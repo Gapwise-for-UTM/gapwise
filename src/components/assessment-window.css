@@ -1,15 +1,21 @@
 :root {
-  --reserved-assessment: oklch(0.6 0.13 72);
+  --res: oklch(0.64 0.15 95);
+  --color-res: var(--res);
 }
 
 .dark {
-  --reserved-assessment: oklch(0.79 0.14 78);
+  --res: oklch(0.84 0.15 95);
 }
 
 .activity-badge[data-activity="RES"],
 .activity-dot[data-activity="RES"],
 .meeting-card[data-activity="RES"] {
-  --meeting-accent: var(--reserved-assessment);
+  --meeting-accent: var(--color-res);
+}
+
+.mobile-integrated-app .meeting-card[data-activity="RES"],
+.mobile-integrated-app .activity-badge[data-activity="RES"] {
+  --meeting-accent: var(--color-res) !important;
 }
 
 .meeting-card[data-activity]:not([data-planned-work="true"]) .card-pin {
@@ -47,8 +53,6 @@
 
 .meeting-card[data-assessment-window="true"] {
   border-style: dashed;
-  border-left-style: solid;
-  border-left-width: 3px;
   background:
     repeating-linear-gradient(
       135deg,
@@ -77,11 +81,11 @@
 }
 
 .reserved-count-pill {
-  border: 1px solid color-mix(in oklab, var(--reserved-assessment) 34%, var(--color-border));
-  background: color-mix(in oklab, var(--reserved-assessment) 10%, var(--color-card));
-  color: var(--reserved-assessment);
+  border: 1px solid color-mix(in oklab, var(--color-res) 34%, var(--color-border));
+  background: color-mix(in oklab, var(--color-res) 10%, var(--color-card));
+  color: var(--color-res);
 }
 
 .reserved-window-note {
-  color: color-mix(in oklab, var(--reserved-assessment) 74%, var(--color-muted-foreground));
+  color: color-mix(in oklab, var(--color-res) 74%, var(--color-muted-foreground));
 }
