@@ -267,7 +267,7 @@ export function startMiWayLiveLayer({
     if (!snapshot) onStatus("loading");
 
     try {
-      const response = await fetch("/api/miway-live", {
+      const response = await fetch("/api/health?view=miway-live", {
         method: "GET",
         headers: { accept: "application/json" },
         credentials: "omit",
