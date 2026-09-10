@@ -6,8 +6,8 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the fi
 | --- | ---: | ---: | ---: | ---: | --- |
 | MN | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | DH | 3 | 0 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| IB | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| DV | 4 | 0 | 4 | 2 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| IB | 3 | 0 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| DV | 7 | 0 | 7 | 2 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | CCT | 1 | 0 | 1 | 1 | Ordinary public access status is not affirmatively published. |
 | HM | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | KN | 3 | 0 | 3 | 3 | Ordinary public access status is not affirmatively published. |
@@ -21,7 +21,7 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the fi
 | DW | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | FCSH | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
 | GF | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| NSB | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| NSB | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | PL | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
 | BG | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
 | LH | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
@@ -47,8 +47,8 @@ The “minimum unresolved accessible coordinates” column is a conservative low
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | MN | 3 | 3 | 1 | 0 | 3 | Main; Field side; Lot #1 |
 | DH | 2 | 2 | 3 | 0 | 2 | Main; Field side |
-| IB | 3 | 3 | 2 | 0 | 3 | Main; North; South |
-| DV | 3 | 3 | 4 | 2 | 1 | Main; End of 5 Minute Walk; Connection with CCT |
+| IB | 3 | 3 | 3 | 0 | 3 | Main; North; South |
+| DV | 3 | 3 | 7 | 2 | 1 | Main; End of 5 Minute Walk; Connection with CCT |
 | CCT | 3 | 3 | 1 | 1 | 2 | Main; Link; Connection with DV |
 | HM | 1 | 1 | 1 | 0 | 1 | Main |
 | RAWC | 1 | 1 | 1 | 0 | 1 | Main |
@@ -57,7 +57,7 @@ The “minimum unresolved accessible coordinates” column is a conservative low
 | AX | 1 | 1 | 0 | 0 | 1 | Main |
 | WC | 1 | 1 | 0 | 0 | 1 | Rear |
 | DW | 1 | 1 | 1 | 0 | 1 | Main |
-| NSB | 2 | 2 | 0 | 0 | 2 | Main; Rear |
+| NSB | 2 | 2 | 2 | 0 | 2 | Main; Rear |
 | BG | 1 | 1 | 0 | 0 | 1 | Main |
 | EH | 2 | 3 | 0 | 0 | 3 | Main; Rear ×2 |
 | OPH | 2 | 2 | 2 | 0 | 2 | Main; Rear |
