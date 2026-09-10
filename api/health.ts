@@ -1,6 +1,9 @@
 import { jsonResponse, logEvent, requestIdFrom, safeError } from "./_lib/observability.js";
+import { getMiWaySnapshot } from "../src/server/miway.js";
 
 const UPSTREAM_TIMEOUT_MS = 2500;
+const MIWAY_CACHE_CONTROL = "public, max-age=0, s-maxage=4, stale-while-revalidate=4";
+const MIWAY_ERROR_CACHE_CONTROL = "public, max-age=0, s-maxage=1, stale-while-revalidate=4";
 
 async function probe(url: string): Promise<{ ok: boolean; latencyMs: number }> {
   const started = performance.now();
@@ -39,6 +42,32 @@ function versionResponse(requestId: string) {
   );
 }
 
+async function miWayResponse(requestId: string) {
+  try {
+    const snapshot = await getMiWaySnapshot();
+    const unavailable = snapshot.status === "unavailable";
+    return jsonResponse(
+      requestId,
+      snapshot,
+      unavailable ? 503 : 200,
+      unavailable ? MIWAY_ERROR_CACHE_CONTROL : MIWAY_CACHE_CONTROL,
+    );
+  } catch (error) {
+    logEvent("warn", "miway_snapshot_unavailable", { requestId, error: safeError(error) });
+    return jsonResponse(
+      requestId,
+      {
+        status: "unavailable",
+        generatedAt: new Date().toISOString(),
+        sourceObservedAt: null,
+        vehicles: [],
+      },
+      503,
+      MIWAY_ERROR_CACHE_CONTROL,
+    );
+  }
+}
+
 export default {
   async fetch(request: Request) {
     const requestId = requestIdFrom(request);
@@ -47,9 +76,9 @@ export default {
     }
 
     const url = new URL(request.url);
-    if (url.searchParams.get("view") === "version") {
-      return versionResponse(requestId);
-    }
+    const view = url.searchParams.get("view");
+    if (view === "version") return versionResponse(requestId);
+    if (view === "miway") return miWayResponse(requestId);
 
     const started = performance.now();
     try {

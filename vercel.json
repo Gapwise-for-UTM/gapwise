@@ -13,6 +13,41 @@
   },
   "redirects": [
     {
+      "source": "/github",
+      "destination": "https://github.com/Gapwise-for-UTM",
+      "permanent": true
+    },
+    {
+      "source": "/github/app",
+      "destination": "https://github.com/Gapwise-for-UTM/gapwise",
+      "permanent": true
+    },
+    {
+      "source": "/github/ai",
+      "destination": "https://github.com/Gapwise-for-UTM/gapwise-ai",
+      "permanent": true
+    },
+    {
+      "source": "/github/data",
+      "destination": "https://github.com/Gapwise-for-UTM/gapwise-data",
+      "permanent": true
+    },
+    {
+      "source": "/github/mobile",
+      "destination": "https://github.com/Gapwise-for-UTM/gapwise-mobile",
+      "permanent": true
+    },
+    {
+      "source": "/github/status",
+      "destination": "https://github.com/Gapwise-for-UTM/gapwise-status",
+      "permanent": true
+    },
+    {
+      "source": "/github/docs",
+      "destination": "https://github.com/Gapwise-for-UTM/gapwise-docs",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
