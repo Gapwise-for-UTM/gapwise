@@ -111,7 +111,9 @@ export function AccountSettingsDialog({
       <DialogContent className="max-h-[88vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl p-0">
         <DialogHeader className="border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>Manage sync, device storage, exports, and Gapwise AI.</DialogDescription>
+          <DialogDescription>
+            Manage sync, device storage, exports, and Gapwise AI.
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs
