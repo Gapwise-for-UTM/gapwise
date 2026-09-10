@@ -16,7 +16,10 @@ describe("Gapwise marketing system", () => {
       expect(landing).toContain(product);
     }
 
-    expect(landing).toContain("https://ai.gapwise.ca/api/mcp");
+    expect(landing).toContain('to="/timetable" onClick={onDemo}');
+    expect(landing).toContain('to="/gaps" onClick={onDemo}');
+    expect(landing).not.toContain("https://ai.gapwise.ca/api/mcp");
+    expect(landing).not.toContain('to="/ops"');
     expect(landing).toContain("https://docs.gapwise.ca");
     expect(landing).toContain("https://data.gapwise.ca");
     expect(landing).toContain("https://status.gapwise.ca");
