@@ -47,6 +47,32 @@ body:has(main.landing-stage) .product-story-nav {
   min-height: var(--gapwise-product-nav-height) !important;
 }
 
+@media (min-width: 801px) {
+  body:has(main.landing-stage) .marketing-hero {
+    position: relative;
+    border-block: 0;
+  }
+
+  body:has(main.landing-stage) .marketing-hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: calc(-1 * var(--product-story-bleed));
+    left: calc(-1 * var(--product-story-bleed));
+    height: 1px;
+    pointer-events: none;
+    background: var(--marketing-line);
+  }
+
+  body:has(main.landing-stage) .product-story-nav::before {
+    top: -1px;
+    bottom: -1px;
+    height: auto;
+    border-block: 1px solid var(--marketing-line);
+    background: transparent;
+  }
+}
+
 @media (max-width: 800px) {
   :root {
     --gapwise-safe-top: env(safe-area-inset-top, 0px);
