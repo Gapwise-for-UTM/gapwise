@@ -73,6 +73,11 @@ html:not(.dark)[data-landing-product="gapwise-status"] {
   --section-accent: #167553;
 }
 
+/* Preserve the semantic LEC tint while giving route-status badges enough foreground contrast. */
+:root:not(.dark) .bg-lec\/15.text-lec {
+  color: var(--color-foreground);
+}
+
 /* Lazy marketing CSS declares a view-timeline opacity animation after this file loads.
  * Disable it rather than letting off-screen product copy become low-contrast while axe scans. */
 .product-story-section > * {
