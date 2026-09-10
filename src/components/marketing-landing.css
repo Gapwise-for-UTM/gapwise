@@ -6,6 +6,7 @@
 
 .marketing-home {
   --marketing-line: color-mix(in oklab, var(--color-border) 90%, transparent);
+  --product-story-bleed: 1.25rem;
   --story-accent: light-dark(#006bb3, #2ea8ff);
   width: min(100%, 78rem);
   margin-inline: auto;
@@ -146,12 +147,26 @@
     border-color 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.product-story-nav::before,
+.product-story-section::after {
+  content: "";
+  position: absolute;
+  right: calc(-1 * var(--product-story-bleed));
+  bottom: -1px;
+  left: calc(-1 * var(--product-story-bleed));
+  height: 1px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--marketing-line), var(--marketing-line)) left / var(--product-story-bleed) 1px no-repeat,
+    linear-gradient(var(--marketing-line), var(--marketing-line)) right / var(--product-story-bleed) 1px no-repeat;
+}
+
 .product-story-nav::after {
   content: "";
   position: absolute;
-  right: 0;
+  right: calc(-1 * var(--product-story-bleed));
   bottom: -1px;
-  left: 0;
+  left: calc(-1 * var(--product-story-bleed));
   height: 1px;
   pointer-events: none;
   background: color-mix(in oklab, var(--story-accent) 68%, transparent);
@@ -230,7 +245,7 @@
 .product-story-section::before {
   content: "";
   position: absolute;
-  inset: 0 -1.25rem;
+  inset: 0 calc(-1 * var(--product-story-bleed));
   z-index: -1;
   pointer-events: none;
   border-inline: 1px solid transparent;
@@ -578,6 +593,10 @@
 }
 
 @media (max-width: 800px) {
+  .marketing-home {
+    --product-story-bleed: 0.75rem;
+  }
+
   .marketing-hero,
   .product-story-section {
     grid-template-columns: minmax(0, 1fr);
@@ -620,10 +639,6 @@
     min-height: auto;
     gap: 2.4rem;
     padding-block: 3.8rem;
-  }
-
-  .product-story-section::before {
-    inset-inline: -0.75rem;
   }
 }
 
