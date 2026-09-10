@@ -140,14 +140,14 @@ export function getLocationPresentation(input: LocationPresentationInput): Locat
       return {
         status: "known",
         label: "Route",
-        detail: "Campus route.",
+        detail: "Campus walking route.",
         icon: RouteIcon,
       };
     case "approximate":
       return {
         status: "approximate",
         label: "Route",
-        detail: "Campus route.",
+        detail: "Campus walking route.",
         icon: RouteIcon,
       };
     case "unavailable":
