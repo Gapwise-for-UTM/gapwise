@@ -8,7 +8,7 @@ import {
   LogIn,
   UserRound,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { TimetableExportDialog } from "@/components/TimetableExportDialog";
 import { TimetableHeatmapExportDialog } from "@/components/TimetableHeatmapExportDialog";
 import type { TransitionPlanner } from "@/features/routing/transition";
@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 const GAPWISE_AI_URL = "https://ai.gapwise.ca";
 const GAPWISE_MCP_URL = `${GAPWISE_AI_URL}/api/mcp`;
 const GUEST_PERSISTENCE_EVENT = "gapwise:guest-timetable-persistence";
+export const SYNC_SETTINGS_SLOT_ID = "gapwise-sync-settings-slot";
 export type AccountSettingsTab = "account" | "exports" | "ai";
 
 type DeviceSaveState = "checking" | "saved" | "off" | "busy" | "unavailable";
@@ -44,6 +45,7 @@ export function AccountSettingsDialog({
   term,
   preferences,
   planTransition,
+  syncControls,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,6 +58,7 @@ export function AccountSettingsDialog({
   term: Term;
   preferences: UserPreferences;
   planTransition: TransitionPlanner;
+  syncControls?: ReactNode;
 }) {
   const hasTimetable = meetings.length > 0;
   const [deviceSaveState, setDeviceSaveState] = useState<DeviceSaveState>("checking");
@@ -107,9 +110,9 @@ export function AccountSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[88vh] w-[calc(100%-2rem)] max-w-3xl overflow-y-auto rounded-2xl p-0">
         <DialogHeader className="border-b border-border px-5 pb-4 pt-5 text-left sm:px-6 sm:pt-6">
-          <DialogTitle>Account settings</DialogTitle>
+          <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
-            Manage optional account sync, local device storage, exports, and Gapwise AI.
+            Manage sync, device storage, exports, and Gapwise AI.
           </DialogDescription>
         </DialogHeader>
 
@@ -235,6 +238,8 @@ export function AccountSettingsDialog({
                 </div>
               </div>
             </section>
+
+            <div id={SYNC_SETTINGS_SLOT_ID}>{syncControls}</div>
           </TabsContent>
 
           <TabsContent value="exports" className="mt-4 space-y-3">

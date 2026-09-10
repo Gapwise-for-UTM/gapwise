@@ -376,6 +376,7 @@ export function DayRoute({
       )}
 
       {selectedSegment &&
+      selectedSegment.route.result &&
       !isCampusDayAnchorMeeting(selectedSegment.from) &&
       !isCampusDayAnchorMeeting(selectedSegment.to) ? (
         <IndoorFloorViewer
@@ -398,6 +399,8 @@ function SegmentDetails({
 }) {
   const route = segment.route;
   const presentation = getLocationPresentation({ from: segment.from, to: segment.to, route });
+  if (presentation.status === "tba" || presentation.status === "unknown") return null;
+
   const fromLocation = getLocationPresentation({ meeting: segment.from });
   const toLocation = getLocationPresentation({ meeting: segment.to });
   const fromAnchor = campusDayAnchorPresentation(segment.from);
@@ -478,16 +481,20 @@ function SegmentDetails({
                 : `~${distanceLabel(distance)}`
             }
           />
-          <Metric
-            icon={RouteIcon}
-            label="Indoor"
-            value={route.result ? distanceLabel(route.result.indoorDistanceMeters) : "Not mapped"}
-          />
-          <Metric
-            icon={RouteIcon}
-            label="Floor changes"
-            value={route.result ? String(route.result.floorChanges) : "Unknown"}
-          />
+          {route.result ? (
+            <>
+              <Metric
+                icon={RouteIcon}
+                label="Indoor"
+                value={distanceLabel(route.result.indoorDistanceMeters)}
+              />
+              <Metric
+                icon={RouteIcon}
+                label="Floor changes"
+                value={String(route.result.floorChanges)}
+              />
+            </>
+          ) : null}
         </dl>
       )}
       {routeWarnings.length > 0 ? (

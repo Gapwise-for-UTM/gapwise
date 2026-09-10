@@ -283,9 +283,7 @@ function MeetingDetailsDialog({
               </dt>
               <dd className="mt-2">
                 <span className="block text-base font-semibold leading-tight text-foreground">
-                  {reserved
-                    ? "To be announced if this window is used"
-                    : (location?.buildingName ?? locationLabel(meeting))}
+                  {reserved ? "Location TBA" : (location?.buildingName ?? locationLabel(meeting))}
                 </span>
                 {!reserved && location && (location.floorLabel || location.roomLabel) ? (
                   <span className="mt-1 block text-sm font-medium text-muted-foreground">
@@ -310,8 +308,7 @@ function MeetingDetailsDialog({
             <div className="rounded-lg border border-border bg-background/40 p-3 text-sm">
               <p className="font-medium text-foreground">Not a weekly class</p>
               <p className="mt-1 leading-relaxed text-muted-foreground">
-                ACORN reserves this recurring window for possible assessments. It only becomes a
-                real commitment when your course announces an assessment for a specific date.
+                Only counts when your course announces an assessment for that date.
               </p>
             </div>
           ) : (
@@ -342,10 +339,6 @@ function MeetingDetailsDialog({
               Route to this class
             </button>
           ) : null}
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            This information comes from the ACORN calendar file you imported. Opening a class card
-            does not contact ACORN or upload anything new.
-          </p>
         </DialogContent>
       ) : null}
     </Dialog>

@@ -84,7 +84,7 @@ export function AiIntegrationControls({ controller }: { controller: AiDelegation
             </p>
             {controller.status.enabled ? (
               <span className="rounded-full border border-accent/25 bg-accent/8 px-2 py-0.5 text-[11px] font-semibold text-accent">
-                Connected · revision {controller.status.revision}
+                Connected
               </span>
             ) : null}
           </div>

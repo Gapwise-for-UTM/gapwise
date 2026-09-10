@@ -1,4 +1,10 @@
-import type { ActivityType, Meeting, Term, Weekday } from "./timetable-types";
+import {
+  ASSESSMENT_WINDOW_NOTE,
+  type ActivityType,
+  type Meeting,
+  type Term,
+  type Weekday,
+} from "./timetable-types";
 
 interface Row {
   courseCode: string;
@@ -236,17 +242,59 @@ const ROWS: Row[] = [
   },
 ];
 
-export const DEMO_MEETINGS: Meeting[] = ROWS.map((r) => ({
-  id: `${r.term}-${r.courseCode}-${r.activityType}-${r.sectionCode}-${r.weekday}-${r.start}`,
-  courseCode: r.courseCode,
-  activityType: r.activityType,
-  sectionCode: r.sectionCode,
-  courseName: r.courseName,
-  startTime: r.start,
-  endTime: r.end,
-  weekday: r.weekday,
-  buildingCode: r.building,
-  room: r.room,
-  term: r.term,
-  locationUnknown: r.building === null,
-}));
+const DEMO_RESERVED_WINDOWS: Meeting[] = [
+  {
+    id: "Fall-DEM210H5-RES-0105-Friday-900",
+    courseCode: "DEM210H5",
+    activityType: "LEC",
+    sectionCode: "0105",
+    courseName: "Applied Demo Methods",
+    startTime: h(15),
+    endTime: h(17),
+    weekday: "Friday",
+    buildingCode: null,
+    room: null,
+    term: "Fall",
+    locationUnknown: true,
+    locationType: "tba",
+    notes: ASSESSMENT_WINDOW_NOTE,
+    dateRange: { startDate: "2026-09-11", endDate: "2026-12-04" },
+    recurrenceIntervalWeeks: 1,
+  },
+  {
+    id: "Winter-DEM320H5-RES-0105-Friday-780",
+    courseCode: "DEM320H5",
+    activityType: "LEC",
+    sectionCode: "0105",
+    courseName: "Field Seminar",
+    startTime: h(13),
+    endTime: h(15),
+    weekday: "Friday",
+    buildingCode: null,
+    room: null,
+    term: "Winter",
+    locationUnknown: true,
+    locationType: "tba",
+    notes: ASSESSMENT_WINDOW_NOTE,
+    dateRange: { startDate: "2027-01-08", endDate: "2027-04-09" },
+    recurrenceIntervalWeeks: 1,
+  },
+];
+
+export const DEMO_MEETINGS: Meeting[] = [
+  ...ROWS.map((r) => ({
+    id: `${r.term}-${r.courseCode}-${r.activityType}-${r.sectionCode}-${r.weekday}-${r.start}`,
+    courseCode: r.courseCode,
+    activityType: r.activityType,
+    sectionCode: r.sectionCode,
+    courseName: r.courseName,
+    startTime: r.start,
+    endTime: r.end,
+    weekday: r.weekday,
+    buildingCode: r.building,
+    room: r.room,
+    term: r.term,
+    locationUnknown: r.building === null,
+  })),
+  ...DEMO_RESERVED_WINDOWS,
+];

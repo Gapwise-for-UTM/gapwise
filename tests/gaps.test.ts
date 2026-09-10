@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { calculateGapTiming, calculateLeaveBy, findGaps } from "@/lib/gaps";
+import { ASSESSMENT_WINDOW_NOTE } from "@/lib/timetable-types";
 import type { RouteResult } from "@/features/routing/types";
 import { meeting } from "./fixtures";
 
@@ -64,5 +65,36 @@ describe("gap route timing", () => {
       previous: extending,
       next,
     });
+  });
+
+  test("does not expose a usable gap through a reserved assessment window", () => {
+    const previous = meeting({
+      id: "previous",
+      term: "Winter",
+      weekday: "Friday",
+      startTime: 11 * 60,
+      endTime: 12 * 60,
+    });
+    const reserved = meeting({
+      id: "reserved",
+      term: "Winter",
+      weekday: "Friday",
+      startTime: 13 * 60,
+      endTime: 15 * 60,
+      buildingCode: null,
+      room: null,
+      locationUnknown: true,
+      locationType: "tba",
+      notes: ASSESSMENT_WINDOW_NOTE,
+    });
+    const next = meeting({
+      id: "next",
+      term: "Winter",
+      weekday: "Friday",
+      startTime: 16 * 60,
+      endTime: 18 * 60,
+    });
+
+    expect(findGaps([previous, reserved, next], "Winter")).toEqual([]);
   });
 });

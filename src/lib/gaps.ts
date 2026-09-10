@@ -64,11 +64,13 @@ export function calculateGapTiming(
 export function findGaps(meetings: Meeting[], term: Term): Gap[] {
   const gaps: Gap[] = [];
   const gapEligibleMeetings = meetings.filter((meeting) => !isAssessmentWindow(meeting));
+  const assessmentWindows = meetings.filter(isAssessmentWindow);
 
   for (const weekday of WEEKDAYS) {
     const day = scheduleForWeekday(gapEligibleMeetings, term, weekday).sort(
       (a, b) => a.startTime - b.startTime || b.endTime - a.endTime,
     );
+    const reserved = scheduleForWeekday(assessmentWindows, term, weekday);
 
     let previous = day[0];
     for (let i = 1; previous && i < day.length; i += 1) {
@@ -83,7 +85,12 @@ export function findGaps(meetings: Meeting[], term: Term): Gap[] {
         continue;
       }
       const gap = gapBetween(previous, next);
-      if (gap) gaps.push(gap);
+      if (
+        gap &&
+        !reserved.some((window) => window.startTime < gap.endTime && window.endTime > gap.startTime)
+      ) {
+        gaps.push(gap);
+      }
       previous = next;
     }
   }

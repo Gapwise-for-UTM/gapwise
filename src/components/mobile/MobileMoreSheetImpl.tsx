@@ -37,14 +37,7 @@ export function MobileMoreSheet({
             <div className="flex flex-wrap items-center gap-2">{children}</div>
           </section>
 
-          {syncControls ? (
-            <section className="border-t border-border pt-4">
-              <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                Sync
-              </p>
-              {syncControls}
-            </section>
-          ) : null}
+          {syncControls}
 
           <section className="space-y-2 border-t border-border pt-4">
             <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">

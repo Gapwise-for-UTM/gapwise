@@ -28,6 +28,10 @@
   overflow-wrap: anywhere;
 }
 
+.gap-plan-root details {
+  display: none;
+}
+
 @media (max-width: 767px) {
   .gap-plan-root {
     gap: 0.85rem;
