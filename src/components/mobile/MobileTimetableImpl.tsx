@@ -146,9 +146,7 @@ function MeetingDetailsSheet({
                 </dt>
                 <dd className="mt-2">
                   <span className="block text-base font-semibold leading-tight text-foreground">
-                    {reserved
-                      ? "To be announced if this window is used"
-                      : (location?.buildingName ?? locationLabel(meeting))}
+                    {reserved ? "Location TBA" : (location?.buildingName ?? locationLabel(meeting))}
                   </span>
                   {!reserved && location && (location.floorLabel || location.roomLabel) ? (
                     <span className="mt-1 block text-sm font-medium text-muted-foreground">
@@ -163,8 +161,7 @@ function MeetingDetailsSheet({
               <div className="mt-3 rounded-xl border border-border bg-background/45 p-3.5 text-sm">
                 <p className="font-semibold">Not a weekly class</p>
                 <p className="mt-1 leading-relaxed text-muted-foreground">
-                  ACORN reserves this recurring window for possible assessments. It only becomes a
-                  real commitment when your course announces an assessment for a specific date.
+                  Only counts when your course announces an assessment for that date.
                 </p>
               </div>
             ) : meeting.notes ? (
@@ -189,11 +186,6 @@ function MeetingDetailsSheet({
                 </button>
               ) : null}
             </div>
-
-            <p className="mt-4 text-xs leading-5 text-muted-foreground">
-              Course information comes from the ACORN calendar you imported. Opening details does
-              not contact ACORN or upload anything new.
-            </p>
           </div>
         ) : null}
       </DrawerContent>

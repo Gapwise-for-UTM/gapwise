@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { ChevronDown, GitBranch, LogOut, Settings2, Trash2, UserRound } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -77,6 +77,7 @@ export function AccountStatus({
   term,
   preferences,
   planTransition,
+  syncControls,
 }: {
   user: User | null;
   loading: boolean;
@@ -89,6 +90,7 @@ export function AccountStatus({
   term: Term;
   preferences: UserPreferences;
   planTransition: TransitionPlanner;
+  syncControls?: ReactNode;
 }) {
   const aiController = useBridgedAiDelegationController();
   const [message, setMessage] = useState<string | null>(null);
@@ -251,7 +253,7 @@ export function AccountStatus({
                   setSettingsOpen(true);
                 }}
               >
-                <Settings2 aria-hidden="true" /> Account settings
+                <Settings2 aria-hidden="true" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem disabled={busy} onSelect={() => void leaveAccount()}>
@@ -327,7 +329,7 @@ export function AccountStatus({
             }}
             className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium"
           >
-            <Settings2 className="h-4 w-4" aria-hidden="true" /> Account settings
+            <Settings2 className="h-4 w-4" aria-hidden="true" /> Settings
           </button>
         </>
       )}
@@ -347,6 +349,7 @@ export function AccountStatus({
         term={term}
         preferences={preferences}
         planTransition={planTransition}
+        syncControls={syncControls}
       />
 
       <Dialog

@@ -121,11 +121,11 @@ export function DesktopSidebar({
           <button
             type="button"
             className="desktop-sidebar-utility desktop-account-settings"
-            aria-label="Account settings"
+            aria-label="Settings (Account settings)"
             onClick={onOpenAccount}
           >
             <Settings aria-hidden="true" />
-            <span>Account settings</span>
+            <span>Settings</span>
           </button>
           <button
             type="button"

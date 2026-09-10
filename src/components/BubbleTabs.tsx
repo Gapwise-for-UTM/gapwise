@@ -1,3 +1,4 @@
+import { useRouterState } from "@tanstack/react-router";
 import { useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 
 export type BubbleTabItem<T extends string> = {
@@ -22,6 +23,7 @@ export function BubbleTabs<T extends string>({
   className?: string;
   compact?: boolean;
 }) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const tablistRef = useRef<HTMLDivElement>(null);
   const selectedIndex = Math.max(
     0,
@@ -31,6 +33,8 @@ export function BubbleTabs<T extends string>({
     "--bubble-count": items.length,
     "--bubble-index": selectedIndex,
   } as CSSProperties;
+
+  if (label === "Term" && pathname.replace(/\/+$/, "") === "/today") return null;
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;

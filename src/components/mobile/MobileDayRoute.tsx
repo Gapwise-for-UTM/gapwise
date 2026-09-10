@@ -214,6 +214,8 @@ function SegmentSummary({
 
   const { route } = segment;
   const presentation = getLocationPresentation({ from: segment.from, to: segment.to, route });
+  if (presentation.status === "tba" || presentation.status === "unknown") return null;
+
   const fromLocation = getLocationPresentation({ meeting: segment.from });
   const toLocation = getLocationPresentation({ meeting: segment.to });
   const fromAnchor = campusDayAnchorPresentation(segment.from);
@@ -288,7 +290,6 @@ function SegmentSummary({
         </div>
       )}
 
-      <p className="mt-3 text-xs leading-5 text-muted-foreground">{presentation.detail}</p>
       {routeWarnings.length > 0 ? (
         <ul className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs text-muted-foreground">
           {routeWarnings.map((warning) => (
@@ -577,6 +578,7 @@ export function MobileDayRoute({
           <SegmentSummary segment={selectedSegment} preferences={preferences} />
 
           {selectedSegment &&
+          selectedSegment.route.result &&
           !isCampusDayAnchorMeeting(selectedSegment.from) &&
           !isCampusDayAnchorMeeting(selectedSegment.to) ? (
             <IndoorFloorViewer
