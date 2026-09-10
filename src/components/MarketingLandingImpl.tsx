@@ -154,10 +154,10 @@ export function MarketingLandingImpl({
               body="Your weekly timetable, gap plan, and campus movement share one schedule context, so every view stays focused on what comes next."
             />
             <div className="product-story-actions">
-              <Link className="product-story-link" to="/utm-timetable">
+              <Link className="product-story-link" to="/timetable" onClick={onDemo}>
                 Timetable <span aria-hidden="true">↗</span>
               </Link>
-              <Link className="product-story-link" to="/gap-planner">
+              <Link className="product-story-link" to="/gaps" onClick={onDemo}>
                 Gap planner <span aria-hidden="true">↗</span>
               </Link>
             </div>
@@ -215,9 +215,6 @@ export function MarketingLandingImpl({
             />
             <div className="product-story-actions">
               <ExternalProductLink href="https://ai.gapwise.ca">Gapwise AI</ExternalProductLink>
-              <ExternalProductLink href="https://ai.gapwise.ca/api/mcp">
-                MCP endpoint
-              </ExternalProductLink>
             </div>
           </div>
 
@@ -345,9 +342,6 @@ export function MarketingLandingImpl({
               <ExternalProductLink href="https://status.gapwise.ca">
                 Open Status
               </ExternalProductLink>
-              <Link className="product-story-link" to="/ops">
-                Operations <span aria-hidden="true">↗</span>
-              </Link>
             </div>
           </div>
 
