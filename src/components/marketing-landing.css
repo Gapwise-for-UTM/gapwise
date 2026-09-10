@@ -30,9 +30,28 @@
 }
 
 .marketing-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(20rem, 0.92fr);
-  border-block: 1px solid var(--marketing-line);
+}
+
+.marketing-hero::before,
+.marketing-hero::after {
+  content: "";
+  position: absolute;
+  right: calc(-1 * var(--product-story-bleed));
+  left: calc(-1 * var(--product-story-bleed));
+  height: 1px;
+  pointer-events: none;
+  background: var(--marketing-line);
+}
+
+.marketing-hero::before {
+  top: -1px;
+}
+
+.marketing-hero::after {
+  bottom: -1px;
 }
 
 .marketing-hero-copy {
@@ -140,13 +159,25 @@
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
+  margin-inline: calc(-1 * var(--product-story-bleed));
+  padding-inline: var(--product-story-bleed);
   background: color-mix(in oklab, var(--color-background) 98%, var(--story-accent) 2%);
   transition:
     background-color 420ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.product-story-nav::before,
+.product-story-nav::before {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+  background: var(--marketing-line);
+}
+
 .product-story-section::after {
   content: "";
   position: absolute;
@@ -161,9 +192,9 @@
 .product-story-nav::after {
   content: "";
   position: absolute;
-  right: calc(-1 * var(--product-story-bleed));
+  right: 0;
   bottom: -1px;
-  left: calc(-1 * var(--product-story-bleed));
+  left: 0;
   height: 1px;
   pointer-events: none;
   background: color-mix(in oklab, var(--story-accent) 68%, transparent);
