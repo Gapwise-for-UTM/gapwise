@@ -1,4 +1,5 @@
 import { jsonResponse, logEvent, requestIdFrom, safeError } from "./_lib/observability.js";
+import { fetchMiWayLive } from "./_lib/miway-live.js";
 
 const UPSTREAM_TIMEOUT_MS = 2500;
 
@@ -47,9 +48,9 @@ export default {
     }
 
     const url = new URL(request.url);
-    if (url.searchParams.get("view") === "version") {
-      return versionResponse(requestId);
-    }
+    const view = url.searchParams.get("view");
+    if (view === "version") return versionResponse(requestId);
+    if (view === "miway-live") return fetchMiWayLive(request, requestId);
 
     const started = performance.now();
     try {

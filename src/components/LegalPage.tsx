@@ -64,10 +64,7 @@ export function LegalPage({
           <a href="https://status.gapwise.ca/" className="text-accent hover:underline">
             Status
           </a>
-          <a
-            href="https://github.com/Gapwise-for-UTM/gapwise"
-            className="text-accent hover:underline"
-          >
+          <a href="https://gapwise.ca/github/app" className="text-accent hover:underline">
             Source
           </a>
         </footer>
