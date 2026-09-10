@@ -34,7 +34,7 @@ html[data-landing-product] body:has(main.landing-stage) .desktop-app-header .bra
 /* Give the product switcher a complete, intentional frame on every viewport. */
 body:has(main.landing-stage) .product-story-nav {
   box-sizing: border-box;
-  width: 100%;
+  width: calc(100% + var(--product-story-bleed) + var(--product-story-bleed));
   border-top: 1px solid var(--color-border) !important;
   border-bottom: 1px solid var(--color-border) !important;
   padding-inline: clamp(0.75rem, 2vw, 1.25rem);
