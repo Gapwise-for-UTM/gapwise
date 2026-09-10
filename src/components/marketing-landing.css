@@ -30,9 +30,28 @@
 }
 
 .marketing-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(20rem, 0.92fr);
-  border-block: 1px solid var(--marketing-line);
+}
+
+.marketing-hero::before,
+.marketing-hero::after {
+  content: "";
+  position: absolute;
+  right: calc(-1 * var(--product-story-bleed));
+  left: calc(-1 * var(--product-story-bleed));
+  height: 1px;
+  pointer-events: none;
+  background: var(--marketing-line);
+}
+
+.marketing-hero::before {
+  top: -1px;
+}
+
+.marketing-hero::after {
+  bottom: -1px;
 }
 
 .marketing-hero-copy {
