@@ -43,6 +43,7 @@ type ApiRecord = Record<string, unknown> & {
   error?: unknown;
   message?: unknown;
   approved?: unknown;
+  created?: unknown;
   clientId?: unknown;
   clients?: unknown;
   revoked?: unknown;
@@ -161,14 +162,38 @@ export async function completeAiAction(
   });
 }
 
-export async function approveAiOAuthClient(clientId: string, clientName: string): Promise<void> {
+export async function approveAiOAuthClient(
+  clientId: string,
+  clientName: string,
+): Promise<{ created: boolean }> {
   const body = await aiRequest("/api/delegation/clients", {
     method: "POST",
     body: JSON.stringify({ clientId, clientName }),
   });
-  if (!isRecord(body) || body.approved !== true || body.clientId !== clientId) {
+  if (
+    !isRecord(body) ||
+    body.approved !== true ||
+    body.clientId !== clientId ||
+    typeof body.created !== "boolean"
+  ) {
     throw new Error("Gapwise AI OAuth client approval response is malformed.");
   }
+  return { created: body.created };
+}
+
+export async function revokeAiOAuthClientApproval(clientId: string): Promise<boolean> {
+  const body = await aiRequest(`/api/delegation/clients?clientId=${encodeURIComponent(clientId)}`, {
+    method: "DELETE",
+  });
+  if (
+    !isRecord(body) ||
+    body.revoked !== true ||
+    !Array.isArray(body.clientIds) ||
+    !body.clientIds.every((value) => typeof value === "string")
+  ) {
+    throw new Error("Gapwise AI OAuth revocation response is malformed.");
+  }
+  return body.clientIds.includes(clientId);
 }
 
 export async function revokeAiOAuthClientApprovals(): Promise<string[]> {
