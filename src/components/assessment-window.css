@@ -1,10 +1,12 @@
 :root {
   --res: oklch(0.64 0.15 95);
+  --res-text: #765d00;
   --color-res: var(--res);
 }
 
 .dark {
   --res: oklch(0.84 0.15 95);
+  --res-text: var(--res);
 }
 
 .activity-badge[data-activity="RES"],
@@ -83,7 +85,7 @@
 .reserved-count-pill {
   border: 1px solid color-mix(in oklab, var(--color-res) 34%, var(--color-border));
   background: color-mix(in oklab, var(--color-res) 10%, var(--color-card));
-  color: var(--color-res);
+  color: var(--res-text);
 }
 
 .reserved-window-note {
