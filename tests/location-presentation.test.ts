@@ -91,7 +91,7 @@ describe("location presentation", () => {
         to: meeting({ id: "next", buildingCode: "IB", room: "340" }),
         route: { ...unavailableRoute, status: "approximate" },
       }),
-    ).toMatchObject({ status: "approximate", label: "Route", detail: "Campus walking route." });
+    ).toMatchObject({ status: "approximate", label: "Route", detail: "Campus route." });
     expect(
       getLocationPresentation({
         from: meeting(),

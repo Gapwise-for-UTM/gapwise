@@ -432,7 +432,7 @@ function SegmentDetails({
         <span
           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
             route.status === "routed" || route.status === "same-room"
-              ? "bg-lec/15 text-foreground"
+              ? "bg-lec/15 text-lec"
               : "bg-muted text-muted-foreground"
           }`}
         >
