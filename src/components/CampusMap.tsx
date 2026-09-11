@@ -761,6 +761,12 @@ function syncEntranceMarkers(
       const active = entrance.id === activeEntranceId;
       applyEntranceMarkerActiveState(existingRecord.element, entrance, active);
     } else {
+      const markerAnchor = document.createElement("div");
+      markerAnchor.className = "map-entrance-marker-anchor";
+      markerAnchor.dataset["entranceId"] = entrance.id;
+      markerAnchor.dataset["longitude"] = String(entrance.coordinates[0]);
+      markerAnchor.dataset["latitude"] = String(entrance.coordinates[1]);
+
       const markerButton = document.createElement("button");
       markerButton.type = "button";
       const active = entrance.id === activeEntranceId;
@@ -791,7 +797,9 @@ function syncEntranceMarkers(
         event.stopPropagation();
         onActiveEntranceChange?.(entrance.id);
       });
-      const marker = new maplibregl.Marker({ element: markerButton, anchor: "center" })
+
+      markerAnchor.append(markerButton);
+      const marker = new maplibregl.Marker({ element: markerAnchor, anchor: "center" })
         .setLngLat(entrance.coordinates)
         .addTo(map);
       markers.push({ id: entrance.id, entrance, marker, element: markerButton });

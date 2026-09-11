@@ -12,13 +12,15 @@
     <link rel="stylesheet" href="/timetable-card-fixes.css" />
     <style>
       /*
-       * MapLibre owns the marker root's geographic transform. Keep entrance
-       * marker geometry completely inert so global button/focus/hover styles
-       * cannot perturb the projected position during pan, zoom, fitBounds,
-       * route fitting, or repeated building changes.
+       * MapLibre owns this inert anchor's geographic transform. The interactive
+       * entrance button is a centered child, so hover/focus/selection styling
+       * can never alter the coordinate MapLibre is projecting.
        */
-      .maplibregl-marker.map-entrance-marker {
+      .maplibregl-marker.map-entrance-marker-anchor {
         box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         width: 30px !important;
         height: 30px !important;
         min-width: 30px !important;
@@ -27,35 +29,19 @@
         max-height: 30px !important;
         margin: 0 !important;
         padding: 0 !important;
+        pointer-events: none !important;
         translate: none !important;
         rotate: none !important;
         scale: none !important;
         transform-origin: 50% 50% !important;
-        transition:
-          border-width 160ms ease,
-          border-color 160ms ease,
-          outline-color 160ms ease !important;
       }
 
-      .maplibregl-marker.map-entrance-marker:hover,
-      .maplibregl-marker.map-entrance-marker:focus,
-      .maplibregl-marker.map-entrance-marker:focus-visible,
-      .maplibregl-marker.map-entrance-marker:active,
-      .maplibregl-marker.map-entrance-marker.is-selected {
-        width: 30px !important;
-        height: 30px !important;
-        min-width: 30px !important;
-        min-height: 30px !important;
-        max-width: 30px !important;
-        max-height: 30px !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        translate: none !important;
-        rotate: none !important;
-        scale: none !important;
+      .map-entrance-marker-anchor > .map-entrance-marker {
+        flex: none;
+        pointer-events: auto;
       }
 
-      .maplibregl-marker.map-entrance-marker.is-selected {
+      .map-entrance-marker.is-selected {
         outline: 2px solid color-mix(in srgb, var(--color-accent) 55%, transparent);
         outline-offset: 2px;
       }
