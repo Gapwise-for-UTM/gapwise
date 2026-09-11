@@ -870,6 +870,31 @@
         "lastVerified": "2026-09-10",
         "verificationStatus": "verified"
       }
+    },
+    {
+      "type": "Feature",
+      "id": "ic-13568164840",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6627448,
+          43.5482744
+        ]
+      },
+      "properties": {
+        "buildingCode": "IC",
+        "label": "Mapped main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13568164840,
+        "accessibility": "accessible",
+        "access": "unknown",
+        "direction": "unknown",
+        "notes": "Current OSM entrance-tagged node is an exact member of a named OSM building way whose name uniquely matches the canonical Gapwise building; ordinary student/public access is not independently established.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164840",
+        "lastVerified": "2026-09-10",
+        "verificationStatus": "verified"
+      }
     }
   ]
 }

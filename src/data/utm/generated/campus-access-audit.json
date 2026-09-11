@@ -128,13 +128,15 @@
       "code": "IC",
       "name": "Innovation Complex",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 0,
+      "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 0,
-      "verifiedAccessibleEntrances": 0,
-      "provenance": [],
+      "graphConnectedAccessPoints": 1,
+      "verifiedAccessibleEntrances": 1,
+      "provenance": [
+        "https://www.openstreetmap.org/node/13568164840"
+      ],
       "unresolved": [
-        "No publishable exterior access point is recorded."
+        "Ordinary public access status is not affirmatively published."
       ]
     },
     {

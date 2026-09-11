@@ -11,7 +11,7 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the fi
 | CCT | 1 | 0 | 1 | 1 | Ordinary public access status is not affirmatively published. |
 | HM | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | KN | 3 | 0 | 3 | 3 | Ordinary public access status is not affirmatively published. |
-| IC | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| IC | 1 | 0 | 1 | 1 | Ordinary public access status is not affirmatively published. |
 | RAWC | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | XR | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | HB | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |

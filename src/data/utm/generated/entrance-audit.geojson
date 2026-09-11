@@ -801,6 +801,27 @@
     },
     {
       "type": "Feature",
+      "id": "ic-13568164840",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6627448,
+          43.5482744
+        ]
+      },
+      "properties": {
+        "buildingCode": "IC",
+        "label": "Mapped main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "verified",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
       "id": "utm:entrance-candidate:ax:main",
       "geometry": null,
       "properties": {
