@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CAMPUS_BUILDING_FOOTPRINTS } from "../src/data/utm/building-footprints";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const candidatePath = resolve(root, "artifacts/utm-osm-entrance-candidates.json");
@@ -9,12 +10,14 @@ const outputPath = resolve(root, "artifacts/entrances.with-osm-discoveries.geojs
 const verifiedAt = "2026-09-10";
 
 type Tags = Record<string, string | undefined>;
+type MemberWay = { osmWayId: number; tags: Tags };
 type Candidate = {
   osmNodeId: number;
   coordinates: [number, number];
   entrance: string;
   tags: Tags;
   existingGapwiseRecord: boolean;
+  memberWays: MemberWay[];
   recommendedBuildingCode: string | null;
   reviewStatus: "unique_boundary_match" | "ambiguous" | "unmatched";
 };
@@ -50,6 +53,42 @@ function label(candidate: Candidate): string {
   return "Mapped entrance";
 }
 
+function normalizedIdentity(value: string) {
+  return value.trim().toLocaleLowerCase("en-CA").replace(/\s+/g, " ");
+}
+
+function topologyBuildingCode(candidate: Candidate): string | null {
+  const namedMemberWays = new Set(
+    candidate.memberWays.flatMap((way) =>
+      way.tags["building"] && way.tags["name"]
+        ? [normalizedIdentity(way.tags["name"])]
+        : [],
+    ),
+  );
+  if (namedMemberWays.size === 0) return null;
+
+  const matches = CAMPUS_BUILDING_FOOTPRINTS.features.filter((feature) =>
+    namedMemberWays.has(normalizedIdentity(feature.properties.name)),
+  );
+  return matches.length === 1 ? matches[0]!.properties.buildingCode : null;
+}
+
+function resolvedBuildingCode(candidate: Candidate): {
+  buildingCode: string;
+  evidence: "canonical_boundary" | "named_osm_building_way";
+} | null {
+  if (candidate.reviewStatus === "unique_boundary_match" && candidate.recommendedBuildingCode) {
+    return {
+      buildingCode: candidate.recommendedBuildingCode,
+      evidence: "canonical_boundary",
+    };
+  }
+  const topologyMatch = topologyBuildingCode(candidate);
+  return topologyMatch
+    ? { buildingCode: topologyMatch, evidence: "named_osm_building_way" }
+    : null;
+}
+
 const discovery = JSON.parse(await readFile(candidatePath, "utf8")) as { candidates: Candidate[] };
 const collection = JSON.parse(await readFile(entrancePath, "utf8")) as Collection;
 const existing = new Set(
@@ -58,36 +97,38 @@ const existing = new Set(
   ),
 );
 
-const additions = discovery.candidates
-  .filter(
-    (candidate) =>
-      !candidate.existingGapwiseRecord &&
-      !existing.has(candidate.osmNodeId) &&
-      candidate.reviewStatus === "unique_boundary_match" &&
-      candidate.recommendedBuildingCode,
-  )
-  .map((candidate): EntranceFeature => ({
-    type: "Feature",
-    id: `${candidate.recommendedBuildingCode!.toLowerCase()}-${candidate.osmNodeId}`,
-    geometry: { type: "Point", coordinates: candidate.coordinates },
-    properties: {
-      buildingCode: candidate.recommendedBuildingCode,
-      label: label(candidate),
-      kind: "entrance",
-      osmNodeId: candidate.osmNodeId,
-      accessibility: accessibility(candidate.tags),
-      access: access(candidate),
-      direction: "unknown",
-      notes:
-        candidate.entrance === "emergency"
-          ? "Current OSM explicitly tags this physical door as an emergency entrance; it must not be used as a normal routing endpoint."
-          : "Current OSM entrance-tagged node lies on exactly one canonical Gapwise building boundary; ordinary student/public access is not independently established.",
-      source: "OpenStreetMap",
-      sourceUrl: `https://www.openstreetmap.org/node/${candidate.osmNodeId}`,
-      lastVerified: verifiedAt,
-      verificationStatus: "verified",
+const additions = discovery.candidates.flatMap((candidate): EntranceFeature[] => {
+  if (candidate.existingGapwiseRecord || existing.has(candidate.osmNodeId)) return [];
+  const resolution = resolvedBuildingCode(candidate);
+  if (!resolution) return [];
+
+  return [
+    {
+      type: "Feature",
+      id: `${resolution.buildingCode.toLowerCase()}-${candidate.osmNodeId}`,
+      geometry: { type: "Point", coordinates: candidate.coordinates },
+      properties: {
+        buildingCode: resolution.buildingCode,
+        label: label(candidate),
+        kind: "entrance",
+        osmNodeId: candidate.osmNodeId,
+        accessibility: accessibility(candidate.tags),
+        access: access(candidate),
+        direction: "unknown",
+        notes:
+          candidate.entrance === "emergency"
+            ? "Current OSM explicitly tags this physical door as an emergency entrance; it must not be used as a normal routing endpoint."
+            : resolution.evidence === "named_osm_building_way"
+              ? "Current OSM entrance-tagged node is an exact member of a named OSM building way whose name uniquely matches the canonical Gapwise building; ordinary student/public access is not independently established."
+              : "Current OSM entrance-tagged node lies on exactly one canonical Gapwise building boundary; ordinary student/public access is not independently established.",
+        source: "OpenStreetMap",
+        sourceUrl: `https://www.openstreetmap.org/node/${candidate.osmNodeId}`,
+        lastVerified: verifiedAt,
+        verificationStatus: "verified",
+      },
     },
-  }));
+  ];
+});
 
 collection.features.push(...additions);
 collection.metadata["lastVerified"] = verifiedAt;
