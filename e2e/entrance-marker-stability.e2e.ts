@@ -63,6 +63,17 @@ function expectStationaryProjection(before: MarkerGeometry, after: MarkerGeometr
   expect(Math.abs(after.anchorCenter.y - before.anchorCenter.y)).toBeLessThan(0.75);
 }
 
+async function expectProjectionMoved(anchor: Locator, before: MarkerGeometry) {
+  await expect
+    .poll(async () => {
+      const after = await markerGeometry(anchor);
+      expectSameGeographicAnchor(before, after);
+      return after.anchorTransform;
+    })
+    .not.toBe(before.anchorTransform);
+  return expectMarkerCentered(anchor);
+}
+
 async function selectBuilding(page: Page, query: string, heading: string) {
   const search = page.getByRole("searchbox", { name: "Search UTM buildings" });
   await search.fill(query);
@@ -119,27 +130,25 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   const routeFitted = await expectMarkerCentered(mnAnchor);
   expectSameGeographicAnchor(original, routeFitted);
 
+  // Use MapLibre's explicit zoom control rather than a synthetic wheel event.
+  // A wheel event can legitimately be clamped or coalesced, making "must move"
+  // assertions flaky even when marker projection is correct.
+  await page.getByRole("button", { name: "Zoom in" }).click();
+  const zoomed = await expectProjectionMoved(mnAnchor, routeFitted);
+  expectSameGeographicAnchor(original, zoomed);
+
   const canvas = page.locator(".maplibregl-canvas").first();
   const bounds = await canvas.boundingBox();
   expect(bounds).not.toBeNull();
   if (!bounds) throw new Error("Campus map canvas bounds are unavailable.");
-  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-  await page.mouse.wheel(0, -550);
-  await page.waitForTimeout(350);
-  const zoomed = await expectMarkerCentered(mnAnchor);
-  expectSameGeographicAnchor(original, zoomed);
-  expect(zoomed.anchorTransform).not.toBe(routeFitted.anchorTransform);
-
   await page.mouse.move(bounds.x + bounds.width * 0.55, bounds.y + bounds.height * 0.55);
   await page.mouse.down();
   await page.mouse.move(bounds.x + bounds.width * 0.45, bounds.y + bounds.height * 0.48, {
     steps: 8,
   });
   await page.mouse.up();
-  await page.waitForTimeout(250);
-  const panned = await expectMarkerCentered(mnAnchor);
+  const panned = await expectProjectionMoved(mnAnchor, zoomed);
   expectSameGeographicAnchor(original, panned);
-  expect(panned.anchorTransform).not.toBe(zoomed.anchorTransform);
 
   const themeToggle = page.getByRole("button", { name: /Switch to (dark|light) mode/ });
   await themeToggle.click();
