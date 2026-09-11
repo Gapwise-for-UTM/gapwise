@@ -48,6 +48,7 @@ describe("ephemeral campus live location", () => {
     mock.emitPosition(position(-79.66475, 43.55105, 12));
     expect(states.at(-1)?.status).toBe("on-campus");
     expect(states.at(-1)?.point).not.toBeNull();
+    expect(states.at(-1)).toHaveProperty("observedAtMs");
 
     mock.emitPosition(position(-79.7, 43.57, 10));
     expect(states.at(-1)).toEqual({ status: "off-campus", point: null });
