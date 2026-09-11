@@ -123,7 +123,7 @@ async function main() {
 
   const entranceNodes = payload.elements
     .filter((element): element is OsmNode => element.type === "node" && "lat" in element && "lon" in element)
-    .filter((node) => Boolean(node.tags?.entrance) && node.tags?.entrance !== "no")
+    .filter((node) => Boolean(node.tags?.["entrance"]) && node.tags?.["entrance"] !== "no")
     .sort((a, b) => a.id - b.id);
 
   const candidates: Candidate[] = entranceNodes.map((node) => {
@@ -141,7 +141,7 @@ async function main() {
     return {
       osmNodeId: node.id,
       coordinates: point,
-      entrance: node.tags?.entrance ?? "yes",
+      entrance: node.tags?.["entrance"] ?? "yes",
       tags: node.tags ?? {},
       existingGapwiseRecord: existingIds.has(node.id),
       matches,
