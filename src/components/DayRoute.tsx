@@ -3,8 +3,10 @@ import { AlertTriangle, Clock3, Footprints, LocateFixed, Route as RouteIcon } fr
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BubbleTabs } from "./BubbleTabs";
 import { CampusExplorer } from "./CampusExplorer";
+import type { LocationControlState } from "./CampusMap";
 import { DayRouteSequence } from "./DayRouteSequence";
 import { IndoorFloorViewer } from "./IndoorFloorViewer";
+import { LiveClassRouteCard } from "./LiveClassRouteCard";
 import { MobileDayRoute } from "@/components/mobile/MobileDayRoute";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import {
@@ -16,6 +18,11 @@ import {
 } from "@/features/routing/campus-day";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
+import {
+  liveLocationMateriallyChanged,
+  planLiveClassRoute,
+  selectLiveClassOrigin,
+} from "@/features/routing/live-class-route";
 import { loadPreferences, savePreferences } from "@/features/sync/sync-service";
 import type { UserPreferences } from "@/features/sync/preferences";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
@@ -92,6 +99,36 @@ export function DayRoute({
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [hoveredBuildingCode, setHoveredBuildingCode] = useState<string | null>(null);
   const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);
+  const [liveLocation, setLiveLocation] = useState<LocationControlState>({
+    status: "disabled",
+    point: null,
+  });
+  const [now, setNow] = useState(() => new Date());
+  const acceptLiveLocation = useCallback((next: LocationControlState) => {
+    setLiveLocation((current) => {
+      const currentOrigin = selectLiveClassOrigin(
+        current,
+        next.status === "on-campus" ? next.observedAtMs : Date.now(),
+      );
+      const nextOrigin = selectLiveClassOrigin(
+        next,
+        next.status === "on-campus" ? next.observedAtMs : Date.now(),
+      );
+      if (
+        !liveLocationMateriallyChanged(currentOrigin, nextOrigin) &&
+        current.status === "on-campus" &&
+        next.status === "on-campus"
+      ) {
+        return { ...next, point: current.point };
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 15_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!routeDays.includes(weekday)) setWeekday("Monday");
@@ -138,6 +175,11 @@ export function DayRoute({
   );
   const selectSegment = useCallback(
     (id: string) => {
+      if (id.startsWith("live-location--")) {
+        setSelectedMeetingId(id.slice("live-location--".length));
+        setSelectedSegmentId(null);
+        return;
+      }
       setSelectedSegmentId(id);
       setSelectedMeetingId(null);
       if (selectedBuildingCode) onSelectBuilding(null);
@@ -146,6 +188,34 @@ export function DayRoute({
   );
   const highlightBuilding = useCallback((code: string | null) => setHoveredBuildingCode(code), []);
   const selectedSegment = segments.find((segment) => segment.id === selectedSegmentId) ?? null;
+  const selectedMeeting = dayMeetings.find((meeting) => meeting.id === selectedMeetingId) ?? null;
+  const liveOrigin = selectLiveClassOrigin(liveLocation, now.getTime());
+  const livePoint = liveOrigin.kind === "live" ? liveOrigin.point : null;
+  const liveRoute = useMemo(
+    () =>
+      selectedMeeting && livePoint
+        ? planLiveClassRoute(selectedMeeting, { kind: "live", point: livePoint }, preferences)
+        : null,
+    [selectedMeeting, livePoint, preferences],
+  );
+  const fallbackRoute = selectedMeeting
+    ? (segments.find((segment) => segment.to.id === selectedMeeting.id)?.route ?? null)
+    : null;
+  const mapSegments = useMemo(
+    () =>
+      selectedMeeting && liveRoute
+        ? [
+            ...segments,
+            {
+              id: `live-location--${selectedMeeting.id}`,
+              from: { ...selectedMeeting, id: "live-location", buildingCode: null, room: null },
+              to: selectedMeeting,
+              route: liveRoute,
+            },
+          ]
+        : segments,
+    [liveRoute, segments, selectedMeeting],
+  );
 
   function updatePreferences(patch: Partial<UserPreferences>) {
     const next = { ...preferences, ...patch };
@@ -165,6 +235,8 @@ export function DayRoute({
         planTransition={planTransition}
         selectedBuildingCode={selectedBuildingCode}
         onSelectBuilding={onSelectBuilding}
+        liveLocation={liveLocation}
+        onLiveLocationChange={acceptLiveLocation}
       />
     );
   }
@@ -347,7 +419,7 @@ export function DayRoute({
         <div className="space-y-3">
           <CampusExplorer
             meetings={dayMeetings}
-            segments={segments}
+            segments={mapSegments}
             selectedMeetingId={selectedMeetingId}
             selectedSegmentId={selectedSegmentId}
             onSelectMeeting={selectMeeting}
@@ -357,6 +429,7 @@ export function DayRoute({
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
             dayAnchor={dayAnchor}
+            onLiveLocationChange={acceptLiveLocation}
             className="h-[min(66vh,44rem)] min-h-[34rem]"
           />
 
@@ -367,6 +440,15 @@ export function DayRoute({
             selectedSegmentId={selectedSegmentId}
             onSelectMeeting={selectMeeting}
             onSelectSegment={selectSegment}
+          />
+
+          <LiveClassRouteCard
+            meeting={selectedMeeting}
+            origin={liveOrigin}
+            route={liveRoute}
+            fallbackRoute={fallbackRoute}
+            preferences={preferences}
+            now={now}
           />
 
           {selectedSegment ? (

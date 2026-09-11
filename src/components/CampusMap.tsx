@@ -61,6 +61,7 @@ export type CampusMapProps = {
   onActiveEntranceChange?: (id: string | null) => void;
   focusPadding?: MapFocusPadding;
   dayAnchor: CampusDayAnchor | null;
+  onLiveLocationChange?: (state: LocationControlState) => void;
   className?: string;
 };
 
@@ -84,7 +85,7 @@ type MapData = {
 type MapLibreModule = typeof import("maplibre-gl");
 type MapStatus = "loading" | "ready" | "error" | "unsupported";
 type MapTheme = keyof typeof MAP_CONFIG.styleUrls;
-type LocationControlState = LiveLocationState | { status: "disabled"; point: null };
+export type LocationControlState = LiveLocationState | { status: "disabled"; point: null };
 const MAP_LOAD_TIMEOUT_MS = 12_000;
 const FIT_BOUNDS_MAX_ZOOM = 17;
 const CAMPUS_OVERVIEW_ZOOM_OUT_ALLOWANCE = 0.15;
@@ -937,6 +938,7 @@ export function CampusMap({
   onActiveEntranceChange,
   focusPadding = DEFAULT_FOCUS_PADDING,
   dayAnchor,
+  onLiveLocationChange,
   className = "",
 }: CampusMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -980,7 +982,8 @@ export function CampusMap({
 
   useEffect(() => {
     liveLocationRef.current = liveLocation;
-  }, [liveLocation]);
+    onLiveLocationChange?.(liveLocation);
+  }, [liveLocation, onLiveLocationChange]);
 
   useEffect(() => {
     themeRef.current = mapTheme;
@@ -1362,14 +1365,14 @@ export function CampusMap({
           <button
             type="button"
             onClick={() => setLocationEnabled((enabled) => !enabled)}
-            aria-label={locationEnabled ? "Hide my location" : "Show my location"}
+            aria-label={locationEnabled ? "Stop using my location" : "Use my location for routes"}
             aria-pressed={locationEnabled}
             className="button-secondary inline-flex min-h-10 min-w-10 items-center justify-center gap-2 rounded-lg px-2.5 text-xs font-semibold shadow-lg md:px-3"
-            title={locationEnabled ? "Hide my location" : "Show my location"}
+            title={locationEnabled ? "Stop using my location" : "Use my location for routes"}
           >
             <LocateFixed className="h-4 w-4" aria-hidden="true" />
             <span className="hidden md:inline">
-              {locationEnabled ? "Hide my location" : "Show my location"}
+              {locationEnabled ? "Stop location" : "Route from me"}
             </span>
           </button>
           {locationStatusLabel(liveLocation.status) ? (
