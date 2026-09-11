@@ -123,8 +123,8 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   expect(original.latitude).toBeTruthy();
 
   // Interactive child styling cannot own, replace, or compose with MapLibre's
-  // geographic transform. First wait for any selection fit to finish, then
-  // verify hover/focus leave the inert geographic anchor byte-for-byte stable.
+  // geographic transform. First wait for the building-selection fitBounds to
+  // finish, then verify hover/focus leave the inert geographic anchor stable.
   await mnButton.dispatchEvent("mouseenter");
   await expect(mnButton).toHaveClass(/is-selected/);
   const hovered = await expectMarkerCentered(mnAnchor);
@@ -141,27 +141,31 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   expectStationaryProjection(original, focused);
   await page.keyboard.press("Tab");
 
-  await page.getByRole("button", { name: "Fit the active day route" }).click();
-  const routeFitted = await waitForProjectionSettled(mnAnchor);
-  expectSameGeographicAnchor(original, routeFitted);
-
+  // Force the camera away from the building-selection fit, then require route
+  // fitting to produce a real MapLibre-owned geographic reprojection while the
+  // marker remains bound to the exact same stored WGS84 entrance coordinate.
   await page.getByRole("button", { name: "Zoom in" }).click();
-  const zoomed = await expectProjectionMoved(mnAnchor, routeFitted);
-  expectSameGeographicAnchor(original, zoomed);
+  const zoomed = await expectProjectionMoved(mnAnchor, original);
+
+  await page.getByRole("button", { name: "Fit the active day route" }).click();
+  const routeFitted = await expectProjectionMoved(mnAnchor, zoomed);
+  expectSameGeographicAnchor(original, routeFitted);
 
   // MapLibre's keyboard handler performs a real map pan without relying on
   // synthetic drag coordinates that can be intercepted by map overlays.
   const canvas = page.locator(".maplibregl-canvas").first();
   await canvas.focus();
   await canvas.press("ArrowRight");
-  const panned = await expectProjectionMoved(mnAnchor, zoomed);
+  const panned = await expectProjectionMoved(mnAnchor, routeFitted);
   expectSameGeographicAnchor(original, panned);
 
+  // A style/theme reload must not move a geographic marker when the camera did
+  // not move. This catches reattachment bugs that preserve IDs but shift pixels.
   const themeToggle = page.getByRole("button", { name: /Switch to (dark|light) mode/ });
   await themeToggle.click();
   const themedMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const themed = await waitForProjectionSettled(themedMnAnchor);
-  expectSameGeographicAnchor(original, themed);
+  expectStationaryProjection(panned, themed);
 
   await selectBuilding(page, "Deerfield", "Deerfield Hall");
   await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(3);
@@ -169,10 +173,15 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
     await waitForProjectionSettled(anchor);
   }
 
+  // Re-selecting MN exercises building fitBounds again. The deterministic MN
+  // building fit must return its known entrance to the same projected location
+  // as the initial MN selection, not merely preserve its data attributes.
   await selectBuilding(page, "MN", "Maanjiwe nendamowinan");
   const restoredMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const restored = await waitForProjectionSettled(restoredMnAnchor);
   expectSameGeographicAnchor(original, restored);
+  expect(Math.abs(restored.anchorCenter.x - original.anchorCenter.x)).toBeLessThan(0.75);
+  expect(Math.abs(restored.anchorCenter.y - original.anchorCenter.y)).toBeLessThan(0.75);
 
   guard.assertClean();
 });
