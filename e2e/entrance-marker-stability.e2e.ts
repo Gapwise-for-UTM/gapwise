@@ -72,7 +72,7 @@ async function waitForProjectionSettled(anchor: Locator) {
   // Building focus uses a 620 ms MapLibre fitBounds transition. Requiring a
   // longer quiet window prevents a pre-animation snapshot from being mistaken
   // for the settled geographic projection on slower CI runners.
-  for (let stableSamples = 0; stableSamples < 8; ) {
+  for (let stableSamples = 0; stableSamples < 8;) {
     await anchor.page().waitForTimeout(100);
     const current = await expectMarkerCentered(anchor);
     expectSameGeographicAnchor(previous, current);
