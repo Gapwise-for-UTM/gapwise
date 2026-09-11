@@ -10,7 +10,9 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 type Tags = Record<string, string | undefined>;
 type OsmNode = { type: "node"; id: number; lat: number; lon: number; tags?: Tags };
-type OsmPayload = { elements: Array<OsmNode | { type: string }> };
+type OsmWay = { type: "way"; id: number; nodes: number[]; tags?: Tags };
+type OsmElement = OsmNode | OsmWay | { type: string };
+type OsmPayload = { elements: OsmElement[] };
 type Ring = [number, number][];
 type Geometry =
   { type: "Polygon"; coordinates: Ring[] } | { type: "MultiPolygon"; coordinates: Ring[][] };
@@ -22,12 +24,18 @@ type Match = {
   boundaryDistanceMeters: number;
 };
 
+type MemberWay = {
+  osmWayId: number;
+  tags: Tags;
+};
+
 type Candidate = {
   osmNodeId: number;
   coordinates: [number, number];
   entrance: string;
   tags: Tags;
   existingGapwiseRecord: boolean;
+  memberWays: MemberWay[];
   matches: Match[];
   recommendedBuildingCode: string | null;
   reviewStatus: "unique_boundary_match" | "ambiguous" | "unmatched";
@@ -99,6 +107,42 @@ function insideGeometry(point: [number, number], geometry: Geometry): boolean {
   return polygons(geometry).some((polygon) => pointInPolygon(point, polygon));
 }
 
+function isOsmNode(element: OsmElement): element is OsmNode {
+  return element.type === "node" && "lat" in element && "lon" in element;
+}
+
+function isOsmWay(element: OsmElement): element is OsmWay {
+  return element.type === "way" && "nodes" in element && Array.isArray(element.nodes);
+}
+
+function buildWayMembership(elements: OsmElement[]) {
+  const membership = new Map<number, OsmWay[]>();
+  for (const way of elements.filter(isOsmWay)) {
+    for (const nodeId of way.nodes) {
+      const ways = membership.get(nodeId);
+      if (ways) ways.push(way);
+      else membership.set(nodeId, [way]);
+    }
+  }
+  return membership;
+}
+
+function describeWayMembership(memberWays: MemberWay[]) {
+  if (memberWays.length === 0) return "—";
+  return memberWays
+    .map(({ osmWayId, tags }) => {
+      const context = [
+        tags["building"] ? `building=${tags["building"]}` : null,
+        tags["name"] ? `name=${tags["name"]}` : null,
+        tags["ref"] ? `ref=${tags["ref"]}` : null,
+        tags["highway"] ? `highway=${tags["highway"]}` : null,
+        tags["indoor"] ? `indoor=${tags["indoor"]}` : null,
+      ].filter((value): value is string => Boolean(value));
+      return `${osmWayId}${context.length > 0 ? ` (${context.join(", ")})` : ""}`;
+    })
+    .join("<br>");
+}
+
 async function fetchOsm(): Promise<OsmPayload> {
   const url = new URL(OSM_MAP_ENDPOINT);
   url.searchParams.set("bbox", CAMPUS_BOUNDS);
@@ -115,6 +159,7 @@ async function fetchOsm(): Promise<OsmPayload> {
 
 async function main() {
   const payload = await fetchOsm();
+  const wayMembership = buildWayMembership(payload.elements);
   const existingRaw = await readFile(resolve(root, "src/data/utm/entrances.geojson"), "utf8");
   const existing = JSON.parse(existingRaw) as {
     features: Array<{ properties: { osmNodeId?: number } }>;
@@ -126,10 +171,7 @@ async function main() {
   );
 
   const entranceNodes = payload.elements
-    .filter(
-      (element): element is OsmNode =>
-        element.type === "node" && "lat" in element && "lon" in element,
-    )
+    .filter(isOsmNode)
     .filter((node) => Boolean(node.tags?.["entrance"]) && node.tags?.["entrance"] !== "no")
     .sort((a, b) => a.id - b.id);
 
@@ -150,12 +192,16 @@ async function main() {
       );
     const unique =
       matches.length === 1 && matches[0]!.boundaryDistanceMeters <= MATCH_DISTANCE_METERS;
+    const memberWays = (wayMembership.get(node.id) ?? [])
+      .map((way): MemberWay => ({ osmWayId: way.id, tags: way.tags ?? {} }))
+      .sort((a, b) => a.osmWayId - b.osmWayId);
     return {
       osmNodeId: node.id,
       coordinates: point,
       entrance: node.tags?.["entrance"] ?? "yes",
       tags: node.tags ?? {},
       existingGapwiseRecord: existingIds.has(node.id),
+      memberWays,
       matches,
       recommendedBuildingCode: unique ? matches[0]!.buildingCode : null,
       reviewStatus: unique
@@ -190,12 +236,12 @@ async function main() {
 
   const rows = candidates.map((candidate) => {
     const best = candidate.matches[0];
-    return `| ${candidate.osmNodeId} | ${candidate.entrance} | ${candidate.coordinates[1].toFixed(7)}, ${candidate.coordinates[0].toFixed(7)} | ${candidate.existingGapwiseRecord ? "yes" : "no"} | ${candidate.reviewStatus} | ${best ? `${best.buildingCode} (${best.boundaryDistanceMeters.toFixed(2)} m)` : "—"} |`;
+    return `| ${candidate.osmNodeId} | ${candidate.entrance} | ${candidate.coordinates[1].toFixed(7)}, ${candidate.coordinates[0].toFixed(7)} | ${candidate.existingGapwiseRecord ? "yes" : "no"} | ${candidate.reviewStatus} | ${best ? `${best.buildingCode} (${best.boundaryDistanceMeters.toFixed(2)} m)` : "—"} | ${describeWayMembership(candidate.memberWays)} |`;
   });
   const markdown = [
     "# Current OSM UTM entrance candidates",
     "",
-    `Generated from the OpenStreetMap map API for campus bounds \`${CAMPUS_BOUNDS}\`. A \`unique_boundary_match\` means an entrance-tagged OSM node lies inside or within ${MATCH_DISTANCE_METERS.toFixed(1)} m of exactly one canonical Gapwise building footprint. This is a review candidate, not an automatic public-access or accessibility claim.`,
+    `Generated from the OpenStreetMap map API for campus bounds \`${CAMPUS_BOUNDS}\`. A \`unique_boundary_match\` means an entrance-tagged OSM node lies inside or within ${MATCH_DISTANCE_METERS.toFixed(1)} m of exactly one canonical Gapwise building footprint. OSM member-way context is included as exact source topology for review, but it does not automatically assign a Gapwise building, public access, direction, or accessibility.`,
     "",
     `- entrance-tagged nodes: ${report.totalEntranceNodes}`,
     `- already represented in Gapwise: ${report.existingEntranceNodes}`,
@@ -203,8 +249,8 @@ async function main() {
     `- ambiguous: ${report.ambiguous}`,
     `- unmatched: ${report.unmatched}`,
     "",
-    "| OSM node | entrance tag | coordinate | existing | review | nearest canonical building |",
-    "| ---: | --- | --- | --- | --- | --- |",
+    "| OSM node | entrance tag | coordinate | existing | review | nearest canonical building | OSM member ways |",
+    "| ---: | --- | --- | --- | --- | --- | --- |",
     ...rows,
     "",
   ].join("\n");
