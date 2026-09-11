@@ -1,7 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const root = resolve(import.meta.dir, "..");
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const candidatePath = resolve(root, "artifacts/utm-osm-entrance-candidates.json");
 const entrancePath = resolve(root, "src/data/utm/entrances.geojson");
 const outputPath = resolve(root, "artifacts/entrances.with-osm-discoveries.geojson");
@@ -32,14 +33,14 @@ type Collection = {
 };
 
 function accessibility(tags: Tags): "accessible" | "not_accessible" | "unknown" {
-  if (tags.wheelchair === "yes") return "accessible";
-  if (tags.wheelchair === "no") return "not_accessible";
+  if (tags["wheelchair"] === "yes") return "accessible";
+  if (tags["wheelchair"] === "no") return "not_accessible";
   return "unknown";
 }
 
 function access(candidate: Candidate): "restricted" | "emergency_only" | "unknown" {
   if (candidate.entrance === "emergency") return "emergency_only";
-  if (["private", "no"].includes(candidate.tags.access ?? "")) return "restricted";
+  if (["private", "no"].includes(candidate.tags["access"] ?? "")) return "restricted";
   return "unknown";
 }
 
@@ -86,9 +87,9 @@ const additions = discovery.candidates
   }));
 
 collection.features.push(...additions);
-collection.metadata.lastVerified = verifiedAt;
-collection.metadata.verificationStatus = "verified";
-collection.metadata.description =
+collection.metadata["lastVerified"] = verifiedAt;
+collection.metadata["verificationStatus"] = "verified";
+collection.metadata["description"] =
   "UTM building entrances and explicitly flagged pedestrian approach points. Physical door points come from reviewed OpenStreetMap entrance nodes; inferred approaches remain explicitly non-door topology fallbacks.";
 
 await writeFile(outputPath, `${JSON.stringify(collection, null, 2)}\n`);
@@ -96,9 +97,9 @@ console.log(
   JSON.stringify({
     added: additions.map((feature) => ({
       id: feature.id,
-      buildingCode: feature.properties.buildingCode,
+      buildingCode: feature.properties["buildingCode"],
       osmNodeId: feature.properties.osmNodeId,
-      access: feature.properties.access,
+      access: feature.properties["access"],
     })),
     totalFeatures: collection.features.length,
   }),
