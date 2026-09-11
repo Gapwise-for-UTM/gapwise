@@ -82,10 +82,16 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   expect(original.longitude).toBeTruthy();
   expect(original.latitude).toBeTruthy();
 
-  await mnButton.hover();
+  // The selected timetable marker can physically overlap an entrance at this zoom.
+  // Dispatch the interaction events directly so this regression isolates marker
+  // projection from hit-testing/z-order while still exercising the real handlers.
+  await mnButton.dispatchEvent("mouseenter");
   await expect(mnButton).toHaveClass(/is-selected/);
   await expectMarkerCentered(mnAnchor);
+  await mnButton.dispatchEvent("mouseleave");
+  await expect(mnButton).not.toHaveClass(/is-selected/);
   await mnButton.focus();
+  await expect(mnButton).toHaveClass(/is-selected/);
   await expectMarkerCentered(mnAnchor);
   await page.keyboard.press("Tab");
 
