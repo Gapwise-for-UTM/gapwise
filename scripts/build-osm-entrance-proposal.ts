@@ -29,9 +29,7 @@ type Candidate = {
 };
 
 type ResolutionEvidence =
-  | "canonical_boundary"
-  | "named_osm_building_way"
-  | "canonical_containment_with_footway";
+  "canonical_boundary" | "named_osm_building_way" | "canonical_containment_with_footway";
 
 type EntranceFeature = {
   type: "Feature";
@@ -71,9 +69,7 @@ function normalizedIdentity(value: string) {
 function topologyBuildingCode(candidate: Candidate): string | null {
   const namedMemberWays = new Set(
     candidate.memberWays.flatMap((way) =>
-      way.tags["building"] && way.tags["name"]
-        ? [normalizedIdentity(way.tags["name"])]
-        : [],
+      way.tags["building"] && way.tags["name"] ? [normalizedIdentity(way.tags["name"])] : [],
     ),
   );
   if (namedMemberWays.size === 0) return null;
