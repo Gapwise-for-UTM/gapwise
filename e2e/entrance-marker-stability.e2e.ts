@@ -63,6 +63,22 @@ function expectStationaryProjection(before: MarkerGeometry, after: MarkerGeometr
   expect(Math.abs(after.anchorCenter.y - before.anchorCenter.y)).toBeLessThan(0.75);
 }
 
+async function waitForProjectionSettled(anchor: Locator) {
+  let previous = await expectMarkerCentered(anchor);
+  for (let stableSamples = 0; stableSamples < 3; ) {
+    await anchor.page().waitForTimeout(100);
+    const current = await expectMarkerCentered(anchor);
+    expectSameGeographicAnchor(previous, current);
+    const stationary =
+      current.anchorTransform === previous.anchorTransform &&
+      Math.abs(current.anchorCenter.x - previous.anchorCenter.x) < 0.75 &&
+      Math.abs(current.anchorCenter.y - previous.anchorCenter.y) < 0.75;
+    stableSamples = stationary ? stableSamples + 1 : 0;
+    previous = current;
+  }
+  return previous;
+}
+
 async function expectProjectionMoved(anchor: Locator, before: MarkerGeometry) {
   await expect
     .poll(async () => {
@@ -71,7 +87,7 @@ async function expectProjectionMoved(anchor: Locator, before: MarkerGeometry) {
       return after.anchorTransform;
     })
     .not.toBe(before.anchorTransform);
-  return expectMarkerCentered(anchor);
+  return waitForProjectionSettled(anchor);
 }
 
 async function selectBuilding(page: Page, query: string, heading: string) {
@@ -101,14 +117,14 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   await expect(mnAnchor).toHaveClass(/maplibregl-marker/);
   await expect(mnButton).not.toHaveClass(/maplibregl-marker/);
 
-  const original = await expectMarkerCentered(mnAnchor);
+  const original = await waitForProjectionSettled(mnAnchor);
   expect(original.entranceId).toBeTruthy();
   expect(original.longitude).toBeTruthy();
   expect(original.latitude).toBeTruthy();
 
-  // Selection/focus is allowed to restyle only the interactive child. With a
-  // stationary camera, MapLibre's geographic transform and projected center
-  // on the inert anchor must remain byte-for-byte / pixel-for-pixel stable.
+  // Interactive child styling cannot own, replace, or compose with MapLibre's
+  // geographic transform. First wait for any selection fit to finish, then
+  // verify hover/focus leave the inert geographic anchor byte-for-byte stable.
   await mnButton.dispatchEvent("mouseenter");
   await expect(mnButton).toHaveClass(/is-selected/);
   const hovered = await expectMarkerCentered(mnAnchor);
@@ -126,46 +142,36 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   await page.keyboard.press("Tab");
 
   await page.getByRole("button", { name: "Fit the active day route" }).click();
-  await page.waitForTimeout(700);
-  const routeFitted = await expectMarkerCentered(mnAnchor);
+  const routeFitted = await waitForProjectionSettled(mnAnchor);
   expectSameGeographicAnchor(original, routeFitted);
 
-  // Use MapLibre's explicit zoom control rather than a synthetic wheel event.
-  // A wheel event can legitimately be clamped or coalesced, making "must move"
-  // assertions flaky even when marker projection is correct.
   await page.getByRole("button", { name: "Zoom in" }).click();
   const zoomed = await expectProjectionMoved(mnAnchor, routeFitted);
   expectSameGeographicAnchor(original, zoomed);
 
+  // MapLibre's keyboard handler performs a real map pan without relying on
+  // synthetic drag coordinates that can be intercepted by map overlays.
   const canvas = page.locator(".maplibregl-canvas").first();
-  const bounds = await canvas.boundingBox();
-  expect(bounds).not.toBeNull();
-  if (!bounds) throw new Error("Campus map canvas bounds are unavailable.");
-  await page.mouse.move(bounds.x + bounds.width * 0.55, bounds.y + bounds.height * 0.55);
-  await page.mouse.down();
-  await page.mouse.move(bounds.x + bounds.width * 0.45, bounds.y + bounds.height * 0.48, {
-    steps: 8,
-  });
-  await page.mouse.up();
+  await canvas.focus();
+  await canvas.press("ArrowRight");
   const panned = await expectProjectionMoved(mnAnchor, zoomed);
   expectSameGeographicAnchor(original, panned);
 
   const themeToggle = page.getByRole("button", { name: /Switch to (dark|light) mode/ });
   await themeToggle.click();
-  await page.waitForTimeout(350);
   const themedMnAnchor = page.locator(".map-entrance-marker-anchor").first();
-  const themed = await expectMarkerCentered(themedMnAnchor);
+  const themed = await waitForProjectionSettled(themedMnAnchor);
   expectSameGeographicAnchor(original, themed);
 
   await selectBuilding(page, "Deerfield", "Deerfield Hall");
   await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(3);
   for (const anchor of await page.locator(".map-entrance-marker-anchor").all()) {
-    await expectMarkerCentered(anchor);
+    await waitForProjectionSettled(anchor);
   }
 
   await selectBuilding(page, "MN", "Maanjiwe nendamowinan");
   const restoredMnAnchor = page.locator(".map-entrance-marker-anchor").first();
-  const restored = await expectMarkerCentered(restoredMnAnchor);
+  const restored = await waitForProjectionSettled(restoredMnAnchor);
   expectSameGeographicAnchor(original, restored);
 
   guard.assertClean();

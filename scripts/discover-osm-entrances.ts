@@ -66,7 +66,8 @@ function pointInRing(point: [number, number], ring: Ring): boolean {
   for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
     const [xi, yi] = ring[i]!;
     const [xj, yj] = ring[j]!;
-    const intersects = yi > point[1] !== yj > point[1] &&
+    const intersects =
+      yi > point[1] !== yj > point[1] &&
       point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi || Number.EPSILON) + xi;
     if (intersects) inside = !inside;
   }
@@ -116,13 +117,20 @@ async function fetchOsm(): Promise<OsmPayload> {
 async function main() {
   const payload = await fetchOsm();
   const existingRaw = await readFile(resolve(root, "src/data/utm/entrances.geojson"), "utf8");
-  const existing = JSON.parse(existingRaw) as { features: Array<{ properties: { osmNodeId?: number } }> };
-  const existingIds = new Set(existing.features.flatMap((feature) =>
-    feature.properties.osmNodeId === undefined ? [] : [feature.properties.osmNodeId],
-  ));
+  const existing = JSON.parse(existingRaw) as {
+    features: Array<{ properties: { osmNodeId?: number } }>;
+  };
+  const existingIds = new Set(
+    existing.features.flatMap((feature) =>
+      feature.properties.osmNodeId === undefined ? [] : [feature.properties.osmNodeId],
+    ),
+  );
 
   const entranceNodes = payload.elements
-    .filter((element): element is OsmNode => element.type === "node" && "lat" in element && "lon" in element)
+    .filter(
+      (element): element is OsmNode =>
+        element.type === "node" && "lat" in element && "lon" in element,
+    )
     .filter((node) => Boolean(node.tags?.["entrance"]) && node.tags?.["entrance"] !== "no")
     .sort((a, b) => a.id - b.id);
 
@@ -136,7 +144,11 @@ async function main() {
         boundaryDistanceMeters: boundaryDistanceMeters(point, feature.geometry),
       }))
       .filter((match) => match.inside || match.boundaryDistanceMeters <= MATCH_DISTANCE_METERS)
-      .sort((a, b) => a.boundaryDistanceMeters - b.boundaryDistanceMeters || a.buildingCode.localeCompare(b.buildingCode));
+      .sort(
+        (a, b) =>
+          a.boundaryDistanceMeters - b.boundaryDistanceMeters ||
+          a.buildingCode.localeCompare(b.buildingCode),
+      );
     const unique = matches.length === 1 && matches[0]!.boundaryDistanceMeters <= MATCH_DISTANCE_METERS;
     return {
       osmNodeId: node.id,
@@ -146,7 +158,11 @@ async function main() {
       existingGapwiseRecord: existingIds.has(node.id),
       matches,
       recommendedBuildingCode: unique ? matches[0]!.buildingCode : null,
-      reviewStatus: unique ? "unique_boundary_match" : matches.length > 0 ? "ambiguous" : "unmatched",
+      reviewStatus: unique
+        ? "unique_boundary_match"
+        : matches.length > 0
+          ? "ambiguous"
+          : "unmatched",
     };
   });
 
@@ -159,12 +175,18 @@ async function main() {
     matchDistanceMeters: MATCH_DISTANCE_METERS,
     totalEntranceNodes: candidates.length,
     existingEntranceNodes: candidates.filter((candidate) => candidate.existingGapwiseRecord).length,
-    newUniqueBoundaryMatches: candidates.filter((candidate) => !candidate.existingGapwiseRecord && candidate.reviewStatus === "unique_boundary_match").length,
+    newUniqueBoundaryMatches: candidates.filter(
+      (candidate) =>
+        !candidate.existingGapwiseRecord && candidate.reviewStatus === "unique_boundary_match",
+    ).length,
     ambiguous: candidates.filter((candidate) => candidate.reviewStatus === "ambiguous").length,
     unmatched: candidates.filter((candidate) => candidate.reviewStatus === "unmatched").length,
     candidates,
   };
-  await writeFile(resolve(outputDir, "utm-osm-entrance-candidates.json"), `${JSON.stringify(report, null, 2)}\n`);
+  await writeFile(
+    resolve(outputDir, "utm-osm-entrance-candidates.json"),
+    `${JSON.stringify(report, null, 2)}\n`,
+  );
 
   const rows = candidates.map((candidate) => {
     const best = candidate.matches[0];
@@ -187,13 +209,15 @@ async function main() {
     "",
   ].join("\n");
   await writeFile(resolve(outputDir, "utm-osm-entrance-candidates.md"), markdown);
-  console.log(JSON.stringify({
-    total: report.totalEntranceNodes,
-    existing: report.existingEntranceNodes,
-    newUnique: report.newUniqueBoundaryMatches,
-    ambiguous: report.ambiguous,
-    unmatched: report.unmatched,
-  }));
+  console.log(
+    JSON.stringify({
+      total: report.totalEntranceNodes,
+      existing: report.existingEntranceNodes,
+      newUnique: report.newUniqueBoundaryMatches,
+      ambiguous: report.ambiguous,
+      unmatched: report.unmatched,
+    }),
+  );
 }
 
 await main();

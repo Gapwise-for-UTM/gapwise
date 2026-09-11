@@ -52,16 +52,19 @@ function label(candidate: Candidate): string {
 
 const discovery = JSON.parse(await readFile(candidatePath, "utf8")) as { candidates: Candidate[] };
 const collection = JSON.parse(await readFile(entrancePath, "utf8")) as Collection;
-const existing = new Set(collection.features.flatMap((feature) =>
-  feature.properties.osmNodeId === undefined ? [] : [Number(feature.properties.osmNodeId)],
-));
+const existing = new Set(
+  collection.features.flatMap((feature) =>
+    feature.properties.osmNodeId === undefined ? [] : [Number(feature.properties.osmNodeId)],
+  ),
+);
 
 const additions = discovery.candidates
-  .filter((candidate) =>
-    !candidate.existingGapwiseRecord &&
-    !existing.has(candidate.osmNodeId) &&
-    candidate.reviewStatus === "unique_boundary_match" &&
-    candidate.recommendedBuildingCode,
+  .filter(
+    (candidate) =>
+      !candidate.existingGapwiseRecord &&
+      !existing.has(candidate.osmNodeId) &&
+      candidate.reviewStatus === "unique_boundary_match" &&
+      candidate.recommendedBuildingCode,
   )
   .map((candidate): EntranceFeature => ({
     type: "Feature",
