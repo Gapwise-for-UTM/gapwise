@@ -12,7 +12,8 @@ type Tags = Record<string, string | undefined>;
 type OsmNode = { type: "node"; id: number; lat: number; lon: number; tags?: Tags };
 type OsmPayload = { elements: Array<OsmNode | { type: string }> };
 type Ring = [number, number][];
-type Geometry = { type: "Polygon"; coordinates: Ring[] } | { type: "MultiPolygon"; coordinates: Ring[][] };
+type Geometry =
+  { type: "Polygon"; coordinates: Ring[] } | { type: "MultiPolygon"; coordinates: Ring[][] };
 
 type Match = {
   buildingCode: string;
