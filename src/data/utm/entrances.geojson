@@ -895,6 +895,106 @@
         "lastVerified": "2026-09-10",
         "verificationStatus": "verified"
       }
+    },
+    {
+      "type": "Feature",
+      "id": "cct-13568164833",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.663432,
+          43.5492443
+        ]
+      },
+      "properties": {
+        "buildingCode": "CCT",
+        "label": "Mapped main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13568164833,
+        "accessibility": "unknown",
+        "access": "unknown",
+        "direction": "unknown",
+        "notes": "Current OSM tags this node as a main entrance and exact member of a pedestrian footway; the node lies inside exactly one canonical Gapwise building footprint, supporting the building assignment despite a recessed/coarse canonical boundary. Ordinary student/public access is not independently established.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13568164833",
+        "lastVerified": "2026-09-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-13731205423",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6644017,
+          43.5515639
+        ]
+      },
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Mapped main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13731205423,
+        "accessibility": "unknown",
+        "access": "unknown",
+        "direction": "unknown",
+        "notes": "Current OSM tags this node as a main entrance and exact member of a pedestrian footway; the node lies inside exactly one canonical Gapwise building footprint, supporting the building assignment despite a recessed/coarse canonical boundary. Ordinary student/public access is not independently established.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13731205423",
+        "lastVerified": "2026-09-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-13731205428",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6635031,
+          43.551209
+        ]
+      },
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Mapped main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13731205428,
+        "accessibility": "unknown",
+        "access": "unknown",
+        "direction": "unknown",
+        "notes": "Current OSM tags this node as a main entrance and exact member of a pedestrian footway; the node lies inside exactly one canonical Gapwise building footprint, supporting the building assignment despite a recessed/coarse canonical boundary. Ordinary student/public access is not independently established.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13731205428",
+        "lastVerified": "2026-09-10",
+        "verificationStatus": "verified"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "xr-13738903094",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.663956,
+          43.5490389
+        ]
+      },
+      "properties": {
+        "buildingCode": "XR",
+        "label": "Mapped main entrance",
+        "kind": "entrance",
+        "osmNodeId": 13738903094,
+        "accessibility": "unknown",
+        "access": "unknown",
+        "direction": "unknown",
+        "notes": "Current OSM tags this node as a main entrance and exact member of a pedestrian footway; the node lies inside exactly one canonical Gapwise building footprint, supporting the building assignment despite a recessed/coarse canonical boundary. Ordinary student/public access is not independently established.",
+        "source": "OpenStreetMap",
+        "sourceUrl": "https://www.openstreetmap.org/node/13738903094",
+        "lastVerified": "2026-09-10",
+        "verificationStatus": "verified"
+      }
     }
   ]
 }

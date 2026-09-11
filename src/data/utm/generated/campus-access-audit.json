@@ -40,11 +40,13 @@
       "code": "IB",
       "name": "Instructional Centre",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 3,
+      "verifiedExteriorEntrances": 5,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 3,
+      "graphConnectedAccessPoints": 5,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
+        "https://www.openstreetmap.org/node/13731205423",
+        "https://www.openstreetmap.org/node/13731205428",
         "https://www.openstreetmap.org/node/2383650599",
         "https://www.openstreetmap.org/node/2383651237",
         "https://www.openstreetmap.org/node/2383653565"
@@ -80,15 +82,17 @@
       "code": "CCT",
       "name": "Communication, Culture and Technology Building",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 1,
+      "verifiedExteriorEntrances": 2,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 1,
+      "graphConnectedAccessPoints": 2,
       "verifiedAccessibleEntrances": 1,
       "provenance": [
+        "https://www.openstreetmap.org/node/13568164833",
         "https://www.openstreetmap.org/node/13568164845"
       ],
       "unresolved": [
-        "Ordinary public access status is not affirmatively published."
+        "Ordinary public access status is not affirmatively published.",
+        "Step-free status requires an authoritative source or field survey."
       ]
     },
     {
@@ -159,12 +163,13 @@
       "code": "XR",
       "name": "Student Centre",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 2,
+      "verifiedExteriorEntrances": 3,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 2,
+      "graphConnectedAccessPoints": 3,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164843",
+        "https://www.openstreetmap.org/node/13738903094",
         "https://www.openstreetmap.org/node/2105676602"
       ],
       "unresolved": [

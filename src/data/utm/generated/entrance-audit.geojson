@@ -822,6 +822,90 @@
     },
     {
       "type": "Feature",
+      "id": "cct-13568164833",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.663432,
+          43.5492443
+        ]
+      },
+      "properties": {
+        "buildingCode": "CCT",
+        "label": "Mapped main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-13731205423",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6644017,
+          43.5515639
+        ]
+      },
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Mapped main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ib-13731205428",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6635031,
+          43.551209
+        ]
+      },
+      "properties": {
+        "buildingCode": "IB",
+        "label": "Mapped main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "xr-13738903094",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.663956,
+          43.5490389
+        ]
+      },
+      "properties": {
+        "buildingCode": "XR",
+        "label": "Mapped main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
       "id": "utm:entrance-candidate:ax:main",
       "geometry": null,
       "properties": {
