@@ -88,7 +88,9 @@ function containmentBuildingCode(candidate: Candidate): string | null {
   if (candidate.entrance !== "main" || candidate.matches.length !== 1) return null;
   const [match] = candidate.matches;
   if (!match?.inside) return null;
-  const hasFootwayMembership = candidate.memberWays.some((way) => way.tags["highway"] === "footway");
+  const hasFootwayMembership = candidate.memberWays.some(
+    (way) => way.tags["highway"] === "footway",
+  );
   return hasFootwayMembership ? match.buildingCode : null;
 }
 
