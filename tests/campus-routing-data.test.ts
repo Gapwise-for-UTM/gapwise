@@ -109,9 +109,11 @@ describe("bundled UTM routing data", () => {
         ),
     );
 
-    expect(disconnected.map((building) => building.code).sort()).toEqual(["NSB"]);
+    // The IC door is mapped from exact OSM building topology, but its retained pedestrian
+    // fragment is still isolated from the main campus component. Keep that distinction explicit.
+    expect(disconnected.map((building) => building.code).sort()).toEqual(["IC"]);
     expect(disconnected[0]?.entrances.map((entrance) => entrance.osmNodeId).sort()).toEqual([
-      13568522572, 13731083800,
+      13568164840,
     ]);
   });
 
