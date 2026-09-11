@@ -38,14 +38,18 @@ async function markerGeometry(anchor: Locator): Promise<MarkerGeometry> {
   });
 }
 
+function isNeutralTransformLonghand(value: string) {
+  return value === "" || value === "none";
+}
+
 async function expectMarkerCentered(anchor: Locator) {
   await expect(anchor).toHaveCount(1);
   await expect(anchor.locator(":scope > .map-entrance-marker")).toHaveCount(1);
   const geometry = await markerGeometry(anchor);
   expect(Math.abs(geometry.anchorCenter.x - geometry.buttonCenter.x)).toBeLessThan(0.75);
   expect(Math.abs(geometry.anchorCenter.y - geometry.buttonCenter.y)).toBeLessThan(0.75);
-  expect(geometry.anchorScale).toBe("none");
-  expect(geometry.anchorTranslate).toBe("none");
+  expect(isNeutralTransformLonghand(geometry.anchorScale)).toBe(true);
+  expect(isNeutralTransformLonghand(geometry.anchorTranslate)).toBe(true);
   expect(geometry.anchorTransform).not.toBe("none");
   return geometry;
 }
@@ -65,7 +69,10 @@ function expectStationaryProjection(before: MarkerGeometry, after: MarkerGeometr
 
 async function waitForProjectionSettled(anchor: Locator) {
   let previous = await expectMarkerCentered(anchor);
-  for (let stableSamples = 0; stableSamples < 3;) {
+  // Building focus uses a 620 ms MapLibre fitBounds transition. Requiring a
+  // longer quiet window prevents a pre-animation snapshot from being mistaken
+  // for the settled geographic projection on slower CI runners.
+  for (let stableSamples = 0; stableSamples < 8; ) {
     await anchor.page().waitForTimeout(100);
     const current = await expectMarkerCentered(anchor);
     expectSameGeographicAnchor(previous, current);
@@ -175,7 +182,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
 
   // Re-selecting MN exercises building fitBounds again. The deterministic MN
   // building fit must return its known entrance to the same projected location
-  // as the initial MN selection, not merely preserve its data attributes.
+  // as the initial, fully-settled MN selection, not merely preserve attributes.
   await selectBuilding(page, "MN", "Maanjiwe nendamowinan");
   const restoredMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const restored = await waitForProjectionSettled(restoredMnAnchor);
