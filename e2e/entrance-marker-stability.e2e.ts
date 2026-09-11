@@ -50,6 +50,19 @@ async function expectMarkerCentered(anchor: Locator) {
   return geometry;
 }
 
+function expectSameGeographicAnchor(before: MarkerGeometry, after: MarkerGeometry) {
+  expect(after.entranceId).toBe(before.entranceId);
+  expect(after.longitude).toBe(before.longitude);
+  expect(after.latitude).toBe(before.latitude);
+}
+
+function expectStationaryProjection(before: MarkerGeometry, after: MarkerGeometry) {
+  expectSameGeographicAnchor(before, after);
+  expect(after.anchorTransform).toBe(before.anchorTransform);
+  expect(Math.abs(after.anchorCenter.x - before.anchorCenter.x)).toBeLessThan(0.75);
+  expect(Math.abs(after.anchorCenter.y - before.anchorCenter.y)).toBeLessThan(0.75);
+}
+
 async function selectBuilding(page: Page, query: string, heading: string) {
   const search = page.getByRole("searchbox", { name: "Search UTM buildings" });
   await search.fill(query);
@@ -82,22 +95,29 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   expect(original.longitude).toBeTruthy();
   expect(original.latitude).toBeTruthy();
 
-  // The selected timetable marker can physically overlap an entrance at this zoom.
-  // Dispatch the interaction events directly so this regression isolates marker
-  // projection from hit-testing/z-order while still exercising the real handlers.
+  // Selection/focus is allowed to restyle only the interactive child. With a
+  // stationary camera, MapLibre's geographic transform and projected center
+  // on the inert anchor must remain byte-for-byte / pixel-for-pixel stable.
   await mnButton.dispatchEvent("mouseenter");
   await expect(mnButton).toHaveClass(/is-selected/);
-  await expectMarkerCentered(mnAnchor);
+  const hovered = await expectMarkerCentered(mnAnchor);
+  expectStationaryProjection(original, hovered);
+
   await mnButton.dispatchEvent("mouseleave");
   await expect(mnButton).not.toHaveClass(/is-selected/);
+  const unhovered = await expectMarkerCentered(mnAnchor);
+  expectStationaryProjection(original, unhovered);
+
   await mnButton.focus();
   await expect(mnButton).toHaveClass(/is-selected/);
-  await expectMarkerCentered(mnAnchor);
+  const focused = await expectMarkerCentered(mnAnchor);
+  expectStationaryProjection(original, focused);
   await page.keyboard.press("Tab");
 
   await page.getByRole("button", { name: "Fit the active day route" }).click();
   await page.waitForTimeout(700);
-  await expectMarkerCentered(mnAnchor);
+  const routeFitted = await expectMarkerCentered(mnAnchor);
+  expectSameGeographicAnchor(original, routeFitted);
 
   const canvas = page.locator(".maplibregl-canvas").first();
   const bounds = await canvas.boundingBox();
@@ -106,7 +126,9 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   await page.mouse.wheel(0, -550);
   await page.waitForTimeout(350);
-  await expectMarkerCentered(mnAnchor);
+  const zoomed = await expectMarkerCentered(mnAnchor);
+  expectSameGeographicAnchor(original, zoomed);
+  expect(zoomed.anchorTransform).not.toBe(routeFitted.anchorTransform);
 
   await page.mouse.move(bounds.x + bounds.width * 0.55, bounds.y + bounds.height * 0.55);
   await page.mouse.down();
@@ -115,16 +137,16 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   });
   await page.mouse.up();
   await page.waitForTimeout(250);
-  await expectMarkerCentered(mnAnchor);
+  const panned = await expectMarkerCentered(mnAnchor);
+  expectSameGeographicAnchor(original, panned);
+  expect(panned.anchorTransform).not.toBe(zoomed.anchorTransform);
 
   const themeToggle = page.getByRole("button", { name: /Switch to (dark|light) mode/ });
   await themeToggle.click();
   await page.waitForTimeout(350);
   const themedMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const themed = await expectMarkerCentered(themedMnAnchor);
-  expect(themed.entranceId).toBe(original.entranceId);
-  expect(themed.longitude).toBe(original.longitude);
-  expect(themed.latitude).toBe(original.latitude);
+  expectSameGeographicAnchor(original, themed);
 
   await selectBuilding(page, "Deerfield", "Deerfield Hall");
   await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(3);
@@ -135,9 +157,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   await selectBuilding(page, "MN", "Maanjiwe nendamowinan");
   const restoredMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const restored = await expectMarkerCentered(restoredMnAnchor);
-  expect(restored.entranceId).toBe(original.entranceId);
-  expect(restored.longitude).toBe(original.longitude);
-  expect(restored.latitude).toBe(original.latitude);
+  expectSameGeographicAnchor(original, restored);
 
   guard.assertClean();
 });
