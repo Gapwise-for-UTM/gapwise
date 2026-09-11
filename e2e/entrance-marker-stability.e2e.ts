@@ -65,7 +65,7 @@ function expectStationaryProjection(before: MarkerGeometry, after: MarkerGeometr
 
 async function waitForProjectionSettled(anchor: Locator) {
   let previous = await expectMarkerCentered(anchor);
-  for (let stableSamples = 0; stableSamples < 3; ) {
+  for (let stableSamples = 0; stableSamples < 3;) {
     await anchor.page().waitForTimeout(100);
     const current = await expectMarkerCentered(anchor);
     expectSameGeographicAnchor(previous, current);

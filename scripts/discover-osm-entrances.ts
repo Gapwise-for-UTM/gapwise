@@ -12,9 +12,7 @@ type Tags = Record<string, string | undefined>;
 type OsmNode = { type: "node"; id: number; lat: number; lon: number; tags?: Tags };
 type OsmPayload = { elements: Array<OsmNode | { type: string }> };
 type Ring = [number, number][];
-type Geometry =
-  | { type: "Polygon"; coordinates: Ring[] }
-  | { type: "MultiPolygon"; coordinates: Ring[][] };
+type Geometry = { type: "Polygon"; coordinates: Ring[] } | { type: "MultiPolygon"; coordinates: Ring[][] };
 
 type Match = {
   buildingCode: string;
@@ -149,7 +147,8 @@ async function main() {
           a.boundaryDistanceMeters - b.boundaryDistanceMeters ||
           a.buildingCode.localeCompare(b.buildingCode),
       );
-    const unique = matches.length === 1 && matches[0]!.boundaryDistanceMeters <= MATCH_DISTANCE_METERS;
+    const unique =
+      matches.length === 1 && matches[0]!.boundaryDistanceMeters <= MATCH_DISTANCE_METERS;
     return {
       osmNodeId: node.id,
       coordinates: point,
