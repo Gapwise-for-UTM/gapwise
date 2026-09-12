@@ -8,11 +8,7 @@ import {
 import { factEvidence, type FactEvidence } from "./provenance";
 
 export type EntranceGeometryConfidence =
-  | "field_verified"
-  | "official"
-  | "mapped"
-  | "inferred"
-  | "unknown";
+  "field_verified" | "official" | "mapped" | "inferred" | "unknown";
 export type EntranceFactState = "verified" | "restricted" | "unknown";
 export type EntranceRegistryRecord = {
   id: string;
