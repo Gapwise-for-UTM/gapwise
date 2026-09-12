@@ -7,13 +7,18 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { getRecognizedBuilding } from "@/data/utm/building-registry";
-import type { Meeting } from "@/lib/timetable-types";
+import {
+  locationLabel,
+  meetingLocationType,
+  type Meeting,
+} from "@/lib/timetable-types";
 import { campusAccessPointForMeeting } from "./campus-day";
 import { resolveMeetingLocation, type LocationStatus } from "./location-resolver";
 import type { TransitionRoute } from "./types";
 
 export type LocationPresentationStatus =
-  LocationStatus | Extract<TransitionRoute["status"], "approximate" | "unavailable">;
+  | LocationStatus
+  | Extract<TransitionRoute["status"], "approximate" | "unavailable">;
 
 export type LocationPresentation = {
   status: LocationPresentationStatus;
@@ -72,7 +77,8 @@ export function getCampusLocationDisplay(meeting: Meeting): CampusLocationDispla
 }
 
 type LocationPresentationInput =
-  { meeting: Meeting } | { from: Meeting; to: Meeting; route: TransitionRoute };
+  | { meeting: Meeting }
+  | { from: Meeting; to: Meeting; route: TransitionRoute };
 
 const UNRESOLVED_PRESENTATIONS: Record<Exclude<LocationStatus, "known">, LocationPresentation> = {
   tba: {
@@ -105,6 +111,19 @@ function meetingPresentation(meeting: Meeting): LocationPresentation {
       icon: MapPin,
     };
   }
+
+  // Timetable presentation follows the ACORN source, not UTM map coverage. This
+  // keeps a real St. George or Scarborough room visible even though Gapwise has
+  // no route graph for that campus.
+  if (meetingLocationType(meeting) === "physical") {
+    return {
+      status: "known",
+      label: locationLabel(meeting),
+      detail: meeting.campus === "UTM" ? "Campus location." : "Class location.",
+      icon: MapPin,
+    };
+  }
+
   const resolution = resolveMeetingLocation(meeting);
   if (resolution.status !== "known") return UNRESOLVED_PRESENTATIONS[resolution.status];
 
