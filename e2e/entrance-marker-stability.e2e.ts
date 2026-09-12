@@ -44,6 +44,37 @@ async function markerGeometry(anchor: Locator): Promise<MarkerGeometry> {
   });
 }
 
+async function expectExactMapLibreProjection(anchor: Locator) {
+  const delta = await anchor.evaluate((element) => {
+    const mapContainer = element.closest<HTMLElement>(".maplibregl-map");
+    if (!mapContainer) throw new Error("Entrance marker is not attached to a MapLibre map.");
+
+    const projected: { x?: number; y?: number } = {};
+    element.dispatchEvent(new CustomEvent("gapwise-map-project", { detail: projected }));
+    if (typeof projected.x !== "number" || typeof projected.y !== "number") {
+      throw new Error("MapLibre projection probe is unavailable for this entrance marker.");
+    }
+
+    const anchorRect = element.getBoundingClientRect();
+    const mapRect = mapContainer.getBoundingClientRect();
+    const anchorCenter = {
+      x: anchorRect.left + anchorRect.width / 2,
+      y: anchorRect.top + anchorRect.height / 2,
+    };
+    const expectedCenter = {
+      x: mapRect.left + projected.x,
+      y: mapRect.top + projected.y,
+    };
+    return {
+      x: Math.abs(anchorCenter.x - expectedCenter.x),
+      y: Math.abs(anchorCenter.y - expectedCenter.y),
+    };
+  });
+
+  expect(delta.x).toBeLessThan(0.75);
+  expect(delta.y).toBeLessThan(0.75);
+}
+
 function isNeutralTransformLonghand(value: string) {
   return value === "" || value === "none";
 }
@@ -63,6 +94,7 @@ async function expectMarkerCentered(anchor: Locator) {
   expect(isNeutralTransformLonghand(geometry.anchorScale)).toBe(true);
   expect(isNeutralTransformLonghand(geometry.anchorTranslate)).toBe(true);
   expect(geometry.anchorTransform).not.toBe("none");
+  await expectExactMapLibreProjection(anchor);
   return geometry;
 }
 
@@ -123,6 +155,11 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
   await expectLanding(page);
+  await page.evaluate(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("e2eMapProjection", "1");
+    window.history.replaceState({}, "", url);
+  });
   await page.getByRole("button", { name: "Try a demo" }).click();
   await page
     .getByRole("group", { name: "View mode" })
