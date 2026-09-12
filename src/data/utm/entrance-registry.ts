@@ -8,7 +8,11 @@ import {
 import { factEvidence, type FactEvidence } from "./provenance";
 
 export type EntranceGeometryConfidence =
-  "field_verified" | "official" | "mapped" | "inferred" | "unknown";
+  | "field_verified"
+  | "official"
+  | "mapped"
+  | "inferred"
+  | "unknown";
 export type EntranceFactState = "verified" | "restricted" | "unknown";
 export type EntranceRegistryRecord = {
   id: string;
@@ -106,16 +110,18 @@ const candidates: EntranceRegistryRecord[] = OFFICIAL_BARRIER_FREE_ENTRANCE_CAND
     buildingCode: candidate.buildingCode,
     label: candidate.label,
     kind: candidate.kind,
+    ...(candidate.coordinates ? { coordinates: candidate.coordinates } : {}),
+    ...(candidate.routingNodeId ? { routingNodeId: candidate.routingNodeId } : {}),
     routability: candidate.routingStatus,
     publicAccess: "unknown",
     barrierFree: "verified",
-    geometryConfidence: "unknown",
+    geometryConfidence: candidate.reconciliationStatus === "matched" ? "mapped" : "unknown",
     officialReconciliation: candidate.reconciliationStatus,
     evidence: candidate.evidence,
   }),
 );
 
-/** Canonical auditable union of geocoded routing points and official identity-only evidence. */
+/** Canonical auditable union of geocoded routing points and official identity evidence. */
 export const UTM_ENTRANCE_REGISTRY: readonly EntranceRegistryRecord[] = [
   ...geocoded,
   ...candidates,
