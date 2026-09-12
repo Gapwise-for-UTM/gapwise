@@ -199,7 +199,7 @@ export function resolveAcornLocation(
 export function resolveMeetingLocation(meeting: {
   buildingCode: string | null;
   room: string | null;
-  sourceLocation?: string;
+  sourceLocation?: string | undefined;
   locationUnknown: boolean;
   locationType?: "physical" | "tba" | "online" | "unknown";
 }): LocationResolution {
