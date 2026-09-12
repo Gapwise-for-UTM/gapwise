@@ -52,9 +52,7 @@ async function expectExactMapLibreProjection(anchor: Locator) {
     const projected: { x?: number; y?: number } = {};
     const pageWindow = element.ownerDocument.defaultView;
     if (!pageWindow) throw new Error("Entrance marker document has no window.");
-    element.dispatchEvent(
-      new pageWindow.CustomEvent("gapwise-map-project", { detail: projected }),
-    );
+    element.dispatchEvent(new pageWindow.CustomEvent("gapwise-map-project", { detail: projected }));
     if (typeof projected.x !== "number" || typeof projected.y !== "number") {
       throw new Error("MapLibre projection probe is unavailable for this entrance marker.");
     }
@@ -120,7 +118,7 @@ async function waitForProjectionSettled(anchor: Locator) {
   // Building focus uses a 620 ms MapLibre fitBounds transition. Requiring a
   // longer quiet window prevents a pre-animation snapshot from being mistaken
   // for the settled geographic projection on slower CI runners.
-  for (let stableSamples = 0; stableSamples < 8; ) {
+  for (let stableSamples = 0; stableSamples < 8;) {
     await anchor.page().waitForTimeout(100);
     const current = await expectMarkerCentered(anchor);
     expectSameGeographicAnchor(previous, current);
