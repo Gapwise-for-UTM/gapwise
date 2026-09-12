@@ -50,7 +50,11 @@ async function expectExactMapLibreProjection(anchor: Locator) {
     if (!mapContainer) throw new Error("Entrance marker is not attached to a MapLibre map.");
 
     const projected: { x?: number; y?: number } = {};
-    element.dispatchEvent(new CustomEvent("gapwise-map-project", { detail: projected }));
+    const pageWindow = element.ownerDocument.defaultView;
+    if (!pageWindow) throw new Error("Entrance marker document has no window.");
+    element.dispatchEvent(
+      new pageWindow.CustomEvent("gapwise-map-project", { detail: projected }),
+    );
     if (typeof projected.x !== "number" || typeof projected.y !== "number") {
       throw new Error("MapLibre projection probe is unavailable for this entrance marker.");
     }
