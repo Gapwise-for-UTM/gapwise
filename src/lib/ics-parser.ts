@@ -135,9 +135,9 @@ function parseLocation(
     };
   }
 
-  const generic = genericPhysicalLocation(value);
   return {
-    ...generic,
+    buildingCode: null,
+    room: null,
     sourceLocation: value,
     locationUnknown: false,
     locationType: "physical",
