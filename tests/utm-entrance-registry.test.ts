@@ -21,15 +21,29 @@ describe("UTM entrance truth registry", () => {
     }
   });
 
-  test("does not silently lose or geolocate an official identity", () => {
+  test("only geolocates official identities after explicit reconciliation", () => {
     const registryCandidates = UTM_ENTRANCE_REGISTRY.filter((item) =>
       item.id.startsWith("utm:entrance-candidate:"),
     );
     expect(registryCandidates).toHaveLength(OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.length);
+
+    const matched = registryCandidates.filter((candidate) => candidate.officialReconciliation === "matched");
+    expect(
+      matched.map((candidate) => [candidate.buildingCode, candidate.routingNodeId]),
+    ).toEqual([
+      ["HM", "osm-node-13731205434"],
+      ["RAWC", "osm-node-13568164832"],
+    ]);
+    expect(matched.every((candidate) => candidate.coordinates !== undefined)).toBe(true);
+    expect(matched.every((candidate) => candidate.geometryConfidence === "mapped")).toBe(true);
+    expect(matched.every((candidate) => candidate.routability === "candidate")).toBe(true);
+
     for (const candidate of registryCandidates) {
-      expect(candidate.coordinates).toBeUndefined();
-      expect(candidate.routingNodeId).toBeUndefined();
       expect(candidate.officialReconciliation).toBeDefined();
+      if (candidate.officialReconciliation !== "matched") {
+        expect(candidate.coordinates).toBeUndefined();
+        expect(candidate.routingNodeId).toBeUndefined();
+      }
     }
   });
 
