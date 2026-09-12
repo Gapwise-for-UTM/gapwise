@@ -61,18 +61,6 @@ function parseSummary(summary: string): {
   };
 }
 
-function genericPhysicalLocation(value: string): {
-  buildingCode: string | null;
-  room: string | null;
-} {
-  const match = /^([A-Z][A-Z0-9]{0,7})(?:[-\s]+(.+))?$/i.exec(value);
-  if (!match) return { buildingCode: null, room: null };
-  return {
-    buildingCode: match[1]!.toUpperCase(),
-    room: match[2]?.trim() || null,
-  };
-}
-
 function parseLocation(
   raw: string | null,
   campus: Campus,
@@ -119,15 +107,14 @@ function parseLocation(
     };
   }
 
-  // UTM locations retain the richer canonical building resolver used by routing.
-  // Other campuses deliberately bypass the UTM registry: a real ACORN room is a
-  // valid timetable location even when Gapwise cannot route to that building.
+  // UTM locations retain canonical building fields only when they can be resolved
+  // against the UTM map registry. Otherwise the source room remains visible in the
+  // timetable without accidentally enabling a campus-map route action.
   if (campus === "UTM") {
     const resolved = resolveAcornLocation(value);
-    const generic = genericPhysicalLocation(value);
     return {
-      buildingCode: resolved.buildingCode ?? generic.buildingCode,
-      room: resolved.room ?? generic.room,
+      buildingCode: resolved.status === "known" ? resolved.buildingCode : null,
+      room: resolved.status === "known" ? resolved.room : null,
       sourceLocation: value,
       locationUnknown: false,
       locationType: "physical",
@@ -135,6 +122,8 @@ function parseLocation(
     };
   }
 
+  // St. George and Scarborough rooms are valid timetable locations even though
+  // Gapwise intentionally has no campus map/routing model for those campuses.
   return {
     buildingCode: null,
     room: null,
