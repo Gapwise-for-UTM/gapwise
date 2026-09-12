@@ -768,7 +768,11 @@ function syncEntranceMarkers(
       markerAnchor.dataset["latitude"] = String(entrance.coordinates[1]);
       if (new URLSearchParams(window.location.search).get("e2eMapProjection") === "1") {
         markerAnchor.addEventListener("gapwise-map-project", (event) => {
-          if (!(event instanceof CustomEvent) || !event.detail || typeof event.detail !== "object") {
+          if (
+            !(event instanceof CustomEvent) ||
+            !event.detail ||
+            typeof event.detail !== "object"
+          ) {
             return;
           }
           const point = map.project(entrance.coordinates);
