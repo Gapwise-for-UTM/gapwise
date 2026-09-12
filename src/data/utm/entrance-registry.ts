@@ -7,7 +7,12 @@ import {
 } from "./official-entrance-candidates";
 import { factEvidence, type FactEvidence } from "./provenance";
 
-export type EntranceGeometryConfidence = "field_verified" | "official" | "mapped" | "inferred" | "unknown";
+export type EntranceGeometryConfidence =
+  | "field_verified"
+  | "official"
+  | "mapped"
+  | "inferred"
+  | "unknown";
 export type EntranceFactState = "verified" | "restricted" | "unknown";
 export type EntranceRegistryRecord = {
   id: string;
