@@ -1,7 +1,9 @@
 import ICAL from "ical.js";
 import {
   ASSESSMENT_WINDOW_NOTE,
+  campusForCourseCode,
   type ActivityType,
+  type Campus,
   type Meeting,
   type MeetingLocationType,
   type ParsedTimetable,
@@ -59,9 +61,25 @@ function parseSummary(summary: string): {
   };
 }
 
-function parseLocation(raw: string | null): {
+function genericPhysicalLocation(value: string): {
   buildingCode: string | null;
   room: string | null;
+} {
+  const match = /^([A-Z][A-Z0-9]{0,7})(?:[-\s]+(.+))?$/i.exec(value);
+  if (!match) return { buildingCode: null, room: null };
+  return {
+    buildingCode: match[1]!.toUpperCase(),
+    room: match[2]?.trim() || null,
+  };
+}
+
+function parseLocation(
+  raw: string | null,
+  campus: Campus,
+): {
+  buildingCode: string | null;
+  room: string | null;
+  sourceLocation: string | undefined;
   locationUnknown: boolean;
   locationType: MeetingLocationType;
   warning: string | null;
@@ -69,22 +87,61 @@ function parseLocation(raw: string | null): {
   const value = unescapeText(raw ?? "")
     .replace(/\s+/g, " ")
     .trim();
-  const resolved = resolveAcornLocation(value);
-  if (!resolved.buildingCode) {
+
+  if (!value) {
     return {
       buildingCode: null,
       room: null,
+      sourceLocation: undefined,
       locationUnknown: true,
-      locationType: resolved.status === "known" ? "physical" : resolved.status,
+      locationType: "tba",
+      warning: "The physical location is still TBA.",
+    };
+  }
+  if (/\bonline\b|\bremote\b|\bvirtual\b/i.test(value)) {
+    return {
+      buildingCode: null,
+      room: null,
+      sourceLocation: value,
+      locationUnknown: true,
+      locationType: "online",
+      warning: "This meeting is online; no physical route is needed.",
+    };
+  }
+  if (/^ZZ(?:\s|$)|\bTBA\b|\bN\/?A\b/i.test(value)) {
+    return {
+      buildingCode: null,
+      room: null,
+      sourceLocation: value,
+      locationUnknown: true,
+      locationType: "tba",
+      warning: "The physical location is still TBA.",
+    };
+  }
+
+  // UTM locations retain the richer canonical building resolver used by routing.
+  // Other campuses deliberately bypass the UTM registry: a real ACORN room is a
+  // valid timetable location even when Gapwise cannot route to that building.
+  if (campus === "UTM") {
+    const resolved = resolveAcornLocation(value);
+    const generic = genericPhysicalLocation(value);
+    return {
+      buildingCode: resolved.buildingCode ?? generic.buildingCode,
+      room: resolved.room ?? generic.room,
+      sourceLocation: value,
+      locationUnknown: false,
+      locationType: "physical",
       warning: resolved.warning,
     };
   }
+
+  const generic = genericPhysicalLocation(value);
   return {
-    buildingCode: resolved.buildingCode,
-    room: resolved.room,
-    locationUnknown: resolved.status !== "known",
-    locationType: resolved.status === "known" ? "physical" : resolved.status,
-    warning: resolved.warning,
+    ...generic,
+    sourceLocation: value,
+    locationUnknown: false,
+    locationType: "physical",
+    warning: null,
   };
 }
 
@@ -248,6 +305,7 @@ export function parseIcs(text: string): ParsedTimetable {
       continue;
     }
 
+    const campus = campusForCourseCode(courseCode);
     const description = unescapeText(event.description ?? "");
     const courseName = description.split("\n")[0]?.trim() || courseCode;
     const rawLocation = unescapeText(
@@ -260,7 +318,7 @@ export function parseIcs(text: string): ParsedTimetable {
     const isReservedAssessmentWindow =
       /^ZZ\s+TBA$/i.test(rawLocation) && /(^|\n)\*{6,}($|\n)/.test(description);
 
-    const location = parseLocation(rawLocation);
+    const location = parseLocation(rawLocation, campus);
     if (location.warning) {
       warnings.add(`${courseCode} ${activityType}: ${location.warning}`);
     }
@@ -315,6 +373,8 @@ export function parseIcs(text: string): ParsedTimetable {
         weekday,
         buildingCode: location.buildingCode,
         room: location.room,
+        sourceLocation: location.sourceLocation,
+        campus,
         term,
         locationUnknown: location.locationUnknown,
         locationType: location.locationType,
@@ -338,7 +398,7 @@ export function parseIcs(text: string): ParsedTimetable {
 
   if (meetings.length === 0) {
     throw new IcsParseError(
-      "We parsed the calendar but found no classes. This export may not contain a UTM timetable.",
+      "We parsed the calendar but found no classes. This export may not contain a U of T timetable.",
     );
   }
 
