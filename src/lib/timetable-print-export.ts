@@ -62,6 +62,30 @@ export interface MeetingPrintStyle {
   reserved: boolean;
 }
 
+export type TimetablePrintOrientation = "portrait" | "landscape";
+
+const PRINTABLE_PORTRAIT_WIDTH = 7.5;
+const PRINTABLE_PORTRAIT_HEIGHT = 10;
+
+/** Chooses the paper orientation that gives the timetable the largest readable scale. */
+export function timetablePrintOrientation(
+  dimensions: Pick<TimetableExportPlan, "width" | "height">,
+): TimetablePrintOrientation {
+  const portraitScale = Math.min(
+    PRINTABLE_PORTRAIT_WIDTH / dimensions.width,
+    PRINTABLE_PORTRAIT_HEIGHT / dimensions.height,
+  );
+  const landscapeScale = Math.min(
+    PRINTABLE_PORTRAIT_HEIGHT / dimensions.width,
+    PRINTABLE_PORTRAIT_WIDTH / dimensions.height,
+  );
+  return landscapeScale > portraitScale ? "landscape" : "portrait";
+}
+
+function printSafePadding(plan: Pick<TimetableExportPlan, "width" | "height">) {
+  return Math.max(42, Math.round(Math.min(plan.width, plan.height) * 0.035));
+}
+
 /** Maps event semantics to monochrome styling without relying on source/custom colors. */
 export function meetingPrintStyle(
   meeting: Meeting,
@@ -191,17 +215,22 @@ export function renderTimetablePrintSvg(
 ) {
   const palette = PRINT_EXPORT_PALETTE;
   const title = timetableExportTitle(plan.terms);
+  const orientation = timetablePrintOrientation(plan);
+  const safePadding = printSafePadding(plan);
+  const pageWidth = plan.width + safePadding * 2;
+  const pageHeight = plan.height + safePadding * 2;
   const fontFace = fontDataUrl
     ? `@font-face{font-family:PrintGeist;src:url('${fontDataUrl}') format('woff2');font-weight:100 900}`
     : "";
+  const printCss = `@page{size:${orientation};margin:0}@media print{:root{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;display:block;overflow:hidden;break-inside:avoid;page-break-inside:avoid}}`;
   let body = `<defs><pattern id="print-reserved-hatch" patternUnits="userSpaceOnUse" width="8" height="8"><rect width="8" height="8" fill="${palette.eventSurface}"/><path d="M-2 8L8-2M2 10L10 2" stroke="${palette.grid}" stroke-width=".75"/></pattern></defs>`;
-  body += `<rect width="100%" height="100%" fill="${palette.pageBackground}"/>`;
+  body += `<rect x="${-safePadding}" y="${-safePadding}" width="${pageWidth}" height="${pageHeight}" fill="${palette.pageBackground}"/>`;
   body += `<text x="36" y="70" font-size="30" font-weight="800" letter-spacing="-.8" fill="${palette.foreground}">${escapeExportText(title)}</text>`;
   body += `<line x1="36" y1="82" x2="${plan.width - 36}" y2="82" stroke="${palette.strongBorder}" stroke-width="1.15"/>`;
   plan.panels.forEach((panel) => {
     body += renderPrintTerm(meetings, panel, palette, plan);
   });
-  return `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${plan.width}" height="${plan.height}" viewBox="0 0 ${plan.width} ${plan.height}" preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision" text-rendering="geometricPrecision"><style>${fontFace}text{font-family:PrintGeist,'Geist Variable',system-ui,sans-serif;font-variant-numeric:tabular-nums}</style>${body}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="${pageWidth}" height="${pageHeight}" viewBox="${-safePadding} ${-safePadding} ${pageWidth} ${pageHeight}" preserveAspectRatio="xMidYMid meet" shape-rendering="geometricPrecision" text-rendering="geometricPrecision"><style>${fontFace}${printCss}text{font-family:PrintGeist,'Geist Variable',system-ui,sans-serif;font-variant-numeric:tabular-nums}</style>${body}</svg>`;
 }
 
 export function timetablePrintFilename(selection: ExportSelection, terms: readonly Term[]): string {
