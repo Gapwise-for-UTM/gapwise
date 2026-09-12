@@ -1,7 +1,14 @@
 export type ActivityType = "LEC" | "TUT" | "PRA" | "OTHER";
 export type Term = "Fall" | "Winter" | "Summer";
+export type Campus = "UTSG" | "UTM" | "UTSC" | "UNKNOWN";
 export type Weekday =
-  "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday";
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
 export type MeetingLocationType = "physical" | "tba" | "online" | "unknown";
 
 export const TERMS: Term[] = ["Fall", "Winter", "Summer"];
@@ -44,6 +51,26 @@ export function termForMonth(month: number): Term {
   return "Fall";
 }
 
+/** Infer the teaching campus from the standard final campus digit in a U of T course code. */
+export function campusForCourseCode(courseCode: string): Campus {
+  const normalized = courseCode.trim().toUpperCase();
+  const match = /^[A-Z]{3}[A-Z0-9]\d{2}[A-Z](\d)$/.exec(normalized);
+  switch (match?.[1]) {
+    case "1":
+      return "UTSG";
+    case "3":
+      return "UTSC";
+    case "5":
+      return "UTM";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+export function meetingCampus(meeting: { courseCode: string; campus?: Campus }): Campus {
+  return meeting.campus ?? campusForCourseCode(meeting.courseCode);
+}
+
 export type MeetingDateRange = {
   /** First date explicitly supplied by DTSTART, in YYYY-MM-DD form. */
   startDate: string;
@@ -65,6 +92,10 @@ export interface Meeting {
   room: string | null;
   term: Term;
   locationUnknown: boolean;
+  /** Campus is inferred per meeting so cross-campus schedules remain first-class. */
+  campus?: Campus;
+  /** Source-backed ACORN location text, retained even when Gapwise has no map data for it. */
+  sourceLocation?: string;
   /** Optional UI metadata for personal items and source-backed schedule annotations. */
   notes?: string;
   color?: string;
@@ -121,7 +152,12 @@ export function formatCompactDuration(minutes: number): string {
 
 export function meetingLocationType(meeting: Meeting): MeetingLocationType {
   if (meeting.locationType) return meeting.locationType;
-  if (!meeting.locationUnknown && (meeting.buildingCode || meeting.room)) return "physical";
+  if (
+    !meeting.locationUnknown &&
+    (meeting.buildingCode || meeting.room || meeting.sourceLocation?.trim())
+  ) {
+    return "physical";
+  }
   return "unknown";
 }
 
@@ -135,5 +171,5 @@ export function locationLabel(m: Meeting): string {
   if (type === "online") return "Online";
   if (type === "tba" || type === "unknown") return "Location TBA";
   if (m.buildingCode && m.room) return `${m.buildingCode} ${m.room}`;
-  return m.buildingCode ?? m.room ?? "Location TBA";
+  return m.buildingCode ?? m.room ?? m.sourceLocation?.trim() ?? "Location TBA";
 }
