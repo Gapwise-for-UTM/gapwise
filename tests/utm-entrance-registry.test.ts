@@ -27,10 +27,10 @@ describe("UTM entrance truth registry", () => {
     );
     expect(registryCandidates).toHaveLength(OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.length);
 
-    const matched = registryCandidates.filter((candidate) => candidate.officialReconciliation === "matched");
-    expect(
-      matched.map((candidate) => [candidate.buildingCode, candidate.routingNodeId]),
-    ).toEqual([
+    const matched = registryCandidates.filter(
+      (candidate) => candidate.officialReconciliation === "matched",
+    );
+    expect(matched.map((candidate) => [candidate.buildingCode, candidate.routingNodeId])).toEqual([
       ["HM", "osm-node-13731205434"],
       ["RAWC", "osm-node-13568164832"],
     ]);

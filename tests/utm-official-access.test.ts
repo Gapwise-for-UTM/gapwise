@@ -53,7 +53,11 @@ describe("official UTM exterior-access evidence", () => {
       (candidate) => candidate.reconciliationStatus === "matched",
     );
     expect(
-      matched.map((candidate) => [candidate.buildingCode, candidate.label, candidate.routingNodeId]),
+      matched.map((candidate) => [
+        candidate.buildingCode,
+        candidate.label,
+        candidate.routingNodeId,
+      ]),
     ).toEqual([
       ["HM", "Main", "osm-node-13731205434"],
       ["RAWC", "Main", "osm-node-13568164832"],
