@@ -12,7 +12,8 @@ import { campusAccessPointForMeeting } from "./campus-day";
 import { resolveMeetingLocation, type LocationStatus } from "./location-resolver";
 import type { TransitionRoute } from "./types";
 
-export type LocationPresentationStatus = LocationStatus | Extract<TransitionRoute["status"], "approximate" | "unavailable">;
+export type LocationPresentationStatus =
+  LocationStatus | Extract<TransitionRoute["status"], "approximate" | "unavailable">;
 
 export type LocationPresentation = {
   status: LocationPresentationStatus;
@@ -70,7 +71,8 @@ export function getCampusLocationDisplay(meeting: Meeting): CampusLocationDispla
   };
 }
 
-type LocationPresentationInput = { meeting: Meeting } | { from: Meeting; to: Meeting; route: TransitionRoute };
+type LocationPresentationInput =
+  { meeting: Meeting } | { from: Meeting; to: Meeting; route: TransitionRoute };
 
 const UNRESOLVED_PRESENTATIONS: Record<Exclude<LocationStatus, "known">, LocationPresentation> = {
   tba: {
