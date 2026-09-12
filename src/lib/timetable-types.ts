@@ -95,7 +95,7 @@ export interface Meeting {
   /** Campus is inferred per meeting so cross-campus schedules remain first-class. */
   campus?: Campus;
   /** Source-backed ACORN location text, retained even when Gapwise has no map data for it. */
-  sourceLocation?: string;
+  sourceLocation?: string | undefined;
   /** Optional UI metadata for personal items and source-backed schedule annotations. */
   notes?: string;
   color?: string;
