@@ -5,6 +5,7 @@ import {
   hasMappedRoutingData,
   hasVerifiedRoutingData,
 } from "@/data/utm/routing-buildings";
+import type { Campus } from "@/lib/timetable-types";
 import type { RoutingNode, VerificationStatus } from "./types";
 
 export type { BuildingConfiguration } from "@/data/utm/building-registry";
@@ -196,16 +197,44 @@ export function resolveAcornLocation(
   };
 }
 
+function unsupportedCampusResolution(raw: string): LocationResolution {
+  return {
+    raw,
+    buildingCode: null,
+    buildingName: null,
+    room: null,
+    status: "unknown",
+    buildingRecognition: "unrecognized",
+    routingDataStatus: "unverified",
+    floor: null,
+    floorVerification: "unknown",
+    warning: "Campus routing is currently available only for UTM.",
+  };
+}
+
 export function resolveMeetingLocation(meeting: {
   buildingCode: string | null;
   room: string | null;
+  campus?: Campus;
+  sourceLocation?: string | undefined;
   locationUnknown: boolean;
   locationType?: "physical" | "tba" | "online" | "unknown";
 }): LocationResolution {
   if (meeting.locationType === "online") return resolveAcornLocation("Online");
   if (meeting.locationType === "tba") return resolveAcornLocation("TBA");
+
+  const suppliedLocation =
+    meeting.sourceLocation?.trim() ||
+    [meeting.buildingCode, meeting.room].filter(Boolean).join(" ");
+
+  // St. George and Scarborough can share short building codes with UTM. Once the
+  // source course identifies either campus, never reinterpret that room against
+  // the UTM registry. It remains fully usable in the timetable, but unroutable.
+  if (meeting.campus === "UTSG" || meeting.campus === "UTSC") {
+    return unsupportedCampusResolution(suppliedLocation);
+  }
+
   if (meeting.locationType === "unknown") {
-    const suppliedLocation = [meeting.buildingCode, meeting.room].filter(Boolean).join(" ");
     if (suppliedLocation) return resolveAcornLocation(suppliedLocation);
     return {
       ...resolveAcornLocation(""),
@@ -213,8 +242,16 @@ export function resolveMeetingLocation(meeting: {
       warning: "No location was provided.",
     };
   }
+  if (meeting.locationType === "physical") {
+    if (suppliedLocation) return resolveAcornLocation(suppliedLocation);
+    return {
+      ...resolveAcornLocation(""),
+      status: "unknown",
+      warning: "The class has a physical location, but no routable UTM building was provided.",
+    };
+  }
   if (meeting.locationUnknown && !meeting.buildingCode && !meeting.room) {
     return resolveAcornLocation("");
   }
-  return resolveAcornLocation([meeting.buildingCode, meeting.room].filter(Boolean).join(" "));
+  return resolveAcornLocation(suppliedLocation);
 }
