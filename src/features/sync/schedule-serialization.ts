@@ -1,5 +1,6 @@
 import type {
   ActivityType,
+  Campus,
   Meeting,
   MeetingLocationType,
   Term,
@@ -8,6 +9,7 @@ import type {
 import { TERMS, WEEKDAYS } from "@/lib/timetable-types";
 
 const ACTIVITY_TYPES: ActivityType[] = ["LEC", "TUT", "PRA", "OTHER"];
+const CAMPUSES: Campus[] = ["UTSG", "UTM", "UTSC", "UNKNOWN"];
 const LOCATION_TYPES: MeetingLocationType[] = ["physical", "tba", "online", "unknown"];
 const deserializationCache = new WeakMap<object, Meeting[]>();
 
@@ -40,6 +42,8 @@ function deserializeMeeting(value: unknown): Meeting | null {
   const room = value["room"];
   const term = value["term"] as Term;
   const locationUnknown = value["locationUnknown"];
+  const campus = value["campus"] as Campus | undefined;
+  const sourceLocation = value["sourceLocation"];
   const notes = value["notes"];
   const locationType = value["locationType"] as MeetingLocationType | undefined;
   const dateRange = value["dateRange"];
@@ -58,6 +62,8 @@ function deserializeMeeting(value: unknown): Meeting | null {
     (buildingCode !== null && typeof buildingCode !== "string") ||
     (room !== null && typeof room !== "string") ||
     typeof locationUnknown !== "boolean" ||
+    (campus !== undefined && !CAMPUSES.includes(campus)) ||
+    (sourceLocation !== undefined && typeof sourceLocation !== "string") ||
     (notes !== undefined && typeof notes !== "string") ||
     (locationType !== undefined && !LOCATION_TYPES.includes(locationType)) ||
     (recurrenceIntervalWeeks !== undefined &&
@@ -105,6 +111,8 @@ function deserializeMeeting(value: unknown): Meeting | null {
     term,
     locationUnknown,
   };
+  if (campus !== undefined) meeting.campus = campus;
+  if (sourceLocation !== undefined) meeting.sourceLocation = sourceLocation as string;
   if (notes !== undefined) meeting.notes = notes as string;
   if (locationType !== undefined) meeting.locationType = locationType;
   if (dateRange !== undefined) {
@@ -146,6 +154,8 @@ export function serializeSchedule(meetings: Meeting[]): Meeting[] {
       term: meeting.term,
       locationUnknown: meeting.locationUnknown,
     };
+    if (meeting.campus) serialized.campus = meeting.campus;
+    if (meeting.sourceLocation !== undefined) serialized.sourceLocation = meeting.sourceLocation;
     if (meeting.notes) serialized.notes = meeting.notes;
     if (meeting.locationType) serialized.locationType = meeting.locationType;
     if (meeting.dateRange) serialized.dateRange = { ...meeting.dateRange };
