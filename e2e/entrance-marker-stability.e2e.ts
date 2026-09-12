@@ -12,6 +12,12 @@ type MarkerGeometry = {
   latitude: string | null;
 };
 
+const MN_ENTRANCE = {
+  id: "mn-13738201127",
+  longitude: -79.6654141,
+  latitude: 43.5513221,
+} as const;
+
 async function markerGeometry(anchor: Locator): Promise<MarkerGeometry> {
   return anchor.evaluate((element) => {
     const button = element.querySelector<HTMLElement>(".map-entrance-marker");
@@ -40,6 +46,12 @@ async function markerGeometry(anchor: Locator): Promise<MarkerGeometry> {
 
 function isNeutralTransformLonghand(value: string) {
   return value === "" || value === "none";
+}
+
+function expectAuditedMnCoordinate(geometry: MarkerGeometry) {
+  expect(geometry.entranceId).toBe(MN_ENTRANCE.id);
+  expect(Number(geometry.longitude)).toBe(MN_ENTRANCE.longitude);
+  expect(Number(geometry.latitude)).toBe(MN_ENTRANCE.latitude);
 }
 
 async function expectMarkerCentered(anchor: Locator) {
@@ -125,9 +137,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   await expect(mnButton).not.toHaveClass(/maplibregl-marker/);
 
   const original = await waitForProjectionSettled(mnAnchor);
-  expect(original.entranceId).toBeTruthy();
-  expect(original.longitude).toBeTruthy();
-  expect(original.latitude).toBeTruthy();
+  expectAuditedMnCoordinate(original);
 
   // Interactive child styling cannot own, replace, or compose with MapLibre's
   // geographic transform. First wait for the building-selection fitBounds to
@@ -150,13 +160,14 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
 
   // Force the camera away from the building-selection fit, then require route
   // fitting to produce a real MapLibre-owned geographic reprojection while the
-  // marker remains bound to the exact same stored WGS84 entrance coordinate.
+  // marker remains bound to the exact audited WGS84 entrance coordinate.
   await page.getByRole("button", { name: "Zoom in" }).click();
   const zoomed = await expectProjectionMoved(mnAnchor, original);
+  expectAuditedMnCoordinate(zoomed);
 
   await page.getByRole("button", { name: "Fit the active day route" }).click();
   const routeFitted = await expectProjectionMoved(mnAnchor, zoomed);
-  expectSameGeographicAnchor(original, routeFitted);
+  expectAuditedMnCoordinate(routeFitted);
 
   // MapLibre's keyboard handler performs a real map pan without relying on
   // synthetic drag coordinates that can be intercepted by map overlays.
@@ -164,7 +175,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   await canvas.focus();
   await canvas.press("ArrowRight");
   const panned = await expectProjectionMoved(mnAnchor, routeFitted);
-  expectSameGeographicAnchor(original, panned);
+  expectAuditedMnCoordinate(panned);
 
   // A style/theme reload must not move a geographic marker when the camera did
   // not move. This catches reattachment bugs that preserve IDs but shift pixels.
@@ -173,6 +184,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   const themedMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const themed = await waitForProjectionSettled(themedMnAnchor);
   expectStationaryProjection(panned, themed);
+  expectAuditedMnCoordinate(themed);
 
   await selectBuilding(page, "Deerfield", "Deerfield Hall");
   await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(3);
@@ -187,6 +199,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   const restoredMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const restored = await waitForProjectionSettled(restoredMnAnchor);
   expectSameGeographicAnchor(original, restored);
+  expectAuditedMnCoordinate(restored);
 
   await selectBuilding(page, "Deerfield", "Deerfield Hall");
   await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(3);
@@ -198,6 +211,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   const repeatedMnAnchor = page.locator(".map-entrance-marker-anchor").first();
   const repeated = await waitForProjectionSettled(repeatedMnAnchor);
   expectSameGeographicAnchor(restored, repeated);
+  expectAuditedMnCoordinate(repeated);
   expect(Math.abs(repeated.anchorCenter.x - restored.anchorCenter.x)).toBeLessThan(0.75);
   expect(Math.abs(repeated.anchorCenter.y - restored.anchorCenter.y)).toBeLessThan(0.75);
 
