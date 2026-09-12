@@ -249,7 +249,9 @@ const records = UTM_BUILDINGS.map((building) => {
   const accessPoints = entrances.filter((feature) => feature.buildingCode === building.code);
   const verified = accessPoints.filter((feature) => feature.verificationStatus === "verified");
   const inferred = accessPoints.filter((feature) => feature.verificationStatus === "inferred");
-  const graphConnected = accessPoints.filter((feature) => locallyGraphAttached(feature.routingNodeId));
+  const graphConnected = accessPoints.filter((feature) =>
+    locallyGraphAttached(feature.routingNodeId),
+  );
   const mainCampusConnected = accessPoints.filter((feature) =>
     mainCampusComponent.has(feature.routingNodeId),
   );
