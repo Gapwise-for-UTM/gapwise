@@ -199,13 +199,18 @@ export function resolveAcornLocation(
 export function resolveMeetingLocation(meeting: {
   buildingCode: string | null;
   room: string | null;
+  sourceLocation?: string;
   locationUnknown: boolean;
   locationType?: "physical" | "tba" | "online" | "unknown";
 }): LocationResolution {
   if (meeting.locationType === "online") return resolveAcornLocation("Online");
   if (meeting.locationType === "tba") return resolveAcornLocation("TBA");
+
+  const suppliedLocation =
+    meeting.sourceLocation?.trim() ||
+    [meeting.buildingCode, meeting.room].filter(Boolean).join(" ");
+
   if (meeting.locationType === "unknown") {
-    const suppliedLocation = [meeting.buildingCode, meeting.room].filter(Boolean).join(" ");
     if (suppliedLocation) return resolveAcornLocation(suppliedLocation);
     return {
       ...resolveAcornLocation(""),
@@ -213,8 +218,16 @@ export function resolveMeetingLocation(meeting: {
       warning: "No location was provided.",
     };
   }
+  if (meeting.locationType === "physical") {
+    if (suppliedLocation) return resolveAcornLocation(suppliedLocation);
+    return {
+      ...resolveAcornLocation(""),
+      status: "unknown",
+      warning: "The class has a physical location, but no routable UTM building was provided.",
+    };
+  }
   if (meeting.locationUnknown && !meeting.buildingCode && !meeting.room) {
     return resolveAcornLocation("");
   }
-  return resolveAcornLocation([meeting.buildingCode, meeting.room].filter(Boolean).join(" "));
+  return resolveAcornLocation(suppliedLocation);
 }
