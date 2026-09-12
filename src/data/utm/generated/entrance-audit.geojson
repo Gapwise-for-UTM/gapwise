@@ -1027,7 +1027,13 @@
     {
       "type": "Feature",
       "id": "utm:entrance-candidate:hm:main",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6630169,
+          43.5510334
+        ]
+      },
       "properties": {
         "buildingCode": "HM",
         "label": "Main",
@@ -1035,8 +1041,8 @@
         "routability": "candidate",
         "publicAccess": "unknown",
         "barrierFree": "verified",
-        "geometryConfidence": "unknown",
-        "reconciliation": "geometry_unknown"
+        "geometryConfidence": "mapped",
+        "reconciliation": "matched"
       }
     },
     {
@@ -1192,7 +1198,13 @@
     {
       "type": "Feature",
       "id": "utm:entrance-candidate:rawc:main",
-      "geometry": null,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6606714,
+          43.5479331
+        ]
+      },
       "properties": {
         "buildingCode": "RAWC",
         "label": "Main",
@@ -1200,8 +1212,8 @@
         "routability": "candidate",
         "publicAccess": "unknown",
         "barrierFree": "verified",
-        "geometryConfidence": "unknown",
-        "reconciliation": "geometry_unknown"
+        "geometryConfidence": "mapped",
+        "reconciliation": "matched"
       }
     },
     {
