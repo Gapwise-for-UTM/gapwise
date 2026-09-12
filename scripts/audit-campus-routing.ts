@@ -218,15 +218,12 @@ const edges = parseEdges(
   nodeIds,
 );
 
-const adjacency = new Map<string, string[]>();
 const incidentNodeIds = new Set<string>();
 const componentAdjacency = new Map<string, string[]>();
 const addComponentNeighbor = (from: string, to: string) => {
   componentAdjacency.set(from, [...(componentAdjacency.get(from) ?? []), to]);
 };
 for (const edge of edges) {
-  adjacency.set(edge.from, [...(adjacency.get(edge.from) ?? []), edge.to]);
-  if (edge.bidirectional) adjacency.set(edge.to, [...(adjacency.get(edge.to) ?? []), edge.from]);
   incidentNodeIds.add(edge.from);
   incidentNodeIds.add(edge.to);
   addComponentNeighbor(edge.from, edge.to);
