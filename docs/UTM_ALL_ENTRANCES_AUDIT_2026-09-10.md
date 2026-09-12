@@ -9,16 +9,19 @@ This checkpoint records the remote evidence sweep for Gapwise's goal of showing 
 - A barrier-free designation does not by itself prove that the entire approach is step-free.
 - A pedestrian approach point is not a physical entrance.
 - Residence access restrictions must remain explicit and must never be silently treated as public access.
+- Screenshot pixels, nearest-building guesses, footway endpoints, and corridor geometry are not substitutes for a defensible door-to-building identity match.
 
-## Current Gapwise baseline
+## Current branch inventory
 
-The canonical entrance GeoJSON currently contains 32 geocoded access points: 23 mapped physical doors and 9 inferred pedestrian approaches. Those points cover 21 of the 30 registered UTM buildings. Nine registered buildings currently have no geocoded exterior access point: `IC`, `WC`, `CUP`, `FCSH`, `GF`, `NSB`, `PL`, `BG`, and `LH`.
+The current PR branch contains 43 geocoded access points: **34 mapped physical doors** and **9 explicitly inferred pedestrian approaches**. Those points cover 23 of the 30 registered UTM buildings. Seven registered buildings currently have no publishable geocoded exterior access point: `WC`, `CUP`, `FCSH`, `GF`, `PL`, `BG`, and `LH`.
 
-Only six mapped doors currently carry affirmative accessibility metadata: one at CCT, two at DV, and three at KN. Ordinary student/public access and direction remain unknown for current geocoded records unless independently evidenced.
+The current live OSM sweep found 39 `entrance=*` nodes inside the UTM audit bounds. Relative to the earlier branch baseline, 11 previously unrepresented physical doors have been safely reconciled: DV +3, IB +3, NSB +2, IC +1, CCT +1, and XR +1. No coordinates in that batch were inferred from official-map screenshot pixels.
+
+Accessibility metadata remains sparse and deliberately fail-closed. Existing affirmative wheelchair metadata is preserved where current source data supports it; ordinary public/student access, directionality, and continuous step-free approach remain unknown unless independently evidenced. The IB emergency-only door is retained for physical completeness but excluded from ordinary endpoint routing.
 
 ## Official UTM barrier-free identities already represented
 
-The existing truth layer preserves the following official UTM Facilities entrance identities as identity-only evidence where exact door geometry has not been reconciled:
+The truth layer preserves the following official UTM Facilities entrance identities. Identity-only records remain unreconciled where exact door geometry cannot yet be defended; a published barrier-free identity is not automatically merged into the nearest OSM door.
 
 - AX — Main
 - WC — Rear
@@ -40,30 +43,43 @@ The existing truth layer preserves the following official UTM Facilities entranc
 
 The CCT↔DV identities describe a building connection and remain intentionally non-routable until indoor topology is modeled.
 
-## Additional remote evidence noted during the 2026-09-10 sweep
+Only the narrow one-to-one Main matches currently supported by both official identity evidence and unique current OSM building-attached `entrance=main` geometry are reconciled in the candidate layer. Buildings with multiple plausible main-tagged doors stay unresolved rather than being assigned by proximity.
 
-### Maanjiwe nendamowinan (MN)
+## Additional remote evidence noted during the 2026-09-10 to 2026-09-12 sweep
 
-In addition to the UTM Facilities identities Main, Field side, and Lot #1, current University of Toronto materials independently refer to a **North Entrance (2nd floor)** and a **south/front-lawn entrance**. These names must not be assumed to be five distinct physical door groups: directional names may overlap the Facilities identities. The current Gapwise data has one anonymous mapped MN door at `[-79.6654141, 43.5513221]` (OSM node `13738201127`). No reviewed source safely maps that coordinate to one of the official/directional labels.
+### Maanjiwe nendamowinan (MN) — highest priority
 
-### Academic/student-facing buildings
+Current authoritative UTM Facilities evidence explicitly names three barrier-free exterior entrance identities: **Main**, **Field side**, and **Lot #1**.
 
-Remote sources and the existing truth layer establish multiple entrance identities for the academic core, notably:
+Additional University of Toronto material independently refers to an **MN North Entrance (2nd floor)**. This establishes a named/cardinal north exterior entrance and its level context, but does not establish that “North Entrance” is synonymous with Main, Field side, or Lot #1. Other U of T event material also refers directionally to a south/front-lawn entrance. Directional labels must not be assumed to represent additional distinct physical door groups when they may overlap the Facilities identities.
 
-- DH — Main, Field side, plus three currently mapped OSM doors whose exact identity reconciliation remains unresolved.
-- IB — Main, North, South; Gapwise currently has two mapped OSM doors.
-- CCT — Main and Link, with the CCT↔DV building connection tracked separately; Gapwise currently has one mapped accessible door.
-- DV — Main and End of 5 Minute Walk, with the DV↔CCT connection tracked separately; Gapwise currently has four mapped doors, two carrying accessibility metadata.
-- HM — Main; Gapwise currently has one mapped door.
-- KN — three mapped doors, all currently carrying accessibility metadata; exact official identity reconciliation remains unresolved.
-- RAWC — Main; one mapped door currently exists.
-- XR — 5 Minute Walk side and Academic Annex side; two mapped doors currently exist.
-- HB — Main and Rear; two mapped doors currently exist.
-- DW — Main; one mapped door currently exists.
-- NSB — Main and Rear are officially named, but no geocoded exterior point is currently in Gapwise.
-- BG — Main is officially named, but no geocoded exterior point is currently in Gapwise.
+The production dataset currently contains one safely reconciled exact MN door coordinate: OSM node `13738201127` at `[-79.6654141, 43.5513221]`. That node is an exact member of MN's named `building=university` OSM way (`172234228`), so its MN building identity is defensible. Its current OSM tag is only `entrance=yes`, not `entrance=main`, so Gapwise does **not** relabel it as the official Main entrance by assumption.
 
-Remote sources do not yet establish complete door-by-door geometry for every exterior door on these buildings. Unlisted service/fire/restricted doors must therefore remain absent until directly verified rather than inferred from imagery.
+Two nearby unresolved `entrance=main` OSM nodes remain explicit MN reconciliation candidates: `13736687034` at `[-79.6656006, 43.5509053]` and `13736687041` at `[-79.6662061, 43.5510741]`. They are attached to pedestrian/indoor-corridor topology and lie only a few metres from the current named MN footprint, but neither node is itself a member of MN's named building way. `entrance=main` + proximity + corridor membership is therefore insufficient to publish them as MN doors without independent building-identity evidence.
+
+This distinction intentionally keeps **building identity** separate from **entrance-name identity**. Official-map screenshots corroborate the multi-entrance count/location pattern only; they are not used to derive coordinates or bridge either identity gap.
+
+### Academic/student-facing buildings changed in this branch
+
+- DV — seven mapped physical doors after adding OSM nodes `1728239002`, `13568164839`, and `13793115966`. Official Main / End of 5 Minute Walk identities remain unreconciled where multiple plausible doors exist.
+- IB — five mapped physical doors after adding emergency-only node `2383651237` and main-tagged nodes `13731205423` and `13731205428`. Official Main / North / South identity reconciliation remains intentionally conservative.
+- NSB — two mapped physical doors (`13568522572`, `13731083800`), both currently `entrance=main`. Official Main / Rear naming is not assigned merely from the shared `main` tag.
+- IC — one mapped physical main entrance (`13568164840`). Its building identity is topology-backed by exact membership in OSM building way `1127939664`, named `Innovation Complex`; `wheelchair=yes` is preserved while access and direction remain unknown.
+- CCT — two mapped physical doors after adding current OSM main entrance `13568164833`.
+- XR — three mapped physical doors after adding current OSM main/revolving entrance `13738903094`.
+
+### Other academic/student-facing buildings
+
+- DH — three mapped OSM doors; official Main and Field side identities remain unreconciled.
+- HM — one mapped door. The official Main identity has a narrow one-to-one current OSM reconciliation.
+- KN — three mapped doors with affirmative wheelchair metadata; exact official entrance-name reconciliation remains unresolved.
+- RAWC — one mapped door. The official Main identity has a narrow one-to-one current OSM reconciliation.
+- HB — two mapped doors; official Main and Rear identities remain unreconciled.
+- DW — one mapped door; official Main identity remains unreconciled.
+- AX — still represented by an inferred pedestrian approach, not a verified door.
+- WC and BG — official entrance identities exist but exact publishable door geometry is still unresolved.
+
+Remote sources still do not establish complete door-by-door geometry for every exterior door on these buildings. Unlisted service, fire, staff-only, or restricted doors must remain absent until directly verified rather than inferred from imagery.
 
 ### Residences
 
@@ -75,9 +91,15 @@ The current data is especially incomplete for residences:
 - LL, MV, MC, PP, SW, and NRB currently use inferred residence approach points rather than verified physical doors.
 - UTM Housing materials describe townhouse-style residence areas with individual exterior unit access, so one aggregate entrance per residence complex would be structurally wrong. Door-level inventory is required before those areas can be considered complete.
 
+## Marker-position correctness
+
+Entrance marker geographic placement is now separated from interactive styling at the DOM architecture level. MapLibre owns an inert `.map-entrance-marker-anchor` wrapper and therefore exclusively owns its geographic projection transform. The child `.map-entrance-marker` button owns hover, focus, sizing, selection, and scale styling. No arbitrary pixel correction is used.
+
+The focused browser regression binds the MN marker to its exact audited WGS84 coordinate and checks it through building selection/fitBounds, hover/focus state changes, zoom, route fitting, keyboard pan, theme/style reload, and repeated MN↔DH building switching. A camera movement must move the projected anchor while the stored entrance ID/longitude/latitude stay exact; a style reload without camera movement must leave the projection stationary.
+
 ## What is safe to preview now
 
-The current application can truthfully preview the existing mapped doors, inferred approaches, and the building-level partial/unmapped coverage semantics. It should **not** display guessed entrance pins for identity-only records. The purpose of this branch is to provide a durable audit baseline for the upcoming per-building geometry work while preserving the fail-closed production model.
+The application can truthfully preview the mapped physical doors, inferred approaches, and building-level partial/unmapped coverage semantics on this branch. It should **not** display guessed entrance pins for identity-only records, convert approaches into doors, or claim unrestricted/step-free access where evidence is unknown.
 
 ## Completion requirement for each building
 
