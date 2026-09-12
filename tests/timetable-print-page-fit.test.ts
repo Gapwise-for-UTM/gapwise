@@ -1,9 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createTimetableExportPlan } from "@/lib/timetable-export";
-import {
-  renderTimetablePrintSvg,
-  timetablePrintOrientation,
-} from "@/lib/timetable-print-export";
+import { renderTimetablePrintSvg, timetablePrintOrientation } from "@/lib/timetable-print-export";
 import { meeting } from "./fixtures";
 
 describe("print timetable page fitting", () => {
