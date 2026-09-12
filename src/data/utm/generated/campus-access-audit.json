@@ -1,6 +1,7 @@
 {
   "generatedAt": "2026-08-25",
   "failClosed": true,
+  "mainCampusReferenceNodeId": "osm-node-13738201127",
   "buildings": [
     {
       "code": "MN",
@@ -9,6 +10,7 @@
       "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13738201127"
@@ -25,6 +27,7 @@
       "verifiedExteriorEntrances": 3,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 3,
+      "mainCampusComponentAccessPoints": 3,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164836",
@@ -43,6 +46,7 @@
       "verifiedExteriorEntrances": 5,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 5,
+      "mainCampusComponentAccessPoints": 5,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13731205423",
@@ -63,6 +67,7 @@
       "verifiedExteriorEntrances": 7,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 7,
+      "mainCampusComponentAccessPoints": 6,
       "verifiedAccessibleEntrances": 2,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164839",
@@ -75,7 +80,8 @@
       ],
       "unresolved": [
         "Ordinary public access status is not affirmatively published.",
-        "Step-free status requires an authoritative source or field survey."
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more locally graph-attached access points are isolated from the main campus pedestrian component."
       ]
     },
     {
@@ -85,6 +91,7 @@
       "verifiedExteriorEntrances": 2,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 2,
+      "mainCampusComponentAccessPoints": 2,
       "verifiedAccessibleEntrances": 1,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164833",
@@ -102,6 +109,7 @@
       "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13731205434"
@@ -118,6 +126,7 @@
       "verifiedExteriorEntrances": 3,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 3,
+      "mainCampusComponentAccessPoints": 3,
       "verifiedAccessibleEntrances": 3,
       "provenance": [
         "https://www.openstreetmap.org/node/1312579120",
@@ -135,12 +144,14 @@
       "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 1,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164840"
       ],
       "unresolved": [
-        "Ordinary public access status is not affirmatively published."
+        "Ordinary public access status is not affirmatively published.",
+        "One or more locally graph-attached access points are isolated from the main campus pedestrian component."
       ]
     },
     {
@@ -150,6 +161,7 @@
       "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164832"
@@ -166,6 +178,7 @@
       "verifiedExteriorEntrances": 3,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 3,
+      "mainCampusComponentAccessPoints": 3,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164843",
@@ -184,6 +197,7 @@
       "verifiedExteriorEntrances": 2,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 2,
+      "mainCampusComponentAccessPoints": 2,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164846",
@@ -201,6 +215,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/1728239148"
@@ -218,6 +233,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 0,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 0,
       "provenance": [],
       "unresolved": [
@@ -231,6 +247,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 0,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 0,
       "provenance": [],
       "unresolved": [
@@ -244,6 +261,7 @@
       "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13767739551"
@@ -260,6 +278,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 0,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 0,
       "provenance": [],
       "unresolved": [
@@ -273,6 +292,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 0,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 0,
       "provenance": [],
       "unresolved": [
@@ -286,6 +306,7 @@
       "verifiedExteriorEntrances": 2,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 2,
+      "mainCampusComponentAccessPoints": 2,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568522572",
@@ -303,6 +324,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 0,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 0,
       "provenance": [],
       "unresolved": [
@@ -316,6 +338,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 0,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 0,
       "provenance": [],
       "unresolved": [
@@ -329,6 +352,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 0,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 0,
       "provenance": [],
       "unresolved": [
@@ -342,6 +366,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/1312381405"
@@ -359,6 +384,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/10307744191"
@@ -376,6 +402,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13783936312"
@@ -393,6 +420,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/1312572625"
@@ -410,6 +438,7 @@
       "verifiedExteriorEntrances": 2,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 2,
+      "mainCampusComponentAccessPoints": 2,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13738728068",
@@ -427,6 +456,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/1312345673"
@@ -444,6 +474,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/1312390438"
@@ -461,6 +492,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/4210336797"
@@ -478,6 +510,7 @@
       "verifiedExteriorEntrances": 0,
       "inferredApproaches": 1,
       "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.utm.utoronto.ca/housing/new-residence-building"
