@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { getLocationPresentation } from "@/features/routing/location-presentation";
 import { resolveMeetingLocation } from "@/features/routing/location-resolver";
+import { deserializeSchedule, serializeSchedule } from "@/features/sync/schedule-serialization";
 import { parseIcs } from "@/lib/ics-parser";
 import { createTimetableExportPlan, renderTimetableExportSvg } from "@/lib/timetable-export";
 import { renderTimetablePrintSvg } from "@/lib/timetable-print-export";
@@ -125,6 +126,18 @@ describe("all-campus timetable compatibility", () => {
     expect(resolveMeetingLocation(utsg).status).toBe("unknown");
     expect(resolveMeetingLocation(utsc).status).toBe("unknown");
     expect(resolveMeetingLocation(utm).status).toBe("known");
+  });
+
+  test("preserves campus identity and source locations through encrypted-sync serialization", () => {
+    const meetings = parseIcs(crossCampusCalendar()).meetings;
+    const restored = deserializeSchedule(serializeSchedule(meetings));
+    const utsg = restored.find((meeting) => meeting.courseCode === "CSC108H1")!;
+    const utsc = restored.find((meeting) => meeting.courseCode === "CSCA08H3")!;
+
+    expect(utsg).toMatchObject({ campus: "UTSG", sourceLocation: "BA 1170" });
+    expect(utsc).toMatchObject({ campus: "UTSC", sourceLocation: "SW 319" });
+    expect(locationLabel(utsg)).toBe("BA 1170");
+    expect(locationLabel(utsc)).toBe("SW 319");
   });
 
   test("keeps all three campuses in normal and print timetable exports", () => {
