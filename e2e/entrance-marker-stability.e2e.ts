@@ -50,9 +50,7 @@ async function expectExactMapLibreProjection(anchor: Locator) {
     if (!mapContainer) throw new Error("Entrance marker is not attached to a MapLibre map.");
 
     const projected: { x?: number; y?: number } = {};
-    const EventConstructor = element.ownerDocument.defaultView?.CustomEvent;
-    if (!EventConstructor) throw new Error("Page CustomEvent constructor is unavailable.");
-    element.dispatchEvent(new EventConstructor("gapwise-map-project", { detail: projected }));
+    element.dispatchEvent(new CustomEvent("gapwise-map-project", { detail: projected }));
     if (typeof projected.x !== "number" || typeof projected.y !== "number") {
       throw new Error("MapLibre projection probe is unavailable for this entrance marker.");
     }
@@ -118,7 +116,7 @@ async function waitForProjectionSettled(anchor: Locator) {
   // Building focus uses a 620 ms MapLibre fitBounds transition. Requiring a
   // longer quiet window prevents a pre-animation snapshot from being mistaken
   // for the settled geographic projection on slower CI runners.
-  for (let stableSamples = 0; stableSamples < 8;) {
+  for (let stableSamples = 0; stableSamples < 8; ) {
     await anchor.page().waitForTimeout(100);
     const current = await expectMarkerCentered(anchor);
     expectSameGeographicAnchor(previous, current);
@@ -157,11 +155,11 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
 
   await expectLanding(page);
-  await page.evaluate(() => {
-    const url = new URL(window.location.href);
-    url.searchParams.set("e2eMapProjection", "1");
-    window.history.replaceState({}, "", url);
-  });
+  const projectionUrl = new URL(page.url());
+  projectionUrl.searchParams.set("e2eMapProjection", "1");
+  await page.goto(projectionUrl.toString());
+  await expectLanding(page);
+
   await page.getByRole("button", { name: "Try a demo" }).click();
   await page
     .getByRole("group", { name: "View mode" })
