@@ -38,7 +38,7 @@ describe("official UTM exterior-access evidence", () => {
     expect(building("IC").aliases).not.toContain("KN");
   });
 
-  test("records all named barrier-free identities in the current building registry without inventing geometry", () => {
+  test("records all named barrier-free identities while only reconciling exact defensible geometry", () => {
     expect(OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES).toHaveLength(31);
     expect(
       OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.reduce(
@@ -49,20 +49,43 @@ describe("official UTM exterior-access evidence", () => {
 
     const recognizedCodes = new Set(UTM_BUILDINGS.map((building) => building.code));
     const ids = new Set<string>();
+    const matched = OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.filter(
+      (candidate) => candidate.reconciliationStatus === "matched",
+    );
+    expect(
+      matched.map((candidate) => [
+        candidate.buildingCode,
+        candidate.label,
+        candidate.routingNodeId,
+      ]),
+    ).toEqual([
+      ["HM", "Main", "osm-node-13731205434"],
+      ["RAWC", "Main", "osm-node-13568164832"],
+    ]);
+
     for (const candidate of OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES) {
       expect(recognizedCodes.has(candidate.buildingCode)).toBe(true);
       expect(ids.has(candidate.id)).toBe(false);
       ids.add(candidate.id);
       expect(["candidate", "non_routable"]).toContain(candidate.routingStatus);
-      expect(candidate.coordinates).toBeNull();
-      expect(candidate.routingNodeId).toBeNull();
       expect(candidate.evidence.existence.confidence).toBe("verified");
       expect(candidate.evidence.barrierFree.confidence).toBe("verified");
-      expect(candidate.evidence.geometry.confidence).toBe("unknown");
       expect(candidate.evidence.publicAccess.confidence).toBe("unknown");
-      expect(["geometry_unknown", "intentionally_non_routable"]).toContain(
-        candidate.reconciliationStatus,
-      );
+
+      if (candidate.reconciliationStatus === "matched") {
+        expect(candidate.coordinates).not.toBeNull();
+        expect(candidate.routingNodeId).not.toBeNull();
+        expect(candidate.evidence.geometry.confidence).toBe("verified");
+        expect(candidate.evidence.geometry.sourceIds).toContain("openstreetmap");
+        expect(candidate.evidence.geometry.sourceIds).toContain("utm-facilities-snow-ice");
+      } else {
+        expect(candidate.coordinates).toBeNull();
+        expect(candidate.routingNodeId).toBeNull();
+        expect(candidate.evidence.geometry.confidence).toBe("unknown");
+        expect(["geometry_unknown", "intentionally_non_routable"]).toContain(
+          candidate.reconciliationStatus,
+        );
+      }
     }
 
     expect(
@@ -72,11 +95,14 @@ describe("official UTM exterior-access evidence", () => {
     ).toMatchObject({ instances: 2 });
   });
 
-  test("never turns official identity-only evidence into routing geometry", () => {
+  test("never duplicates official identity records as independent routing graph nodes", () => {
     const graphNodeIds = new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id));
     for (const candidate of OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES) {
       expect(graphNodeIds.has(candidate.id)).toBe(false);
-      expect(candidate.routingNodeId).toBeNull();
+      if (candidate.reconciliationStatus === "matched") {
+        expect(candidate.routingNodeId).not.toBeNull();
+        expect(graphNodeIds.has(candidate.routingNodeId!)).toBe(true);
+      }
     }
   });
 });

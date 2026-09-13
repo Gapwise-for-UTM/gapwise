@@ -14,6 +14,10 @@ export default tseslint.config(
       ".vinxi",
       "supabase/functions/**",
       "src/routes/mail.tsx",
+      // Generated entrance artifacts are validated by the UTM data workflows.
+      // Keep ESLint/Prettier from treating generated serialization as source style.
+      "src/data/utm/entrances.geojson",
+      "src/data/utm/generated/entrance-audit.geojson",
     ],
   },
   {

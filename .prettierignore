@@ -6,9 +6,11 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+src/data/utm/entrances.geojson
 src/data/utm/outdoor-edges.json
 src/data/utm/outdoor-nodes.geojson
 src/data/utm/generated/campus-access-audit.json
+src/data/utm/generated/entrance-audit.geojson
 public/openapi.json
 public/data/utm-campus-v1.json
 

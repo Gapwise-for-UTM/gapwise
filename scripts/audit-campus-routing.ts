@@ -7,6 +7,7 @@ import { officialEntranceCandidatesForBuilding } from "../src/data/utm/official-
 import type { AccessibilityStatus } from "../src/features/routing/types";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
+const MAIN_CAMPUS_REFERENCE_NODE_ID = "osm-node-13738201127";
 
 type EntranceKind = "entrance" | "approach";
 type VerificationStatus = "verified" | "inferred";
@@ -217,18 +218,43 @@ const edges = parseEdges(
   nodeIds,
 );
 
-const adjacency = new Map<string, string[]>();
+const incidentNodeIds = new Set<string>();
+const componentAdjacency = new Map<string, string[]>();
+const addComponentNeighbor = (from: string, to: string) => {
+  componentAdjacency.set(from, [...(componentAdjacency.get(from) ?? []), to]);
+};
 for (const edge of edges) {
-  adjacency.set(edge.from, [...(adjacency.get(edge.from) ?? []), edge.to]);
-  if (edge.bidirectional) adjacency.set(edge.to, [...(adjacency.get(edge.to) ?? []), edge.from]);
+  incidentNodeIds.add(edge.from);
+  incidentNodeIds.add(edge.to);
+  addComponentNeighbor(edge.from, edge.to);
+  addComponentNeighbor(edge.to, edge.from);
 }
-const connected = (id: string) => nodeIds.has(id) && (adjacency.get(id)?.length ?? 0) > 0;
+const locallyGraphAttached = (id: string) => nodeIds.has(id) && incidentNodeIds.has(id);
+
+if (!nodeIds.has(MAIN_CAMPUS_REFERENCE_NODE_ID)) {
+  throw new Error(`Main campus reference node “${MAIN_CAMPUS_REFERENCE_NODE_ID}” is missing.`);
+}
+const mainCampusComponent = new Set<string>([MAIN_CAMPUS_REFERENCE_NODE_ID]);
+const componentQueue = [MAIN_CAMPUS_REFERENCE_NODE_ID];
+while (componentQueue.length > 0) {
+  const current = componentQueue.shift()!;
+  for (const neighbor of componentAdjacency.get(current) ?? []) {
+    if (mainCampusComponent.has(neighbor)) continue;
+    mainCampusComponent.add(neighbor);
+    componentQueue.push(neighbor);
+  }
+}
 
 const records = UTM_BUILDINGS.map((building) => {
   const accessPoints = entrances.filter((feature) => feature.buildingCode === building.code);
   const verified = accessPoints.filter((feature) => feature.verificationStatus === "verified");
   const inferred = accessPoints.filter((feature) => feature.verificationStatus === "inferred");
-  const graphConnected = accessPoints.filter((feature) => connected(feature.routingNodeId));
+  const graphConnected = accessPoints.filter((feature) =>
+    locallyGraphAttached(feature.routingNodeId),
+  );
+  const mainCampusConnected = accessPoints.filter((feature) =>
+    mainCampusComponent.has(feature.routingNodeId),
+  );
   const unresolved: string[] = [];
   if (accessPoints.length === 0) {
     unresolved.push("No publishable exterior access point is recorded.");
@@ -242,6 +268,11 @@ const records = UTM_BUILDINGS.map((building) => {
   if (inferred.length > 0) {
     unresolved.push("One or more approach points are topology inferences, not verified doors.");
   }
+  if (graphConnected.length > mainCampusConnected.length) {
+    unresolved.push(
+      "One or more locally graph-attached access points are isolated from the main campus pedestrian component.",
+    );
+  }
   return {
     code: building.code,
     name: building.name,
@@ -249,6 +280,7 @@ const records = UTM_BUILDINGS.map((building) => {
     verifiedExteriorEntrances: verified.length,
     inferredApproaches: inferred.length,
     graphConnectedAccessPoints: graphConnected.length,
+    mainCampusComponentAccessPoints: mainCampusConnected.length,
     verifiedAccessibleEntrances: verified.filter(
       (feature) => feature.accessibility === "accessible",
     ).length,
@@ -257,7 +289,12 @@ const records = UTM_BUILDINGS.map((building) => {
   };
 });
 
-const report = { generatedAt: "2026-08-25", failClosed: true, buildings: records };
+const report = {
+  generatedAt: "2026-08-25",
+  failClosed: true,
+  mainCampusReferenceNodeId: MAIN_CAMPUS_REFERENCE_NODE_ID,
+  buildings: records,
+};
 await writeFile(
   resolve(root, "src/data/utm/generated/campus-access-audit.json"),
   `${JSON.stringify(report, null, 2)}\n`,
@@ -293,7 +330,7 @@ await writeFile(
 
 const rows = records.map(
   (record) =>
-    `| ${record.code} | ${record.verifiedExteriorEntrances} | ${record.inferredApproaches} | ${record.graphConnectedAccessPoints} | ${record.verifiedAccessibleEntrances} | ${record.unresolved.join(" ") || "None recorded"} |`,
+    `| ${record.code} | ${record.verifiedExteriorEntrances} | ${record.inferredApproaches} | ${record.graphConnectedAccessPoints} | ${record.mainCampusComponentAccessPoints} | ${record.verifiedAccessibleEntrances} | ${record.unresolved.join(" ") || "None recorded"} |`,
 );
 
 const officialRows = UTM_BUILDINGS.flatMap((building) => {
@@ -318,6 +355,6 @@ const officialRows = UTM_BUILDINGS.flatMap((building) => {
 
 await writeFile(
   resolve(root, "docs/CAMPUS_ACCESS_AUDIT.md"),
-  `# UTM campus access audit\n\nGenerated deterministically by \`bun run routing:audit\`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Graph-connected” means only that the point is attached to the bundled pedestrian graph; it does not by itself establish endpoint eligibility. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.\n\n| Building | Verified geocoded doors | Inferred geocoded approaches | Graph-connected access points | Explicitly accessible geocoded doors | Unresolved |\n| --- | ---: | ---: | ---: | ---: | --- |\n${rows.join("\n")}\n\n## Official UTM barrier-free entrance reconciliation\n\nUTM Facilities separately publishes named **barrier-free building entrances** in its snow and ice removal strategy: https://www.utm.utoronto.ca/facilities/utm-strategy-snow-and-ice-removal. These records establish the entrance identity and barrier-free designation, but the page does not publish exact door coordinates. Gapwise therefore keeps them as non-routable evidence candidates until a candidate can be matched to publishable geometry or a field survey.\n\nThe official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) remains a visual-QA reference only. The reproducibility investigation, including the network limitations encountered on 2026-08-25, is recorded in \`docs/UTM_ENTRANCE_REGISTRY.md\`. No marker position was transcribed into routing coordinates and no structured official entrance feed was validated.\n\nThe “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the geocoded coordinates still need an explicit source match to the named official entrance.\n\n| Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n${officialRows.join("\n")}\n\nThe same official Facilities source also names **Early Learning Centre: Main**. Early Learning Centre is not currently in the Gapwise UTM building registry, so it is recorded here as an upstream coverage gap rather than silently assigned to another building. Absence from the barrier-free list does not prove that a building is inaccessible.\n`,
+  `# UTM campus access audit\n\nGenerated deterministically by \`bun run routing:audit\`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Locally graph-attached” means only that the point has at least one incident edge in the bundled pedestrian graph. “Main campus component” means the point is in the same undirected pedestrian-graph component as the audited MN entrance node \`${MAIN_CAMPUS_REFERENCE_NODE_ID}\`; it still does not by itself establish endpoint eligibility or a directionally routable path. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.\n\n| Building | Verified geocoded doors | Inferred geocoded approaches | Locally graph-attached access points | Main-campus-component access points | Explicitly accessible geocoded doors | Unresolved |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n${rows.join("\n")}\n\n## Official UTM barrier-free entrance reconciliation\n\nUTM Facilities separately publishes named **barrier-free building entrances** in its snow and ice removal strategy: https://www.utm.utoronto.ca/facilities/utm-strategy-snow-and-ice-removal. These records establish the entrance identity and barrier-free designation, but the page does not publish exact door coordinates. Gapwise therefore keeps them as non-routable evidence candidates until a candidate can be matched to publishable geometry or a field survey.\n\nThe official University of Toronto interactive map (https://map.utoronto.ca/?id=1809) remains a visual-QA reference only. The reproducibility investigation, including the network limitations encountered on 2026-08-25, is recorded in \`docs/UTM_ENTRANCE_REGISTRY.md\`. No marker position was transcribed into routing coordinates and no structured official entrance feed was validated.\n\nThe “minimum unresolved accessible coordinates” column is a conservative lower bound: official barrier-free physical instances minus currently geocoded entrances that are independently marked accessible. A value of zero does **not** prove identity-level reconciliation; the geocoded coordinates still need an explicit source match to the named official entrance.\n\n| Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |\n| --- | ---: | ---: | ---: | ---: | ---: | --- |\n${officialRows.join("\n")}\n\nThe same official Facilities source also names **Early Learning Centre: Main**. Early Learning Centre is not currently in the Gapwise UTM building registry, so it is recorded here as an upstream coverage gap rather than silently assigned to another building. Absence from the barrier-free list does not prove that a building is inaccessible.\n`,
 );
 console.log(`Audited ${records.length} buildings and ${entrances.length} geocoded access points.`);

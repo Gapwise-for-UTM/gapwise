@@ -1,39 +1,39 @@
 # UTM campus access audit
 
-Generated deterministically by `bun run routing:audit`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Graph-connected” means only that the point is attached to the bundled pedestrian graph; it does not by itself establish endpoint eligibility. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.
+Generated deterministically by `bun run routing:audit`. “Verified” in the first table means the cited source establishes a geocoded door and building association; it does **not** imply public or step-free access unless those fields are affirmative. “Locally graph-attached” means only that the point has at least one incident edge in the bundled pedestrian graph. “Main campus component” means the point is in the same undirected pedestrian-graph component as the audited MN entrance node `osm-node-13738201127`; it still does not by itself establish endpoint eligibility or a directionally routable path. Unknown remains unknown and step-free routing fails closed. Official identity-only evidence is reconciled separately below.
 
-| Building | Verified geocoded doors | Inferred geocoded approaches | Graph-connected access points | Explicitly accessible geocoded doors | Unresolved |
-| --- | ---: | ---: | ---: | ---: | --- |
-| MN | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| DH | 3 | 0 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| IB | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| DV | 4 | 0 | 4 | 2 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| CCT | 1 | 0 | 1 | 1 | Ordinary public access status is not affirmatively published. |
-| HM | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| KN | 3 | 0 | 3 | 3 | Ordinary public access status is not affirmatively published. |
-| IC | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| RAWC | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| XR | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| HB | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| AX | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| WC | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| CUP | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| DW | 1 | 0 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| FCSH | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| GF | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| NSB | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| PL | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| BG | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| LH | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
-| EH | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| LL | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| MV | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| MC | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| OPH | 2 | 0 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| PP | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| RIH | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| SW | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| NRB | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| Building | Verified geocoded doors | Inferred geocoded approaches | Locally graph-attached access points | Main-campus-component access points | Explicitly accessible geocoded doors | Unresolved |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| MN | 1 | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| DH | 3 | 0 | 3 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| IB | 5 | 0 | 5 | 5 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| DV | 7 | 0 | 7 | 6 | 2 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more locally graph-attached access points are isolated from the main campus pedestrian component. |
+| CCT | 2 | 0 | 2 | 2 | 1 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| HM | 1 | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| KN | 3 | 0 | 3 | 3 | 3 | Ordinary public access status is not affirmatively published. |
+| IC | 1 | 0 | 1 | 0 | 1 | Ordinary public access status is not affirmatively published. One or more locally graph-attached access points are isolated from the main campus pedestrian component. |
+| RAWC | 1 | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| XR | 3 | 0 | 3 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| HB | 2 | 0 | 2 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| AX | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| WC | 0 | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| CUP | 0 | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| DW | 1 | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| FCSH | 0 | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| GF | 0 | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| NSB | 2 | 0 | 2 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| PL | 0 | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| BG | 0 | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| LH | 0 | 0 | 0 | 0 | 0 | No publishable exterior access point is recorded. |
+| EH | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| LL | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| MV | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| MC | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| OPH | 2 | 0 | 2 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| PP | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| RIH | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| SW | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
+| NRB | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
 
 ## Official UTM barrier-free entrance reconciliation
 
@@ -47,17 +47,17 @@ The “minimum unresolved accessible coordinates” column is a conservative low
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
 | MN | 3 | 3 | 1 | 0 | 3 | Main; Field side; Lot #1 |
 | DH | 2 | 2 | 3 | 0 | 2 | Main; Field side |
-| IB | 3 | 3 | 2 | 0 | 3 | Main; North; South |
-| DV | 3 | 3 | 4 | 2 | 1 | Main; End of 5 Minute Walk; Connection with CCT |
-| CCT | 3 | 3 | 1 | 1 | 2 | Main; Link; Connection with DV |
+| IB | 3 | 3 | 5 | 0 | 3 | Main; North; South |
+| DV | 3 | 3 | 7 | 2 | 1 | Main; End of 5 Minute Walk; Connection with CCT |
+| CCT | 3 | 3 | 2 | 1 | 2 | Main; Link; Connection with DV |
 | HM | 1 | 1 | 1 | 0 | 1 | Main |
 | RAWC | 1 | 1 | 1 | 0 | 1 | Main |
-| XR | 2 | 2 | 2 | 0 | 2 | 5 Minute Walk side; Academic Annex side |
+| XR | 2 | 2 | 3 | 0 | 2 | 5 Minute Walk side; Academic Annex side |
 | HB | 2 | 2 | 2 | 0 | 2 | Main; Rear |
 | AX | 1 | 1 | 0 | 0 | 1 | Main |
 | WC | 1 | 1 | 0 | 0 | 1 | Rear |
 | DW | 1 | 1 | 1 | 0 | 1 | Main |
-| NSB | 2 | 2 | 0 | 0 | 2 | Main; Rear |
+| NSB | 2 | 2 | 2 | 0 | 2 | Main; Rear |
 | BG | 1 | 1 | 0 | 0 | 1 | Main |
 | EH | 2 | 3 | 0 | 0 | 3 | Main; Rear ×2 |
 | OPH | 2 | 2 | 2 | 0 | 2 | Main; Rear |

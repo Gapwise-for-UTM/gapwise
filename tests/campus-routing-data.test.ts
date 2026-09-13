@@ -95,10 +95,32 @@ describe("bundled UTM routing data", () => {
     }
   });
 
-  test("connects every building to the main campus graph through at least one entrance", () => {
+  test("keeps disconnected entrance inventory explicit instead of pretending it is routable", () => {
     const origin = CAMPUS_BUILDINGS.find((building) => building.code === "MN")!;
-    for (const building of CAMPUS_BUILDINGS) {
-      const routes = building.entrances.map((entrance) =>
+    const disconnected = CAMPUS_BUILDINGS.filter(
+      (building) =>
+        !building.entrances.some((entrance) =>
+          findRoute(
+            UTM_ROUTING_GRAPH,
+            origin.entranceNodeId,
+            entrance.routingNodeId,
+            DEFAULT_ROUTE_PREFERENCES,
+          ),
+        ),
+    );
+
+    // The IC door is mapped from exact OSM building topology, but its retained pedestrian
+    // fragment is still isolated from the main campus component. Keep that distinction explicit.
+    expect(disconnected.map((building) => building.code).sort()).toEqual(["IC"]);
+    expect(disconnected[0]?.entrances.map((entrance) => entrance.osmNodeId).sort()).toEqual([
+      13568164840,
+    ]);
+  });
+
+  test("answers every pair inside the main campus routing component", () => {
+    const origin = CAMPUS_BUILDINGS.find((building) => building.code === "MN")!;
+    const connectedBuildings = CAMPUS_BUILDINGS.flatMap((building) => {
+      const connectedEntrance = building.entrances.find((entrance) =>
         findRoute(
           UTM_ROUTING_GRAPH,
           origin.entranceNodeId,
@@ -106,17 +128,23 @@ describe("bundled UTM routing data", () => {
           DEFAULT_ROUTE_PREFERENCES,
         ),
       );
-      expect(routes.some(Boolean)).toBe(true);
-    }
-  });
+      return connectedEntrance ? [{ building, connectedEntrance }] : [];
+    });
 
-  test("answers every pair in the full campus route matrix", () => {
-    for (const origin of CAMPUS_BUILDINGS) {
-      for (const destination of CAMPUS_BUILDINGS) {
-        const route = findRoute(
+    for (const originBuilding of connectedBuildings) {
+      expect(
+        findRoute(
           UTM_ROUTING_GRAPH,
           origin.entranceNodeId,
-          destination.entranceNodeId,
+          originBuilding.building.entranceNodeId,
+          DEFAULT_ROUTE_PREFERENCES,
+        ),
+      ).not.toBeNull();
+      for (const destinationBuilding of connectedBuildings) {
+        const route = findRoute(
+          UTM_ROUTING_GRAPH,
+          originBuilding.connectedEntrance.routingNodeId,
+          destinationBuilding.connectedEntrance.routingNodeId,
           DEFAULT_ROUTE_PREFERENCES,
         );
         expect(route).not.toBeNull();
