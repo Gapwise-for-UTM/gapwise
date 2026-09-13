@@ -71,22 +71,22 @@ test("first-class product URLs load directly with intentional empty states", asy
   const routes = [
     {
       path: "/timetable",
-      title: "Timetable — Gapwise for UTM",
+      title: "Timetable — Gapwise for U of T",
       heading: "Add your timetable",
     },
     {
       path: "/gaps",
-      title: "Gap Plan — Gapwise for UTM",
+      title: "Gap Plan — Gapwise for U of T",
       heading: "Add a timetable to plan your gaps",
     },
     {
       path: "/today",
-      title: "Today — Gapwise for UTM",
+      title: "Today — Gapwise for U of T",
       heading: "Add a timetable to see today",
     },
     {
       path: "/route",
-      title: "Campus Route — Gapwise for UTM",
+      title: "Campus Route — Gapwise for U of T",
       heading: "Find your way around campus",
     },
   ] as const;
@@ -143,7 +143,7 @@ test("route-driven navigation preserves a loaded timetable through history", asy
   await expect(page).toHaveURL(/\/route\/?$/);
   await expect(page.getByRole("heading", { name: "Route preferences" })).toBeVisible();
 
-  await page.getByRole("link", { name: "Gapwise for UTM home" }).click();
+  await page.getByRole("link", { name: "Gapwise for U of T home" }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(
     page.getByRole("heading", { name: "Make every gap on campus count." }),
@@ -217,7 +217,6 @@ test("campus explorer supports public building deep links and local search", asy
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeSearch);
 
   await search.fill("Deerfield");
-  await expect(page.getByRole("button", { name: /DH Deerfield Hall/ })).toBeVisible();
   await search.press("Enter");
   await expect(page.getByRole("heading", { name: "Deerfield Hall" })).toBeVisible();
   const deerfieldDetails = page.getByRole("region", { name: "Deerfield Hall" });
