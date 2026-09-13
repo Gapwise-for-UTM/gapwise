@@ -14,11 +14,11 @@
   },
   "repositories": {
     "core": "https://github.com/Gapwise-for-UTM/gapwise",
-    "mobile": "https://github.com/Gapwise-for-UTM/gapwise-mobile",
-    "ai": "https://github.com/Gapwise-for-UTM/gapwise-ai",
-    "data": "https://github.com/Gapwise-for-UTM/gapwise-data",
-    "docs": "https://github.com/Gapwise-for-UTM/gapwise-docs",
-    "status": "https://github.com/Gapwise-for-UTM/gapwise-status"
+    "mobile": "https://github.com/Gapwise-for-UTM/android",
+    "ai": "https://github.com/Gapwise-for-UTM/ai",
+    "data": "https://github.com/Gapwise-for-UTM/data",
+    "docs": "https://github.com/Gapwise-for-UTM/docs",
+    "status": "https://github.com/Gapwise-for-UTM/status"
   },
   "ownership": {
     "core": [
@@ -32,7 +32,7 @@
       "typescript-sdk",
       "python-sdk"
     ],
-    "mobile": ["native-mobile-ux", "device-integration", "mobile-distribution"],
+    "mobile": ["native-android-ux", "device-integration", "android-distribution"],
     "ai": ["oauth", "mcp", "delegation", "bounded-ai-actions"],
     "data": [
       "canonical-public-campus-facts",
@@ -50,7 +50,7 @@
     "status": ["service-health", "incident-communication"]
   },
   "campusData": {
-    "canonicalRepository": "https://github.com/Gapwise-for-UTM/gapwise-data",
+    "canonicalRepository": "https://github.com/Gapwise-for-UTM/data",
     "canonicalPath": "data/utm",
     "coreMirrorPath": "src/data/utm",
     "runtimeFetchRequired": false,
