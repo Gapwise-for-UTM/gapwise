@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/LegalPage";
 export const Route = createFileRoute("/trust")({
   head: () => ({
     meta: [
-      { title: "Trust Center — Gapwise for UTM" },
+      { title: "Trust Center — Gapwise for U of T" },
       {
         name: "description",
         content:
@@ -28,11 +28,13 @@ function TrustPage() {
     >
       <section>
         <p>
-          Gapwise is an independent student project for UTM. It is not an official University of
-          Toronto service and does not claim university review, sponsorship, endorsement,
-          certification, or procurement approval. This page separates implementation-backed facts
-          from operating commitments and items that still require provider, legal, or human
-          confirmation.
+          Gapwise is an independent student project for University of Toronto students. Timetable
+          identity supports UTM, UTSG, UTSC, and mixed-campus schedules; the current first-party
+          campus map, routing, places, and open-data layer are focused on UTM. Gapwise is not an
+          official University of Toronto service and does not claim university review, sponsorship,
+          endorsement, certification, or procurement approval. This page separates
+          implementation-backed facts from operating commitments and items that still require
+          provider, legal, or human confirmation.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <Link to="/privacy" className={cardClass}>
@@ -72,8 +74,14 @@ function TrustPage() {
           <li>Gapwise does not ask for your ACORN password.</li>
           <li>The original ACORN .ics file is read and parsed in your browser.</li>
           <li>The application does not upload the original file or its source filename.</li>
-          <li>Guest timetable, gap, and route planning can work without a Gapwise account.</li>
+          <li>UTM, UTSG, UTSC, and mixed-campus timetable identity is preserved.</li>
+          <li>Guest timetable use can work without a Gapwise account.</li>
         </ul>
+        <p>
+          UTSG and UTSC source locations remain timetable locations; Gapwise does not silently map
+          them onto the UTM campus. Route-aware planning and the first-party campus map use the UTM
+          coverage that is actually available.
+        </p>
         <p>
           If you choose to remember a timetable locally, parsed schedule data can remain in browser
           storage. If you enable private cloud sync, supported private state can also enter the
@@ -101,7 +109,7 @@ function TrustPage() {
       <section>
         <h2>Public API, private account state, and AI are separate boundaries</h2>
         <p>
-          The public developer API is for deterministic campus information. It does not expose
+          The public developer API is for deterministic UTM campus information. It does not expose
           private student timetables, accounts, friends, private sync state, credentials, or precise
           live location. Private AI access is a separate opt-in delegation path.
         </p>
