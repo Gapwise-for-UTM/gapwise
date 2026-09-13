@@ -87,13 +87,13 @@ export function MarketingLandingImpl({
     <div ref={rootRef} className="marketing-home" data-active-product={activeProduct}>
       <section className="marketing-hero" aria-labelledby="marketing-title">
         <div className="marketing-hero-copy">
-          <p className="marketing-eyebrow">Gapwise for UTM</p>
+          <p className="marketing-eyebrow">Gapwise for U of T</p>
           <h1 id="marketing-title">
             Make every <span>gap</span> on campus count.
           </h1>
           <p className="marketing-lede">
-            One precise workspace for your timetable, the time between classes, and moving across
-            UTM.
+            One precise workspace for your U of T timetable, the time between classes, and UTM
+            campus movement.
           </p>
           <div className="marketing-hero-links">
             <a href="#gapwise">Explore Gapwise</a>
@@ -151,7 +151,7 @@ export function MarketingLandingImpl({
             <ProductHeading
               label="Gapwise"
               title="Plan the time between classes."
-              body="Your weekly timetable, gap plan, and campus movement share one schedule context, so every view stays focused on what comes next."
+              body="Import UTM, UTSG, UTSC, or mixed-campus timetables in one schedule context. Gap planning and first-party campus routing stay grounded in the UTM data coverage that actually exists."
             />
             <div className="product-story-actions">
               <Link className="product-story-link" to="/timetable" onClick={onDemo}>
@@ -160,6 +160,12 @@ export function MarketingLandingImpl({
               <Link className="product-story-link" to="/gaps" onClick={onDemo}>
                 Gap planner <span aria-hidden="true">↗</span>
               </Link>
+              <ExternalProductLink href="https://github.com/Gapwise-for-UTM/android">
+                Android
+              </ExternalProductLink>
+              <ExternalProductLink href="https://github.com/Gapwise-for-UTM/ios">
+                iOS
+              </ExternalProductLink>
             </div>
           </div>
 
@@ -211,7 +217,7 @@ export function MarketingLandingImpl({
             <ProductHeading
               label="Gapwise AI"
               title="Campus context, permissioned."
-              body="The Gapwise MCP layer exposes deterministic public campus intelligence plus student context you explicitly delegate. Your connected AI client supplies the reasoning."
+              body="The Gapwise MCP layer exposes deterministic public UTM campus intelligence plus student context you explicitly delegate. Your connected AI client supplies the reasoning."
             />
             <div className="product-story-actions">
               <ExternalProductLink href="https://ai.gapwise.ca">Gapwise AI</ExternalProductLink>
@@ -249,7 +255,7 @@ export function MarketingLandingImpl({
             <ProductHeading
               label="Gapwise Docs"
               title="Contracts you can build against."
-              body="Canonical OpenAPI, JavaScript and Python SDK references, platform guides, security boundaries, and AI integration documentation live in one technical surface."
+              body="Canonical OpenAPI, JavaScript and Python SDK references, platform guides, security boundaries, native-client ownership, and AI integration documentation live in one technical surface."
             />
             <div className="product-story-actions">
               <ExternalProductLink href="https://docs.gapwise.ca">Open Docs</ExternalProductLink>
@@ -284,7 +290,7 @@ export function MarketingLandingImpl({
             <ProductHeading
               label="Gapwise Data"
               title="UTM facts with provenance."
-              body="The open data layer owns canonical campus identity, geometry, entrances, routing inputs, provenance, and validation — including 30 UTM buildings and facilities in the published snapshot."
+              body="The open data layer owns canonical UTM campus identity, geometry, entrances, routing inputs, provenance, and validation — including 30 buildings and facilities in the published snapshot."
             />
             <div className="product-story-actions">
               <ExternalProductLink href="https://data.gapwise.ca">Explore Data</ExternalProductLink>
