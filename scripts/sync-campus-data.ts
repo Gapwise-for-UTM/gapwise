@@ -12,7 +12,7 @@ const checkOnly = args.includes("--check");
 const write = args.includes("--write");
 const publish = args.includes("--publish");
 const sourceArg = args.find((arg) => arg.startsWith("--source="))?.slice("--source=".length);
-const sourceRoot = resolve(repoRoot, sourceArg ?? "../gapwise-data/data/utm");
+const sourceRoot = resolve(repoRoot, sourceArg ?? "../data/data/utm");
 const dataRepoRoot = resolve(sourceRoot, "../..");
 const ignoredFiles = new Set(["SHA256SUMS"]);
 
@@ -24,7 +24,7 @@ if ([checkOnly, write, publish].filter(Boolean).length !== 1) {
 if (!existsSync(sourceRoot)) {
   console.error(
     `Canonical campus data was not found at ${sourceRoot}. ` +
-      "Check out Gapwise-for-UTM/gapwise-data next to gapwise, or pass --source=<path>.",
+      "Check out Gapwise-for-UTM/data next to gapwise, or pass --source=<path>.",
   );
   process.exit(2);
 }
@@ -118,7 +118,7 @@ for (const path of targetFiles) {
 
 if (checkOnly) {
   if (differences.length > 0) {
-    console.error("Campus data mirror differs from Gapwise-for-UTM/gapwise-data:");
+    console.error("Campus data mirror differs from Gapwise-for-UTM/data:");
     for (const difference of differences) console.error(`- ${difference}`);
     process.exit(1);
   }
