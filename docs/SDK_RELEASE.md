@@ -158,11 +158,11 @@ Manual targets `jsr`, `javascript`, `python-github`, and `all` remain available 
 A registry release is not complete merely because a package upload succeeds. After a new SDK release:
 
 - `gapwise` updates the canonical developer platform/release state;
-- `gapwise-docs` updates installation and runtime guidance;
-- `gapwise-data` updates developer examples only when the released API/SDK contract changes;
-- `gapwise-mobile` consumes the same canonical platform semantics without forking SDK behavior;
-- `gapwise-ai` keeps public campus SDKs distinct from the private OAuth/MCP boundary;
-- `gapwise-status` treats registry availability as release metadata, not as a substitute for live API/service monitoring.
+- `docs` updates installation and runtime guidance;
+- `data` updates developer examples only when the released API/SDK contract changes;
+- `android` consumes the same canonical platform semantics without forking SDK behavior;
+- `ai` keeps public campus SDKs distinct from the private OAuth/MCP boundary;
+- `status` treats registry availability as release metadata, not as a substitute for live API/service monitoring.
 
 All six repositories should link back to the canonical SDK source and documentation rather than reproducing an independent contract.
 
