@@ -161,10 +161,11 @@ A registry release is not complete merely because a package upload succeeds. Aft
 - `docs` updates installation and runtime guidance;
 - `data` updates developer examples only when the released API/SDK contract changes;
 - `android` consumes the same canonical platform semantics without forking SDK behavior;
+- `ios` consumes the same canonical platform semantics without forking SDK behavior;
 - `ai` keeps public campus SDKs distinct from the private OAuth/MCP boundary;
 - `status` treats registry availability as release metadata, not as a substitute for live API/service monitoring.
 
-All six repositories should link back to the canonical SDK source and documentation rather than reproducing an independent contract.
+All seven first-party product repositories should link back to the canonical SDK source and documentation rather than reproducing an independent contract.
 
 ## Security properties
 
