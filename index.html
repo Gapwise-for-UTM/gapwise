@@ -12,19 +12,30 @@
     <link rel="stylesheet" href="/timetable-card-fixes.css" />
     <style>
       /*
-       * MapLibre owns the marker root's transform. Keep entrance marker geometry
-       * absolutely stable so visual selection state can never scale or resize
-       * the geographic translation during repeated pan/zoom interactions.
+       * MapLibre owns this dimensionless anchor's geographic transform. The
+       * interactive entrance button is positioned independently around the
+       * projected point, so hover/focus/selection sizing cannot change the
+       * anchor box or participate in MapLibre's coordinate transform.
        */
-      .map-entrance-marker {
+      .maplibregl-marker.map-entrance-marker-anchor {
         box-sizing: border-box !important;
-        width: 30px !important;
-        height: 30px !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        pointer-events: none !important;
+        translate: none !important;
+        rotate: none !important;
         scale: none !important;
-        transition:
-          border-width 160ms ease,
-          border-color 160ms ease,
-          outline-color 160ms ease !important;
+        transform-origin: 50% 50% !important;
+      }
+
+      .map-entrance-marker-anchor > .map-entrance-marker {
+        position: absolute;
+        left: 0;
+        top: 0;
+        translate: -50% -50%;
+        pointer-events: auto;
       }
 
       .map-entrance-marker.is-selected {
