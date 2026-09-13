@@ -12,21 +12,15 @@
     <link rel="stylesheet" href="/timetable-card-fixes.css" />
     <style>
       /*
-       * MapLibre owns this inert anchor's geographic transform. The interactive
-       * entrance button is a centered child, so hover/focus/selection styling
-       * can never alter the coordinate MapLibre is projecting.
+       * MapLibre owns this dimensionless anchor's geographic transform. The
+       * interactive entrance button is positioned independently around the
+       * projected point, so hover/focus/selection sizing cannot change the
+       * anchor box or participate in MapLibre's coordinate transform.
        */
       .maplibregl-marker.map-entrance-marker-anchor {
         box-sizing: border-box !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        width: 30px !important;
-        height: 30px !important;
-        min-width: 30px !important;
-        min-height: 30px !important;
-        max-width: 30px !important;
-        max-height: 30px !important;
+        width: 0 !important;
+        height: 0 !important;
         margin: 0 !important;
         padding: 0 !important;
         pointer-events: none !important;
@@ -37,7 +31,10 @@
       }
 
       .map-entrance-marker-anchor > .map-entrance-marker {
-        flex: none;
+        position: absolute;
+        left: 0;
+        top: 0;
+        translate: -50% -50%;
         pointer-events: auto;
       }
 
