@@ -7,7 +7,7 @@ test("privacy and terms are public, responsive, and independent of an account", 
 }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await page.goto("/privacy");
-  await expect(page).toHaveTitle("Privacy — Gapwise for UTM");
+  await expect(page).toHaveTitle("Privacy — Gapwise for U of T");
   await expect(page.getByRole("heading", { name: "Your schedule stays yours." })).toBeVisible();
   await expect(page.getByText("The original file is not uploaded")).toBeVisible();
   await expect(
@@ -23,7 +23,7 @@ test("privacy and terms are public, responsive, and independent of an account", 
     page.getByText(/Delete your account and associated application cloud data/),
   ).toBeVisible();
   await page.getByRole("link", { name: "Terms" }).click();
-  await expect(page).toHaveTitle("Terms — Gapwise for UTM");
+  await expect(page).toHaveTitle("Terms — Gapwise for U of T");
   await expect(page.getByRole("heading", { name: "A practical student utility." })).toBeVisible();
   await expect(page.getByText(/without paid feature tiers or a product checkout/)).toBeVisible();
   await expect(
@@ -52,7 +52,7 @@ test("accessibility statement publishes scoped evidence and limitations", async 
 
 test("trust center exposes evidence-backed boundaries and limitations", async ({ page }) => {
   await page.goto("/trust");
-  await expect(page).toHaveTitle("Trust Center — Gapwise for UTM");
+  await expect(page).toHaveTitle("Trust Center — Gapwise for U of T");
   await expect(page.getByRole("heading", { name: "Evidence before promises." })).toBeVisible();
   await expect(page.getByText("Gapwise does not ask for your ACORN password.")).toBeVisible();
   await expect(
@@ -87,7 +87,7 @@ test("trust center exposes evidence-backed boundaries and limitations", async ({
 
 test("vulnerability policy and canonical security contact are public", async ({ page }) => {
   await page.goto("/security");
-  await expect(page).toHaveTitle("Vulnerability Disclosure — Gapwise for UTM");
+  await expect(page).toHaveTitle("Vulnerability Disclosure — Gapwise for U of T");
   await expect(
     page.getByRole("heading", { name: "Vulnerability Disclosure Policy" }),
   ).toBeVisible();
