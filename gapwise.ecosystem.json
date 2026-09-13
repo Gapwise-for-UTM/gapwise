@@ -14,7 +14,8 @@
   },
   "repositories": {
     "core": "https://github.com/Gapwise-for-UTM/gapwise",
-    "mobile": "https://github.com/Gapwise-for-UTM/android",
+    "android": "https://github.com/Gapwise-for-UTM/android",
+    "ios": "https://github.com/Gapwise-for-UTM/ios",
     "ai": "https://github.com/Gapwise-for-UTM/ai",
     "data": "https://github.com/Gapwise-for-UTM/data",
     "docs": "https://github.com/Gapwise-for-UTM/docs",
@@ -32,7 +33,8 @@
       "typescript-sdk",
       "python-sdk"
     ],
-    "mobile": ["native-android-ux", "device-integration", "android-distribution"],
+    "android": ["native-android-ux", "android-device-integration", "android-distribution"],
+    "ios": ["native-ios-ux", "ios-device-integration", "ios-distribution"],
     "ai": ["oauth", "mcp", "delegation", "bounded-ai-actions"],
     "data": [
       "canonical-public-campus-facts",
