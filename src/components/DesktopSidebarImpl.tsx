@@ -72,7 +72,7 @@ export function DesktopSidebar({
           className="brand-utm-pill"
           style={{ color: "light-dark(var(--color-primary), var(--color-accent))" }}
         >
-          UTM
+          U of T
         </span>
       </Link>
 
