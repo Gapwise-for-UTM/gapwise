@@ -6,7 +6,8 @@ export const Route = createFileRoute("/_app/gaps")({
       { title: "Gap Plan — Gapwise for U of T" },
       {
         name: "description",
-        content: "Plan useful time between U of T classes with UTM route-aware guidance where supported.",
+        content:
+          "Plan useful time between U of T classes with UTM route-aware guidance where supported.",
       },
     ],
   }),
