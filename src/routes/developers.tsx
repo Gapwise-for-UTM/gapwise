@@ -97,7 +97,7 @@ function DevelopersPage() {
               <img src="/logo-mark.svg" alt="" aria-hidden="true" />
             </span>
             <span className="font-display text-base font-semibold tracking-[-0.035em]">
-              Gapwise <span className="brand-utm-pill">UTM</span>
+              Gapwise <span className="brand-utm-pill">U of T</span>
             </span>
           </Link>
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
@@ -114,9 +114,10 @@ function DevelopersPage() {
                 Build with the campus layer behind Gapwise.
               </h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground">
-                Use the stable API and SDKs for deterministic campus intelligence, Gapwise Data for
-                canonical raw UTM artifacts, or the separate AI/MCP surface for explicitly delegated
-                student context.
+                Use the stable API and SDKs for deterministic UTM campus intelligence, Gapwise Data
+                for canonical raw UTM artifacts, or the separate AI/MCP surface for explicitly
+                delegated student context. U of T timetable support across UTM, UTSG, and UTSC is a
+                product capability; this public campus API remains UTM-focused.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-2" aria-label="Platform properties">
@@ -233,9 +234,9 @@ function DevelopersPage() {
                   SDK release status
                 </p>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  The official TypeScript and Python clients are source-available and validated by
-                  the release gate. Check the documentation for current npm, JSR, and PyPI
-                  availability before installing from a registry.
+                  <code>@gapwise/sdk@0.1.1</code> is published on npm and JSR, and{" "}
+                  <code>gapwise==0.1.0</code> is published on PyPI. Both are first-party clients for
+                  the same public v1 contract.
                 </p>
               </div>
             </section>
