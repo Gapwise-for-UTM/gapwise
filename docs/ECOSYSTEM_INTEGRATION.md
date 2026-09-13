@@ -4,14 +4,14 @@ Gapwise is one product ecosystem implemented across six first-party repositories
 
 ## Repository graph
 
-| Repository       | Owns                                                                                                                                          | Consumes from the ecosystem                                           | Must not become                                            |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `gapwise`        | canonical student-state semantics, deterministic timetable/gap/routing logic, public API v1, OpenAPI, official TypeScript + Python SDK source | data evidence, AI integration state, operational links                | a duplicate docs/status/data site                          |
-| `gapwise-mobile` | native iOS/Android UX, mobile persistence/adapters, secure device integration                                                                 | canonical Gapwise API/product semantics, AI boundary, data provenance | an independent timetable/routing engine                    |
-| `gapwise-ai`     | OAuth/MCP authorization boundary, delegated snapshots, bounded AI actions                                                                     | canonical Gapwise student/campus semantics                            | a second source of timetable truth or a public SDK backend |
-| `gapwise-data`   | public data/provenance explanation, schemas, attribution, evidence                                                                            | canonical campus datasets and public API contracts                    | an alternate API implementation                            |
-| `gapwise-docs`   | canonical public developer documentation                                                                                                      | released contracts from every owning repository                       | an independent product contract                            |
-| `gapwise-status` | independent health/incident communication                                                                                                     | public endpoints and operator-maintained health facts                 | a source of product/release semantics                      |
+| Repository | Owns | Consumes from the ecosystem | Must not become |
+| --- | --- | --- | --- |
+| `gapwise` | canonical student-state semantics, deterministic timetable/gap/routing logic, public API v1, OpenAPI, official TypeScript + Python SDK source | data evidence, AI integration state, operational links | a duplicate docs/status/data site |
+| `android` | native Android UX, mobile persistence/adapters, secure device integration | canonical Gapwise API/product semantics, AI boundary, data provenance | an independent timetable/routing engine |
+| `ai` | OAuth/MCP authorization boundary, delegated snapshots, bounded AI actions | canonical Gapwise student/campus semantics | a second source of timetable truth or a public SDK backend |
+| `data` | public data/provenance explanation, schemas, attribution, evidence | canonical campus datasets and public API contracts | an alternate API implementation |
+| `docs` | canonical public developer documentation | released contracts from every owning repository | an independent product contract |
+| `status` | independent health/incident communication | public endpoints and operator-maintained health facts | a source of product/release semantics |
 
 ## Public developer platform
 
@@ -44,7 +44,7 @@ canonical campus/data evidence
    +------+------+----------------+
    |             |                |
    v             v                v
-public API     mobile          student web
+public API     Android         student web
    |
    +--------+---------+
             |         |
@@ -59,11 +59,11 @@ private student state
           |
           | explicit delegation only
           v
-      gapwise-ai OAuth/MCP
+          ai OAuth/MCP
 
-all public services ---> gapwise-status
-all released contracts -> gapwise-docs
-campus evidence --------> gapwise-data
+all public services ---> status
+all released contracts -> docs
+campus evidence --------> data
 ```
 
 ## Cross-repository rules
@@ -71,12 +71,12 @@ campus evidence --------> gapwise-data
 1. **One canonical contract.** Public HTTP behavior comes from OpenAPI + `gapwise`; SDKs and docs follow it.
 2. **Two equal SDK implementations.** TypeScript and Python receive equivalent API coverage, examples, release validation, and documentation attention.
 3. **No runtime forks.** Node, Bun, and Deno support is achieved by portability/testing of the TypeScript SDK, not three codebases.
-4. **Release claims are evidence-based.** npm, JSR, PyPI, mobile stores, AI client compatibility, and operational health are only called released/verified after the relevant external evidence exists.
+4. **Release claims are evidence-based.** npm, JSR, PyPI, Android distribution, AI client compatibility, and operational health are only called released/verified after the relevant external evidence exists.
 5. **Private and public surfaces stay separate.** Public SDKs expose campus intelligence only; private student context stays behind explicit OAuth/MCP delegation.
-6. **Data uncertainty survives every layer.** Unknown, inferred, approximate, unavailable, and unverified states must not be silently promoted to certainty by mobile, SDKs, docs, AI, or status.
+6. **Data uncertainty survives every layer.** Unknown, inferred, approximate, unavailable, and unverified states must not be silently promoted to certainty by Android, SDKs, docs, AI, or status.
 7. **Status reports health, not truth.** Registry/package existence and product semantics belong to release/docs sources; Status monitors availability and incidents.
-8. **Docs describe owners.** `gapwise-docs` links to owning repositories and released behavior instead of redefining it.
-9. **Repository changes propagate intentionally.** A contract change in one owning repo must identify downstream docs/mobile/data/AI/status consequences before release.
+8. **Docs describe owners.** `docs` links to owning repositories and released behavior instead of redefining it.
+9. **Repository changes propagate intentionally.** A contract change in one owning repo must identify downstream docs/Android/data/AI/status consequences before release.
 
 ## SDK release synchronization
 
@@ -98,11 +98,11 @@ For any ecosystem-level change, ask all of the following:
 - Does OpenAPI or public API behavior change?
 - Do both SDKs need code/type/example changes?
 - Does the TypeScript change remain portable across Node, Bun, and Deno?
-- Does `gapwise-docs` need a released-contract update?
-- Does `gapwise-data` need schema/provenance/example changes?
-- Does `gapwise-mobile` consume or mirror any affected semantics?
-- Does `gapwise-ai` depend on or expose a delegated form of the affected concept?
-- Does `gapwise-status` need a new/renamed monitored public surface?
+- Does `docs` need a released-contract update?
+- Does `data` need schema/provenance/example changes?
+- Does `android` consume or mirror any affected semantics?
+- Does `ai` depend on or expose a delegated form of the affected concept?
+- Does `status` need a new/renamed monitored public surface?
 - Are privacy, security, uncertainty, attribution, or source-of-truth statements still accurate?
 
 A change is ecosystem-complete only when the relevant answers are handled, not merely when one repository builds.
