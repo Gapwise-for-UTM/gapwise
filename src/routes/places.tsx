@@ -5,7 +5,7 @@ import { listCampusPlaces } from "@/features/campus-state/snapshot";
 export const Route = createFileRoute("/places")({
   head: () => ({
     meta: [
-      { title: "Campus places — Gapwise for UTM" },
+      { title: "Campus places — Gapwise for U of T" },
       {
         name: "description",
         content: "Source-backed UTM dining, study, service and recreation places.",
