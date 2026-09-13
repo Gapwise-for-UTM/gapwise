@@ -1,10 +1,7 @@
 import { sanitizeRoutePreferences } from "../src/config/routing.js";
 import { findBestRoute } from "../src/features/routing/engine.js";
 import type { RoutePreferences } from "../src/features/routing/types.js";
-import {
-  resolvePublicBuilding,
-  serverRoutingGraph,
-} from "../src/server/public-campus/data.js";
+import { resolvePublicBuilding, serverRoutingGraph } from "../src/server/public-campus/data.js";
 import { routeBetweenPublicBuildings } from "../src/server/public-campus/service.js";
 import {
   exactObject,
