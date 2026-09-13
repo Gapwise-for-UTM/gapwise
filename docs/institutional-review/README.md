@@ -19,15 +19,15 @@ This directory is the Phase 8 institutional-review package for AND-159. It is an
 | Requested artifact | Package location / source | Current status and gap |
 | --- | --- | --- |
 | One-page product overview | [PRODUCT_OVERVIEW.md](PRODUCT_OVERVIEW.md) | `Repository evidence`; owner approval and intended-recipient review remain pending. |
-| Security whitepaper | Gapwise Security Overview in `andrewmuratov/gapwise-docs` | `Repository evidence`; re-check exact published revision and production boundary before sharing. |
-| Architecture/data-flow diagram | Gapwise architecture package in `gapwise-docs` | `Repository evidence`; reconcile against the deployed core and AI integrations. |
+| Security whitepaper | Gapwise Security Overview in `Gapwise-for-UTM/docs` | `Repository evidence`; re-check exact published revision and production boundary before sharing. |
+| Architecture/data-flow diagram | Gapwise architecture package in `Gapwise-for-UTM/docs` | `Repository evidence`; reconcile against the deployed core and AI integrations. |
 | Data inventory / subprocessors | `../TRUST_DATA_INVENTORY.md` | `Repository evidence`; preserve every provider/jurisdiction confirmation flag. |
-| PIA / retention / privacy workflows | `andrewmuratov/gapwise-docs/governance/privacy` | `Process material`; legal-policy drafts remain drafts until approved. |
+| PIA / retention / privacy workflows | `Gapwise-for-UTM/docs/governance/privacy` | `Process material`; legal-policy drafts remain drafts until approved. |
 | Vulnerability disclosure / `security.txt` | `/security`, `SECURITY.md`, `/.well-known/security.txt` | Current repository implementation; exact production reachability should be captured before institutional handoff. |
 | Incident response / BC-DR | `../INCIDENT_RESPONSE.md`, `../DISASTER_RECOVERY.md`, [EVIDENCE_REGISTER.md](EVIDENCE_REGISTER.md) | Current `Process material`; exercises, named roles, provider evidence, backup/restore evidence, and service levels remain separate. |
 | Accessibility statement/evidence | `/accessibility`, `../ACCESSIBILITY_MATRIX.md`, `../ACCESSIBILITY_CONFORMANCE_WORKSHEET.md` | Current evidence-backed statement and worksheet; no formal conformance or third-party certification claimed. |
 | Public Trust Center | `/trust` | Student-readable evidence map; revalidate links and exact deployed build before external reliance. |
-| AI/MCP permission model | `../DEVELOPER_PLATFORM.md`, core AI contract, `gapwise-docs`, `andrewmuratov/gapwise-ai` | Exact-head cross-repository reconciliation required before institutional sharing. |
+| AI/MCP permission model | `../DEVELOPER_PLATFORM.md`, core AI contract, `Gapwise-for-UTM/docs`, `Gapwise-for-UTM/ai` | Exact-head cross-repository reconciliation required before institutional sharing. |
 | CI/security snapshot | [CI_SECURITY_EVIDENCE.md](CI_SECURITY_EVIDENCE.md) | Capture worksheet; green CI/scanners are not independent assurance. |
 | Independent penetration test | [PENETRATION_TEST_READINESS.md](PENETRATION_TEST_READINESS.md) | `Independent assessment required`; no test/result is claimed. |
 | CAIQ/SIG-style preparation | [QUESTIONNAIRE_PREPARATION.md](QUESTIONNAIRE_PREPARATION.md) | Preparation worksheet only, not an official questionnaire response. |
