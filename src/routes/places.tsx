@@ -22,7 +22,7 @@ function PlacesPage() {
       <header className="app-nav sticky top-0 z-30 border-b" data-scrolled="true">
         <div className="mx-auto flex min-h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="font-display font-semibold">
-            Gapwise <span className="brand-utm-pill">UTM</span>
+            Gapwise <span className="brand-utm-pill">U of T</span>
           </Link>
           <Link to="/today" className="button-secondary px-3 py-2 text-sm font-semibold">
             Today
