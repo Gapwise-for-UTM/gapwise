@@ -1,13 +1,15 @@
-# Contributing to Gapwise for UTM
+# Contributing to Gapwise
 
-Gapwise for UTM is an independent student project. Contributions should preserve its local-first privacy model, accessibility, honest campus-data confidence, and sustainable free-tier operating model.
+Gapwise is an independent student project for University of Toronto students. Contributions should preserve its local-first privacy model, accessibility, honest campus-data confidence, and sustainable operating model.
+
+Timetable identity supports UTM, UTSG, UTSC, and mixed-campus schedules. The current first-party campus map, routing graph, campus places, and open-data layer are focused on UTM. Contributions must preserve that distinction instead of silently treating timetable coverage as map/routing coverage.
 
 ## Before starting
 
 1. Search existing GitHub issues and pull requests.
 2. Use the repository issue forms for public bug/feature reports.
 3. Report security vulnerabilities privately through the repository security policy.
-4. Maintainer-planned implementation work is tracked in the **Gapwise for UTM** Linear project.
+4. Maintainer-planned implementation work is tracked in the **Gapwise** Linear project.
 
 GitHub is the public engineering record. Linear is the maintainer's planning/execution system; contributors do not need Linear access to report a problem.
 
@@ -78,7 +80,7 @@ Never commit or attach:
 - `.env` files or production environment values;
 - real student timetable files or screenshots containing personal schedules;
 - student numbers, private email addresses, or authentication links;
-- restricted UTM documents, private floor plans, or unofficially obtained data.
+- restricted university documents, private floor plans, or unofficially obtained data.
 
 Use synthetic/redacted data in tests and issue evidence.
 
@@ -91,14 +93,17 @@ The original uploaded `.ics` file must remain browser-local unless the privacy m
 Preserve:
 
 - useful guest mode without an account;
+- local parsing of UTM, UTSG, UTSC, and mixed-campus ACORN schedules;
+- source campus and source location for non-UTM meetings;
+- UTM-only map/routing claims until equivalent first-party campus evidence exists elsewhere;
 - optional browser-encrypted private sync;
 - Microsoft/Google/GitHub OAuth without U of T credential collection;
-- compatibility with free Vercel/Supabase plans where practical;
+- compatibility with free or low-cost Vercel/Supabase operation where practical;
 - accessible keyboard, screen-reader, mobile, and reduced-motion behavior;
 - clear distinction between verified, inferred/approximate, and unavailable campus guidance;
 - the independent-project/non-affiliation statement.
 
-Do not add ACORN scraping, automated enrolment, background location tracking, paid infrastructure, raw private analytics, or official U of T/UTM branding without deliberate product/security review.
+Do not add ACORN scraping, automated enrolment, background location tracking, raw private analytics, or official U of T/UTM branding without deliberate product/security review.
 
 ## Campus data
 
@@ -132,6 +137,7 @@ Reviewers should verify that:
 - no secret or personal information is exposed;
 - user isolation, deletion, and authentication remain correct;
 - route/accessibility claims are evidence-backed;
+- campus scope remains accurate;
 - performance claims are measured;
 - documentation matches deployed behavior;
 - required CI is green and relevant preview/production behavior was checked.
