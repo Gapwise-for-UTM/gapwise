@@ -165,7 +165,7 @@ function TrustPage() {
             Privacy page
           </Link>
           <a
-            href="https://github.com/Gapwise-for-UTM/gapwise-docs/tree/main/governance/privacy"
+            href="https://github.com/Gapwise-for-UTM/docs/tree/main/governance/privacy"
             className="text-accent hover:underline"
           >
             Privacy governance package
