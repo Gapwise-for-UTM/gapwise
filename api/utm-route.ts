@@ -1,3 +1,7 @@
+import { sanitizeRoutePreferences } from "../src/config/routing.js";
+import { findBestRoute } from "../src/features/routing/engine.js";
+import type { RoutePreferences } from "../src/features/routing/types.js";
+import { resolvePublicBuilding, serverRoutingGraph } from "../src/server/public-campus/data.js";
 import { routeBetweenPublicBuildings } from "../src/server/public-campus/service.js";
 import {
   exactObject,
@@ -7,7 +11,6 @@ import {
   readBoundedJson,
   requireString,
 } from "../src/server/public-campus/http.js";
-import type { RoutePreferences } from "../src/features/routing/types.js";
 
 function optionalPreferences(value: unknown): Partial<RoutePreferences> | null {
   if (value === undefined || value === null) return null;
@@ -44,6 +47,29 @@ function optionalPreferences(value: unknown): Partial<RoutePreferences> | null {
   return preferences;
 }
 
+function mappedCoordinates(
+  fromQuery: string,
+  toQuery: string,
+  preferences: Partial<RoutePreferences> | null,
+) {
+  const fromResolution = resolvePublicBuilding(fromQuery);
+  const toResolution = resolvePublicBuilding(toQuery);
+  if (fromResolution.status !== "found" || toResolution.status !== "found") return [];
+  if (fromResolution.building.code === toResolution.building.code) return [];
+
+  const graph = serverRoutingGraph();
+  const nodeIds = new Set(graph.nodes.map((node) => node.id));
+  const starts = fromResolution.building.entrances
+    .map((entrance) => entrance.routingNodeId)
+    .filter((id) => nodeIds.has(id));
+  const ends = toResolution.building.entrances
+    .map((entrance) => entrance.routingNodeId)
+    .filter((id) => nodeIds.has(id));
+  return (
+    findBestRoute(graph, starts, ends, sanitizeRoutePreferences(preferences))?.coordinates ?? []
+  );
+}
+
 export default {
   async fetch(request: Request) {
     if (request.method === "OPTIONS") return optionsResponse();
@@ -54,6 +80,7 @@ export default {
       const body = exactObject(await readBoundedJson(request));
       const from = requireString(body["from"], "from");
       const to = requireString(body["to"], "to");
+      const includeGeometry = body["includeGeometry"] === true;
       let preferences: Partial<RoutePreferences> | null;
       try {
         preferences = optionalPreferences(body["preferences"]);
@@ -70,7 +97,13 @@ export default {
       if ("error" in result) {
         return jsonResponse(result, result.error === "unknown_building" ? 404 : 409);
       }
-      return jsonResponse({ service: "gapwise-public-campus", route: result });
+      return jsonResponse({
+        service: "gapwise-public-campus",
+        route: result,
+        ...(includeGeometry
+          ? { displayCoordinates: mappedCoordinates(from, to, preferences) }
+          : {}),
+      });
     } catch (error) {
       return publicApiError(error);
     }
