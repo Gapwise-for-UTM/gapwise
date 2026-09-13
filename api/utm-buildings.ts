@@ -13,6 +13,8 @@ export default {
       return jsonResponse({ error: "method_not_allowed", message: "Use GET." }, 405);
     }
 
+    // Native map clients can opt into the same canonical footprints and entrance
+    // geometry used by the web map without changing the existing public response.
     const includeGeometry = new URL(request.url).searchParams.get("geometry") === "1";
     if (!includeGeometry) {
       return jsonResponse(
