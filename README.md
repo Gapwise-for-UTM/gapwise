@@ -6,7 +6,7 @@
 
 ### A privacy-first campus-intelligence ecosystem for UTM.
 
-**Gapwise is a connected software platform for understanding and acting on a student's day: timetable intelligence, gap planning, campus routing, leave-by timing, open campus data, public APIs and SDKs, native mobile, permissioned AI, developer documentation, and independent service monitoring.**
+**Gapwise is a connected software platform for understanding and acting on a student's day: timetable intelligence, gap planning, campus routing, leave-by timing, open campus data, public APIs and SDKs, native Android, permissioned AI, developer documentation, and independent service monitoring.**
 
 [![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-gapwise.ca-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise.ca)
 [![CI](https://img.shields.io/github/actions/workflow/status/Gapwise-for-UTM/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Gapwise-for-UTM/gapwise/actions/workflows/ci.yml)
@@ -36,7 +36,7 @@ The platform turns a UTM ACORN `.ics` timetable export into a local-first model 
 - Can I go somewhere and still make the next class?
 - Which campus places are realistic given route time, transition buffers, and uncertainty?
 
-The original calendar file is parsed in the browser. From that normalized schedule, Gapwise builds timetable views, detects gaps, computes route-aware activity budgets, produces leave-by timing, renders campus navigation, and coordinates optional account, sync, mobile, API, data, and AI surfaces.
+The original calendar file is parsed in the browser. From that normalized schedule, Gapwise builds timetable views, detects gaps, computes route-aware activity budgets, produces leave-by timing, renders campus navigation, and coordinates optional account, sync, Android, API, data, and AI surfaces.
 
 But Gapwise is now broader than the student web app: it is a **six-repository campus-intelligence ecosystem** with shared product semantics and deliberately separated trust boundaries.
 
@@ -46,7 +46,7 @@ But Gapwise is now broader than the student web app: it is a **six-repository ca
 
 Gapwise is created and led by **Andrew Muratov**, a University of Toronto Mississauga Computer Science student working across **full-stack software engineering, cybersecurity and privacy engineering, platform architecture, API and SDK design, data engineering, developer infrastructure, mobile engineering, systems design, and permissioned AI integration**.
 
-The project is designed as an integrated software ecosystem rather than a collection of disconnected demos. Product, API, mobile, data, AI, docs, and status surfaces share one source-of-truth hierarchy, one security model, one brand, and one set of deterministic campus semantics.
+The project is designed as an integrated software ecosystem rather than a collection of disconnected demos. Product, API, Android, data, AI, docs, and status surfaces share one source-of-truth hierarchy, one security model, one brand, and one set of deterministic campus semantics.
 
 ---
 
@@ -55,11 +55,11 @@ The project is designed as an integrated software ecosystem rather than a collec
 | Repository | Role | Primary surface |
 | --- | --- | --- |
 | **[`gapwise`](https://github.com/Gapwise-for-UTM/gapwise)** | Core web/PWA product, canonical student-state behavior, deterministic campus engine, public API, OpenAPI contract, and SDK source | [gapwise.ca](https://gapwise.ca) / [api.gapwise.ca](https://api.gapwise.ca/v1) |
-| **[`gapwise-mobile`](https://github.com/Gapwise-for-UTM/gapwise-mobile)** | Native iOS and Android client consuming canonical Gapwise contracts | Native mobile app |
-| **[`gapwise-ai`](https://github.com/Gapwise-for-UTM/gapwise-ai)** | OAuth-protected MCP layer for explicitly delegated student context and bounded AI-facing actions | [ai.gapwise.ca](https://ai.gapwise.ca) |
-| **[`gapwise-data`](https://github.com/Gapwise-for-UTM/gapwise-data)** | Open campus-data, provenance, schema, validation, and reuse portal | [data.gapwise.ca](https://data.gapwise.ca) |
-| **[`gapwise-docs`](https://github.com/Gapwise-for-UTM/gapwise-docs)** | Canonical public developer documentation for platform, SDKs, security, data, and AI/MCP integration | [docs.gapwise.ca](https://docs.gapwise.ca) |
-| **[`gapwise-status`](https://github.com/Gapwise-for-UTM/gapwise-status)** | Independently deployed service-health monitoring and incident communication | [status.gapwise.ca](https://status.gapwise.ca) |
+| **[`android`](https://github.com/Gapwise-for-UTM/android)** | Native Kotlin + Jetpack Compose Android client consuming canonical Gapwise contracts | Android app |
+| **[`ai`](https://github.com/Gapwise-for-UTM/ai)** | OAuth-protected MCP layer for explicitly delegated student context and bounded AI-facing actions | [ai.gapwise.ca](https://ai.gapwise.ca) |
+| **[`data`](https://github.com/Gapwise-for-UTM/data)** | Open campus-data, provenance, schema, validation, and reuse portal | [data.gapwise.ca](https://data.gapwise.ca) |
+| **[`docs`](https://github.com/Gapwise-for-UTM/docs)** | Canonical public developer documentation for platform, SDKs, security, data, and AI/MCP integration | [docs.gapwise.ca](https://docs.gapwise.ca) |
+| **[`status`](https://github.com/Gapwise-for-UTM/status)** | Independently deployed service-health monitoring and incident communication | [status.gapwise.ca](https://status.gapwise.ca) |
 
 The architectural rule across every surface is simple:
 
@@ -212,11 +212,11 @@ Gapwise AI is not presented as a second timetable engine or as a universal LLM b
 
 ---
 
-## Mobile
+## Android
 
-[`gapwise-mobile`](https://github.com/Gapwise-for-UTM/gapwise-mobile) is the native iOS and Android client built with Expo and React Native.
+[`android`](https://github.com/Gapwise-for-UTM/android) is the native Android client built with Kotlin and Jetpack Compose.
 
-It brings canonical Gapwise semantics to phone-native interaction patterns including Today, timetable, campus, routing, exports, account continuity, settings, diagnostics, accessibility, and permissioned AI surfaces.
+It brings canonical Gapwise semantics to phone-native interaction patterns including Today, timetable, gap planning, map tools, account continuity, encrypted local persistence and sync, settings, and privacy controls.
 
 It is intentionally not a WebView wrapper and should not fork timetable, routing, gap-planning, or campus truth from the main platform.
 
@@ -267,10 +267,9 @@ Deterministic Gapwise domain logic owns:
 - leave-by and arrival timing;
 - route and accessibility uncertainty.
 
-React renders those decisions. Mobile consumes them. The public API exposes them. Data explains their evidence. Docs describe their contracts. AI reasons over them. Status monitors the surfaces that serve them.
+React renders those decisions. Android consumes them. The public API exposes them. Data explains their evidence. Docs describe their contracts. AI reasons over them. Status monitors the surfaces that serve them.
 
 ---
-
 
 ### Personal-item compatibility
 
@@ -319,7 +318,7 @@ Core technologies across the main platform include:
 - Resend for transactional auth email;
 - GitHub Actions.
 
-The wider ecosystem adds Expo/React Native, Astro/Starlight, Model Context Protocol, OAuth, and separate status/data deployment surfaces.
+The wider ecosystem adds Kotlin + Jetpack Compose for Android, Astro/Starlight, Model Context Protocol, OAuth, and separate status/data deployment surfaces.
 
 ---
 
