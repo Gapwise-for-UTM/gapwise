@@ -11,7 +11,7 @@ export const Route = createFileRoute("/_app/route/")({
   validateSearch: validateRouteSearch,
   head: () => ({
     meta: [
-      { title: "Campus Route — Gapwise for UTM" },
+      { title: "Campus Route — Gapwise for U of T" },
       {
         name: "description",
         content: "Explore UTM buildings and review route-aware transitions between classes.",
