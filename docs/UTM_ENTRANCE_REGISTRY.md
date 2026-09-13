@@ -68,12 +68,14 @@ no publishable geocoded exterior access point: `WC`, `CUP`, `FCSH`, `GF`, `PL`, 
 
 The concise release classification is:
 
-| State                                         | Buildings                                | Required follow-up                                                                        |
-| --------------------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Mapped doors; some step-free coordinates      | CCT, DV, KN, IC                          | Verify public access and match each official name to a door; survey connecting approaches |
-| Mapped doors; step-free coordinate unresolved | MN, DH, IB, HM, RAWC, XR, HB, DW, NSB, OPH | Survey labels, access, barrier-free equipment, and paths                                  |
-| Inferred approach only                        | AX, EH, LL, MV, MC, PP, RIH, SW, NRB     | Locate and survey physical exterior doors; do not promote the approach                    |
-| No geocoded exterior access point             | WC, CUP, FCSH, GF, PL, BG, LH             | Obtain authoritative geometry or field survey before routing                              |
+- **Mapped doors; some step-free coordinates:** CCT, DV, KN, IC. Verify public access and match each
+  official name to a door; survey connecting approaches.
+- **Mapped doors; step-free coordinate unresolved:** MN, DH, IB, HM, RAWC, XR, HB, DW, NSB, OPH.
+  Survey labels, access, barrier-free equipment, and paths.
+- **Inferred approach only:** AX, EH, LL, MV, MC, PP, RIH, SW, NRB. Locate and survey physical
+  exterior doors; do not promote the approach.
+- **No geocoded exterior access point:** WC, CUP, FCSH, GF, PL, BG, LH. Obtain authoritative geometry
+  or field survey before routing.
 
 No building is classified as fully complete/current because ordinary public/student access is not
 affirmatively evidenced for the current geocoded doors, and the public sources are not complete
