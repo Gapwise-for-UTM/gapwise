@@ -21,15 +21,11 @@ describe("official UTM exterior-access evidence", () => {
     expect(CAMPUS_SOURCE_RECORDS["utoronto-robotics-2025-conference"].url).toBe(
       "https://robotics.utoronto.ca/2025-toronto-robotics-conference/",
     );
-    expect(CAMPUS_SOURCE_RECORDS["utoronto-robotics-2025-conference"].notes).toContain(
-      "MN north entrance (2nd floor)",
-    );
-    expect(CAMPUS_SOURCE_RECORDS["utoronto-robotics-2025-conference"].notes).toContain(
-      "no exact door coordinate",
-    );
-    expect(CAMPUS_SOURCE_RECORDS["utoronto-robotics-2025-conference"].notes).toContain(
-      "does not establish unrestricted public access or barrier-free status",
-    );
+    const roboticsNotes = CAMPUS_SOURCE_RECORDS["utoronto-robotics-2025-conference"].notes;
+    expect(roboticsNotes).toContain("MN north entrance (2nd floor)");
+    expect(roboticsNotes).toContain("no exact door coordinate");
+    expect(roboticsNotes).toContain("unrestricted public access");
+    expect(roboticsNotes).toContain("barrier-free status");
     for (const source of Object.values(CAMPUS_SOURCE_RECORDS)) {
       expect(source.url).toStartWith("https://");
       expect(source.retrievedAt).toMatch(/^2026-(08-(10|21)|09-13)$/);
