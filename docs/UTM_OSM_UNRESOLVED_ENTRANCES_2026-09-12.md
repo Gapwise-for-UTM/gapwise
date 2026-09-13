@@ -18,8 +18,8 @@ That establishes **MN building identity**, but not the official UTM entrance-nam
 
 Two nearby current OSM nodes remain unresolved MN candidates:
 
-| OSM node | OSM tag | WGS84 coordinate | Exact OSM topology | Why held back |
-| ---: | --- | --- | --- | --- |
+| OSM node      | OSM tag         | WGS84 coordinate            | Exact OSM topology                                                                                | Why held back                                                                                             |
+| ------------: | --------------- | --------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `13736687034` | `entrance=main` | `[-79.6656006, 43.5509053]` | pedestrian way `1499474239`; footway `1499491685`; way `1500142666`; indoor corridor `1500298510` | Not a member of MN's named building way; `main` + proximity/corridor topology does not prove MN identity. |
 | `13736687041` | `entrance=main` | `[-79.6662061, 43.5510741]` | footway `1500122686`; ways `1500122688`, `1500149686`, `1507392979`; indoor corridor `1500298513` | Not a member of MN's named building way; `main` + proximity/corridor topology does not prove MN identity. |
 
@@ -29,11 +29,11 @@ Authoritative UTM Facilities evidence independently names MN barrier-free entran
 
 The same live discovery run contains three additional `entrance=yes` nodes clustered on OSM building way `1127621275`. The way is currently tagged only `building=yes` and has no reviewed `name`/`ref` identity in the discovery artifact, so assigning these doors to a canonical Gapwise building would be guesswork.
 
-| OSM node | WGS84 coordinate | Exact OSM topology | Current disposition |
-| ---: | --- | --- | --- |
-| `2383656944` | `[-79.6632279, 43.5502743]` | building way `1127621275`; way `1149032682` | Unmatched. Preserve as a real OSM door candidate, but do not assign a building. |
-| `10307744174` | `[-79.6631071, 43.5504326]` | footway `160783313`; way `1127621274`; building way `1127621275`; indoor corridor `1127621752` | Unmatched. Corridor/footway membership does not establish building identity. |
-| `10309718335` | `[-79.6632161, 43.5504459]` | footway `1127388383`; way `1127621273`; building way `1127621275`; indoor corridor `1127621752` | Unmatched. Corridor/footway membership does not establish building identity. |
+| OSM node      | WGS84 coordinate            | Exact OSM topology                                                                              | Current disposition                                                             |
+| ------------: | --------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+|  `2383656944` | `[-79.6632279, 43.5502743]` | building way `1127621275`; way `1149032682`                                                     | Unmatched. Preserve as a real OSM door candidate, but do not assign a building. |
+| `10307744174` | `[-79.6631071, 43.5504326]` | footway `160783313`; way `1127621274`; building way `1127621275`; indoor corridor `1127621752`  | Unmatched. Corridor/footway membership does not establish building identity.    |
+| `10309718335` | `[-79.6632161, 43.5504459]` | footway `1127388383`; way `1127621273`; building way `1127621275`; indoor corridor `1127621752` | Unmatched. Corridor/footway membership does not establish building identity.    |
 
 These three nodes should be revisited if OSM gains a defensible building `name`/`ref`, an authoritative UTM source identifies the structure and exact door placement, or field verification records the physical door/building relationship. Until then they remain outside production.
 
