@@ -52,10 +52,7 @@ describe("UTM entrance truth registry", () => {
       (item) => item.buildingCode === "OPH" && item.id.startsWith("oph-"),
     ).sort((a, b) => a.id.localeCompare(b.id));
 
-    expect(mappedOphDoors.map((item) => item.id)).toEqual([
-      "oph-13738728068",
-      "oph-1728224590",
-    ]);
+    expect(mappedOphDoors.map((item) => item.id)).toEqual(["oph-13738728068", "oph-1728224590"]);
     expect(mappedOphDoors.every((item) => item.kind === "exterior_entrance")).toBe(true);
     expect(mappedOphDoors.every((item) => item.publicAccess === "restricted")).toBe(true);
     expect(mappedOphDoors.every((item) => item.routability === "routable")).toBe(true);

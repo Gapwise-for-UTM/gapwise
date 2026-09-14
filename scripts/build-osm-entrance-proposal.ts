@@ -28,9 +28,7 @@ type Candidate = {
 };
 
 type ResolutionEvidence =
-  | "canonical_boundary"
-  | "named_osm_building_way"
-  | "canonical_containment_with_footway";
+  "canonical_boundary" | "named_osm_building_way" | "canonical_containment_with_footway";
 
 type EntranceFeature = {
   type: "Feature";
