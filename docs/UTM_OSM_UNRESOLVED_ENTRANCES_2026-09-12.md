@@ -23,6 +23,8 @@ Two nearby current OSM nodes remain unresolved MN candidates:
 
 Authoritative UTM Facilities evidence independently names MN barrier-free entrance identities `Main`, `Field side`, and `Lot #1`; separate U of T material identifies a `North Entrance (2nd floor)`. The Facilities source was re-checked live on 2026-09-13 at `https://www.utm.utoronto.ca/facilities/utm-strategy-snow-and-ice-removal`: its current Priority #1 list still explicitly names `Maanjiwe nendamowinan: Main, Field side, Lot #1`, while describing these as barrier-free building entrances. That confirms the identity/count evidence but still publishes no exact door coordinates. Those identities therefore remain deliberately separate from the unresolved coordinates above until an exact door↔identity match is independently supportable. Official-map screenshots may corroborate the multi-entrance pattern, but are not coordinate evidence.
 
+Gapwise now also preserves the Robotics `North entrance (2nd floor)` as structured identity-only evidence under `utm:entrance-identity:mn:north-2f`. Its existence is verified from the first-party U of T event source, while geometry, unrestricted public/student access, and barrier-free status remain explicitly unknown. This identity is not assigned to any OSM node and is not treated as equivalent to Facilities' `Main`, `Field side`, or `Lot #1` identities.
+
 ## Other unmatched live OSM doors
 
 The same live discovery run contains three additional `entrance=yes` nodes clustered on OSM building way `1127621275`. The way is currently tagged only `building=yes` and has no reviewed `name`/`ref` identity in the discovery artifact, so assigning these doors to a canonical Gapwise building would be guesswork.

@@ -1,7 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { UTM_BUILDINGS } from "@/data/utm/building-registry";
 import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
-import { OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES } from "@/data/utm/official-entrance-candidates";
+import {
+  OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES,
+  OFFICIAL_OTHER_ENTRANCE_IDENTITIES,
+  officialOtherEntranceIdentitiesForBuilding,
+} from "@/data/utm/official-entrance-candidates";
 import { CAMPUS_SOURCE_RECORDS } from "@/data/utm/provenance";
 
 describe("official UTM exterior-access evidence", () => {
@@ -104,6 +108,25 @@ describe("official UTM exterior-access evidence", () => {
     ).toMatchObject({ instances: 2 });
   });
 
+  test("preserves the authoritative MN North identity without inventing geometry or accessibility", () => {
+    expect(OFFICIAL_OTHER_ENTRANCE_IDENTITIES).toHaveLength(1);
+    const north = officialOtherEntranceIdentitiesForBuilding("mn")[0];
+    expect(north).toMatchObject({
+      id: "utm:entrance-identity:mn:north-2f",
+      buildingCode: "MN",
+      label: "North entrance",
+      levelContext: "2nd floor",
+      coordinates: null,
+    });
+    expect(north?.evidence.existence.confidence).toBe("verified");
+    expect(north?.evidence.existence.sourceIds).toEqual(["utoronto-robotics-2025-conference"]);
+    expect(north?.evidence.geometry.confidence).toBe("unknown");
+    expect(north?.evidence.geometry.sourceIds).toContain("openstreetmap");
+    expect(north?.evidence.publicAccess.confidence).toBe("unknown");
+    expect(north?.evidence.barrierFree.confidence).toBe("unknown");
+    expect(officialOtherEntranceIdentitiesForBuilding("DV")).toEqual([]);
+  });
+
   test("never duplicates official identity records as independent routing graph nodes", () => {
     const graphNodeIds = new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id));
     for (const candidate of OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES) {
@@ -112,6 +135,10 @@ describe("official UTM exterior-access evidence", () => {
         expect(candidate.routingNodeId).not.toBeNull();
         expect(graphNodeIds.has(candidate.routingNodeId!)).toBe(true);
       }
+    }
+    for (const identity of OFFICIAL_OTHER_ENTRANCE_IDENTITIES) {
+      expect(identity.coordinates).toBeNull();
+      expect(graphNodeIds.has(identity.id)).toBe(false);
     }
   });
 });
