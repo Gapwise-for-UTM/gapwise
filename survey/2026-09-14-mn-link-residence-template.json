@@ -1,0 +1,13 @@
+{
+  "$schema": "./campus-survey.schema.json",
+  "schemaVersion": 1,
+  "survey": {
+    "date": "2026-09-14",
+    "source": "UTM campus field survey",
+    "sourceUrl": "",
+    "notes": "MN complete exterior perimeter plus official residence entrance reconciliation. Use /survey to capture observations; keep the CCT/HMALC indoor walkthrough in its separate evidence export until local indoor geometry is defensible."
+  },
+  "buildings": [],
+  "nodes": [],
+  "edges": []
+}
