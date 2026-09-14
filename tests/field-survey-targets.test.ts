@@ -1,23 +1,23 @@
 import { describe, expect, test } from "bun:test";
 import {
+  FIELD_SURVEY_SOURCE_RECORDS,
   fieldSurveyTargetsForBuilding,
   UTM_FIELD_SURVEY_TARGETS,
-} from "@/data/utm/field-survey-targets";
+} from "@/features/routing/field-survey-targets";
 import {
   OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES,
   OFFICIAL_OTHER_ENTRANCE_IDENTITIES,
 } from "@/data/utm/official-entrance-candidates";
-import { CAMPUS_SOURCE_RECORDS } from "@/data/utm/provenance";
 
 describe("UTM field survey targets", () => {
-  test("references only known evidence sources and official entrance identities", () => {
+  test("references only known survey sources and official entrance identities", () => {
     const candidateIds = new Set(
       OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.map((candidate) => candidate.id),
     );
     const identityIds = new Set(OFFICIAL_OTHER_ENTRANCE_IDENTITIES.map((identity) => identity.id));
 
     for (const target of UTM_FIELD_SURVEY_TARGETS) {
-      for (const sourceId of target.sourceIds) expect(CAMPUS_SOURCE_RECORDS[sourceId]).toBeDefined();
+      for (const sourceId of target.sourceIds) expect(FIELD_SURVEY_SOURCE_RECORDS[sourceId]).toBeDefined();
       if (target.officialCandidateId) expect(candidateIds.has(target.officialCandidateId)).toBe(true);
       if (target.officialIdentityId) expect(identityIds.has(target.officialIdentityId)).toBe(true);
     }
@@ -40,12 +40,10 @@ describe("UTM field survey targets", () => {
     expect(new Set(candidates.map((candidate) => candidate.osmNodeId))).toEqual(
       new Set([13738728068, 1728224590]),
     );
-    expect(candidates.every((candidate) => candidate.kind === "physical_door_unreconciled")).toBe(
-      true,
-    );
+    expect(candidates.every((candidate) => candidate.kind === "physical_door_unreconciled")).toBe(true);
   });
 
-  test("covers MN perimeter completion, all official Facilities identities, and the north 2F identity", () => {
+  test("covers MN perimeter completion, all Facilities identities, and the north 2F identity", () => {
     const ids = new Set(fieldSurveyTargetsForBuilding("MN").map((target) => target.id));
     expect(ids).toEqual(
       new Set([
