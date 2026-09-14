@@ -1,29 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  ArrowLeft,
-  Crosshair,
-  Download,
-  MapPin,
-  Plus,
-  Route as RouteIcon,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
+import { ArrowLeft, Crosshair, Download, Plus, Route as RouteIcon, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  normalizePublicBuildingCode,
-  UTM_BUILDINGS,
-} from "@/data/utm/building-registry";
+import { normalizePublicBuildingCode, UTM_BUILDINGS } from "@/data/utm/building-registry";
 import {
   fieldSurveyTargetsForBuilding,
   type FieldSurveyGeometryCandidate,
 } from "@/data/utm/field-survey-targets";
-import {
-  validateCampusSurvey,
-  type AccessibilityStatus,
-  type CampusSurvey,
-  type SurveyNode,
-} from "@/data/utm/survey-format";
+import { validateCampusSurvey, type CampusSurvey, type SurveyNode } from "@/data/utm/survey-format";
+import type { AccessibilityStatus } from "@/features/routing/types";
 
 const DRAFT_KEY = "gapwise-utm-field-survey-v1";
 
@@ -47,10 +31,7 @@ type WalkthroughSegment = {
   notes: string;
 };
 
-type DraftState = {
-  nodes: SurveyNode[];
-  walkthroughSegments: WalkthroughSegment[];
-};
+type DraftState = { nodes: SurveyNode[]; walkthroughSegments: WalkthroughSegment[] };
 
 export function validateSurveySearch(search: Record<string, unknown>) {
   const building = normalizePublicBuildingCode(search["building"]) ?? undefined;
@@ -64,19 +45,28 @@ export const Route = createFileRoute("/survey")({
       { title: "UTM Field Survey — Gapwise" },
       {
         name: "description",
-        content:
-          "Capture evidence-backed UTM entrance observations and CCT/HMALC Link walkthrough notes.",
+        content: "Capture evidence-backed UTM entrance observations and CCT/HMALC Link walkthrough notes.",
       },
     ],
   }),
   component: FieldSurveyPage,
 });
 
-function id(prefix: string) {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`.toLowerCase();
-  }
-  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+function uniqueId(prefix: string) {
+  const suffix =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+  return `${prefix}-${suffix}`.toLowerCase();
+}
+
+function localDate() {
+  const now = new Date();
+  return [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 function downloadJson(filename: string, value: unknown) {
@@ -89,28 +79,14 @@ function downloadJson(filename: string, value: unknown) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-function localDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function candidateLabel(candidate: FieldSurveyGeometryCandidate) {
-  const [longitude, latitude] = candidate.coordinates;
-  return `OSM ${candidate.osmNodeId} · ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
-}
-
 function buildCampusSurvey(nodes: SurveyNode[]): CampusSurvey {
-  const buildingFloors = new Map<string, Set<string>>();
+  const floorsByBuilding = new Map<string, Set<string>>();
   for (const node of nodes) {
     if (!node.building) continue;
-    const floors = buildingFloors.get(node.building) ?? new Set<string>();
+    const floors = floorsByBuilding.get(node.building) ?? new Set<string>();
     if (node.floor) floors.add(node.floor);
-    buildingFloors.set(node.building, floors);
+    floorsByBuilding.set(node.building, floors);
   }
-
   return {
     schemaVersion: 1,
     survey: {
@@ -118,20 +94,25 @@ function buildCampusSurvey(nodes: SurveyNode[]): CampusSurvey {
       source: "UTM campus field survey",
       sourceUrl: "",
       notes:
-        "Recorded with Gapwise field-survey mode. Browser geolocation accuracy is preserved in each live-capture node's notes. Candidate coordinates are existing source-backed OSM door geometry and require an on-site identity observation before selection.",
+        "Recorded with Gapwise field-survey mode. Live browser location accuracy is preserved in node notes; existing OSM coordinates are selectable only after an on-site identity observation.",
     },
-    buildings: [...buildingFloors.entries()]
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([code, floors]) => ({ code, floors: [...floors].sort() })),
+    buildings: [...floorsByBuilding.entries()].map(([code, floors]) => ({
+      code,
+      floors: [...floors].sort(),
+    })),
     nodes,
     edges: [],
   };
 }
 
+function candidateTitle(candidate: FieldSurveyGeometryCandidate) {
+  const [longitude, latitude] = candidate.coordinates;
+  return `OSM ${candidate.osmNodeId} · ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+}
+
 function FieldSurveyPage() {
   const search = Route.useSearch();
-  const initialBuilding = search.building ?? "MN";
-  const [buildingCode, setBuildingCode] = useState(initialBuilding);
+  const [buildingCode, setBuildingCode] = useState(search.building ?? "MN");
   const targets = useMemo(() => fieldSurveyTargetsForBuilding(buildingCode), [buildingCode]);
   const [targetId, setTargetId] = useState(targets[0]?.id ?? "");
   const target = targets.find((item) => item.id === targetId) ?? null;
@@ -143,32 +124,30 @@ function FieldSurveyPage() {
   const [notes, setNotes] = useState("");
   const [candidateId, setCandidateId] = useState("");
   const [capturedLocation, setCapturedLocation] = useState<CapturedLocation | null>(null);
-  const [locationStatus, setLocationStatus] = useState("");
+  const [status, setStatus] = useState("");
   const [draft, setDraft] = useState<DraftState>({ nodes: [], walkthroughSegments: [] });
 
   const [walkFrom, setWalkFrom] = useState("");
   const [walkTo, setWalkTo] = useState("");
   const [walkDistance, setWalkDistance] = useState("");
-  const [walkEnvironment, setWalkEnvironment] = useState<"indoor" | "covered">("indoor");
   const [walkStairs, setWalkStairs] = useState(false);
   const [walkAccessibility, setWalkAccessibility] = useState<AccessibilityStatus>("unknown");
-  const [walkBidirectional, setWalkBidirectional] = useState(true);
-  const [walkPhoto, setWalkPhoto] = useState("");
   const [walkNotes, setWalkNotes] = useState("");
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(DRAFT_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved) as Partial<DraftState>;
-      setDraft({
-        nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
-        walkthroughSegments: Array.isArray(parsed.walkthroughSegments)
-          ? parsed.walkthroughSegments
-          : [],
-      });
+      if (saved) {
+        const parsed = JSON.parse(saved) as Partial<DraftState>;
+        setDraft({
+          nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
+          walkthroughSegments: Array.isArray(parsed.walkthroughSegments)
+            ? parsed.walkthroughSegments
+            : [],
+        });
+      }
     } catch {
-      // A damaged local draft should never block a new survey.
+      // Corrupt local drafts should not block a fresh survey.
     }
   }, []);
 
@@ -177,11 +156,10 @@ function FieldSurveyPage() {
   }, [draft]);
 
   useEffect(() => {
-    const nextTargets = fieldSurveyTargetsForBuilding(buildingCode);
-    const nextTarget = nextTargets[0] ?? null;
-    setTargetId(nextTarget?.id ?? "");
-    setLabel(nextTarget?.label ?? "Exterior entrance");
-    setFloor(nextTarget?.levelContext ?? "");
+    const next = fieldSurveyTargetsForBuilding(buildingCode)[0] ?? null;
+    setTargetId(next?.id ?? "");
+    setLabel(next?.label ?? "Exterior entrance");
+    setFloor(next?.levelContext ?? "");
     setCandidateId("");
     setCapturedLocation(null);
   }, [buildingCode]);
@@ -192,50 +170,50 @@ function FieldSurveyPage() {
     setFloor(target.levelContext ?? "");
     setCandidateId("");
     setCapturedLocation(null);
-  }, [targetId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [target]);
 
-  const geometryCandidates = target?.geometryCandidates ?? [];
-  const selectedCandidate = geometryCandidates.find((candidate) => candidate.id === candidateId) ?? null;
+  const candidates = target?.geometryCandidates ?? [];
+  const selectedCandidate = candidates.find((candidate) => candidate.id === candidateId) ?? null;
   const usableCandidate =
     selectedCandidate?.kind === "physical_door_unreconciled" ? selectedCandidate : null;
-  const hasCoordinate = Boolean(usableCandidate || capturedLocation);
-  const isConnectionTarget = target?.targetKind === "building_connection";
+  const connectionTarget = target?.targetKind === "building_connection";
+  const selectedBuilding = UTM_BUILDINGS.find((building) => building.code === buildingCode);
 
   function captureLocation() {
     if (!("geolocation" in navigator)) {
-      setLocationStatus("This browser does not expose geolocation.");
+      setStatus("This browser does not expose geolocation.");
       return;
     }
-    setLocationStatus("Finding your position…");
+    setStatus("Finding your position…");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const next = {
+        const next: CapturedLocation = {
           longitude: position.coords.longitude,
           latitude: position.coords.latitude,
           accuracyMeters: position.coords.accuracy,
           capturedAt: new Date(position.timestamp).toISOString(),
         };
-        setCapturedLocation(next);
         setCandidateId("");
-        setLocationStatus(`Captured · browser reports ±${Math.round(next.accuracyMeters)} m accuracy`);
+        setCapturedLocation(next);
+        setStatus(`Captured · browser reports ±${Math.round(next.accuracyMeters)} m accuracy`);
       },
-      (error) => setLocationStatus(error.message || "Location capture failed."),
+      (error) => setStatus(error.message || "Location capture failed."),
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15_000 },
     );
   }
 
-  function addEntranceObservation() {
+  function addEntrance() {
     const coordinate = usableCandidate
       ? { longitude: usableCandidate.coordinates[0], latitude: usableCandidate.coordinates[1] }
       : capturedLocation;
     if (!coordinate) return;
 
-    const evidenceNotes = [
+    const nodeNotes = [
       target ? `Field target: ${target.id}.` : "Field target: unlisted exterior door.",
       usableCandidate
-        ? `On-site observation reconciles this identity to existing OSM node ${usableCandidate.osmNodeId}; coordinate copied from source-backed OSM geometry, not phone GPS.`
+        ? `On-site observation reconciles this identity to existing OSM node ${usableCandidate.osmNodeId}; coordinate copied from source-backed OSM geometry.`
         : capturedLocation
-          ? `Live browser geolocation captured ${capturedLocation.capturedAt}; reported accuracy ±${Math.round(capturedLocation.accuracyMeters)} m. Reconcile against the physical threshold and source geometry before treating this as survey-grade exact geometry.`
+          ? `Live browser geolocation captured ${capturedLocation.capturedAt}; reported accuracy ±${Math.round(capturedLocation.accuracyMeters)} m. Reconcile against the physical threshold before importing as exact geometry.`
           : "",
       `Observed access: ${accessObservation}.`,
       notes.trim(),
@@ -244,7 +222,7 @@ function FieldSurveyPage() {
       .join(" ");
 
     const node: SurveyNode = {
-      id: id(`field-${buildingCode.toLowerCase()}`),
+      id: uniqueId(`field-${buildingCode.toLowerCase()}`),
       building: buildingCode,
       floor: floor.trim() || null,
       kind: "entrance",
@@ -253,34 +231,32 @@ function FieldSurveyPage() {
       longitude: coordinate.longitude,
       latitude: coordinate.latitude,
       ...(photoReference.trim() ? { photoReference: photoReference.trim() } : {}),
-      notes: evidenceNotes,
+      notes: nodeNotes,
     };
-
     setDraft((current) => ({ ...current, nodes: [...current.nodes, node] }));
-    setNotes("");
-    setPhotoReference("");
-    setAccessObservation("unknown");
-    setAccessibility("unknown");
     setCandidateId("");
     setCapturedLocation(null);
-    setLocationStatus("Observation added to the local draft.");
+    setPhotoReference("");
+    setNotes("");
+    setStatus("Entrance observation added to the local draft.");
   }
 
-  function addWalkthroughSegment() {
+  function addWalkSegment() {
     const distanceMeters = Number(walkDistance);
     if (!walkFrom.trim() || !walkTo.trim() || !Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+      setStatus("Enter both segment endpoints and a positive measured distance.");
       return;
     }
     const segment: WalkthroughSegment = {
-      id: id("walk-cct-hm"),
+      id: uniqueId("walk-cct-hm"),
       fromLabel: walkFrom.trim(),
       toLabel: walkTo.trim(),
       distanceMeters,
-      environment: walkEnvironment,
+      environment: "indoor",
       stairs: walkStairs,
       accessibility: walkAccessibility,
-      bidirectional: walkBidirectional,
-      photoReference: walkPhoto.trim(),
+      bidirectional: true,
+      photoReference: "",
       notes: walkNotes.trim(),
     };
     setDraft((current) => ({
@@ -292,18 +268,17 @@ function FieldSurveyPage() {
     setWalkDistance("");
     setWalkStairs(false);
     setWalkAccessibility("unknown");
-    setWalkPhoto("");
     setWalkNotes("");
+    setStatus("CCT/HMALC walkthrough segment added.");
   }
 
-  function exportEntranceSurvey() {
+  function exportEntrances() {
     try {
-      const survey = buildCampusSurvey(draft.nodes);
-      const validated = validateCampusSurvey(survey);
+      const validated = validateCampusSurvey(buildCampusSurvey(draft.nodes));
       downloadJson(`utm-field-survey-${localDate()}.json`, validated);
-      setLocationStatus("Validated entrance survey downloaded.");
+      setStatus("Validated entrance survey downloaded.");
     } catch (error) {
-      setLocationStatus(error instanceof Error ? error.message : "Survey validation failed.");
+      setStatus(error instanceof Error ? error.message : "Survey validation failed.");
     }
   }
 
@@ -316,151 +291,71 @@ function FieldSurveyPage() {
         source: "UTM campus field survey",
         connectionId: "cct-hm-link",
         note:
-          "This file is evidence capture, not directly routable indoor geometry. Convert to indoor local-coordinate nodes/edges only after geometry and level transitions are independently defensible.",
+          "Evidence capture only. Convert to indoor local-coordinate nodes and edges after the corridor geometry and level transitions are independently defensible.",
       },
       segments: draft.walkthroughSegments,
     });
   }
 
-  const selectedBuilding = UTM_BUILDINGS.find((building) => building.code === buildingCode)!;
-
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-8">
-        <header className="flex items-start justify-between gap-4">
-          <div>
-            <Link
-              to="/route"
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg text-sm font-semibold text-muted-foreground hover:text-foreground"
-            >
-              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-              Back to campus map
-            </Link>
-            <p className="mt-5 font-mono text-xs font-bold uppercase tracking-[0.14em] text-accent">
-              UTM evidence capture
-            </p>
-            <h1 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">
-              Field survey
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              Resolve the exact door identities Gapwise intentionally refuses to guess. Drafts stay in
-              this browser until you download them.
-            </p>
-          </div>
-          <div className="hidden rounded-xl border border-border bg-card p-3 sm:block">
-            <ShieldCheck className="h-6 w-6 text-accent" aria-hidden="true" />
-          </div>
-        </header>
+      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+        <Link to="/route" className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to map
+        </Link>
+        <p className="mt-5 font-mono text-xs font-bold uppercase tracking-[0.14em] text-accent">UTM evidence capture</p>
+        <h1 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em]">Field survey</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Resolve the exact door identities Gapwise refuses to guess. Drafts stay in this browser until exported.
+        </p>
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-1.5 text-sm font-semibold">
-              Building
-              <select
-                value={buildingCode}
-                onChange={(event) => setBuildingCode(event.target.value)}
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              >
+            <Field label="Building">
+              <select value={buildingCode} onChange={(event) => setBuildingCode(event.target.value)} className="field-control">
                 {UTM_BUILDINGS.map((building) => (
-                  <option key={building.code} value={building.code}>
-                    {building.code} — {building.name}
-                  </option>
+                  <option key={building.code} value={building.code}>{building.code} — {building.name}</option>
                 ))}
               </select>
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              Survey target
-              <select
-                value={targetId}
-                onChange={(event) => setTargetId(event.target.value)}
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              >
-                {targets.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
+            </Field>
+            <Field label="Survey target">
+              <select value={targetId} onChange={(event) => setTargetId(event.target.value)} className="field-control">
+                {targets.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                 <option value="">Unlisted exterior door</option>
               </select>
-            </label>
+            </Field>
           </div>
 
           <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-4">
-            <p className="font-mono text-[0.68rem] font-bold uppercase tracking-[0.12em] text-accent">
-              {selectedBuilding.code} · {selectedBuilding.category}
+            <strong>{selectedBuilding?.code} · {selectedBuilding?.name}</strong>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              {target?.instructions ?? "Record this only while physically standing at a real exterior door."}
             </p>
-            <p className="mt-1 font-semibold">{selectedBuilding.name}</p>
-            {target ? (
-              <>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{target.instructions}</p>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Evidence: {target.sourceIds.join(" · ")}
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Record this only if you are physically standing at a real exterior door.
-              </p>
-            )}
+            {target ? <p className="mt-2 text-xs text-muted-foreground">Evidence: {target.sourceIds.join(" · ")}</p> : null}
           </div>
 
-          {!isConnectionTarget ? (
+          {!connectionTarget ? (
             <div className="mt-5 grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-sm font-semibold">
-                  Door label
-                  <input
-                    value={label}
-                    onChange={(event) => setLabel(event.target.value)}
-                    className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-                  />
-                </label>
-                <label className="grid gap-1.5 text-sm font-semibold">
-                  Floor / level context
-                  <input
-                    value={floor}
-                    onChange={(event) => setFloor(event.target.value)}
-                    placeholder="Optional, e.g. 2"
-                    className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-                  />
-                </label>
+                <Field label="Door label"><input value={label} onChange={(event) => setLabel(event.target.value)} className="field-control" /></Field>
+                <Field label="Floor / level context"><input value={floor} onChange={(event) => setFloor(event.target.value)} placeholder="Optional" className="field-control" /></Field>
               </div>
 
-              {geometryCandidates.length > 0 ? (
-                <fieldset className="grid gap-2 rounded-xl border border-border p-4">
+              {candidates.length ? (
+                <fieldset className="grid gap-3 rounded-xl border border-border p-4">
                   <legend className="px-1 text-sm font-semibold">Known geometry candidates</legend>
-                  <label className="flex gap-3 text-sm">
-                    <input
-                      type="radio"
-                      name="coordinate-source"
-                      checked={!candidateId}
-                      onChange={() => setCandidateId("")}
-                    />
-                    <span>
-                      <strong>Live field position</strong>
-                      <span className="block text-xs leading-5 text-muted-foreground">
-                        Use for a newly observed door. Reconcile the GPS reading before importing it as exact geometry.
-                      </span>
-                    </span>
-                  </label>
-                  {geometryCandidates.map((candidate) => (
+                  {candidates.map((candidate) => (
                     <label key={candidate.id} className="flex gap-3 text-sm">
                       <input
                         type="radio"
-                        name="coordinate-source"
+                        name="geometry-candidate"
                         disabled={candidate.kind === "approach_only"}
                         checked={candidateId === candidate.id}
-                        onChange={() => {
-                          setCandidateId(candidate.id);
-                          setCapturedLocation(null);
-                          setLocationStatus("Existing source-backed door geometry selected.");
-                        }}
+                        onChange={() => { setCandidateId(candidate.id); setCapturedLocation(null); }}
                       />
                       <span>
-                        <strong>{candidateLabel(candidate)}</strong>
-                        <span className="block text-xs leading-5 text-muted-foreground">
-                          {candidate.notes}
-                        </span>
+                        <strong>{candidateTitle(candidate)}</strong>
+                        <span className="block text-xs leading-5 text-muted-foreground">{candidate.notes}</span>
                       </span>
                     </label>
                   ))}
@@ -468,269 +363,71 @@ function FieldSurveyPage() {
               ) : null}
 
               {!usableCandidate ? (
-                <button
-                  type="button"
-                  onClick={captureLocation}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-4 text-sm font-semibold hover:bg-secondary/80"
-                >
-                  <Crosshair className="h-4 w-4" aria-hidden="true" />
-                  Capture position at the threshold
+                <button type="button" onClick={captureLocation} className="button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold">
+                  <Crosshair className="h-4 w-4" aria-hidden="true" /> Capture position at threshold
                 </button>
               ) : null}
 
               {capturedLocation ? (
-                <div className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
-                  <div className="flex items-center gap-2 font-semibold">
-                    <MapPin className="h-4 w-4 text-accent" aria-hidden="true" />
-                    {capturedLocation.latitude.toFixed(7)}, {capturedLocation.longitude.toFixed(7)}
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Browser-reported accuracy ±{Math.round(capturedLocation.accuracyMeters)} m. This is evidence,
-                    not automatic proof of the exact threshold coordinate.
-                  </p>
-                </div>
+                <p className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
+                  {capturedLocation.latitude.toFixed(7)}, {capturedLocation.longitude.toFixed(7)} · browser accuracy ±{Math.round(capturedLocation.accuracyMeters)} m
+                </p>
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="grid gap-1.5 text-sm font-semibold">
-                  Accessibility evidence
-                  <select
-                    value={accessibility}
-                    onChange={(event) => setAccessibility(event.target.value as AccessibilityStatus)}
-                    className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-                  >
-                    <option value="unknown">Unknown</option>
-                    <option value="accessible">Verified accessible</option>
-                    <option value="not_accessible">Verified not accessible</option>
+                <Field label="Accessibility evidence">
+                  <select value={accessibility} onChange={(event) => setAccessibility(event.target.value as AccessibilityStatus)} className="field-control">
+                    <option value="unknown">Unknown</option><option value="accessible">Verified accessible</option><option value="not_accessible">Verified not accessible</option>
                   </select>
-                </label>
-                <label className="grid gap-1.5 text-sm font-semibold">
-                  Observed access
-                  <select
-                    value={accessObservation}
-                    onChange={(event) => setAccessObservation(event.target.value)}
-                    className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-                  >
-                    <option value="unknown">Unknown</option>
-                    <option value="ordinary student/public use observed">Ordinary use observed</option>
-                    <option value="card reader observed">Card reader observed</option>
-                    <option value="locked observed">Locked observed</option>
-                    <option value="emergency-only signage observed">Emergency-only signage</option>
-                    <option value="service-only signage observed">Service-only signage</option>
+                </Field>
+                <Field label="Observed access">
+                  <select value={accessObservation} onChange={(event) => setAccessObservation(event.target.value)} className="field-control">
+                    <option value="unknown">Unknown</option><option value="ordinary use observed">Ordinary use observed</option><option value="card reader observed">Card reader observed</option><option value="locked observed">Locked observed</option><option value="emergency-only signage observed">Emergency-only</option><option value="service-only signage observed">Service-only</option>
                   </select>
-                </label>
+                </Field>
               </div>
-
-              <label className="grid gap-1.5 text-sm font-semibold">
-                Photo reference
-                <input
-                  value={photoReference}
-                  onChange={(event) => setPhotoReference(event.target.value)}
-                  placeholder="e.g. IMG_2841.HEIC"
-                  className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-                />
-              </label>
-              <label className="grid gap-1.5 text-sm font-semibold">
-                Observation notes
-                <textarea
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  rows={4}
-                  placeholder="Signage, side of building, nearby path, automatic opener, stairs/ramp, door count…"
-                  className="rounded-xl border border-border bg-background p-3 text-sm"
-                />
-              </label>
-
-              <button
-                type="button"
-                disabled={!hasCoordinate}
-                onClick={addEntranceObservation}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-                Add entrance observation
+              <Field label="Photo reference"><input value={photoReference} onChange={(event) => setPhotoReference(event.target.value)} placeholder="e.g. IMG_2841.HEIC" className="field-control" /></Field>
+              <Field label="Observation notes"><textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} className="field-control h-auto py-3" placeholder="Signage, side, nearby path, opener, stairs/ramp, door count…" /></Field>
+              <button type="button" disabled={!usableCandidate && !capturedLocation} onClick={addEntrance} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40">
+                <Plus className="h-4 w-4" aria-hidden="true" /> Add entrance observation
               </button>
             </div>
           ) : (
-            <div className="mt-5 rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm leading-6">
-              <strong>Do not trace this indoor link with phone GPS.</strong> Walk it physically and use the
-              segment recorder below. Gapwise's indoor graph uses local floor coordinates, so these notes are
-              deliberately kept separate until the corridor geometry can be reconstructed defensibly.
-            </div>
-          )}
-
-          {locationStatus ? (
-            <p className="mt-4 whitespace-pre-wrap text-xs leading-5 text-muted-foreground" role="status">
-              {locationStatus}
+            <p className="mt-5 rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm leading-6">
+              Do not trace the CCT/HMALC Link with indoor GPS. Use the segment recorder below; convert the walkthrough to local floor geometry only after the route is defensible.
             </p>
-          ) : null}
+          )}
         </section>
 
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 sm:p-6">
-          <div className="flex items-start gap-3">
-            <RouteIcon className="mt-0.5 h-5 w-5 text-accent" aria-hidden="true" />
-            <div>
-              <h2 className="font-display text-xl font-semibold">CCT ↔ HMALC Link walkthrough</h2>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                First-party UTM sources verify the connection's existence. Record the actual route one segment at
-                a time; do not infer hidden corridors or accessibility.
-              </p>
-            </div>
-          </div>
-
+          <div className="flex gap-3"><RouteIcon className="mt-1 h-5 w-5 text-accent" aria-hidden="true" /><div><h2 className="font-display text-xl font-semibold">CCT ↔ HMALC Link walkthrough</h2><p className="mt-1 text-sm text-muted-foreground">Record doors, junctions, level changes and measured segment distances. Unknown stays unknown.</p></div></div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-1.5 text-sm font-semibold">
-              From
-              <input
-                value={walkFrom}
-                onChange={(event) => setWalkFrom(event.target.value)}
-                placeholder="e.g. CCT atrium doorway"
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              />
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              To
-              <input
-                value={walkTo}
-                onChange={(event) => setWalkTo(event.target.value)}
-                placeholder="e.g. first corridor junction"
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              />
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              Measured distance (m)
-              <input
-                inputMode="decimal"
-                value={walkDistance}
-                onChange={(event) => setWalkDistance(event.target.value)}
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              />
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              Environment
-              <select
-                value={walkEnvironment}
-                onChange={(event) => setWalkEnvironment(event.target.value as "indoor" | "covered")}
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              >
-                <option value="indoor">Indoor</option>
-                <option value="covered">Covered</option>
-              </select>
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              Accessibility
-              <select
-                value={walkAccessibility}
-                onChange={(event) => setWalkAccessibility(event.target.value as AccessibilityStatus)}
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              >
-                <option value="unknown">Unknown</option>
-                <option value="accessible">Verified accessible</option>
-                <option value="not_accessible">Verified not accessible</option>
-              </select>
-            </label>
-            <label className="grid gap-1.5 text-sm font-semibold">
-              Photo reference
-              <input
-                value={walkPhoto}
-                onChange={(event) => setWalkPhoto(event.target.value)}
-                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
-              />
-            </label>
+            <Field label="From"><input value={walkFrom} onChange={(event) => setWalkFrom(event.target.value)} className="field-control" /></Field>
+            <Field label="To"><input value={walkTo} onChange={(event) => setWalkTo(event.target.value)} className="field-control" /></Field>
+            <Field label="Measured distance (m)"><input inputMode="decimal" value={walkDistance} onChange={(event) => setWalkDistance(event.target.value)} className="field-control" /></Field>
+            <Field label="Accessibility"><select value={walkAccessibility} onChange={(event) => setWalkAccessibility(event.target.value as AccessibilityStatus)} className="field-control"><option value="unknown">Unknown</option><option value="accessible">Verified accessible</option><option value="not_accessible">Verified not accessible</option></select></Field>
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-5 text-sm">
-            <label className="flex items-center gap-2 font-semibold">
-              <input type="checkbox" checked={walkStairs} onChange={(event) => setWalkStairs(event.target.checked)} />
-              Stairs on this segment
-            </label>
-            <label className="flex items-center gap-2 font-semibold">
-              <input
-                type="checkbox"
-                checked={walkBidirectional}
-                onChange={(event) => setWalkBidirectional(event.target.checked)}
-              />
-              Bidirectional observed
-            </label>
-          </div>
-
-          <label className="mt-4 grid gap-1.5 text-sm font-semibold">
-            Segment notes
-            <textarea
-              rows={3}
-              value={walkNotes}
-              onChange={(event) => setWalkNotes(event.target.value)}
-              placeholder="Door, turn, elevator/stairs, level change, hours/access signs…"
-              className="rounded-xl border border-border bg-background p-3 text-sm"
-            />
-          </label>
-
-          <button
-            type="button"
-            onClick={addWalkthroughSegment}
-            className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-4 text-sm font-bold"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            Add walkthrough segment
-          </button>
+          <label className="mt-4 flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={walkStairs} onChange={(event) => setWalkStairs(event.target.checked)} /> Stairs on this segment</label>
+          <Field label="Segment notes" className="mt-4"><textarea value={walkNotes} onChange={(event) => setWalkNotes(event.target.value)} rows={3} className="field-control h-auto py-3" /></Field>
+          <button type="button" onClick={addWalkSegment} className="button-secondary mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold"><Plus className="h-4 w-4" aria-hidden="true" /> Add walkthrough segment</button>
         </section>
 
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="font-display text-xl font-semibold">Local draft</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {draft.nodes.length} entrance observations · {draft.walkthroughSegments.length} link segments
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setDraft({ nodes: [], walkthroughSegments: [] });
-                setLocationStatus("Local draft cleared.");
-              }}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-muted-foreground hover:bg-secondary"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
-              Clear
-            </button>
+            <div><h2 className="font-display text-xl font-semibold">Local draft</h2><p className="mt-1 text-sm text-muted-foreground">{draft.nodes.length} entrances · {draft.walkthroughSegments.length} link segments</p></div>
+            <button type="button" onClick={() => setDraft({ nodes: [], walkthroughSegments: [] })} className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-muted-foreground"><Trash2 className="h-4 w-4" aria-hidden="true" /> Clear</button>
           </div>
-
-          {draft.nodes.length > 0 ? (
-            <ul className="mt-4 grid gap-2">
-              {draft.nodes.map((node) => (
-                <li key={node.id} className="rounded-xl border border-border bg-secondary/30 p-3 text-sm">
-                  <strong>{node.building} · {node.labelOrRoom}</strong>
-                  <span className="mt-1 block font-mono text-xs text-muted-foreground">
-                    {node.latitude?.toFixed(7)}, {node.longitude?.toFixed(7)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              disabled={draft.nodes.length === 0}
-              onClick={exportEntranceSurvey}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40"
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Download importable entrance survey
-            </button>
-            <button
-              type="button"
-              disabled={draft.walkthroughSegments.length === 0}
-              onClick={exportWalkthrough}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-secondary px-4 text-sm font-bold disabled:opacity-40"
-            >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Download CCT/HM walkthrough notes
-            </button>
+            <button type="button" disabled={!draft.nodes.length} onClick={exportEntrances} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40"><Download className="h-4 w-4" aria-hidden="true" /> Download importable entrance survey</button>
+            <button type="button" disabled={!draft.walkthroughSegments.length} onClick={exportWalkthrough} className="button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold disabled:opacity-40"><Download className="h-4 w-4" aria-hidden="true" /> Download link walkthrough</button>
           </div>
+          {status ? <p className="mt-4 whitespace-pre-wrap text-xs leading-5 text-muted-foreground" role="status">{status}</p> : null}
         </section>
       </div>
     </main>
   );
+}
+
+function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+  return <label className={`grid gap-1.5 text-sm font-semibold ${className}`}><span>{label}</span>{children}</label>;
 }
