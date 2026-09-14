@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { UTM_BUILDINGS } from "@/data/utm/building-registry";
+import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { entranceRegistryIssues, UTM_ENTRANCE_REGISTRY } from "@/data/utm/entrance-registry";
 import entranceDataRaw from "@/data/utm/entrances.geojson?raw";
 import { OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES } from "@/data/utm/official-entrance-candidates";
@@ -68,6 +69,29 @@ describe("UTM entrance truth registry", () => {
         expect(candidate.routingNodeId).toBeUndefined();
       }
     }
+  });
+
+  test("keeps unresolved MN main-tagged OSM candidates out of production routing", () => {
+    const unresolvedMnNodeIds = ["osm-node-13736687034", "osm-node-13736687041"];
+    const routingNodeIds = new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id));
+    const registryIds = new Set(UTM_ENTRANCE_REGISTRY.map((item) => item.id));
+
+    for (const nodeId of unresolvedMnNodeIds) {
+      expect(routingNodeIds.has(nodeId)).toBe(false);
+      expect([...registryIds].some((id) => id.includes(nodeId.replace("osm-node-", "")))).toBe(false);
+    }
+
+    const mappedMnDoors = UTM_ENTRANCE_REGISTRY.filter(
+      (item) => item.buildingCode === "MN" && item.id.startsWith("mn-"),
+    );
+    expect(mappedMnDoors.map((item) => item.id)).toEqual(["mn-13738201127"]);
+
+    const officialMnIdentities = UTM_ENTRANCE_REGISTRY.filter(
+      (item) => item.buildingCode === "MN" && item.id.startsWith("utm:entrance-candidate:mn:"),
+    ).sort((a, b) => a.label.localeCompare(b.label));
+    expect(officialMnIdentities.map((item) => item.label)).toEqual(["Field side", "Lot #1", "Main"]);
+    expect(officialMnIdentities.every((item) => item.coordinates === undefined)).toBe(true);
+    expect(officialMnIdentities.every((item) => item.routingNodeId === undefined)).toBe(true);
   });
 
   test("preserves current restrictive access on both mapped OPH doors", () => {
