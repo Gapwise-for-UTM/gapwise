@@ -47,6 +47,26 @@ describe("UTM entrance truth registry", () => {
     }
   });
 
+  test("preserves current restrictive access on both mapped OPH doors", () => {
+    const mappedOphDoors = UTM_ENTRANCE_REGISTRY.filter(
+      (item) => item.buildingCode === "OPH" && item.id.startsWith("oph-"),
+    ).sort((a, b) => a.id.localeCompare(b.id));
+
+    expect(mappedOphDoors.map((item) => item.id)).toEqual([
+      "oph-13738728068",
+      "oph-1728224590",
+    ]);
+    expect(mappedOphDoors.every((item) => item.kind === "exterior_entrance")).toBe(true);
+    expect(mappedOphDoors.every((item) => item.publicAccess === "restricted")).toBe(true);
+    expect(mappedOphDoors.every((item) => item.routability === "routable")).toBe(true);
+
+    const officialOphIdentities = UTM_ENTRANCE_REGISTRY.filter(
+      (item) => item.buildingCode === "OPH" && item.id.startsWith("utm:entrance-candidate:oph:"),
+    );
+    expect(officialOphIdentities.map((item) => item.label).sort()).toEqual(["Main", "Rear"]);
+    expect(officialOphIdentities.every((item) => item.coordinates === undefined)).toBe(true);
+  });
+
   test("gives every registered building an explicit auditable state", () => {
     for (const building of UTM_BUILDINGS) {
       const records = UTM_ENTRANCE_REGISTRY.filter(
