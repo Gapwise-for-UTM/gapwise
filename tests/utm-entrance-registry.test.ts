@@ -15,6 +15,11 @@ describe("UTM entrance truth registry", () => {
         expect(fact.sourceIds.length).toBeGreaterThan(0);
         expect(fact.lastVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       }
+      if (entrance.direction === "unknown") {
+        expect(entrance.evidence.direction.confidence).toBe("unknown");
+      } else {
+        expect(entrance.evidence.direction.confidence).toBe("verified");
+      }
       if (entrance.coordinates) {
         expect(entrance.coordinates[0]).toBeWithin(-180, 180);
         expect(entrance.coordinates[1]).toBeWithin(-90, 90);
@@ -87,6 +92,7 @@ describe("UTM entrance truth registry", () => {
       (item) => item.buildingCode === "MN" && item.id.startsWith("mn-"),
     );
     expect(mappedMnDoors.map((item) => item.id)).toEqual(["mn-13738201127"]);
+    expect(mappedMnDoors.every((item) => item.direction === "unknown")).toBe(true);
 
     const officialMnIdentities = UTM_ENTRANCE_REGISTRY.filter(
       (item) => item.buildingCode === "MN" && item.id.startsWith("utm:entrance-candidate:mn:"),
@@ -98,6 +104,7 @@ describe("UTM entrance truth registry", () => {
     ]);
     expect(officialMnIdentities.every((item) => item.coordinates === undefined)).toBe(true);
     expect(officialMnIdentities.every((item) => item.routingNodeId === undefined)).toBe(true);
+    expect(officialMnIdentities.every((item) => item.direction === "unknown")).toBe(true);
   });
 
   test("preserves current restrictive access without inventing OPH entrance identities", () => {
@@ -112,6 +119,7 @@ describe("UTM entrance truth registry", () => {
     ]);
     expect(mappedOphDoors.every((item) => item.kind === "exterior_entrance")).toBe(true);
     expect(mappedOphDoors.every((item) => item.publicAccess === "restricted")).toBe(true);
+    expect(mappedOphDoors.every((item) => item.direction === "unknown")).toBe(true);
     expect(mappedOphDoors.every((item) => item.routability === "routable")).toBe(true);
 
     const officialOphIdentities = UTM_ENTRANCE_REGISTRY.filter(
