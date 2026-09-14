@@ -60,10 +60,8 @@ describe("UTM field survey targets", () => {
 
   test("represents the CCT/HMALC connection as a walkthrough target rather than invented geometry", () => {
     const target = UTM_FIELD_SURVEY_TARGETS.find((item) => item.id === "cct-hm-link");
-    expect(target).toMatchObject({
-      buildingCodes: ["CCT", "HM"],
-      targetKind: "building_connection",
-      geometryCandidates: undefined,
-    });
+    expect(target?.buildingCodes).toEqual(["CCT", "HM"]);
+    expect(target?.targetKind).toBe("building_connection");
+    expect(target?.geometryCandidates).toBeUndefined();
   });
 });
