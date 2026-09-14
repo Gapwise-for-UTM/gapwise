@@ -78,10 +78,7 @@ function featureCollection(value: unknown, context: string): unknown[] {
 function datasetLastVerified(value: unknown, context: string): string {
   const collection = record(value, context);
   const metadata = record(collection["metadata"], `${context}.metadata`);
-  const lastVerified = stringValue(
-    metadata["lastVerified"],
-    `${context}.metadata.lastVerified`,
-  );
+  const lastVerified = stringValue(metadata["lastVerified"], `${context}.metadata.lastVerified`);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(lastVerified)) {
     throw new Error(`${context}.metadata.lastVerified must use YYYY-MM-DD.`);
   }
@@ -221,10 +218,7 @@ function parseEdges(value: unknown, nodeIds: ReadonlySet<string>): AuditedEdge[]
 const entrancePayload = JSON.parse(
   await readFile(resolve(root, "src/data/utm/entrances.geojson"), "utf8"),
 ) as unknown;
-const entranceDatasetLastVerified = datasetLastVerified(
-  entrancePayload,
-  "entrances.geojson",
-);
+const entranceDatasetLastVerified = datasetLastVerified(entrancePayload, "entrances.geojson");
 const entrances = parseEntrances(entrancePayload);
 const nodeIds = parseOutdoorNodeIds(
   JSON.parse(
