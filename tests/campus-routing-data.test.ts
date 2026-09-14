@@ -60,7 +60,8 @@ describe("bundled UTM routing data", () => {
       expect(getCampusBuildingFootprint(building.code)).not.toBeNull();
     }
 
-    // Every residence currently offered as a personalized home origin remains routable.
+    // Every residence currently offered as a personalized home origin remains represented.
+    // Individual route attempts still fail closed when its mapped entrances are restricted.
     expect(RESIDENCE_BUILDINGS.map((building) => building.code).sort()).toEqual(
       UTM_RESIDENCES.map((building) => building.code).sort(),
     );
@@ -109,12 +110,22 @@ describe("bundled UTM routing data", () => {
         ),
     );
 
-    // The IC door is mapped from exact OSM building topology, but its retained pedestrian
-    // fragment is still isolated from the main campus component. Keep that distinction explicit.
-    expect(disconnected.map((building) => building.code).sort()).toEqual(["IC"]);
-    expect(disconnected[0]?.entrances.map((entrance) => entrance.osmNodeId).sort()).toEqual([
-      13568164840,
-    ]);
+    // IC remains isolated by retained graph topology. OPH is now also intentionally disconnected:
+    // current OSM marks both mapped exterior doors access=private, so generated routing removes
+    // their ordinary entrance connectors instead of pretending they are generally usable.
+    expect(disconnected.map((building) => building.code).sort()).toEqual(["IC", "OPH"]);
+    expect(
+      disconnected
+        .find((building) => building.code === "IC")
+        ?.entrances.map((entrance) => entrance.osmNodeId)
+        .sort(),
+    ).toEqual([13568164840]);
+    expect(
+      disconnected
+        .find((building) => building.code === "OPH")
+        ?.entrances.map((entrance) => entrance.osmNodeId)
+        .sort(),
+    ).toEqual([13738728068, 1728224590]);
   });
 
   test("answers every pair inside the main campus routing component", () => {
