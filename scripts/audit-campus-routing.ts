@@ -75,6 +75,16 @@ function featureCollection(value: unknown, context: string): unknown[] {
   return features;
 }
 
+function datasetLastVerified(value: unknown, context: string): string {
+  const collection = record(value, context);
+  const metadata = record(collection["metadata"], `${context}.metadata`);
+  const lastVerified = stringValue(metadata["lastVerified"], `${context}.metadata.lastVerified`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(lastVerified)) {
+    throw new Error(`${context}.metadata.lastVerified must use YYYY-MM-DD.`);
+  }
+  return lastVerified;
+}
+
 function validatePointGeometry(value: unknown, context: string): void {
   const geometry = record(value, `${context}.geometry`);
   const coordinates = geometry["coordinates"];
@@ -205,9 +215,11 @@ function parseEdges(value: unknown, nodeIds: ReadonlySet<string>): AuditedEdge[]
   });
 }
 
-const entrances = parseEntrances(
-  JSON.parse(await readFile(resolve(root, "src/data/utm/entrances.geojson"), "utf8")) as unknown,
-);
+const entrancePayload = JSON.parse(
+  await readFile(resolve(root, "src/data/utm/entrances.geojson"), "utf8"),
+) as unknown;
+const entranceDatasetLastVerified = datasetLastVerified(entrancePayload, "entrances.geojson");
+const entrances = parseEntrances(entrancePayload);
 const nodeIds = parseOutdoorNodeIds(
   JSON.parse(
     await readFile(resolve(root, "src/data/utm/outdoor-nodes.geojson"), "utf8"),
@@ -290,7 +302,7 @@ const records = UTM_BUILDINGS.map((building) => {
 });
 
 const report = {
-  generatedAt: "2026-08-25",
+  generatedAt: entranceDatasetLastVerified,
   failClosed: true,
   mainCampusReferenceNodeId: MAIN_CAMPUS_REFERENCE_NODE_ID,
   buildings: records,
