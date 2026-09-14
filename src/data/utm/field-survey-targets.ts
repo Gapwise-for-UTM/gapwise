@@ -95,7 +95,7 @@ const RIH_APPROACH = [
   },
 ] as const satisfies readonly FieldSurveyGeometryCandidate[];
 
-export const UTM_FIELD_SURVEY_TARGETS = [
+export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
   {
     id: "mn-perimeter-completeness",
     buildingCodes: ["MN"],
@@ -228,7 +228,7 @@ export const UTM_FIELD_SURVEY_TARGETS = [
     instructions:
       "Locate and record the physical Roy Ivor Hall Main entrance. The currently mapped point is only an approach and is not a door coordinate.",
   },
-] as const satisfies readonly FieldSurveyTarget[];
+];
 
 export function fieldSurveyTargetsForBuilding(buildingCode: string) {
   const normalized = buildingCode.trim().toUpperCase();
