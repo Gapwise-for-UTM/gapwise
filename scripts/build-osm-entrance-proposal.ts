@@ -7,7 +7,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const candidatePath = resolve(root, "artifacts/utm-osm-entrance-candidates.json");
 const entrancePath = resolve(root, "src/data/utm/entrances.geojson");
 const outputPath = resolve(root, "artifacts/entrances.with-osm-discoveries.geojson");
-const verifiedAt = "2026-09-10";
 
 type Tags = Record<string, string | undefined>;
 type MemberWay = { osmWayId: number; tags: Tags };
@@ -29,7 +28,9 @@ type Candidate = {
 };
 
 type ResolutionEvidence =
-  "canonical_boundary" | "named_osm_building_way" | "canonical_containment_with_footway";
+  | "canonical_boundary"
+  | "named_osm_building_way"
+  | "canonical_containment_with_footway";
 
 type EntranceFeature = {
   type: "Feature";
@@ -130,13 +131,55 @@ function notes(candidate: Candidate, evidence: ResolutionEvidence): string {
   return "Current OSM entrance-tagged node lies on exactly one canonical Gapwise building boundary; ordinary student/public access is not independently established.";
 }
 
-const discovery = JSON.parse(await readFile(candidatePath, "utf8")) as { candidates: Candidate[] };
+const discovery = JSON.parse(await readFile(candidatePath, "utf8")) as {
+  generatedAt: string;
+  candidates: Candidate[];
+};
+const verifiedAt = discovery.generatedAt.slice(0, 10);
+if (!/^\d{4}-\d{2}-\d{2}$/.test(verifiedAt)) {
+  throw new Error(`Invalid discovery generatedAt date: ${discovery.generatedAt}`);
+}
+
 const collection = JSON.parse(await readFile(entrancePath, "utf8")) as Collection;
 const existing = new Set(
   collection.features.flatMap((feature) =>
     feature.properties.osmNodeId === undefined ? [] : [Number(feature.properties.osmNodeId)],
   ),
 );
+const existingByOsmNodeId = new Map(
+  collection.features.flatMap((feature) =>
+    feature.properties.osmNodeId === undefined
+      ? []
+      : [[Number(feature.properties.osmNodeId), feature] as const],
+  ),
+);
+
+// A fresh discovery run is also a chance to tighten fail-closed semantics on
+// doors that Gapwise already knows about. We only promote restrictive states
+// here: current OSM access=private/no and entrance=emergency are direct reasons
+// not to offer an ordinary route endpoint. Missing access tags never erase a
+// previously reviewed restriction, and this does not infer public access.
+const restrictiveAccessRefreshes = discovery.candidates.flatMap((candidate) => {
+  const nextAccess = access(candidate);
+  if (nextAccess === "unknown") return [];
+  const feature = existingByOsmNodeId.get(candidate.osmNodeId);
+  if (!feature) return [];
+
+  const previousAccess = feature.properties["access"];
+  feature.properties["access"] = nextAccess;
+  feature.properties["lastVerified"] = verifiedAt;
+  return previousAccess === nextAccess
+    ? []
+    : [
+        {
+          id: feature.id,
+          buildingCode: feature.properties["buildingCode"],
+          osmNodeId: candidate.osmNodeId,
+          previousAccess: previousAccess ?? "unknown",
+          access: nextAccess,
+        },
+      ];
+});
 
 const additions = discovery.candidates.flatMap((candidate): EntranceFeature[] => {
   if (candidate.existingGapwiseRecord || existing.has(candidate.osmNodeId)) return [];
@@ -175,6 +218,7 @@ collection.metadata["description"] =
 await writeFile(outputPath, `${JSON.stringify(collection, null, 2)}\n`);
 console.log(
   JSON.stringify({
+    restrictiveAccessRefreshes,
     added: additions.map((feature) => ({
       id: feature.id,
       buildingCode: feature.properties["buildingCode"],
