@@ -2,6 +2,8 @@ export type CampusSourceId =
   | "openstreetmap"
   | "utm-facilities-buildings"
   | "utm-facilities-snow-ice"
+  | "utm-library-cct-entrance"
+  | "utm-main-news-cct-hmalc-link"
   | "utm-procurement-oph-main-lobby-2026"
   | "utoronto-interactive-map"
   | "utoronto-robotics-2025-conference";
@@ -53,6 +55,26 @@ export const CAMPUS_SOURCE_RECORDS = {
     retrievedAt: "2026-09-13",
     notes:
       "Priority 1 explicitly names barrier-free building entrance identities. It does not publish exact door coordinates or establish the accessibility of every connecting route edge.",
+  },
+  "utm-library-cct-entrance": {
+    id: "utm-library-cct-entrance",
+    organization: "University of Toronto Mississauga Library",
+    title: "Entrance Closure Advisory",
+    url: "https://utm.library.utoronto.ca/content/entrance-closure-advisory",
+    sourceType: "official_web",
+    retrievedAt: "2026-09-14",
+    notes:
+      "UTM Library directs users to the library entrance from CCT when another entrance is unavailable. This verifies an indoor CCT-to-library connection identity, not its precise geometry, floor-by-floor path, hours, or accessibility of every segment.",
+  },
+  "utm-main-news-cct-hmalc-link": {
+    id: "utm-main-news-cct-hmalc-link",
+    organization: "University of Toronto Mississauga",
+    title: "Inside Blackwood Gallery's award-winning exhibition",
+    url: "https://www.utm.utoronto.ca/main-news/inside-blackwood-gallerys-award-winning-exhibition",
+    sourceType: "official_web",
+    retrievedAt: "2026-09-14",
+    notes:
+      "First-party UTM reporting identifies a doorway joining CCT to the Hazel McCallion Academic Learning Centre and refers to the area as the CCT Link. It does not publish routable corridor geometry or vertical-transition details.",
   },
   "utm-procurement-oph-main-lobby-2026": {
     id: "utm-procurement-oph-main-lobby-2026",
