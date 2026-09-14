@@ -9,11 +9,12 @@ import {
 import { CAMPUS_SOURCE_RECORDS } from "@/data/utm/provenance";
 
 describe("official UTM exterior-access evidence", () => {
-  test("registers the official sources with map/event evidence constrained to corroboration", () => {
+  test("registers official sources while keeping map/event/procurement evidence constrained", () => {
     expect(Object.keys(CAMPUS_SOURCE_RECORDS).sort()).toEqual([
       "openstreetmap",
       "utm-facilities-buildings",
       "utm-facilities-snow-ice",
+      "utm-procurement-oph-main-lobby-2026",
       "utoronto-interactive-map",
       "utoronto-robotics-2025-conference",
     ]);
@@ -30,9 +31,19 @@ describe("official UTM exterior-access evidence", () => {
     expect(roboticsNotes).toContain("no exact door coordinate");
     expect(roboticsNotes).toContain("unrestricted public access");
     expect(roboticsNotes).toContain("barrier-free status");
+
+    const ophProcurement = CAMPUS_SOURCE_RECORDS["utm-procurement-oph-main-lobby-2026"];
+    expect(ophProcurement.organization).toBe("University of Toronto Mississauga");
+    expect(ophProcurement.url).toBe(
+      "https://www.merx.com/uoft/solicitations/open-bids/Laundry-Vending-Services-and-Equipment/0000319578",
+    );
+    expect(ophProcurement.notes).toContain("Oscar Peterson Hall – main entrance lobby");
+    expect(ophProcurement.notes).toContain("no exact exterior door coordinate");
+    expect(ophProcurement.notes).toContain("does not identify which current OSM entrance node");
+
     for (const source of Object.values(CAMPUS_SOURCE_RECORDS)) {
       expect(source.url).toStartWith("https://");
-      expect(source.retrievedAt).toMatch(/^2026-(08-(10|21)|09-13)$/);
+      expect(source.retrievedAt).toMatch(/^2026-(08-(10|21)|09-(13|14))$/);
     }
   });
 
@@ -108,6 +119,35 @@ describe("official UTM exterior-access evidence", () => {
     ).toMatchObject({ instances: 2 });
   });
 
+  test("corroborates OPH Main without guessing which mapped door is Main or Rear", () => {
+    const ophMain = OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.find(
+      (candidate) => candidate.buildingCode === "OPH" && candidate.label === "Main",
+    );
+    const ophRear = OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.find(
+      (candidate) => candidate.buildingCode === "OPH" && candidate.label === "Rear",
+    );
+
+    expect(ophMain).toMatchObject({
+      reconciliationStatus: "geometry_unknown",
+      coordinates: null,
+      routingNodeId: null,
+    });
+    expect(ophMain?.evidence.existence.sourceIds).toEqual([
+      "utm-facilities-snow-ice",
+      "utm-procurement-oph-main-lobby-2026",
+    ]);
+    expect(ophMain?.evidence.existence.lastVerified).toBe("2026-09-14");
+    expect(ophMain?.evidence.geometry.confidence).toBe("unknown");
+    expect(ophMain?.evidence.barrierFree.sourceIds).toEqual(["utm-facilities-snow-ice"]);
+
+    expect(ophRear).toMatchObject({
+      reconciliationStatus: "geometry_unknown",
+      coordinates: null,
+      routingNodeId: null,
+    });
+    expect(ophRear?.evidence.existence.sourceIds).toEqual(["utm-facilities-snow-ice"]);
+  });
+
   test("preserves the authoritative MN North identity without inventing geometry or accessibility", () => {
     expect(OFFICIAL_OTHER_ENTRANCE_IDENTITIES).toHaveLength(1);
     const north = officialOtherEntranceIdentitiesForBuilding("mn")[0];
@@ -120,8 +160,10 @@ describe("official UTM exterior-access evidence", () => {
     });
     expect(north?.evidence.existence.confidence).toBe("verified");
     expect(north?.evidence.existence.sourceIds).toEqual(["utoronto-robotics-2025-conference"]);
+    expect(north?.evidence.existence.lastVerified).toBe("2026-09-13");
     expect(north?.evidence.geometry.confidence).toBe("unknown");
     expect(north?.evidence.geometry.sourceIds).toContain("openstreetmap");
+    expect(north?.evidence.geometry.lastVerified).toBe("2026-09-13");
     expect(north?.evidence.publicAccess.confidence).toBe("unknown");
     expect(north?.evidence.barrierFree.confidence).toBe("unknown");
     expect(officialOtherEntranceIdentitiesForBuilding("DV")).toEqual([]);
