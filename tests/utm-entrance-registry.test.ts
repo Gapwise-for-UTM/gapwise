@@ -15,11 +15,9 @@ describe("UTM entrance truth registry", () => {
         expect(fact.sourceIds.length).toBeGreaterThan(0);
         expect(fact.lastVerified).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       }
-      if (entrance.publicAccess === "unknown") {
-        expect(entrance.evidence.publicAccess.confidence).toBe("unknown");
-      } else {
-        expect(entrance.evidence.publicAccess.confidence).toBe("verified");
-      }
+      expect(entrance.evidence.publicAccess.confidence).toBe(
+        entrance.publicAccess === "unknown" ? "unknown" : "verified",
+      );
       if (entrance.direction === "unknown") {
         expect(entrance.evidence.direction.confidence).toBe("unknown");
       } else {
