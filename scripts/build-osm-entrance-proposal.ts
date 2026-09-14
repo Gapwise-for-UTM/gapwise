@@ -28,7 +28,9 @@ type Candidate = {
 };
 
 type ResolutionEvidence =
-  "canonical_boundary" | "named_osm_building_way" | "canonical_containment_with_footway";
+  | "canonical_boundary"
+  | "named_osm_building_way"
+  | "canonical_containment_with_footway";
 
 type EntranceFeature = {
   type: "Feature";
@@ -152,31 +154,37 @@ const existingByOsmNodeId = new Map(
   ),
 );
 
-// A fresh discovery run is also a chance to tighten fail-closed semantics on
-// doors that Gapwise already knows about. We only promote restrictive states
-// here: current OSM access=private/no and entrance=emergency are direct reasons
-// not to offer an ordinary route endpoint. Missing access tags never erase a
-// previously reviewed restriction, and this does not infer public access.
-const restrictiveAccessRefreshes = discovery.candidates.flatMap((candidate) => {
-  const nextAccess = access(candidate);
-  if (nextAccess === "unknown") return [];
+// A fresh discovery run re-verifies every already-known OSM entrance node that
+// it actually saw, so per-door freshness must move with the dataset-level
+// freshness instead of leaving old dates behind. Access remains fail-closed:
+// only explicit current OSM restrictions (access=private/no or
+// entrance=emergency) are promoted. Missing access tags never erase a
+// previously reviewed restriction and never imply public access.
+const existingOsmRefreshes = discovery.candidates.flatMap((candidate) => {
   const feature = existingByOsmNodeId.get(candidate.osmNodeId);
-  if (!feature) return [];
+  if (!feature || feature.properties["source"] !== "OpenStreetMap") return [];
 
+  const previousLastVerified = feature.properties["lastVerified"];
   const previousAccess = feature.properties["access"];
-  feature.properties["access"] = nextAccess;
+  const nextAccess = access(candidate);
+
   feature.properties["lastVerified"] = verifiedAt;
-  return previousAccess === nextAccess
-    ? []
-    : [
-        {
-          id: feature.id,
-          buildingCode: feature.properties["buildingCode"],
-          osmNodeId: candidate.osmNodeId,
-          previousAccess: previousAccess ?? "unknown",
-          access: nextAccess,
-        },
-      ];
+  if (nextAccess !== "unknown") feature.properties["access"] = nextAccess;
+
+  const accessChanged = nextAccess !== "unknown" && previousAccess !== nextAccess;
+  if (previousLastVerified === verifiedAt && !accessChanged) return [];
+
+  return [
+    {
+      id: feature.id,
+      buildingCode: feature.properties["buildingCode"],
+      osmNodeId: candidate.osmNodeId,
+      previousLastVerified: previousLastVerified ?? null,
+      lastVerified: verifiedAt,
+      previousAccess: previousAccess ?? "unknown",
+      access: feature.properties["access"] ?? "unknown",
+    },
+  ];
 });
 
 const additions = discovery.candidates.flatMap((candidate): EntranceFeature[] => {
@@ -216,7 +224,7 @@ collection.metadata["description"] =
 await writeFile(outputPath, `${JSON.stringify(collection, null, 2)}\n`);
 console.log(
   JSON.stringify({
-    restrictiveAccessRefreshes,
+    existingOsmRefreshes,
     added: additions.map((feature) => ({
       id: feature.id,
       buildingCode: feature.properties["buildingCode"],
