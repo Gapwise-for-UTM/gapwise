@@ -1,15 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Crosshair, Download, Plus, Route as RouteIcon, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { normalizePublicBuildingCode, UTM_BUILDINGS } from "@/data/utm/building-registry";
+import { validateCampusSurvey, type CampusSurvey, type SurveyNode } from "@/data/utm/survey-format";
 import {
   fieldSurveyTargetsForBuilding,
   type FieldSurveyGeometryCandidate,
-} from "@/data/utm/field-survey-targets";
-import { validateCampusSurvey, type CampusSurvey, type SurveyNode } from "@/data/utm/survey-format";
+} from "@/features/routing/field-survey-targets";
 import type { AccessibilityStatus } from "@/features/routing/types";
 
 const DRAFT_KEY = "gapwise-utm-field-survey-v1";
+const CONTROL =
+  "h-11 w-full rounded-xl border border-border bg-background px-3 text-sm font-normal text-foreground outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30";
 
 type CapturedLocation = {
   longitude: number;
@@ -165,7 +167,11 @@ function FieldSurveyPage() {
   }, [buildingCode]);
 
   useEffect(() => {
-    if (!target) return;
+    if (!target) {
+      setLabel("Exterior entrance");
+      setFloor("");
+      return;
+    }
     setLabel(target.label);
     setFloor(target.levelContext ?? "");
     setCandidateId("");
@@ -312,14 +318,14 @@ function FieldSurveyPage() {
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Building">
-              <select value={buildingCode} onChange={(event) => setBuildingCode(event.target.value)} className="field-control">
+              <select value={buildingCode} onChange={(event) => setBuildingCode(event.target.value)} className={CONTROL}>
                 {UTM_BUILDINGS.map((building) => (
                   <option key={building.code} value={building.code}>{building.code} — {building.name}</option>
                 ))}
               </select>
             </Field>
             <Field label="Survey target">
-              <select value={targetId} onChange={(event) => setTargetId(event.target.value)} className="field-control">
+              <select value={targetId} onChange={(event) => setTargetId(event.target.value)} className={CONTROL}>
                 {targets.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                 <option value="">Unlisted exterior door</option>
               </select>
@@ -337,8 +343,8 @@ function FieldSurveyPage() {
           {!connectionTarget ? (
             <div className="mt-5 grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Door label"><input value={label} onChange={(event) => setLabel(event.target.value)} className="field-control" /></Field>
-                <Field label="Floor / level context"><input value={floor} onChange={(event) => setFloor(event.target.value)} placeholder="Optional" className="field-control" /></Field>
+                <Field label="Door label"><input value={label} onChange={(event) => setLabel(event.target.value)} className={CONTROL} /></Field>
+                <Field label="Floor / level context"><input value={floor} onChange={(event) => setFloor(event.target.value)} placeholder="Optional" className={CONTROL} /></Field>
               </div>
 
               {candidates.length ? (
@@ -376,18 +382,18 @@ function FieldSurveyPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Accessibility evidence">
-                  <select value={accessibility} onChange={(event) => setAccessibility(event.target.value as AccessibilityStatus)} className="field-control">
+                  <select value={accessibility} onChange={(event) => setAccessibility(event.target.value as AccessibilityStatus)} className={CONTROL}>
                     <option value="unknown">Unknown</option><option value="accessible">Verified accessible</option><option value="not_accessible">Verified not accessible</option>
                   </select>
                 </Field>
                 <Field label="Observed access">
-                  <select value={accessObservation} onChange={(event) => setAccessObservation(event.target.value)} className="field-control">
+                  <select value={accessObservation} onChange={(event) => setAccessObservation(event.target.value)} className={CONTROL}>
                     <option value="unknown">Unknown</option><option value="ordinary use observed">Ordinary use observed</option><option value="card reader observed">Card reader observed</option><option value="locked observed">Locked observed</option><option value="emergency-only signage observed">Emergency-only</option><option value="service-only signage observed">Service-only</option>
                   </select>
                 </Field>
               </div>
-              <Field label="Photo reference"><input value={photoReference} onChange={(event) => setPhotoReference(event.target.value)} placeholder="e.g. IMG_2841.HEIC" className="field-control" /></Field>
-              <Field label="Observation notes"><textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} className="field-control h-auto py-3" placeholder="Signage, side, nearby path, opener, stairs/ramp, door count…" /></Field>
+              <Field label="Photo reference"><input value={photoReference} onChange={(event) => setPhotoReference(event.target.value)} placeholder="e.g. IMG_2841.HEIC" className={CONTROL} /></Field>
+              <Field label="Observation notes"><textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} className={`${CONTROL} h-auto py-3`} placeholder="Signage, side, nearby path, opener, stairs/ramp, door count…" /></Field>
               <button type="button" disabled={!usableCandidate && !capturedLocation} onClick={addEntrance} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40">
                 <Plus className="h-4 w-4" aria-hidden="true" /> Add entrance observation
               </button>
@@ -402,13 +408,13 @@ function FieldSurveyPage() {
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 sm:p-6">
           <div className="flex gap-3"><RouteIcon className="mt-1 h-5 w-5 text-accent" aria-hidden="true" /><div><h2 className="font-display text-xl font-semibold">CCT ↔ HMALC Link walkthrough</h2><p className="mt-1 text-sm text-muted-foreground">Record doors, junctions, level changes and measured segment distances. Unknown stays unknown.</p></div></div>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <Field label="From"><input value={walkFrom} onChange={(event) => setWalkFrom(event.target.value)} className="field-control" /></Field>
-            <Field label="To"><input value={walkTo} onChange={(event) => setWalkTo(event.target.value)} className="field-control" /></Field>
-            <Field label="Measured distance (m)"><input inputMode="decimal" value={walkDistance} onChange={(event) => setWalkDistance(event.target.value)} className="field-control" /></Field>
-            <Field label="Accessibility"><select value={walkAccessibility} onChange={(event) => setWalkAccessibility(event.target.value as AccessibilityStatus)} className="field-control"><option value="unknown">Unknown</option><option value="accessible">Verified accessible</option><option value="not_accessible">Verified not accessible</option></select></Field>
+            <Field label="From"><input value={walkFrom} onChange={(event) => setWalkFrom(event.target.value)} className={CONTROL} /></Field>
+            <Field label="To"><input value={walkTo} onChange={(event) => setWalkTo(event.target.value)} className={CONTROL} /></Field>
+            <Field label="Measured distance (m)"><input inputMode="decimal" value={walkDistance} onChange={(event) => setWalkDistance(event.target.value)} className={CONTROL} /></Field>
+            <Field label="Accessibility"><select value={walkAccessibility} onChange={(event) => setWalkAccessibility(event.target.value as AccessibilityStatus)} className={CONTROL}><option value="unknown">Unknown</option><option value="accessible">Verified accessible</option><option value="not_accessible">Verified not accessible</option></select></Field>
           </div>
           <label className="mt-4 flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={walkStairs} onChange={(event) => setWalkStairs(event.target.checked)} /> Stairs on this segment</label>
-          <Field label="Segment notes" className="mt-4"><textarea value={walkNotes} onChange={(event) => setWalkNotes(event.target.value)} rows={3} className="field-control h-auto py-3" /></Field>
+          <Field label="Segment notes" className="mt-4"><textarea value={walkNotes} onChange={(event) => setWalkNotes(event.target.value)} rows={3} className={`${CONTROL} h-auto py-3`} /></Field>
           <button type="button" onClick={addWalkSegment} className="button-secondary mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold"><Plus className="h-4 w-4" aria-hidden="true" /> Add walkthrough segment</button>
         </section>
 
@@ -428,6 +434,6 @@ function FieldSurveyPage() {
   );
 }
 
-function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+function Field({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
   return <label className={`grid gap-1.5 text-sm font-semibold ${className}`}><span>{label}</span>{children}</label>;
 }
