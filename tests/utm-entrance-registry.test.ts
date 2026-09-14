@@ -1,6 +1,5 @@
 import { describe, expect, test } from "bun:test";
 import { UTM_BUILDINGS } from "@/data/utm/building-registry";
-import { UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import { entranceRegistryIssues, UTM_ENTRANCE_REGISTRY } from "@/data/utm/entrance-registry";
 import entranceDataRaw from "@/data/utm/entrances.geojson?raw";
 import { OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES } from "@/data/utm/official-entrance-candidates";
@@ -71,14 +70,17 @@ describe("UTM entrance truth registry", () => {
     }
   });
 
-  test("keeps unresolved MN main-tagged OSM candidates out of production routing", () => {
-    const unresolvedMnNodeIds = ["osm-node-13736687034", "osm-node-13736687041"];
-    const routingNodeIds = new Set(UTM_ROUTING_GRAPH.nodes.map((node) => node.id));
-    const registryIds = new Set(UTM_ENTRANCE_REGISTRY.map((item) => item.id));
+  test("keeps unresolved MN main-tagged OSM candidates out of production entrances", () => {
+    const entranceData = JSON.parse(entranceDataRaw) as {
+      features: Array<{ id: string }>;
+    };
+    const unresolvedMnOsmIds = ["13736687034", "13736687041"];
+    const productionEntranceIds = entranceData.features.map((feature) => feature.id);
+    const registryIds = UTM_ENTRANCE_REGISTRY.map((item) => item.id);
 
-    for (const nodeId of unresolvedMnNodeIds) {
-      expect(routingNodeIds.has(nodeId)).toBe(false);
-      expect([...registryIds].some((id) => id.includes(nodeId.replace("osm-node-", "")))).toBe(false);
+    for (const osmId of unresolvedMnOsmIds) {
+      expect(productionEntranceIds.some((id) => id.includes(osmId))).toBe(false);
+      expect(registryIds.some((id) => id.includes(osmId))).toBe(false);
     }
 
     const mappedMnDoors = UTM_ENTRANCE_REGISTRY.filter(
