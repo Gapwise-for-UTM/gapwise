@@ -91,17 +91,25 @@ describe("UTM entrance truth registry", () => {
     const officialMnIdentities = UTM_ENTRANCE_REGISTRY.filter(
       (item) => item.buildingCode === "MN" && item.id.startsWith("utm:entrance-candidate:mn:"),
     ).sort((a, b) => a.label.localeCompare(b.label));
-    expect(officialMnIdentities.map((item) => item.label)).toEqual(["Field side", "Lot #1", "Main"]);
+    expect(officialMnIdentities.map((item) => item.label)).toEqual([
+      "Field side",
+      "Lot #1",
+      "Main",
+    ]);
     expect(officialMnIdentities.every((item) => item.coordinates === undefined)).toBe(true);
     expect(officialMnIdentities.every((item) => item.routingNodeId === undefined)).toBe(true);
   });
 
-  test("preserves current restrictive access on both mapped OPH doors", () => {
+  test("preserves current restrictive access without inventing OPH entrance identities", () => {
     const mappedOphDoors = UTM_ENTRANCE_REGISTRY.filter(
       (item) => item.buildingCode === "OPH" && item.id.startsWith("oph-"),
     ).sort((a, b) => a.id.localeCompare(b.id));
 
     expect(mappedOphDoors.map((item) => item.id)).toEqual(["oph-13738728068", "oph-1728224590"]);
+    expect(mappedOphDoors.map((item) => item.label)).toEqual([
+      "Mapped entrance A",
+      "Mapped entrance B",
+    ]);
     expect(mappedOphDoors.every((item) => item.kind === "exterior_entrance")).toBe(true);
     expect(mappedOphDoors.every((item) => item.publicAccess === "restricted")).toBe(true);
     expect(mappedOphDoors.every((item) => item.routability === "routable")).toBe(true);

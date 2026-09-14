@@ -61,6 +61,14 @@ function label(candidate: Candidate): string {
   return "Mapped entrance";
 }
 
+const REVIEWED_EXISTING_LABELS = new Map<number, string>([
+  // UTM Facilities confirms OPH has one Main and one Rear barrier-free entrance,
+  // but no reviewed source establishes which of these two current OSM doors is
+  // which. Keep the physical doors distinct without inventing either identity.
+  [13738728068, "Mapped entrance A"],
+  [1728224590, "Mapped entrance B"],
+]);
+
 function normalizedIdentity(value: string) {
   return value.trim().toLocaleLowerCase("en-CA").replace(/\s+/g, " ");
 }
@@ -157,20 +165,26 @@ const existingByOsmNodeId = new Map(
 // freshness instead of leaving old dates behind. Access remains fail-closed:
 // only explicit current OSM restrictions (access=private/no or
 // entrance=emergency) are promoted. Missing access tags never erase a
-// previously reviewed restriction and never imply public access.
+// previously reviewed restriction and never imply public access. Reviewed
+// identity-safe labels may also replace older labels that overstate which named
+// official entrance a mapped door represents.
 const existingOsmRefreshes = discovery.candidates.flatMap((candidate) => {
   const feature = existingByOsmNodeId.get(candidate.osmNodeId);
   if (!feature || feature.properties["source"] !== "OpenStreetMap") return [];
 
   const previousLastVerified = feature.properties["lastVerified"];
   const previousAccess = feature.properties["access"];
+  const previousLabel = feature.properties["label"];
   const nextAccess = access(candidate);
+  const reviewedLabel = REVIEWED_EXISTING_LABELS.get(candidate.osmNodeId);
 
   feature.properties["lastVerified"] = verifiedAt;
   if (nextAccess !== "unknown") feature.properties["access"] = nextAccess;
+  if (reviewedLabel) feature.properties["label"] = reviewedLabel;
 
   const accessChanged = nextAccess !== "unknown" && previousAccess !== nextAccess;
-  if (previousLastVerified === verifiedAt && !accessChanged) return [];
+  const labelChanged = reviewedLabel !== undefined && previousLabel !== reviewedLabel;
+  if (previousLastVerified === verifiedAt && !accessChanged && !labelChanged) return [];
 
   return [
     {
@@ -181,6 +195,8 @@ const existingOsmRefreshes = discovery.candidates.flatMap((candidate) => {
       lastVerified: verifiedAt,
       previousAccess: previousAccess ?? "unknown",
       access: feature.properties["access"] ?? "unknown",
+      previousLabel: previousLabel ?? null,
+      label: feature.properties["label"] ?? null,
     },
   ];
 });
