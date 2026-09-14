@@ -29,7 +29,7 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the fi
 | LL | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
 | MV | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
 | MC | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
-| OPH | 2 | 0 | 2 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| OPH | 2 | 0 | 2 | 2 | 0 | Step-free status requires an authoritative source or field survey. |
 | PP | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
 | RIH | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
 | SW | 0 | 1 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more approach points are topology inferences, not verified doors. |
