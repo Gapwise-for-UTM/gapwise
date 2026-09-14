@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { UTM_BUILDINGS } from "@/data/utm/building-registry";
 import { entranceRegistryIssues, UTM_ENTRANCE_REGISTRY } from "@/data/utm/entrance-registry";
+import entranceDataRaw from "@/data/utm/entrances.geojson?raw";
 import { OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES } from "@/data/utm/official-entrance-candidates";
 
 describe("UTM entrance truth registry", () => {
@@ -19,6 +20,28 @@ describe("UTM entrance truth registry", () => {
         expect(entrance.coordinates[1]).toBeWithin(-90, 90);
       }
     }
+  });
+
+  test("keeps current OSM door verification dates aligned with the live dataset audit", () => {
+    const entranceData = JSON.parse(entranceDataRaw) as {
+      metadata: { lastVerified: string };
+      features: Array<{
+        properties: {
+          kind: "entrance" | "approach";
+          source: string;
+          lastVerified: string;
+        };
+      }>;
+    };
+    const osmDoors = entranceData.features.filter(
+      (feature) =>
+        feature.properties.kind === "entrance" && feature.properties.source === "OpenStreetMap",
+    );
+
+    expect(osmDoors.length).toBeGreaterThan(0);
+    expect(new Set(osmDoors.map((feature) => feature.properties.lastVerified))).toEqual(
+      new Set([entranceData.metadata.lastVerified]),
+    );
   });
 
   test("only geolocates official identities after explicit reconciliation", () => {
