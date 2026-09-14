@@ -141,9 +141,7 @@ describe("UTM entrance truth registry", () => {
   });
 
   test("models the CCT-DV identities as non-routable building connections", () => {
-    const connections = UTM_ENTRANCE_REGISTRY.filter(
-      (item) => item.kind === "building_connection",
-    );
+    const connections = UTM_ENTRANCE_REGISTRY.filter((item) => item.kind === "building_connection");
     expect(connections.map((item) => item.buildingCode).sort()).toEqual(["CCT", "DV"]);
     expect(connections.every((item) => item.routability === "non_routable")).toBe(true);
     expect(connections.every((item) => item.coordinates === undefined)).toBe(true);
