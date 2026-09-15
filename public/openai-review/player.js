@@ -7,9 +7,7 @@ async function loadDemo() {
       { length: 10 },
       (_, index) => `/openai-review/demo.part${index + 1}.b64`,
     );
-    const parts = await Promise.all(
-      partUrls.map((url) => fetch(url, { cache: "force-cache" })),
-    );
+    const parts = await Promise.all(partUrls.map((url) => fetch(url, { cache: "force-cache" })));
 
     if (parts.some((response) => !response.ok)) {
       throw new Error("Video data could not be loaded.");
