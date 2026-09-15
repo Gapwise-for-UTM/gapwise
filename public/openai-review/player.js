@@ -3,10 +3,13 @@ const status = document.getElementById("status");
 
 async function loadDemo() {
   try {
-    const parts = await Promise.all([
-      fetch("/openai-review/demo.part1.b64", { cache: "force-cache" }),
-      fetch("/openai-review/demo.part2.b64", { cache: "force-cache" }),
-    ]);
+    const partUrls = Array.from(
+      { length: 10 },
+      (_, index) => `/openai-review/demo.part${index + 1}.b64`,
+    );
+    const parts = await Promise.all(
+      partUrls.map((url) => fetch(url, { cache: "force-cache" })),
+    );
 
     if (parts.some((response) => !response.ok)) {
       throw new Error("Video data could not be loaded.");
