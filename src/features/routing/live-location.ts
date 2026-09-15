@@ -3,7 +3,10 @@ import { isPointConfidentlyInsideCampus, type MapPoint } from "./campus-presence
 
 export type LiveLocationState =
   | { status: "requesting" | "off-campus" | "permission-denied" | "unavailable"; point: null }
-  | { status: "on-campus"; point: MapPoint };
+  | { status: "on-campus"; point: MapPoint; observedAtMs: number };
+
+export const LIVE_LOCATION_MAX_AGE_MS = 30_000;
+export const LIVE_LOCATION_MIN_ROUTE_MOVEMENT_METERS = 15;
 
 type GeolocationWatcher = Pick<Geolocation, "watchPosition" | "clearWatch">;
 
@@ -30,7 +33,7 @@ export function watchCampusLocation({
         };
         onChange(
           isPointConfidentlyInsideCampus(point, graph)
-            ? { status: "on-campus", point }
+            ? { status: "on-campus", point, observedAtMs: position.timestamp || Date.now() }
             : { status: "off-campus", point: null },
         );
       },
