@@ -28,10 +28,7 @@ export default {
     }
 
     const footprints = new Map(
-      serverCampusBuildingFootprints().map((feature) => [
-        feature.properties.buildingCode,
-        feature,
-      ]),
+      serverCampusBuildingFootprints().map((feature) => [feature.properties.buildingCode, feature]),
     );
     return jsonResponse(
       {

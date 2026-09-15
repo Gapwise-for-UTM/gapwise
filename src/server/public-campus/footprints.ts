@@ -43,7 +43,9 @@ const footprintUrls = [
   new URL("../../data/utm/footprints/LH.geojson", import.meta.url),
 ] as const;
 
-function geometryPolygons(geometry: CampusBuildingFootprint["geometry"]): FootprintCoordinate[][][] {
+function geometryPolygons(
+  geometry: CampusBuildingFootprint["geometry"],
+): FootprintCoordinate[][][] {
   return geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
 }
 
