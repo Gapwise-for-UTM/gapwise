@@ -410,6 +410,19 @@ export function CampusExplorer({
             </span>
           </div>
 
+          <a
+            data-testid="contribute-entrance-link"
+            href={`https://data.gapwise.ca/contribute?building=${encodeURIComponent(details.building.code)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 flex min-h-10 items-center justify-center gap-2 rounded-lg border border-accent/25 bg-accent/8 px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+          >
+            <DoorOpen className="h-3.5 w-3.5" aria-hidden="true" />
+            {details.coverageStatus === "complete"
+              ? "Add or correct entrance data"
+              : "Know an entrance we're missing? Contribute"}
+          </a>
+
           <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
             <span>
