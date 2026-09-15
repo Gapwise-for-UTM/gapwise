@@ -1,0 +1,37 @@
+const video = document.getElementById("demo");
+const status = document.getElementById("status");
+
+async function loadDemo() {
+  try {
+    const partUrls = Array.from(
+      { length: 10 },
+      (_, index) => `/openai-review/demo.part${index + 1}.b64`,
+    );
+    const parts = await Promise.all(
+      partUrls.map((url) => fetch(url, { cache: "force-cache" })),
+    );
+
+    if (parts.some((response) => !response.ok)) {
+      throw new Error("Video data could not be loaded.");
+    }
+
+    const base64 = (await Promise.all(parts.map((response) => response.text()))).join("");
+    const binary = atob(base64.trim());
+    const bytes = new Uint8Array(binary.length);
+
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const url = URL.createObjectURL(new Blob([bytes], { type: "video/mp4" }));
+    video.src = url;
+    status.dataset.ready = "true";
+
+    window.addEventListener("pagehide", () => URL.revokeObjectURL(url), { once: true });
+  } catch (error) {
+    console.error(error);
+    status.textContent = "The demo recording failed to load. Refresh the page to try again.";
+  }
+}
+
+loadDemo();
