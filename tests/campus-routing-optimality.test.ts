@@ -171,7 +171,10 @@ const preferenceMatrix: RoutePreferences[] = (
     walkingSpeedMps,
   })),
 );
-const EXHAUSTIVE_ORACLE_TIMEOUT_MS = 15_000;
+// This is intentionally exhaustive over every exterior endpoint, routing mode, and speed.
+// Entrance inventory growth increases the all-pairs work quadratically, so keep a bounded
+// CI budget without reducing the oracle matrix.
+const EXHAUSTIVE_ORACLE_TIMEOUT_MS = 30_000;
 
 describe("campus routing optimality oracle", () => {
   test(

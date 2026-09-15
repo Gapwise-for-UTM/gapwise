@@ -60,7 +60,8 @@ describe("bundled UTM routing data", () => {
       expect(getCampusBuildingFootprint(building.code)).not.toBeNull();
     }
 
-    // Every residence currently offered as a personalized home origin remains routable.
+    // Every residence currently offered as a personalized home origin remains represented.
+    // Individual route attempts still fail closed when its mapped entrances are restricted.
     expect(RESIDENCE_BUILDINGS.map((building) => building.code).sort()).toEqual(
       UTM_RESIDENCES.map((building) => building.code).sort(),
     );
@@ -95,10 +96,42 @@ describe("bundled UTM routing data", () => {
     }
   });
 
-  test("connects every building to the main campus graph through at least one entrance", () => {
+  test("keeps disconnected entrance inventory explicit instead of pretending it is routable", () => {
     const origin = CAMPUS_BUILDINGS.find((building) => building.code === "MN")!;
-    for (const building of CAMPUS_BUILDINGS) {
-      const routes = building.entrances.map((entrance) =>
+    const disconnected = CAMPUS_BUILDINGS.filter(
+      (building) =>
+        !building.entrances.some((entrance) =>
+          findRoute(
+            UTM_ROUTING_GRAPH,
+            origin.entranceNodeId,
+            entrance.routingNodeId,
+            DEFAULT_ROUTE_PREFERENCES,
+          ),
+        ),
+    );
+
+    // IC remains isolated by retained graph topology. OPH is now also intentionally disconnected:
+    // current OSM marks both mapped exterior doors access=private, so generated routing removes
+    // their ordinary entrance connectors instead of pretending they are generally usable.
+    expect(disconnected.map((building) => building.code).sort()).toEqual(["IC", "OPH"]);
+    expect(
+      disconnected
+        .find((building) => building.code === "IC")
+        ?.entrances.map((entrance) => entrance.osmNodeId)
+        .sort(),
+    ).toEqual([13568164840]);
+    expect(
+      disconnected
+        .find((building) => building.code === "OPH")
+        ?.entrances.map((entrance) => entrance.osmNodeId)
+        .sort(),
+    ).toEqual([13738728068, 1728224590]);
+  });
+
+  test("answers every pair inside the main campus routing component", () => {
+    const origin = CAMPUS_BUILDINGS.find((building) => building.code === "MN")!;
+    const connectedBuildings = CAMPUS_BUILDINGS.flatMap((building) => {
+      const connectedEntrance = building.entrances.find((entrance) =>
         findRoute(
           UTM_ROUTING_GRAPH,
           origin.entranceNodeId,
@@ -106,17 +139,23 @@ describe("bundled UTM routing data", () => {
           DEFAULT_ROUTE_PREFERENCES,
         ),
       );
-      expect(routes.some(Boolean)).toBe(true);
-    }
-  });
+      return connectedEntrance ? [{ building, connectedEntrance }] : [];
+    });
 
-  test("answers every pair in the full campus route matrix", () => {
-    for (const origin of CAMPUS_BUILDINGS) {
-      for (const destination of CAMPUS_BUILDINGS) {
-        const route = findRoute(
+    for (const originBuilding of connectedBuildings) {
+      expect(
+        findRoute(
           UTM_ROUTING_GRAPH,
           origin.entranceNodeId,
-          destination.entranceNodeId,
+          originBuilding.building.entranceNodeId,
+          DEFAULT_ROUTE_PREFERENCES,
+        ),
+      ).not.toBeNull();
+      for (const destinationBuilding of connectedBuildings) {
+        const route = findRoute(
+          UTM_ROUTING_GRAPH,
+          originBuilding.connectedEntrance.routingNodeId,
+          destinationBuilding.connectedEntrance.routingNodeId,
           DEFAULT_ROUTE_PREFERENCES,
         );
         expect(route).not.toBeNull();

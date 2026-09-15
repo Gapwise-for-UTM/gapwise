@@ -207,7 +207,7 @@ describe("gap destination feasibility", () => {
     let calls = 0;
     const result = assessGapDestination({
       gap: gap(),
-      destinationBuildingCode: "IC",
+      destinationBuildingCode: "WC",
       preferences: DEFAULT_USER_PREFERENCES,
       gapPreferences: DEFAULT_GAP_PREFERENCES,
       planTransition: () => {
@@ -217,7 +217,7 @@ describe("gap destination feasibility", () => {
     });
 
     expect(result).not.toBeNull();
-    expect(result?.destination.code).toBe("IC");
+    expect(result?.destination.code).toBe("WC");
     expect(result?.status).toBe("unavailable");
     expect(result?.outbound.status).toBe("unavailable");
     expect(result?.inbound.status).toBe("unavailable");

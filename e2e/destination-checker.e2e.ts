@@ -26,11 +26,11 @@ test("Today checks canonical destinations inside a live gap on mobile Safari", a
   await expect(page.getByText("Protected buffer:")).toBeVisible();
   await expect(page.getByText("Gapwise can't verify both legs")).toHaveCount(0);
 
-  await destination.selectOption("IC");
+  await destination.selectOption("WC");
   await expect(page.getByText("Gapwise can't verify both legs")).toBeVisible();
   await expect(
     page.getByText(
-      "Gapwise recognizes IC, but mapped routing coverage is unavailable; it will not guess either travel leg.",
+      "Gapwise recognizes WC, but mapped routing coverage is unavailable; it will not guess either travel leg.",
     ),
   ).toBeVisible();
 

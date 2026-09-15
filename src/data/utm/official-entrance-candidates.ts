@@ -14,8 +14,8 @@ export type OfficialEntranceCandidate = {
     | "requires_field_verification"
     | "intentionally_non_routable";
   routingStatus: "candidate" | "non_routable";
-  coordinates: null;
-  routingNodeId: null;
+  coordinates: [number, number] | null;
+  routingNodeId: string | null;
   evidence: {
     existence: FactEvidence;
     barrierFree: FactEvidence;
@@ -28,6 +28,12 @@ const BARRIER_FREE_EXISTENCE = factEvidence(
   ["utm-facilities-snow-ice"],
   "verified",
   "UTM Facilities explicitly names this barrier-free entrance identity.",
+);
+
+const OPH_MAIN_EXISTENCE = factEvidence(
+  ["utm-facilities-snow-ice", "utm-procurement-oph-main-lobby-2026"],
+  "verified",
+  "UTM Facilities names the OPH Main barrier-free entrance identity, and a separate UTM-issued 2026 procurement notice independently names the Oscar Peterson Hall main entrance lobby. Neither source identifies which current OSM exterior door reaches that lobby.",
 );
 
 const BARRIER_FREE_ACCESSIBILITY = factEvidence(
@@ -48,6 +54,12 @@ const UNKNOWN_PUBLIC_ACCESS = factEvidence(
   "Priority snow-clearing status does not, by itself, establish unrestricted public access.",
 );
 
+const MATCHED_OSM_GEOMETRY = factEvidence(
+  ["utm-facilities-snow-ice", "openstreetmap"],
+  "verified",
+  "The official source names exactly one Main entrance identity and current OSM has exactly one entrance=main node on the named building geometry.",
+);
+
 type CandidateIdentity = readonly [
   stableId: string,
   buildingCode: string,
@@ -55,6 +67,28 @@ type CandidateIdentity = readonly [
   instances?: number,
   kind?: OfficialEntranceCandidate["kind"],
 ];
+
+type MatchedGeometry = {
+  coordinates: [number, number];
+  routingNodeId: string;
+};
+
+/**
+ * These matches are intentionally narrow. Each building has exactly one official
+ * barrier-free identity named "Main" and exactly one current OSM entrance=main
+ * node attached to that named building geometry. Buildings with multiple OSM
+ * main-tagged doors (for example CCT, IB, NSB, OPH, DV, DH, HB) stay unresolved.
+ */
+const MATCHED_MAIN_GEOMETRY: Readonly<Record<string, MatchedGeometry>> = {
+  "hm:main": {
+    coordinates: [-79.6630169, 43.5510334],
+    routingNodeId: "osm-node-13731205434",
+  },
+  "rawc:main": {
+    coordinates: [-79.6606714, 43.5479331],
+    routingNodeId: "osm-node-13568164832",
+  },
+};
 
 /**
  * Official UTM Facilities barrier-free entrance identities for buildings in the
@@ -97,25 +131,83 @@ const BARRIER_FREE_IDENTITIES: readonly CandidateIdentity[] = [
 
 export const OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES: readonly OfficialEntranceCandidate[] =
   BARRIER_FREE_IDENTITIES.map(
-    ([stableId, buildingCode, label, instances = 1, kind = "exterior_entrance"]) => ({
-      id: `utm:entrance-candidate:${stableId}`,
-      buildingCode,
-      label,
-      instances,
-      kind,
-      reconciliationStatus:
-        kind === "building_connection" ? "intentionally_non_routable" : "geometry_unknown",
-      routingStatus: kind === "building_connection" ? "non_routable" : "candidate",
-      coordinates: null,
-      routingNodeId: null,
-      evidence: {
-        existence: BARRIER_FREE_EXISTENCE,
-        barrierFree: BARRIER_FREE_ACCESSIBILITY,
-        geometry: UNKNOWN_GEOMETRY,
-        publicAccess: UNKNOWN_PUBLIC_ACCESS,
-      },
-    }),
+    ([stableId, buildingCode, label, instances = 1, kind = "exterior_entrance"]) => {
+      const matchedGeometry = MATCHED_MAIN_GEOMETRY[stableId];
+      return {
+        id: `utm:entrance-candidate:${stableId}`,
+        buildingCode,
+        label,
+        instances,
+        kind,
+        reconciliationStatus:
+          kind === "building_connection"
+            ? "intentionally_non_routable"
+            : matchedGeometry
+              ? "matched"
+              : "geometry_unknown",
+        routingStatus: kind === "building_connection" ? "non_routable" : "candidate",
+        coordinates: matchedGeometry?.coordinates ?? null,
+        routingNodeId: matchedGeometry?.routingNodeId ?? null,
+        evidence: {
+          existence: stableId === "oph:main" ? OPH_MAIN_EXISTENCE : BARRIER_FREE_EXISTENCE,
+          barrierFree: BARRIER_FREE_ACCESSIBILITY,
+          geometry: matchedGeometry ? MATCHED_OSM_GEOMETRY : UNKNOWN_GEOMETRY,
+          publicAccess: UNKNOWN_PUBLIC_ACCESS,
+        },
+      };
+    },
   );
+
+export type OfficialEntranceIdentityEvidence = {
+  id: string;
+  buildingCode: string;
+  label: string;
+  levelContext: string | null;
+  coordinates: [number, number] | null;
+  evidence: {
+    existence: FactEvidence;
+    geometry: FactEvidence;
+    publicAccess: FactEvidence;
+    barrierFree: FactEvidence;
+  };
+};
+
+/**
+ * Authoritative entrance identities that are not asserted to be barrier-free.
+ * These remain separate from the Facilities barrier-free candidates so existence
+ * evidence cannot silently acquire accessibility or geometry semantics.
+ */
+export const OFFICIAL_OTHER_ENTRANCE_IDENTITIES: readonly OfficialEntranceIdentityEvidence[] = [
+  {
+    id: "utm:entrance-identity:mn:north-2f",
+    buildingCode: "MN",
+    label: "North entrance",
+    levelContext: "2nd floor",
+    coordinates: null,
+    evidence: {
+      existence: factEvidence(
+        ["utoronto-robotics-2025-conference"],
+        "verified",
+        "U of T Robotics conference logistics explicitly identifies the MN north entrance (2nd floor).",
+      ),
+      geometry: factEvidence(
+        ["utoronto-robotics-2025-conference", "openstreetmap"],
+        "unknown",
+        "The first-party source publishes no exact door coordinate, so this identity is not assigned to any current OSM entrance node.",
+      ),
+      publicAccess: factEvidence(
+        ["utoronto-robotics-2025-conference"],
+        "unknown",
+        "Event logistics establish the entrance identity, not unrestricted ordinary public/student access.",
+      ),
+      barrierFree: factEvidence(
+        ["utoronto-robotics-2025-conference"],
+        "unknown",
+        "The conference source does not identify the north entrance as barrier-free or equate it with Facilities' Main, Field side, or Lot #1 identities.",
+      ),
+    },
+  },
+];
 
 export function officialEntranceCandidatesForBuilding(
   buildingCode: string,
@@ -123,5 +215,14 @@ export function officialEntranceCandidatesForBuilding(
   const normalized = buildingCode.trim().toUpperCase();
   return OFFICIAL_BARRIER_FREE_ENTRANCE_CANDIDATES.filter(
     (candidate) => candidate.buildingCode === normalized,
+  );
+}
+
+export function officialOtherEntranceIdentitiesForBuilding(
+  buildingCode: string,
+): readonly OfficialEntranceIdentityEvidence[] {
+  const normalized = buildingCode.trim().toUpperCase();
+  return OFFICIAL_OTHER_ENTRANCE_IDENTITIES.filter(
+    (identity) => identity.buildingCode === normalized,
   );
 }

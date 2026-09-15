@@ -10,6 +10,7 @@ import { factEvidence, type FactEvidence } from "./provenance";
 export type EntranceGeometryConfidence =
   "field_verified" | "official" | "mapped" | "inferred" | "unknown";
 export type EntranceFactState = "verified" | "restricted" | "unknown";
+export type EntranceDirection = "bidirectional" | "entry_only" | "exit_only" | "unknown";
 export type EntranceRegistryRecord = {
   id: string;
   buildingCode: string;
@@ -19,6 +20,7 @@ export type EntranceRegistryRecord = {
   routingNodeId?: string;
   routability: "routable" | "candidate" | "non_routable";
   publicAccess: EntranceFactState;
+  direction: EntranceDirection;
   barrierFree: "verified" | "not_barrier_free" | "unknown";
   geometryConfidence: EntranceGeometryConfidence;
   officialReconciliation?: OfficialEntranceCandidate["reconciliationStatus"];
@@ -26,6 +28,7 @@ export type EntranceRegistryRecord = {
     existence: FactEvidence;
     geometry: FactEvidence;
     publicAccess: FactEvidence;
+    direction: FactEvidence;
     barrierFree: FactEvidence;
   };
 };
@@ -41,6 +44,7 @@ type Feature = {
     routingNodeId?: string;
     accessibility: AccessibilityStatus;
     access?: "public" | "restricted" | "emergency_only" | "unknown";
+    direction?: EntranceDirection;
     verificationStatus: "verified" | "inferred";
   };
 };
@@ -54,6 +58,7 @@ const geocoded: EntranceRegistryRecord[] = features.map((feature) => {
   const routingNodeId =
     properties.routingNodeId ??
     (properties.osmNodeId === undefined ? undefined : `osm-node-${properties.osmNodeId}`);
+  const direction = properties.direction ?? "unknown";
   return {
     id: feature.id,
     buildingCode: properties.buildingCode,
@@ -68,6 +73,7 @@ const geocoded: EntranceRegistryRecord[] = features.map((feature) => {
         : properties.access === "restricted" || properties.access === "emergency_only"
           ? "restricted"
           : "unknown",
+    direction,
     barrierFree:
       properties.accessibility === "accessible"
         ? "verified"
@@ -87,7 +93,29 @@ const geocoded: EntranceRegistryRecord[] = features.map((feature) => {
       publicAccess:
         properties.access === "public"
           ? factEvidence(["openstreetmap"], "verified")
-          : unknown("No reviewed source establishes ordinary public/student access."),
+          : properties.access === "restricted"
+            ? factEvidence(
+                ["openstreetmap"],
+                "verified",
+                "Reviewed OSM access metadata explicitly restricts ordinary public/student access.",
+              )
+            : properties.access === "emergency_only"
+              ? factEvidence(
+                  ["openstreetmap"],
+                  "verified",
+                  "Reviewed OSM entrance metadata explicitly limits this door to emergency use.",
+                )
+              : unknown("No reviewed source establishes ordinary public/student access."),
+      direction:
+        direction === "unknown"
+          ? unknown(
+              "No reviewed source establishes entry/exit direction restrictions for this entrance.",
+            )
+          : factEvidence(
+              ["openstreetmap"],
+              "verified",
+              "Reviewed source metadata explicitly establishes this entrance direction restriction.",
+            ),
       barrierFree:
         properties.accessibility === "accessible"
           ? factEvidence(
@@ -95,7 +123,15 @@ const geocoded: EntranceRegistryRecord[] = features.map((feature) => {
               "verified",
               "Reviewed OSM accessibility metadata; connecting edges must independently pass step-free checks.",
             )
-          : unknown("No reviewed source establishes barrier-free suitability for this coordinate."),
+          : properties.accessibility === "not_accessible"
+            ? factEvidence(
+                ["openstreetmap"],
+                "verified",
+                "Reviewed OSM accessibility metadata explicitly marks this entrance as not barrier-free.",
+              )
+            : unknown(
+                "No reviewed source establishes barrier-free suitability for this coordinate.",
+              ),
     },
   };
 });
@@ -106,16 +142,26 @@ const candidates: EntranceRegistryRecord[] = OFFICIAL_BARRIER_FREE_ENTRANCE_CAND
     buildingCode: candidate.buildingCode,
     label: candidate.label,
     kind: candidate.kind,
+    ...(candidate.coordinates ? { coordinates: candidate.coordinates } : {}),
+    ...(candidate.routingNodeId ? { routingNodeId: candidate.routingNodeId } : {}),
     routability: candidate.routingStatus,
     publicAccess: "unknown",
+    direction: "unknown",
     barrierFree: "verified",
-    geometryConfidence: "unknown",
+    geometryConfidence: candidate.reconciliationStatus === "matched" ? "mapped" : "unknown",
     officialReconciliation: candidate.reconciliationStatus,
-    evidence: candidate.evidence,
+    evidence: {
+      ...candidate.evidence,
+      direction: factEvidence(
+        candidate.evidence.existence.sourceIds,
+        "unknown",
+        "No reviewed official source establishes entry/exit direction restrictions for this entrance identity.",
+      ),
+    },
   }),
 );
 
-/** Canonical auditable union of geocoded routing points and official identity-only evidence. */
+/** Canonical auditable union of geocoded routing points and official identity evidence. */
 export const UTM_ENTRANCE_REGISTRY: readonly EntranceRegistryRecord[] = [
   ...geocoded,
   ...candidates,
@@ -136,12 +182,16 @@ export function entranceRegistryIssues(
       issues.push(`Routable record lacks geometry or graph identity: ${record.id}`);
     if (record.kind === "pedestrian_approach" && record.geometryConfidence !== "inferred")
       issues.push(`Approach is not explicitly inferred: ${record.id}`);
+    if (record.publicAccess !== "unknown" && record.evidence.publicAccess.confidence !== "verified")
+      issues.push(`Access assertion lacks verified evidence: ${record.id}`);
+    if (record.direction !== "unknown" && record.evidence.direction.confidence !== "verified")
+      issues.push(`Directional endpoint lacks verified direction evidence: ${record.id}`);
     if (
-      record.barrierFree === "verified" &&
+      (record.barrierFree === "verified" || record.barrierFree === "not_barrier_free") &&
       record.routability === "routable" &&
       record.evidence.barrierFree.confidence !== "verified"
     )
-      issues.push(`Step-free endpoint lacks verified evidence: ${record.id}`);
+      issues.push(`Accessibility assertion lacks verified evidence: ${record.id}`);
     for (const evidence of Object.values(record.evidence))
       if (evidence.sourceIds.length === 0) issues.push(`Fact lacks provenance: ${record.id}`);
   }
