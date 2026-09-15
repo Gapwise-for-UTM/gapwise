@@ -8,8 +8,10 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CampusExplorer } from "@/components/CampusExplorer";
+import type { LocationControlState } from "@/components/CampusMap";
 import { DayRouteSequence } from "@/components/DayRouteSequence";
 import { IndoorFloorViewer } from "@/components/IndoorFloorViewer";
+import { LiveClassRouteCard } from "@/components/LiveClassRouteCard";
 import { useMobileRouteTarget } from "@/components/mobile/MobileShell";
 import {
   Drawer,
@@ -27,6 +29,7 @@ import {
 } from "@/features/routing/campus-day";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
+import { planLiveClassRoute, selectLiveClassOrigin } from "@/features/routing/live-class-route";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
 import {
@@ -316,6 +319,8 @@ export function MobileDayRoute({
   planTransition,
   selectedBuildingCode,
   onSelectBuilding,
+  liveLocation,
+  onLiveLocationChange,
 }: {
   meetings: Meeting[];
   term: Term;
@@ -325,6 +330,8 @@ export function MobileDayRoute({
   planTransition: TransitionPlanner;
   selectedBuildingCode: string | null;
   onSelectBuilding: (code: string | null) => void;
+  liveLocation: LocationControlState;
+  onLiveLocationChange: (state: LocationControlState) => void;
 }) {
   const { routeTargetId, setRouteTargetId } = useMobileRouteTarget();
   const [requestedMeetingId] = useState<string | null>(routeTargetId);
@@ -334,6 +341,12 @@ export function MobileDayRoute({
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(requestedMeetingId);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 15_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const availableTerms = useMemo(
     () => TERMS.filter((item) => meetings.some((meeting) => meeting.term === item)),
@@ -387,14 +400,6 @@ export function MobileDayRoute({
   }, [meetings, requestedMeetingId, term]);
 
   useEffect(() => {
-    const incoming = requestedMeetingId
-      ? segments.find((segment) => segment.to.id === requestedMeetingId)
-      : null;
-    if (incoming) {
-      setSelectedSegmentId(incoming.id);
-      setSelectedMeetingId(null);
-      return;
-    }
     const target = requestedMeetingId
       ? dayMeetings.find((meeting) => meeting.id === requestedMeetingId)
       : null;
@@ -417,6 +422,11 @@ export function MobileDayRoute({
   );
   const selectSegment = useCallback(
     (id: string) => {
+      if (id.startsWith("live-location--")) {
+        setSelectedMeetingId(id.slice("live-location--".length));
+        setSelectedSegmentId(null);
+        return;
+      }
       setSelectedSegmentId(id);
       setSelectedMeetingId(null);
       if (selectedBuildingCode) onSelectBuilding(null);
@@ -424,6 +434,34 @@ export function MobileDayRoute({
     [onSelectBuilding, selectedBuildingCode],
   );
   const selectedSegment = segments.find((segment) => segment.id === selectedSegmentId) ?? null;
+  const selectedMeeting = dayMeetings.find((meeting) => meeting.id === selectedMeetingId) ?? null;
+  const liveOrigin = selectLiveClassOrigin(liveLocation, now.getTime());
+  const livePoint = liveOrigin.kind === "live" ? liveOrigin.point : null;
+  const liveRoute = useMemo(
+    () =>
+      selectedMeeting && livePoint
+        ? planLiveClassRoute(selectedMeeting, { kind: "live", point: livePoint }, preferences)
+        : null,
+    [selectedMeeting, livePoint, preferences],
+  );
+  const fallbackRoute = selectedMeeting
+    ? (segments.find((segment) => segment.to.id === selectedMeeting.id)?.route ?? null)
+    : null;
+  const mapSegments = useMemo(
+    () =>
+      selectedMeeting && liveRoute
+        ? [
+            ...segments,
+            {
+              id: `live-location--${selectedMeeting.id}`,
+              from: { ...selectedMeeting, id: "live-location", buildingCode: null, room: null },
+              to: selectedMeeting,
+              route: liveRoute,
+            },
+          ]
+        : segments,
+    [liveRoute, segments, selectedMeeting],
+  );
 
   if (meetings.length === 0) {
     return (
@@ -553,7 +591,7 @@ export function MobileDayRoute({
         <>
           <CampusExplorer
             meetings={dayMeetings}
-            segments={segments}
+            segments={mapSegments}
             selectedMeetingId={selectedMeetingId}
             selectedSegmentId={selectedSegmentId}
             onSelectMeeting={selectMeeting}
@@ -563,6 +601,7 @@ export function MobileDayRoute({
             selectedBuildingCode={selectedBuildingCode}
             onSelectBuilding={onSelectBuilding}
             dayAnchor={dayAnchor}
+            onLiveLocationChange={onLiveLocationChange}
             className="h-[52dvh] min-h-[22rem] max-h-[36rem]"
           />
 
@@ -573,6 +612,15 @@ export function MobileDayRoute({
             selectedSegmentId={selectedSegmentId}
             onSelectMeeting={selectMeeting}
             onSelectSegment={selectSegment}
+          />
+
+          <LiveClassRouteCard
+            meeting={selectedMeeting}
+            origin={liveOrigin}
+            route={liveRoute}
+            fallbackRoute={fallbackRoute}
+            preferences={preferences}
+            now={now}
           />
 
           <SegmentSummary segment={selectedSegment} preferences={preferences} />
