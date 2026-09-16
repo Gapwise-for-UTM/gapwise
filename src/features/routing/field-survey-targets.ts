@@ -62,14 +62,16 @@ const MN_GEOMETRY_CANDIDATES: readonly FieldSurveyGeometryCandidate[] = [
     kind: "physical_door_unreconciled",
     coordinates: [-79.6656006, 43.5509053],
     osmNodeId: 13736687034,
-    notes: "OSM entrance=main near MN, but the node lacks strong MN building identity. Field reconciliation is required.",
+    notes:
+      "OSM entrance=main near MN, but the node lacks strong MN building identity. Field reconciliation is required.",
   },
   {
     id: "mn-osm-13736687041",
     kind: "physical_door_unreconciled",
     coordinates: [-79.6662061, 43.5510741],
     osmNodeId: 13736687041,
-    notes: "OSM entrance=main near MN, but the node lacks strong MN building identity. Field reconciliation is required.",
+    notes:
+      "OSM entrance=main near MN, but the node lacks strong MN building identity. Field reconciliation is required.",
   },
 ];
 
@@ -118,7 +120,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     targetKind: "perimeter_completion",
     sourceIds: ["openstreetmap", "utm-facilities-snow-ice"],
     geometryCandidates: MN_GEOMETRY_CANDIDATES,
-    instructions: "Walk the full exterior perimeter and record every physical exterior door separately, including locked, service-only, emergency-only, and unlabeled doors. Record observed restrictions rather than assuming access.",
+    instructions:
+      "Walk the full exterior perimeter and record every physical exterior door separately, including locked, service-only, emergency-only, and unlabeled doors. Record observed restrictions rather than assuming access.",
   },
   {
     id: "mn-main",
@@ -128,7 +131,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     officialCandidateId: "utm:entrance-candidate:mn:main",
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: MN_GEOMETRY_CANDIDATES,
-    instructions: "Identify the exact physical door corresponding to UTM Facilities' Main identity. Do not assign a candidate solely because OSM calls it entrance=main.",
+    instructions:
+      "Identify the exact physical door corresponding to UTM Facilities' Main identity. Do not assign a candidate solely because OSM calls it entrance=main.",
   },
   {
     id: "mn-field-side",
@@ -138,7 +142,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     officialCandidateId: "utm:entrance-candidate:mn:field-side",
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: MN_GEOMETRY_CANDIDATES,
-    instructions: "Identify the exact exterior door UTM calls Field side and record the route from the adjacent pedestrian path to the threshold.",
+    instructions:
+      "Identify the exact exterior door UTM calls Field side and record the route from the adjacent pedestrian path to the threshold.",
   },
   {
     id: "mn-lot-1",
@@ -148,7 +153,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     officialCandidateId: "utm:entrance-candidate:mn:lot-1",
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: MN_GEOMETRY_CANDIDATES,
-    instructions: "Identify the exact exterior door UTM calls Lot #1 and record the route from the adjacent pedestrian path to the threshold.",
+    instructions:
+      "Identify the exact exterior door UTM calls Lot #1 and record the route from the adjacent pedestrian path to the threshold.",
   },
   {
     id: "mn-north-2f",
@@ -159,7 +165,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     levelContext: "2nd floor",
     sourceIds: ["utoronto-robotics-2025-conference"],
     geometryCandidates: MN_GEOMETRY_CANDIDATES,
-    instructions: "Find the north exterior entrance named by U of T Robotics, verify its second-floor context, and keep it separate from Facilities' Main/Field side/Lot #1 identities unless site evidence explicitly links them.",
+    instructions:
+      "Find the north exterior entrance named by U of T Robotics, verify its second-floor context, and keep it separate from Facilities' Main/Field side/Lot #1 identities unless site evidence explicitly links them.",
   },
   {
     id: "cct-hm-link",
@@ -167,7 +174,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     label: "CCT / HMALC Link",
     targetKind: "building_connection",
     sourceIds: ["utm-library-cct-entrance", "utm-main-news-cct-hmalc-link"],
-    instructions: "Walk the complete public connection from CCT to the library/HMALC. Record each door, junction, level change, stairs/elevator choice, segment distance, access restriction, and accessibility observation. Do not use indoor GPS as route geometry.",
+    instructions:
+      "Walk the complete public connection from CCT to the library/HMALC. Record each door, junction, level change, stairs/elevator choice, segment distance, access restriction, and accessibility observation. Do not use indoor GPS as route geometry.",
   },
   {
     id: "eh-main",
@@ -177,7 +185,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     officialCandidateId: "utm:entrance-candidate:eh:main",
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: EH_APPROACH,
-    instructions: "Locate and record the physical Erindale Hall Main entrance. The currently mapped point is only an approach and is not a door coordinate.",
+    instructions:
+      "Locate and record the physical Erindale Hall Main entrance. The currently mapped point is only an approach and is not a door coordinate.",
   },
   {
     id: "eh-rear-1",
@@ -188,7 +197,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     instance: 1,
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: EH_APPROACH,
-    instructions: "Locate one of the two Rear entrances and distinguish it from the second Rear instance with a stable field description.",
+    instructions:
+      "Locate one of the two Rear entrances and distinguish it from the second Rear instance with a stable field description.",
   },
   {
     id: "eh-rear-2",
@@ -199,7 +209,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     instance: 2,
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: EH_APPROACH,
-    instructions: "Locate the second Rear entrance and distinguish it from the first Rear instance with a stable field description.",
+    instructions:
+      "Locate the second Rear entrance and distinguish it from the first Rear instance with a stable field description.",
   },
   {
     id: "oph-main",
@@ -209,7 +220,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     officialCandidateId: "utm:entrance-candidate:oph:main",
     sourceIds: ["utm-facilities-snow-ice", "utm-procurement-oph-main-lobby-2026"],
     geometryCandidates: OPH_GEOMETRY_CANDIDATES,
-    instructions: "Reconcile the official Main identity to one exact OPH physical door. Two mapped OSM doors are candidates, but neither may be selected from proximity alone.",
+    instructions:
+      "Reconcile the official Main identity to one exact OPH physical door. Two mapped OSM doors are candidates, but neither may be selected from proximity alone.",
   },
   {
     id: "oph-rear",
@@ -219,7 +231,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     officialCandidateId: "utm:entrance-candidate:oph:rear",
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: OPH_GEOMETRY_CANDIDATES,
-    instructions: "Reconcile the official Rear identity to one exact OPH physical door and record observed access restrictions separately from barrier-free identity evidence.",
+    instructions:
+      "Reconcile the official Rear identity to one exact OPH physical door and record observed access restrictions separately from barrier-free identity evidence.",
   },
   {
     id: "rih-main",
@@ -229,7 +242,8 @@ export const UTM_FIELD_SURVEY_TARGETS: readonly FieldSurveyTarget[] = [
     officialCandidateId: "utm:entrance-candidate:rih:main",
     sourceIds: ["utm-facilities-snow-ice"],
     geometryCandidates: RIH_APPROACH,
-    instructions: "Locate and record the physical Roy Ivor Hall Main entrance. The currently mapped point is only an approach and is not a door coordinate.",
+    instructions:
+      "Locate and record the physical Roy Ivor Hall Main entrance. The currently mapped point is only an approach and is not a door coordinate.",
   },
 ];
 
