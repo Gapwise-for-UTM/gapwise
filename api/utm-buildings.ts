@@ -1,10 +1,10 @@
-import { CAMPUS_BUILDING_FOOTPRINTS } from "../src/data/utm/building-footprints.js";
 import {
   PUBLIC_CAMPUS_DATA_VERSION,
   publicCampusBuildings,
 } from "../src/server/public-campus/data.js";
-import { listPublicBuildings } from "../src/server/public-campus/service.js";
+import { serverCampusBuildingFootprints } from "../src/server/public-campus/footprints.js";
 import { jsonResponse, optionsResponse } from "../src/server/public-campus/http.js";
+import { listPublicBuildings } from "../src/server/public-campus/service.js";
 
 export default {
   async fetch(request: Request) {
@@ -28,10 +28,7 @@ export default {
     }
 
     const footprints = new Map(
-      CAMPUS_BUILDING_FOOTPRINTS.features.map((feature) => [
-        feature.properties.buildingCode,
-        feature,
-      ]),
+      serverCampusBuildingFootprints().map((feature) => [feature.properties.buildingCode, feature]),
     );
     return jsonResponse(
       {
