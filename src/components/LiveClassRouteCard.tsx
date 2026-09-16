@@ -71,7 +71,7 @@ export function LiveClassRouteCard({
             {locationLabel(meeting)} · starts {formatTime(meeting.startTime)}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-accent/12 px-2.5 py-1 text-[0.68rem] font-semibold text-accent">
+        <span className="shrink-0 rounded-full bg-accent/12 px-2.5 py-1 text-[0.68rem] font-semibold text-foreground">
           {live ? "From you" : "Fallback"}
         </span>
       </div>
