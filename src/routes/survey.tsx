@@ -47,7 +47,8 @@ export const Route = createFileRoute("/survey")({
       { title: "UTM Field Survey — Gapwise" },
       {
         name: "description",
-        content: "Capture evidence-backed UTM entrance observations and CCT/HMALC Link walkthrough notes.",
+        content:
+          "Capture evidence-backed UTM entrance observations and CCT/HMALC Link walkthrough notes.",
       },
     ],
   }),
@@ -249,7 +250,12 @@ function FieldSurveyPage() {
 
   function addWalkSegment() {
     const distanceMeters = Number(walkDistance);
-    if (!walkFrom.trim() || !walkTo.trim() || !Number.isFinite(distanceMeters) || distanceMeters <= 0) {
+    if (
+      !walkFrom.trim() ||
+      !walkTo.trim() ||
+      !Number.isFinite(distanceMeters) ||
+      distanceMeters <= 0
+    ) {
       setStatus("Enter both segment endpoints and a positive measured distance.");
       return;
     }
@@ -306,45 +312,87 @@ function FieldSurveyPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
-        <Link to="/route" className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-muted-foreground">
+        <Link
+          to="/route"
+          className="inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-muted-foreground"
+        >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to map
         </Link>
-        <p className="mt-5 font-mono text-xs font-bold uppercase tracking-[0.14em] text-accent">UTM evidence capture</p>
-        <h1 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em]">Field survey</h1>
+        <p className="mt-5 font-mono text-xs font-bold uppercase tracking-[0.14em] text-accent">
+          UTM evidence capture
+        </p>
+        <h1 className="mt-2 font-display text-3xl font-semibold tracking-[-0.04em]">
+          Field survey
+        </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Resolve the exact door identities Gapwise refuses to guess. Drafts stay in this browser until exported.
+          Resolve the exact door identities Gapwise refuses to guess. Drafts stay in this browser until
+          exported.
         </p>
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Building">
-              <select value={buildingCode} onChange={(event) => setBuildingCode(event.target.value)} className={CONTROL}>
+              <select
+                value={buildingCode}
+                onChange={(event) => setBuildingCode(event.target.value)}
+                className={CONTROL}
+              >
                 {UTM_BUILDINGS.map((building) => (
-                  <option key={building.code} value={building.code}>{building.code} — {building.name}</option>
+                  <option key={building.code} value={building.code}>
+                    {building.code} — {building.name}
+                  </option>
                 ))}
               </select>
             </Field>
             <Field label="Survey target">
-              <select value={targetId} onChange={(event) => setTargetId(event.target.value)} className={CONTROL}>
-                {targets.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              <select
+                value={targetId}
+                onChange={(event) => setTargetId(event.target.value)}
+                className={CONTROL}
+              >
+                {targets.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
                 <option value="">Unlisted exterior door</option>
               </select>
             </Field>
           </div>
 
           <div className="mt-4 rounded-xl border border-border bg-secondary/40 p-4">
-            <strong>{selectedBuilding?.code} · {selectedBuilding?.name}</strong>
+            <strong>
+              {selectedBuilding?.code} · {selectedBuilding?.name}
+            </strong>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {target?.instructions ?? "Record this only while physically standing at a real exterior door."}
+              {target?.instructions ??
+                "Record this only while physically standing at a real exterior door."}
             </p>
-            {target ? <p className="mt-2 text-xs text-muted-foreground">Evidence: {target.sourceIds.join(" · ")}</p> : null}
+            {target ? (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Evidence: {target.sourceIds.join(" · ")}
+              </p>
+            ) : null}
           </div>
 
           {!connectionTarget ? (
             <div className="mt-5 grid gap-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Door label"><input value={label} onChange={(event) => setLabel(event.target.value)} className={CONTROL} /></Field>
-                <Field label="Floor / level context"><input value={floor} onChange={(event) => setFloor(event.target.value)} placeholder="Optional" className={CONTROL} /></Field>
+                <Field label="Door label">
+                  <input
+                    value={label}
+                    onChange={(event) => setLabel(event.target.value)}
+                    className={CONTROL}
+                  />
+                </Field>
+                <Field label="Floor / level context">
+                  <input
+                    value={floor}
+                    onChange={(event) => setFloor(event.target.value)}
+                    placeholder="Optional"
+                    className={CONTROL}
+                  />
+                </Field>
               </div>
 
               {candidates.length ? (
@@ -357,11 +405,16 @@ function FieldSurveyPage() {
                         name="geometry-candidate"
                         disabled={candidate.kind === "approach_only"}
                         checked={candidateId === candidate.id}
-                        onChange={() => { setCandidateId(candidate.id); setCapturedLocation(null); }}
+                        onChange={() => {
+                          setCandidateId(candidate.id);
+                          setCapturedLocation(null);
+                        }}
                       />
                       <span>
                         <strong>{candidateTitle(candidate)}</strong>
-                        <span className="block text-xs leading-5 text-muted-foreground">{candidate.notes}</span>
+                        <span className="block text-xs leading-5 text-muted-foreground">
+                          {candidate.notes}
+                        </span>
                       </span>
                     </label>
                   ))}
@@ -369,71 +422,220 @@ function FieldSurveyPage() {
               ) : null}
 
               {!usableCandidate ? (
-                <button type="button" onClick={captureLocation} className="button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold">
+                <button
+                  type="button"
+                  onClick={captureLocation}
+                  className="button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold"
+                >
                   <Crosshair className="h-4 w-4" aria-hidden="true" /> Capture position at threshold
                 </button>
               ) : null}
 
               {capturedLocation ? (
                 <p className="rounded-xl border border-border bg-secondary/40 p-3 text-sm">
-                  {capturedLocation.latitude.toFixed(7)}, {capturedLocation.longitude.toFixed(7)} · browser accuracy ±{Math.round(capturedLocation.accuracyMeters)} m
+                  {capturedLocation.latitude.toFixed(7)}, {capturedLocation.longitude.toFixed(7)} ·
+                  browser accuracy ±{Math.round(capturedLocation.accuracyMeters)} m
                 </p>
               ) : null}
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Accessibility evidence">
-                  <select value={accessibility} onChange={(event) => setAccessibility(event.target.value as AccessibilityStatus)} className={CONTROL}>
-                    <option value="unknown">Unknown</option><option value="accessible">Verified accessible</option><option value="not_accessible">Verified not accessible</option>
+                  <select
+                    value={accessibility}
+                    onChange={(event) =>
+                      setAccessibility(event.target.value as AccessibilityStatus)
+                    }
+                    className={CONTROL}
+                  >
+                    <option value="unknown">Unknown</option>
+                    <option value="accessible">Verified accessible</option>
+                    <option value="not_accessible">Verified not accessible</option>
                   </select>
                 </Field>
                 <Field label="Observed access">
-                  <select value={accessObservation} onChange={(event) => setAccessObservation(event.target.value)} className={CONTROL}>
-                    <option value="unknown">Unknown</option><option value="ordinary use observed">Ordinary use observed</option><option value="card reader observed">Card reader observed</option><option value="locked observed">Locked observed</option><option value="emergency-only signage observed">Emergency-only</option><option value="service-only signage observed">Service-only</option>
+                  <select
+                    value={accessObservation}
+                    onChange={(event) => setAccessObservation(event.target.value)}
+                    className={CONTROL}
+                  >
+                    <option value="unknown">Unknown</option>
+                    <option value="ordinary use observed">Ordinary use observed</option>
+                    <option value="card reader observed">Card reader observed</option>
+                    <option value="locked observed">Locked observed</option>
+                    <option value="emergency-only signage observed">Emergency-only</option>
+                    <option value="service-only signage observed">Service-only</option>
                   </select>
                 </Field>
               </div>
-              <Field label="Photo reference"><input value={photoReference} onChange={(event) => setPhotoReference(event.target.value)} placeholder="e.g. IMG_2841.HEIC" className={CONTROL} /></Field>
-              <Field label="Observation notes"><textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} className={`${CONTROL} h-auto py-3`} placeholder="Signage, side, nearby path, opener, stairs/ramp, door count…" /></Field>
-              <button type="button" disabled={!usableCandidate && !capturedLocation} onClick={addEntrance} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40">
+              <Field label="Photo reference">
+                <input
+                  value={photoReference}
+                  onChange={(event) => setPhotoReference(event.target.value)}
+                  placeholder="e.g. IMG_2841.HEIC"
+                  className={CONTROL}
+                />
+              </Field>
+              <Field label="Observation notes">
+                <textarea
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  rows={4}
+                  className={`${CONTROL} h-auto py-3`}
+                  placeholder="Signage, side, nearby path, opener, stairs/ramp, door count…"
+                />
+              </Field>
+              <button
+                type="button"
+                disabled={!usableCandidate && !capturedLocation}
+                onClick={addEntrance}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40"
+              >
                 <Plus className="h-4 w-4" aria-hidden="true" /> Add entrance observation
               </button>
             </div>
           ) : (
             <p className="mt-5 rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm leading-6">
-              Do not trace the CCT/HMALC Link with indoor GPS. Use the segment recorder below; convert the walkthrough to local floor geometry only after the route is defensible.
+              Do not trace the CCT/HMALC Link with indoor GPS. Use the segment recorder below; convert
+              the walkthrough to local floor geometry only after the route is defensible.
             </p>
           )}
         </section>
 
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 sm:p-6">
-          <div className="flex gap-3"><RouteIcon className="mt-1 h-5 w-5 text-accent" aria-hidden="true" /><div><h2 className="font-display text-xl font-semibold">CCT ↔ HMALC Link walkthrough</h2><p className="mt-1 text-sm text-muted-foreground">Record doors, junctions, level changes and measured segment distances. Unknown stays unknown.</p></div></div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <Field label="From"><input value={walkFrom} onChange={(event) => setWalkFrom(event.target.value)} className={CONTROL} /></Field>
-            <Field label="To"><input value={walkTo} onChange={(event) => setWalkTo(event.target.value)} className={CONTROL} /></Field>
-            <Field label="Measured distance (m)"><input inputMode="decimal" value={walkDistance} onChange={(event) => setWalkDistance(event.target.value)} className={CONTROL} /></Field>
-            <Field label="Accessibility"><select value={walkAccessibility} onChange={(event) => setWalkAccessibility(event.target.value as AccessibilityStatus)} className={CONTROL}><option value="unknown">Unknown</option><option value="accessible">Verified accessible</option><option value="not_accessible">Verified not accessible</option></select></Field>
+          <div className="flex gap-3">
+            <RouteIcon className="mt-1 h-5 w-5 text-accent" aria-hidden="true" />
+            <div>
+              <h2 className="font-display text-xl font-semibold">CCT ↔ HMALC Link walkthrough</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Record doors, junctions, level changes and measured segment distances. Unknown stays
+                unknown.
+              </p>
+            </div>
           </div>
-          <label className="mt-4 flex items-center gap-2 text-sm font-semibold"><input type="checkbox" checked={walkStairs} onChange={(event) => setWalkStairs(event.target.checked)} /> Stairs on this segment</label>
-          <Field label="Segment notes" className="mt-4"><textarea value={walkNotes} onChange={(event) => setWalkNotes(event.target.value)} rows={3} className={`${CONTROL} h-auto py-3`} /></Field>
-          <button type="button" onClick={addWalkSegment} className="button-secondary mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold"><Plus className="h-4 w-4" aria-hidden="true" /> Add walkthrough segment</button>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <Field label="From">
+              <input
+                value={walkFrom}
+                onChange={(event) => setWalkFrom(event.target.value)}
+                className={CONTROL}
+              />
+            </Field>
+            <Field label="To">
+              <input
+                value={walkTo}
+                onChange={(event) => setWalkTo(event.target.value)}
+                className={CONTROL}
+              />
+            </Field>
+            <Field label="Measured distance (m)">
+              <input
+                inputMode="decimal"
+                value={walkDistance}
+                onChange={(event) => setWalkDistance(event.target.value)}
+                className={CONTROL}
+              />
+            </Field>
+            <Field label="Accessibility">
+              <select
+                value={walkAccessibility}
+                onChange={(event) =>
+                  setWalkAccessibility(event.target.value as AccessibilityStatus)
+                }
+                className={CONTROL}
+              >
+                <option value="unknown">Unknown</option>
+                <option value="accessible">Verified accessible</option>
+                <option value="not_accessible">Verified not accessible</option>
+              </select>
+            </Field>
+          </div>
+          <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
+            <input
+              type="checkbox"
+              checked={walkStairs}
+              onChange={(event) => setWalkStairs(event.target.checked)}
+            />{" "}
+            Stairs on this segment
+          </label>
+          <Field label="Segment notes" className="mt-4">
+            <textarea
+              value={walkNotes}
+              onChange={(event) => setWalkNotes(event.target.value)}
+              rows={3}
+              className={`${CONTROL} h-auto py-3`}
+            />
+          </Field>
+          <button
+            type="button"
+            onClick={addWalkSegment}
+            className="button-secondary mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" /> Add walkthrough segment
+          </button>
         </section>
 
         <section className="mt-5 rounded-2xl border border-border bg-card p-4 sm:p-6">
           <div className="flex items-center justify-between gap-4">
-            <div><h2 className="font-display text-xl font-semibold">Local draft</h2><p className="mt-1 text-sm text-muted-foreground">{draft.nodes.length} entrances · {draft.walkthroughSegments.length} link segments</p></div>
-            <button type="button" onClick={() => setDraft({ nodes: [], walkthroughSegments: [] })} className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-muted-foreground"><Trash2 className="h-4 w-4" aria-hidden="true" /> Clear</button>
+            <div>
+              <h2 className="font-display text-xl font-semibold">Local draft</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {draft.nodes.length} entrances · {draft.walkthroughSegments.length} link segments
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDraft({ nodes: [], walkthroughSegments: [] })}
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-semibold text-muted-foreground"
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" /> Clear
+            </button>
           </div>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <button type="button" disabled={!draft.nodes.length} onClick={exportEntrances} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40"><Download className="h-4 w-4" aria-hidden="true" /> Download importable entrance survey</button>
-            <button type="button" disabled={!draft.walkthroughSegments.length} onClick={exportWalkthrough} className="button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold disabled:opacity-40"><Download className="h-4 w-4" aria-hidden="true" /> Download link walkthrough</button>
+            <button
+              type="button"
+              disabled={!draft.nodes.length}
+              onClick={exportEntrances}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-4 text-sm font-bold text-accent-foreground disabled:opacity-40"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" /> Download importable entrance
+              survey
+            </button>
+            <button
+              type="button"
+              disabled={!draft.walkthroughSegments.length}
+              onClick={exportWalkthrough}
+              className="button-secondary inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold disabled:opacity-40"
+            >
+              <Download className="h-4 w-4" aria-hidden="true" /> Download link walkthrough
+            </button>
           </div>
-          {status ? <p className="mt-4 whitespace-pre-wrap text-xs leading-5 text-muted-foreground" role="status">{status}</p> : null}
+          {status ? (
+            <p
+              className="mt-4 whitespace-pre-wrap text-xs leading-5 text-muted-foreground"
+              role="status"
+            >
+              {status}
+            </p>
+          ) : null}
         </section>
       </div>
     </main>
   );
 }
 
-function Field({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) {
-  return <label className={`grid gap-1.5 text-sm font-semibold ${className}`}><span>{label}</span>{children}</label>;
+function Field({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <label className={`grid gap-1.5 text-sm font-semibold ${className}`}>
+      <span>{label}</span>
+      {children}
+    </label>
+  );
 }
