@@ -84,10 +84,10 @@ function SupportPage() {
       <section>
         <h2>An AI-requested change was rejected</h2>
         <p>
-          Personal-item and supported preference writes are permission-checked and revision-bound. A
-          stale or conflicting write can fail even if the assistant expected it to work. Refresh the
-          current Gapwise context and retry only if the request still fits. Imported academic
-          meetings cannot be created, edited, or deleted through AI integrations.
+          Supported preference writes are permission-checked and revision-bound. A stale or
+          conflicting write can fail even if the assistant expected it to work. Refresh the current
+          Gapwise context and retry only if the request still fits. Imported academic meetings
+          cannot be created, edited, or deleted through AI integrations.
         </p>
       </section>
 
