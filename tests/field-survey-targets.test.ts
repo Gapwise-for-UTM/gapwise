@@ -17,9 +17,12 @@ describe("UTM field survey targets", () => {
     const identityIds = new Set(OFFICIAL_OTHER_ENTRANCE_IDENTITIES.map((identity) => identity.id));
 
     for (const target of UTM_FIELD_SURVEY_TARGETS) {
-      for (const sourceId of target.sourceIds) expect(FIELD_SURVEY_SOURCE_RECORDS[sourceId]).toBeDefined();
-      if (target.officialCandidateId) expect(candidateIds.has(target.officialCandidateId)).toBe(true);
-      if (target.officialIdentityId) expect(identityIds.has(target.officialIdentityId)).toBe(true);
+      for (const sourceId of target.sourceIds)
+        expect(FIELD_SURVEY_SOURCE_RECORDS[sourceId]).toBeDefined();
+      if (target.officialCandidateId)
+        expect(candidateIds.has(target.officialCandidateId)).toBe(true);
+      if (target.officialIdentityId)
+        expect(identityIds.has(target.officialIdentityId)).toBe(true);
     }
   });
 
@@ -40,19 +43,15 @@ describe("UTM field survey targets", () => {
     expect(new Set(candidates.map((candidate) => candidate.osmNodeId))).toEqual(
       new Set([13738728068, 1728224590]),
     );
-    expect(candidates.every((candidate) => candidate.kind === "physical_door_unreconciled")).toBe(true);
+    expect(
+      candidates.every((candidate) => candidate.kind === "physical_door_unreconciled"),
+    ).toBe(true);
   });
 
   test("covers MN perimeter completion, all Facilities identities, and the north 2F identity", () => {
     const ids = new Set(fieldSurveyTargetsForBuilding("MN").map((target) => target.id));
     expect(ids).toEqual(
-      new Set([
-        "mn-perimeter-completeness",
-        "mn-main",
-        "mn-field-side",
-        "mn-lot-1",
-        "mn-north-2f",
-      ]),
+      new Set(["mn-perimeter-completeness", "mn-main", "mn-field-side", "mn-lot-1", "mn-north-2f"]),
     );
   });
 
