@@ -82,11 +82,7 @@ describe("UTM entrance truth registry", () => {
     const entranceData = JSON.parse(entranceDataRaw) as {
       features: Array<{ id: string; properties: { buildingCode: string } }>;
     };
-    const expectedMnDoorIds = [
-      "mn-13736687034",
-      "mn-13736687041",
-      "mn-13738201127",
-    ];
+    const expectedMnDoorIds = ["mn-13736687034", "mn-13736687041", "mn-13738201127"];
 
     const productionMnDoorIds = entranceData.features
       .filter((feature) => feature.properties.buildingCode === "MN")
