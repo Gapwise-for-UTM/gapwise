@@ -207,12 +207,36 @@ export function planMeetingTransition(
   }
 
   if (starts.length > 0 && ends.length > 0) {
-    const result = findBestRoute(
+    const preferredEndpoints = (nodes: RoutingNode[], buildingCode: string | null | undefined) => {
+      if (!buildingCode) return nodes;
+      const primaryId = getCampusBuilding(buildingCode)?.entranceNodeId;
+      const primary = primaryId ? nodes.find((node) => node.id === primaryId) : undefined;
+      return primary ? [primary] : nodes;
+    };
+    const preferredStarts =
+      originAccessNode || originRoom ? starts : preferredEndpoints(starts, origin?.buildingCode);
+    const preferredEnds =
+      destinationAccessNode || destinationRoom
+        ? ends
+        : preferredEndpoints(ends, destination?.buildingCode);
+
+    let result = findBestRoute(
       graph,
-      starts.map(({ id }) => id),
-      ends.map(({ id }) => id),
+      preferredStarts.map(({ id }) => id),
+      preferredEnds.map(({ id }) => id),
       preferences,
     );
+    if (
+      !result &&
+      (preferredStarts.length !== starts.length || preferredEnds.length !== ends.length)
+    ) {
+      result = findBestRoute(
+        graph,
+        starts.map(({ id }) => id),
+        ends.map(({ id }) => id),
+        preferences,
+      );
+    }
     if (result) {
       const displayCoordinates = result.coordinates;
       const indoorComplete = Boolean(originRoom && destinationRoom);
