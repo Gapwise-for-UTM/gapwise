@@ -24,48 +24,6 @@
     },
     {
       "type": "Feature",
-      "id": "mn-13736687034",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -79.6656006,
-          43.5509053
-        ]
-      },
-      "properties": {
-        "buildingCode": "MN",
-        "label": "Mapped main entrance",
-        "kind": "exterior_entrance",
-        "routability": "routable",
-        "publicAccess": "unknown",
-        "barrierFree": "unknown",
-        "geometryConfidence": "mapped",
-        "reconciliation": null
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "mn-13736687041",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -79.6662061,
-          43.5510741
-        ]
-      },
-      "properties": {
-        "buildingCode": "MN",
-        "label": "Mapped main entrance",
-        "kind": "exterior_entrance",
-        "routability": "routable",
-        "publicAccess": "unknown",
-        "barrierFree": "unknown",
-        "geometryConfidence": "mapped",
-        "reconciliation": null
-      }
-    },
-    {
-      "type": "Feature",
       "id": "dh-13568164836",
       "geometry": {
         "type": "Point",
@@ -76,7 +34,7 @@
       },
       "properties": {
         "buildingCode": "DH",
-        "label": "Main entrance A",
+        "label": "Front entrance",
         "kind": "exterior_entrance",
         "routability": "routable",
         "publicAccess": "unknown",
@@ -97,28 +55,7 @@
       },
       "properties": {
         "buildingCode": "DH",
-        "label": "Main entrance B",
-        "kind": "exterior_entrance",
-        "routability": "routable",
-        "publicAccess": "unknown",
-        "barrierFree": "unknown",
-        "geometryConfidence": "mapped",
-        "reconciliation": null
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "dh-13751172451",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -79.6660506,
-          43.5505348
-        ]
-      },
-      "properties": {
-        "buildingCode": "DH",
-        "label": "Mapped entrance",
+        "label": "Back entrance",
         "kind": "exterior_entrance",
         "routability": "routable",
         "publicAccess": "unknown",
