@@ -7,11 +7,11 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the fi
 | MN | 3 | 0 | 3 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | DH | 2 | 0 | 2 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | IB | 5 | 0 | 5 | 5 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| DV | 7 | 0 | 7 | 7 | 2 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| DV | 7 | 0 | 7 | 6 | 2 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more locally graph-attached access points are isolated from the main campus pedestrian component. |
 | CCT | 2 | 0 | 2 | 2 | 1 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | HM | 1 | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | KN | 3 | 0 | 3 | 3 | 3 | Ordinary public access status is not affirmatively published. |
-| IC | 1 | 0 | 1 | 1 | 1 | Ordinary public access status is not affirmatively published. |
+| IC | 1 | 0 | 1 | 0 | 1 | Ordinary public access status is not affirmatively published. One or more locally graph-attached access points are isolated from the main campus pedestrian component. |
 | RAWC | 1 | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | XR | 3 | 0 | 3 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | HB | 2 | 0 | 2 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
