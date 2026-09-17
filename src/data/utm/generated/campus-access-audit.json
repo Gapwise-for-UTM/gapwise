@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-17",
+  "generatedAt": "2026-09-14",
   "failClosed": true,
   "mainCampusReferenceNodeId": "osm-node-13738201127",
   "buildings": [
@@ -7,14 +7,12 @@
       "code": "MN",
       "name": "Maanjiwe nendamowinan",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 3,
+      "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 3,
-      "mainCampusComponentAccessPoints": 3,
+      "graphConnectedAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 1,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
-        "https://www.openstreetmap.org/node/13736687034",
-        "https://www.openstreetmap.org/node/13736687041",
         "https://www.openstreetmap.org/node/13738201127"
       ],
       "unresolved": [
@@ -26,15 +24,14 @@
       "code": "DH",
       "name": "Deerfield Hall",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 3,
+      "verifiedExteriorEntrances": 2,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 3,
-      "mainCampusComponentAccessPoints": 3,
+      "graphConnectedAccessPoints": 2,
+      "mainCampusComponentAccessPoints": 2,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164836",
-        "https://www.openstreetmap.org/node/13568164837",
-        "https://www.openstreetmap.org/node/13751172451"
+        "https://www.openstreetmap.org/node/13568164837"
       ],
       "unresolved": [
         "Ordinary public access status is not affirmatively published.",
@@ -69,7 +66,7 @@
       "verifiedExteriorEntrances": 7,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 7,
-      "mainCampusComponentAccessPoints": 7,
+      "mainCampusComponentAccessPoints": 6,
       "verifiedAccessibleEntrances": 2,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164839",
@@ -82,7 +79,8 @@
       ],
       "unresolved": [
         "Ordinary public access status is not affirmatively published.",
-        "Step-free status requires an authoritative source or field survey."
+        "Step-free status requires an authoritative source or field survey.",
+        "One or more locally graph-attached access points are isolated from the main campus pedestrian component."
       ]
     },
     {
@@ -145,13 +143,14 @@
       "verifiedExteriorEntrances": 1,
       "inferredApproaches": 0,
       "graphConnectedAccessPoints": 1,
-      "mainCampusComponentAccessPoints": 1,
+      "mainCampusComponentAccessPoints": 0,
       "verifiedAccessibleEntrances": 1,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164840"
       ],
       "unresolved": [
-        "Ordinary public access status is not affirmatively published."
+        "Ordinary public access status is not affirmatively published.",
+        "One or more locally graph-attached access points are isolated from the main campus pedestrian component."
       ]
     },
     {
