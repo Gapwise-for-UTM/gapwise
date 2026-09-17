@@ -25,6 +25,7 @@ type EntranceFeature = {
     kind: "entrance" | "approach";
     osmNodeId: number;
     accessibility: AccessibilityStatus;
+    preferredForRouting?: boolean;
     notes?: string;
     source: string;
     sourceUrl: string;
@@ -50,6 +51,7 @@ export type PublicBuildingEntrance = {
   coordinates: [number, number];
   routingNodeId: string;
   accessibility: AccessibilityStatus;
+  preferredForRouting: boolean;
   notes: string | null;
   metadata: SourceMetadata;
 };
@@ -99,6 +101,7 @@ function toPublicEntrance(feature: EntranceFeature): PublicBuildingEntrance {
     coordinates: feature.geometry.coordinates,
     routingNodeId: `osm-node-${feature.properties.osmNodeId}`,
     accessibility: feature.properties.accessibility,
+    preferredForRouting: feature.properties.preferredForRouting ?? false,
     notes: feature.properties.notes ?? null,
     metadata: {
       source: feature.properties.source,
@@ -118,7 +121,8 @@ export function publicCampusBuildings(): PublicCampusBuilding[] {
   buildingsCache = UTM_BUILDINGS.map((building) => {
     const buildingEntrances = entrances
       .filter((feature) => feature.properties.buildingCode === building.code)
-      .map(toPublicEntrance);
+      .map(toPublicEntrance)
+      .sort((a, b) => Number(b.preferredForRouting) - Number(a.preferredForRouting));
     const routableEntrances = buildingEntrances.filter((entrance) =>
       nodeIds.has(entrance.routingNodeId),
     );
