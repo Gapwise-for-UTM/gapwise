@@ -114,6 +114,26 @@ describe("UTM entrance truth registry", () => {
     expect(officialMnIdentities.every((item) => item.direction === "unknown")).toBe(true);
   });
 
+  test("keeps the field-rejected DH side node out of production entrances", () => {
+    const entranceData = JSON.parse(entranceDataRaw) as {
+      features: Array<{ id: string; properties: { buildingCode: string } }>;
+    };
+    const dhDoors = entranceData.features
+      .filter((feature) => feature.properties.buildingCode === "DH")
+      .map((feature) => feature.id)
+      .sort();
+
+    expect(dhDoors).toEqual(["dh-13568164836", "dh-13568164837"]);
+    expect(dhDoors).not.toContain("dh-13751172451");
+
+    const registryDhDoors = UTM_ENTRANCE_REGISTRY.filter(
+      (item) => item.buildingCode === "DH" && item.id.startsWith("dh-"),
+    )
+      .map((item) => item.id)
+      .sort();
+    expect(registryDhDoors).toEqual(dhDoors);
+  });
+
   test("preserves current restrictive access without inventing OPH entrance identities", () => {
     const mappedOphDoors = UTM_ENTRANCE_REGISTRY.filter(
       (item) => item.buildingCode === "OPH" && item.id.startsWith("oph-"),
