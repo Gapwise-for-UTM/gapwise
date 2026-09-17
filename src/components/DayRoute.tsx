@@ -11,6 +11,7 @@ import {
   campusDayAnchorPresentation,
   createCampusDayRouteStops,
   isCampusDayAnchorMeeting,
+  mappableWeekdaysForMeetings,
   selectedCampusDayAnchor,
   type CampusDayAnchor,
 } from "@/features/routing/campus-day";
@@ -21,13 +22,7 @@ import type { UserPreferences } from "@/features/sync/preferences";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import {
-  formatDuration,
-  formatTime,
-  TERMS,
-  visibleWeekdaysForMeetings,
-  weekdayForDate,
-} from "@/lib/timetable-types";
+import { formatDuration, formatTime, TERMS, weekdayForDate } from "@/lib/timetable-types";
 
 type DaySegment = {
   id: string;
@@ -82,11 +77,11 @@ export function DayRoute({
     [meetings],
   );
   const routeDays = useMemo(
-    () => visibleWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),
+    () => mappableWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),
     [meetings, term],
   );
   const today = weekdayForDate(new Date());
-  const initialDay = routeDays.includes(today) ? today : "Monday";
+  const initialDay = routeDays.includes(today) ? today : (routeDays[0] ?? "Monday");
   const [weekday, setWeekday] = useState<Weekday>(initialDay);
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
@@ -94,15 +89,17 @@ export function DayRoute({
   const [preferenceMessage, setPreferenceMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!routeDays.includes(weekday)) setWeekday("Monday");
+    if (!routeDays.includes(weekday)) setWeekday(routeDays[0] ?? "Monday");
   }, [routeDays, weekday]);
 
   const dayMeetings = useMemo(
     () =>
-      meetings
-        .filter((meeting) => meeting.term === term && meeting.weekday === weekday)
-        .sort((a, b) => a.startTime - b.startTime),
-    [meetings, term, weekday],
+      routeDays.includes(weekday)
+        ? meetings
+            .filter((meeting) => meeting.term === term && meeting.weekday === weekday)
+            .sort((a, b) => a.startTime - b.startTime)
+        : [],
+    [meetings, routeDays, term, weekday],
   );
   const dayAnchor = useMemo(() => selectedCampusDayAnchor(preferences), [preferences]);
   const routeStops = useMemo(
@@ -202,18 +199,20 @@ export function DayRoute({
               compact
               className="mt-2 w-full sm:w-44"
             />
-            <BubbleTabs
-              label="Route weekday"
-              items={routeDays.map((day) => ({
-                value: day,
-                label: day.slice(0, 3),
-                ariaLabel: day,
-              }))}
-              value={weekday}
-              onChange={setWeekday}
-              compact
-              className="mt-2 w-full"
-            />
+            {routeDays.length > 0 ? (
+              <BubbleTabs
+                label="Route weekday"
+                items={routeDays.map((day) => ({
+                  value: day,
+                  label: day.slice(0, 3),
+                  ariaLabel: day,
+                }))}
+                value={weekday}
+                onChange={setWeekday}
+                compact
+                className="mt-2 w-full"
+              />
+            ) : null}
           </div>
           <div>
             <h2
@@ -322,10 +321,12 @@ export function DayRoute({
         <div className="space-y-3">
           <div className="empty-state surface p-6 text-center">
             <h2 className="font-display text-xl font-semibold tracking-tight">
-              No classes on {weekday}
+              {routeDays.length === 0 ? "No mapped class locations" : `No classes on ${weekday}`}
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Choose another weekday, or keep exploring the campus map.
+              {routeDays.length === 0
+                ? "This term has no class days with a mappable campus location yet."
+                : "Choose another weekday, or keep exploring the campus map."}
             </p>
           </div>
           <CampusExplorer

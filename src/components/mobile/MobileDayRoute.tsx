@@ -23,19 +23,14 @@ import {
   campusDayAnchorPresentation,
   createCampusDayRouteStops,
   isCampusDayAnchorMeeting,
+  mappableWeekdaysForMeetings,
   selectedCampusDayAnchor,
 } from "@/features/routing/campus-day";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { TransitionRoute } from "@/features/routing/types";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import {
-  formatDuration,
-  formatTime,
-  TERMS,
-  visibleWeekdaysForMeetings,
-  weekdayForDate,
-} from "@/lib/timetable-types";
+import { formatDuration, formatTime, TERMS, weekdayForDate } from "@/lib/timetable-types";
 
 type DaySegment = {
   id: string;
@@ -75,16 +70,12 @@ function departureMetricLabel(kind: "residence" | "transit" | "parking" | "picku
 
 function defaultWeekday(meetings: Meeting[], term: Term, targetId: string | null): Weekday {
   const target = targetId ? meetings.find((meeting) => meeting.id === targetId) : null;
-  if (target?.term === term) return target.weekday;
   const termMeetings = meetings.filter((meeting) => meeting.term === term);
-  const visibleDays = visibleWeekdaysForMeetings(termMeetings);
+  const visibleDays = mappableWeekdaysForMeetings(termMeetings);
+  if (target?.term === term && visibleDays.includes(target.weekday)) return target.weekday;
   const today = weekdayForDate(new Date());
-  if (visibleDays.includes(today) && termMeetings.some((meeting) => meeting.weekday === today)) {
-    return today;
-  }
-  return (
-    visibleDays.find((day) => termMeetings.some((meeting) => meeting.weekday === day)) ?? "Monday"
-  );
+  if (visibleDays.includes(today)) return today;
+  return visibleDays[0] ?? "Monday";
 }
 
 function RouteOptionsDrawer({
@@ -340,7 +331,7 @@ export function MobileDayRoute({
     [meetings],
   );
   const routeDays = useMemo(
-    () => visibleWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),
+    () => mappableWeekdaysForMeetings(meetings.filter((meeting) => meeting.term === term)),
     [meetings, term],
   );
   useEffect(() => {
@@ -350,10 +341,12 @@ export function MobileDayRoute({
   }, [meetings, requestedMeetingId, routeDays, term, weekday]);
   const dayMeetings = useMemo(
     () =>
-      meetings
-        .filter((meeting) => meeting.term === term && meeting.weekday === weekday)
-        .sort((a, b) => a.startTime - b.startTime),
-    [meetings, term, weekday],
+      routeDays.includes(weekday)
+        ? meetings
+            .filter((meeting) => meeting.term === term && meeting.weekday === weekday)
+            .sort((a, b) => a.startTime - b.startTime)
+        : [],
+    [meetings, routeDays, term, weekday],
   );
   const dayAnchor = useMemo(() => selectedCampusDayAnchor(preferences), [preferences]);
   const routeStops = useMemo(
@@ -383,8 +376,8 @@ export function MobileDayRoute({
     const target = meetings.find(
       (meeting) => meeting.id === requestedMeetingId && meeting.term === term,
     );
-    if (target) setWeekday(target.weekday);
-  }, [meetings, requestedMeetingId, term]);
+    if (target && routeDays.includes(target.weekday)) setWeekday(target.weekday);
+  }, [meetings, requestedMeetingId, routeDays, term]);
 
   useEffect(() => {
     const incoming = requestedMeetingId
@@ -462,11 +455,12 @@ export function MobileDayRoute({
           <div className="min-w-0">
             <p className="eyebrow text-accent">Campus route</p>
             <h1 className="mt-1 font-display text-xl font-semibold tracking-[-0.035em]">
-              {weekday}
+              {routeDays.length > 0 ? weekday : "Campus map"}
             </h1>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {dayMeetings.length} {dayMeetings.length === 1 ? "class" : "classes"} · time-labelled
-              map
+              {routeDays.length > 0
+                ? `${dayMeetings.length} ${dayMeetings.length === 1 ? "class" : "classes"} · time-labelled map`
+                : "No mapped class locations this term"}
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
@@ -501,37 +495,43 @@ export function MobileDayRoute({
           </div>
         ) : null}
 
-        <div
-          className="mt-2 grid gap-1"
-          style={{ gridTemplateColumns: `repeat(${routeDays.length}, minmax(0, 1fr))` }}
-          role="group"
-          aria-label="Route weekday"
-        >
-          {routeDays.map((day) => (
-            <button
-              key={day}
-              type="button"
-              aria-pressed={weekday === day}
-              onClick={() => setWeekday(day)}
-              className={`min-h-11 rounded-lg text-xs font-semibold ${
-                weekday === day
-                  ? "border border-accent/40 bg-accent/12 text-accent"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {DAY_SHORT[day]}
-            </button>
-          ))}
-        </div>
+        {routeDays.length > 0 ? (
+          <div
+            className="mt-2 grid gap-1"
+            style={{ gridTemplateColumns: `repeat(${routeDays.length}, minmax(0, 1fr))` }}
+            role="group"
+            aria-label="Route weekday"
+          >
+            {routeDays.map((day) => (
+              <button
+                key={day}
+                type="button"
+                aria-pressed={weekday === day}
+                onClick={() => setWeekday(day)}
+                className={`min-h-11 rounded-lg text-xs font-semibold ${
+                  weekday === day
+                    ? "border border-accent/40 bg-accent/12 text-accent"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {DAY_SHORT[day]}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       {dayMeetings.length === 0 ? (
         <>
           <section className="surface p-6 text-center">
             <RouteIcon className="mx-auto h-6 w-6 text-accent" aria-hidden="true" />
-            <h2 className="mt-3 font-display text-lg font-semibold">No classes on {weekday}</h2>
+            <h2 className="mt-3 font-display text-lg font-semibold">
+              {routeDays.length === 0 ? "No mapped class locations" : `No classes on ${weekday}`}
+            </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Choose another weekday, or keep exploring the campus map.
+              {routeDays.length === 0
+                ? "This term has no class days with a mappable campus location yet."
+                : "Choose another weekday, or keep exploring the campus map."}
             </p>
           </section>
           <CampusExplorer

@@ -1,11 +1,10 @@
-import { DoorOpen, MapPin, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CampusMap, type CampusMapProps, type MapFocusPadding } from "./CampusMap";
 import {
   getBuildingExplorerDetails,
   searchCampusBuildings,
   type BuildingSearchResult,
-  type EntranceCoverageStatus,
 } from "@/features/routing/building-explorer";
 import { getCampusLocationDisplay } from "@/features/routing/location-presentation";
 import { formatTime, locationLabel } from "@/lib/timetable-types";
@@ -14,29 +13,6 @@ type CampusExplorerProps = Omit<CampusMapProps, "selectedBuildingCode" | "onSele
   selectedBuildingCode: string | null;
   onSelectBuilding: (code: string | null) => void;
 };
-
-function pluralize(count: number, singular: string, plural = `${singular}s`) {
-  return count === 1 ? singular : plural;
-}
-
-function coverageLabel(status: EntranceCoverageStatus) {
-  if (status === "complete") return "Complete coverage";
-  if (status === "partial") return "Partial coverage";
-  return "Not mapped";
-}
-
-function coverageSummary(mappedEntrances: number, inferredApproaches: number) {
-  if (mappedEntrances > 0 && inferredApproaches > 0) {
-    return `${mappedEntrances} source-backed mapped ${pluralize(mappedEntrances, "entrance")} and ${inferredApproaches} inferred ${pluralize(inferredApproaches, "approach")} are known. Other entrances may be missing`;
-  }
-  if (mappedEntrances > 0) {
-    return `${mappedEntrances} source-backed mapped ${pluralize(mappedEntrances, "entrance")} ${mappedEntrances === 1 ? "is" : "are"} known. Other entrances may be missing`;
-  }
-  if (inferredApproaches > 0) {
-    return `${inferredApproaches} inferred ${pluralize(inferredApproaches, "approach")} ${inferredApproaches === 1 ? "is" : "are"} mapped, but physical entrance coverage is not established`;
-  }
-  return "No physical entrances are currently mapped for this building";
-}
 
 function floorStatusLabel(result: BuildingSearchResult) {
   if (result.floorVerification === "verified") return "verified";
@@ -51,7 +27,6 @@ export function CampusExplorer({
   ...mapProps
 }: CampusExplorerProps) {
   const [query, setQuery] = useState("");
-  const [roomResult, setRoomResult] = useState<BuildingSearchResult | null>(null);
   const [activeEntranceId, setActiveEntranceId] = useState<string | null>(null);
   const [mapDetailMeetingId, setMapDetailMeetingId] = useState<string | null>(null);
   const [focusPadding, setFocusPadding] = useState<MapFocusPadding>({
@@ -84,7 +59,6 @@ export function CampusExplorer({
   const selectMeetingFromMap = useCallback(
     (id: string) => {
       setMapDetailMeetingId(id);
-      setRoomResult(null);
       onSelectBuilding(null);
       onSelectMeeting(id);
     },
@@ -160,18 +134,15 @@ export function CampusExplorer({
   function selectResult(result: BuildingSearchResult) {
     setQuery("");
     setMapDetailMeetingId(null);
-    setRoomResult(result.room ? result : null);
     onSelectBuilding(result.building.code);
   }
 
   function selectFromMap(code: string) {
     setMapDetailMeetingId(null);
-    setRoomResult(null);
     onSelectBuilding(code);
   }
 
   function clearSelection() {
-    setRoomResult(null);
     setQuery("");
     onSelectBuilding(null);
   }
@@ -361,7 +332,7 @@ export function CampusExplorer({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="font-mono text-[0.65rem] font-bold uppercase tracking-[0.14em] text-accent">
-                {details.building.code} · {details.building.category}
+                {details.building.code}
               </p>
               <h2
                 id="selected-building-title"
@@ -379,116 +350,6 @@ export function CampusExplorer({
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
-
-          {roomResult?.building.code === details.building.code && roomResult.room ? (
-            <div className="mt-3 rounded-lg border border-accent/25 bg-accent/8 p-3 text-xs leading-5">
-              <p className="font-semibold">
-                {details.building.code} {roomResult.room}
-                {roomResult.floor ? ` · Floor ${roomResult.floor}` : ""}
-              </p>
-              <p className="mt-0.5 text-muted-foreground">
-                {roomResult.floorVerification === "verified"
-                  ? "The floor is backed by verified room metadata. "
-                  : roomResult.floorVerification === "inferred"
-                    ? "The floor is inferred from the building's room-numbering rule. "
-                    : ""}
-                Exact indoor room routing is not mapped.
-              </p>
-            </div>
-          ) : null}
-
-          <div
-            data-testid="entrance-coverage-summary"
-            className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background/50 p-2.5 text-xs"
-          >
-            <DoorOpen className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
-            <span className="font-semibold">
-              {details.mappedEntrances} mapped {pluralize(details.mappedEntrances, "entrance")}
-            </span>
-            <span className="ml-auto font-semibold text-muted-foreground">
-              {coverageLabel(details.coverageStatus)}
-            </span>
-          </div>
-
-          <a
-            data-testid="contribute-entrance-link"
-            href={`https://data.gapwise.ca/contribute?building=${encodeURIComponent(details.building.code)}`}
-            target="_blank"
-            rel="noreferrer"
-            className="mt-2 flex min-h-10 items-center justify-center gap-2 rounded-lg border border-accent/25 bg-accent/8 px-3 text-xs font-semibold text-accent transition-colors hover:bg-accent/12 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-          >
-            <DoorOpen className="h-3.5 w-3.5" aria-hidden="true" />
-            {details.coverageStatus === "complete"
-              ? "Add or correct entrance data"
-              : "Know an entrance we're missing? Contribute"}
-          </a>
-
-          <p className="mt-3 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
-            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
-            <span>
-              {coverageSummary(details.mappedEntrances, details.inferredApproaches)}. Indoor room
-              paths are not currently mapped.
-            </span>
-          </p>
-
-          {details.officialBarrierFreeEntranceInstances > 0 ? (
-            <p
-              data-testid="official-barrier-free-note"
-              className="mt-2 text-xs leading-5 text-muted-foreground"
-            >
-              UTM Facilities publishes {details.officialBarrierFreeEntranceInstances} barrier-free
-              exterior entrance{" "}
-              {pluralize(details.officialBarrierFreeEntranceInstances, "instance")}. Exact
-              identity-to-door reconciliation is still pending.
-            </p>
-          ) : null}
-
-          <ul
-            className="mt-3 space-y-1.5 border-t border-border pt-3 text-xs"
-            aria-label="Mapped entrance and approach points"
-          >
-            {(details.campus?.entrances ?? []).map((entrance) => {
-              const active = entrance.id === activeEntranceId;
-              return (
-                <li key={entrance.id}>
-                  <button
-                    type="button"
-                    onMouseEnter={() => setActiveEntranceId(entrance.id)}
-                    onMouseLeave={() => setActiveEntranceId(null)}
-                    onFocus={() => setActiveEntranceId(entrance.id)}
-                    onBlur={() => setActiveEntranceId(null)}
-                    onClick={() => setActiveEntranceId(entrance.id)}
-                    className={`w-full rounded-lg border p-2.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 ${
-                      active
-                        ? "border-accent/60 bg-accent/10"
-                        : "border-transparent hover:bg-secondary"
-                    }`}
-                  >
-                    <span className="flex items-center justify-between gap-3">
-                      <span className="font-semibold">{entrance.label}</span>
-                      <span className="shrink-0 text-[0.68rem] font-semibold text-muted-foreground">
-                        {entrance.accessibility === "accessible"
-                          ? "Barrier-free evidence"
-                          : entrance.accessibility === "not_accessible"
-                            ? "Not barrier-free"
-                            : "Barrier-free unknown"}
-                      </span>
-                    </span>
-                    <span className="mt-0.5 block text-muted-foreground">
-                      {entrance.kind === "entrance"
-                        ? "Mapped entrance · source-backed geometry"
-                        : "Mapped approach · inferred"}
-                    </span>
-                    {entrance.notes ? (
-                      <span className="mt-0.5 block leading-5 text-muted-foreground">
-                        {entrance.notes}
-                      </span>
-                    ) : null}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
         </section>
       ) : null}
     </div>
