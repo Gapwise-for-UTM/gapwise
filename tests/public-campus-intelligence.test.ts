@@ -14,7 +14,8 @@ describe("public campus intelligence", () => {
 
     expect(mn?.name).toBe("Maanjiwe nendamowinan");
     expect(dh?.name).toBe("Deerfield Hall");
-    expect(mn?.entranceCount).toBe(3);\n    expect(mn?.verifiedEntranceCount).toBe(3);
+    expect(mn?.entranceCount).toBe(3);
+    expect(mn?.verifiedEntranceCount).toBe(3);
     expect("entrances" in (mn ?? {})).toBe(false);
   });
 
