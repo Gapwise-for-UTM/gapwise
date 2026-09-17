@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_GAP_PREFERENCES } from "@/features/gaps/preferences";
-import { createCampusDayRouteStops } from "@/features/routing/campus-day";
+import {
+  createCampusDayRouteStops,
+  mappableWeekdaysForMeetings,
+} from "@/features/routing/campus-day";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import { DEFAULT_USER_PREFERENCES } from "@/features/sync/preferences";
 import { deserializeSchedule, serializeSchedule } from "@/features/sync/schedule-serialization";
@@ -67,6 +70,13 @@ describe("ACORN assessment windows", () => {
     expect(isAssessmentWindow(meeting)).toBe(true);
     expect(locationLabel(meeting)).toBe("Reserved assessment window · location TBA");
     expect(visibleWeekdaysForMeetings([meeting])).toContain("Saturday");
+    expect(mappableWeekdaysForMeetings([meeting])).not.toContain("Saturday");
+  });
+
+  test("shows only weekdays with a mappable class location in the campus map", () => {
+    const meetings = parseIcs(fixtureWithClassBeforeReservedWindow).meetings;
+
+    expect(mappableWeekdaysForMeetings(meetings)).toEqual(["Thursday"]);
   });
 
   test("preserves the assessment annotation through cloud schedule serialization", () => {

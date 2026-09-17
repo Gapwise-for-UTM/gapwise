@@ -6,7 +6,8 @@ import {
 import { getResidenceBuilding } from "@/data/utm/campus";
 import type { UserPreferences } from "@/features/sync/preferences";
 import type { Meeting, Term, Weekday } from "@/lib/timetable-types";
-import { isAssessmentWindow } from "@/lib/timetable-types";
+import { isAssessmentWindow, WEEKDAYS } from "@/lib/timetable-types";
+import { resolveMeetingLocation } from "./location-resolver";
 import { createResidenceMeeting, isResidenceMeeting } from "./residence";
 
 const ACCESS_MEETING_PREFIX = "gapwise-campus-access:";
@@ -28,6 +29,18 @@ export type CampusDayAnchorPresentation = {
   title: string;
   segmentLabel: string;
 };
+
+export function mappableWeekdaysForMeetings(meetings: readonly Meeting[]): Weekday[] {
+  const present = new Set(
+    meetings
+      .filter(
+        (meeting) =>
+          !isAssessmentWindow(meeting) && resolveMeetingLocation(meeting).status === "known",
+      )
+      .map((meeting) => meeting.weekday),
+  );
+  return WEEKDAYS.filter((day) => present.has(day));
+}
 
 export function selectedCampusDayAnchor(preferences: UserPreferences): CampusDayAnchor | null {
   if (preferences.dayOrigin === "residence") {

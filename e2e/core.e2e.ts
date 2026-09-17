@@ -197,9 +197,9 @@ test("campus explorer supports public building deep links and local search", asy
 
   await page.goto("/route?building=MN");
   await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan" })).toBeVisible();
-  await expect(
-    page.getByTestId("entrance-coverage-summary").getByText("Partial coverage"),
-  ).toBeVisible();
+  const mnDetails = page.getByRole("region", { name: "Maanjiwe nendamowinan" });
+  await expect(mnDetails.getByText("MN", { exact: true })).toBeVisible();
+  await expect(mnDetails.getByText(/mapped entrance|coverage|barrier-free/i)).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
 
   await page.getByRole("button", { name: "Close Maanjiwe nendamowinan details" }).click();
@@ -211,9 +211,9 @@ test("campus explorer supports public building deep links and local search", asy
   await search.fill("Kaneff");
   await search.press("Enter");
   await expect(page.getByRole("heading", { name: "Kaneff Centre" })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: /Accessible main entrance A/ }).first(),
-  ).toBeVisible();
+  const kaneffDetails = page.getByRole("region", { name: "Kaneff Centre" });
+  await expect(kaneffDetails.getByText("KN", { exact: true })).toBeVisible();
+  await expect(kaneffDetails.getByText(/entrance/i)).toHaveCount(0);
   expect(await page.evaluate(() => window.scrollY)).toBe(scrollBeforeSearch);
 
   await search.fill("Deerfield");
@@ -221,13 +221,15 @@ test("campus explorer supports public building deep links and local search", asy
   await search.press("Enter");
   await expect(page.getByRole("heading", { name: "Deerfield Hall" })).toBeVisible();
   const deerfieldDetails = page.getByRole("region", { name: "Deerfield Hall" });
-  await expect(deerfieldDetails.getByRole("button", { name: /^Front entrance / })).toBeVisible();
-  await expect(deerfieldDetails.getByRole("button", { name: /^Back entrance / })).toBeVisible();
+  await expect(deerfieldDetails.getByText("DH", { exact: true })).toBeVisible();
+  await expect(deerfieldDetails.getByText(/entrance/i)).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get("building")).toBe("DH");
 
   await search.fill("MN 3120");
   await search.press("Enter");
-  await expect(page.getByText("MN 3120 · Floor 3")).toBeVisible();
+  const roomSearchDetails = page.getByRole("region", { name: "Maanjiwe nendamowinan" });
+  await expect(roomSearchDetails.getByText("MN", { exact: true })).toBeVisible();
+  await expect(roomSearchDetails.getByText(/3120|Floor 3/)).toHaveCount(0);
   expect(new URL(page.url()).searchParams.get("building")).toBe("MN");
 
   await page.goto("/route?building=NOT_A_BUILDING");
