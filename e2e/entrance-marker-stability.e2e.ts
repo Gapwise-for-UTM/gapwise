@@ -13,9 +13,9 @@ type MarkerGeometry = {
 };
 
 const MN_ENTRANCE = {
-  id: "mn-13738201127",
-  longitude: -79.6654141,
-  latitude: 43.5513221,
+  id: "mn-13736687034",
+  longitude: -79.66564442734699,
+  latitude: 43.55091595384269,
 } as const;
 
 async function markerGeometry(anchor: Locator): Promise<MarkerGeometry> {

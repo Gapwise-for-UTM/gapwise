@@ -1,4 +1,5 @@
 import type { User } from "@supabase/supabase-js";
+import { Settings2, UserRound } from "lucide-react";
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { TransitionPlanner } from "@/features/routing/transition";
 import type { UserPreferences } from "@/features/sync/preferences";
@@ -37,10 +38,12 @@ function SignInStub({
   loading,
   available,
   onActivate,
+  onOpenSettings,
 }: {
   loading: boolean;
   available: boolean;
   onActivate: () => void;
+  onOpenSettings: () => void;
 }) {
   return (
     <div className="relative flex items-center gap-2" role="group" aria-label="Account">
@@ -48,9 +51,17 @@ function SignInStub({
         type="button"
         disabled={loading || !available}
         onClick={onActivate}
-        className="button-secondary inline-flex min-h-9 items-center px-3 text-sm font-medium disabled:opacity-50"
+        className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
       >
-        Sign in
+        <UserRound className="h-4 w-4" aria-hidden="true" /> Sign in
+      </button>
+      <button
+        type="button"
+        disabled={loading}
+        onClick={onOpenSettings}
+        className="button-secondary inline-flex min-h-9 items-center gap-2 px-3 text-sm font-medium disabled:opacity-50"
+      >
+        <Settings2 className="h-4 w-4" aria-hidden="true" /> Settings
       </button>
     </div>
   );
@@ -87,6 +98,10 @@ export function AccountStatus(props: AccountStatusProps) {
           setActivated(true);
           requestGapwiseSignIn();
         }}
+        onOpenSettings={() => {
+          setActivated(true);
+          setLocalSettingsRequest((request) => request + 1);
+        }}
       />
     );
   }
@@ -94,7 +109,12 @@ export function AccountStatus(props: AccountStatusProps) {
   return (
     <Suspense
       fallback={
-        <SignInStub loading available={signInEnvironmentAvailable} onActivate={() => undefined} />
+        <SignInStub
+          loading
+          available={signInEnvironmentAvailable}
+          onActivate={() => undefined}
+          onOpenSettings={() => undefined}
+        />
       }
     >
       <AccountStatusImpl {...props} settingsRequest={settingsRequest} />

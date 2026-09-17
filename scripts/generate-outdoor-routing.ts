@@ -142,6 +142,7 @@ function buildGraph(payload: OsmPayload, entrances: EntranceFeature[]): RoutingG
       const atCrossing =
         node.tags?.["highway"] === "crossing" ||
         memberships.some((tags) => tags["footway"] === "crossing");
+      const [longitude, latitude] = entrance?.geometry.coordinates ?? [node.lon, node.lat];
       const routingNode: RoutingNode = {
         id: `osm-node-${node.id}`,
         kind: entrance
@@ -154,8 +155,8 @@ function buildGraph(payload: OsmPayload, entrances: EntranceFeature[]): RoutingG
         buildingCode: entrance?.properties.buildingCode ?? null,
         floor: null,
         accessibility: entrance?.properties.accessibility ?? accessibility(node.tags, onSteps),
-        longitude: node.lon,
-        latitude: node.lat,
+        longitude,
+        latitude,
         metadata: entrance
           ? {
               source: entrance.properties.source,
