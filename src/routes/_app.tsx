@@ -3,6 +3,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import {
   CalendarRange,
   CalendarClock,
+  HardDriveDownload,
   LayoutGrid,
   MapPinned,
   Trash2,
@@ -351,6 +352,26 @@ function AppLayout() {
           />
           {restorationMessage ? (
             <p className="surface mb-4 p-4 text-sm text-muted-foreground">{restorationMessage}</p>
+          ) : null}
+          {meetings && !user && !remember && !isDemo ? (
+            <section className="surface mb-4 flex items-center gap-3 p-4" aria-label="Device save">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/8 text-accent">
+                <HardDriveDownload className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">Keep your timetable on this device</p>
+                <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                  Restore it in this browser without signing in.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => timetableCommands.setRemembered(true)}
+                className="button-primary min-h-10 shrink-0 px-3 text-sm font-semibold"
+              >
+                Save
+              </button>
+            </section>
           ) : null}
           {!meetings && mobileTab !== "route" ? (
             <ProductEmptyState
