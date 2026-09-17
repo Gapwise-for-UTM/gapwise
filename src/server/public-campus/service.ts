@@ -171,6 +171,18 @@ function bestMappedRoute(
   const nodeIds = new Set(graph.nodes.map((node) => node.id));
   const starts = from.entrances.filter((entrance) => nodeIds.has(entrance.routingNodeId));
   const ends = to.entrances.filter((entrance) => nodeIds.has(entrance.routingNodeId));
+  const preferredStart = starts.find((entrance) => entrance.preferredForRouting) ?? starts[0];
+  const preferredEnd = ends.find((entrance) => entrance.preferredForRouting) ?? ends[0];
+  if (preferredStart && preferredEnd) {
+    const preferred = findRoute(
+      graph,
+      preferredStart.routingNodeId,
+      preferredEnd.routingNodeId,
+      preferences,
+    );
+    if (preferred) return preferred;
+  }
+
   let best: RouteResult | null = null;
   for (const start of starts) {
     for (const end of ends) {
