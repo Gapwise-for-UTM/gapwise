@@ -209,9 +209,11 @@ export function planMeetingTransition(
   if (starts.length > 0 && ends.length > 0) {
     const preferredEndpoints = (nodes: RoutingNode[], buildingCode: string | null | undefined) => {
       if (!buildingCode) return nodes;
-      const primaryId = getCampusBuilding(buildingCode)?.entranceNodeId;
-      const primary = primaryId ? nodes.find((node) => node.id === primaryId) : undefined;
-      return primary ? [primary] : nodes;
+      const preferredId = getCampusBuilding(buildingCode)?.entrances.find(
+        (entrance) => entrance.preferredForRouting,
+      )?.routingNodeId;
+      const preferred = preferredId ? nodes.find((node) => node.id === preferredId) : undefined;
+      return preferred ? [preferred] : nodes;
     };
     const preferredStarts =
       originAccessNode || originRoom ? starts : preferredEndpoints(starts, origin?.buildingCode);
