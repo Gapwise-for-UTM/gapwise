@@ -24,6 +24,48 @@
     },
     {
       "type": "Feature",
+      "id": "mn-13736687034",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6656006,
+          43.5509053
+        ]
+      },
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Mapped main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mn-13736687041",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.6662061,
+          43.5510741
+        ]
+      },
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Mapped main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
       "id": "dh-13568164836",
       "geometry": {
         "type": "Point",
