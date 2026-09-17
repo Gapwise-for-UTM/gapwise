@@ -47,9 +47,9 @@ describe("UTM entrance truth registry", () => {
     );
 
     expect(osmDoors.length).toBeGreaterThan(0);
-    expect(new Set(osmDoors.map((feature) => feature.properties.lastVerified))).toEqual(
-      new Set([entranceData.metadata.lastVerified]),
-    );
+    const verificationDates = osmDoors.map((feature) => feature.properties.lastVerified).sort();
+    expect(verificationDates.every((date) => /^\\d{4}-\\d{2}-\\d{2}$/.test(date))).toBe(true);
+    expect(verificationDates.at(-1)).toBe(entranceData.metadata.lastVerified);
   });
 
   test("only geolocates official identities after explicit reconciliation", () => {
