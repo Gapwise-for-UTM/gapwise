@@ -663,3 +663,34 @@ test("guest import never writes plaintext timetable persistence", async ({ page 
   ).toBeVisible();
   guard.assertClean();
 });
+
+test("mobile guests can save an imported timetable without opening More", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "mobile save affordance runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await expectLanding(page);
+
+  await page.locator("#ics-file").setInputFiles(fixturePath);
+  await expect(page.getByRole("region", { name: "Device save" })).toBeVisible();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+
+  await expect(page.getByText("Saved on this device.")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Device save" })).toHaveCount(0);
+  guard.assertClean();
+});
+
+test("mobile guest settings are visible as soon as More opens", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "mobile settings affordance runs once");
+  const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
+  await page.goto("/today");
+
+  await page
+    .getByRole("navigation", { name: "Main" })
+    .getByRole("button", { name: "More" })
+    .click();
+
+  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Settings", exact: true })).toBeVisible();
+  guard.assertClean();
+});
