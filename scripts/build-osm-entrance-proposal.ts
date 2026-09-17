@@ -7,6 +7,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const candidatePath = resolve(root, "artifacts/utm-osm-entrance-candidates.json");
 const entrancePath = resolve(root, "src/data/utm/entrances.geojson");
 const outputPath = resolve(root, "artifacts/entrances.with-osm-discoveries.geojson");
+const REJECTED_OSM_ENTRANCE_NODE_IDS = new Set([13751172451]);
 
 type Tags = Record<string, string | undefined>;
 type MemberWay = { osmWayId: number; tags: Tags };
@@ -202,6 +203,7 @@ const existingOsmRefreshes = discovery.candidates.flatMap((candidate) => {
 });
 
 const additions = discovery.candidates.flatMap((candidate): EntranceFeature[] => {
+  if (REJECTED_OSM_ENTRANCE_NODE_IDS.has(candidate.osmNodeId)) return [];
   if (candidate.existingGapwiseRecord || existing.has(candidate.osmNodeId)) return [];
   const resolution = resolvedBuildingCode(candidate);
   if (!resolution) return [];

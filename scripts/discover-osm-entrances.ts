@@ -6,6 +6,8 @@ import { CAMPUS_BUILDING_FOOTPRINTS } from "../src/data/utm/building-footprints"
 const OSM_MAP_ENDPOINT = "https://api.openstreetmap.org/api/0.6/map";
 const CAMPUS_BOUNDS = "-79.6715,43.5450,-79.6600,43.5524";
 const MATCH_DISTANCE_METERS = 2.0;
+// Field-verified false-positive OSM entrance tags that must not be promoted back into Gapwise.
+const REJECTED_OSM_ENTRANCE_NODE_IDS = new Set([13751172451]);
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 type Tags = Record<string, string | undefined>;
@@ -173,6 +175,7 @@ async function main() {
   const entranceNodes = payload.elements
     .filter(isOsmNode)
     .filter((node) => Boolean(node.tags?.["entrance"]) && node.tags?.["entrance"] !== "no")
+    .filter((node) => !REJECTED_OSM_ENTRANCE_NODE_IDS.has(node.id))
     .sort((a, b) => a.id - b.id);
 
   const candidates: Candidate[] = entranceNodes.map((node) => {

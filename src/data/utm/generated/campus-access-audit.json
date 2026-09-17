@@ -7,12 +7,14 @@
       "code": "MN",
       "name": "Maanjiwe nendamowinan",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 1,
+      "verifiedExteriorEntrances": 3,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 1,
-      "mainCampusComponentAccessPoints": 1,
+      "graphConnectedAccessPoints": 3,
+      "mainCampusComponentAccessPoints": 3,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
+        "https://www.openstreetmap.org/node/13736687034",
+        "https://www.openstreetmap.org/node/13736687041",
         "https://www.openstreetmap.org/node/13738201127"
       ],
       "unresolved": [
@@ -24,15 +26,14 @@
       "code": "DH",
       "name": "Deerfield Hall",
       "canonicalGeometry": "present",
-      "verifiedExteriorEntrances": 3,
+      "verifiedExteriorEntrances": 2,
       "inferredApproaches": 0,
-      "graphConnectedAccessPoints": 3,
-      "mainCampusComponentAccessPoints": 3,
+      "graphConnectedAccessPoints": 2,
+      "mainCampusComponentAccessPoints": 2,
       "verifiedAccessibleEntrances": 0,
       "provenance": [
         "https://www.openstreetmap.org/node/13568164836",
-        "https://www.openstreetmap.org/node/13568164837",
-        "https://www.openstreetmap.org/node/13751172451"
+        "https://www.openstreetmap.org/node/13568164837"
       ],
       "unresolved": [
         "Ordinary public access status is not affirmatively published.",

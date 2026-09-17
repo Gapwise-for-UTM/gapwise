@@ -4,8 +4,8 @@ Generated deterministically by `bun run routing:audit`. “Verified” in the fi
 
 | Building | Verified geocoded doors | Inferred geocoded approaches | Locally graph-attached access points | Main-campus-component access points | Explicitly accessible geocoded doors | Unresolved |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| MN | 1 | 0 | 1 | 1 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
-| DH | 3 | 0 | 3 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| MN | 3 | 0 | 3 | 3 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
+| DH | 2 | 0 | 2 | 2 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | IB | 5 | 0 | 5 | 5 | 0 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
 | DV | 7 | 0 | 7 | 6 | 2 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. One or more locally graph-attached access points are isolated from the main campus pedestrian component. |
 | CCT | 2 | 0 | 2 | 2 | 1 | Ordinary public access status is not affirmatively published. Step-free status requires an authoritative source or field survey. |
@@ -45,8 +45,8 @@ The “minimum unresolved accessible coordinates” column is a conservative low
 
 | Building | Official named identities | Physical instances | Verified geocoded doors | Explicitly accessible coordinates | Minimum unresolved accessible coordinates | Official labels |
 | --- | ---: | ---: | ---: | ---: | ---: | --- |
-| MN | 3 | 3 | 1 | 0 | 3 | Main; Field side; Lot #1 |
-| DH | 2 | 2 | 3 | 0 | 2 | Main; Field side |
+| MN | 3 | 3 | 3 | 0 | 3 | Main; Field side; Lot #1 |
+| DH | 2 | 2 | 2 | 0 | 2 | Main; Field side |
 | IB | 3 | 3 | 5 | 0 | 3 | Main; North; South |
 | DV | 3 | 3 | 7 | 2 | 1 | Main; End of 5 Minute Walk; Connection with CCT |
 | CCT | 3 | 3 | 2 | 1 | 2 | Main; Link; Connection with DV |

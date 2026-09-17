@@ -34,7 +34,7 @@
       },
       "properties": {
         "buildingCode": "DH",
-        "label": "Main entrance A",
+        "label": "Front entrance",
         "kind": "exterior_entrance",
         "routability": "routable",
         "publicAccess": "unknown",
@@ -55,28 +55,7 @@
       },
       "properties": {
         "buildingCode": "DH",
-        "label": "Main entrance B",
-        "kind": "exterior_entrance",
-        "routability": "routable",
-        "publicAccess": "unknown",
-        "barrierFree": "unknown",
-        "geometryConfidence": "mapped",
-        "reconciliation": null
-      }
-    },
-    {
-      "type": "Feature",
-      "id": "dh-13751172451",
-      "geometry": {
-        "type": "Point",
-        "coordinates": [
-          -79.6660506,
-          43.5505348
-        ]
-      },
-      "properties": {
-        "buildingCode": "DH",
-        "label": "Mapped entrance",
+        "label": "Back entrance",
         "kind": "exterior_entrance",
         "routability": "routable",
         "publicAccess": "unknown",
@@ -1118,6 +1097,48 @@
         "barrierFree": "verified",
         "geometryConfidence": "unknown",
         "reconciliation": "geometry_unknown"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mn-13736687034",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.66564442734699,
+          43.55091595384269
+        ]
+      },
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Front / main entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "mn-13736687041",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -79.66613849196767,
+          43.55107456077706
+        ]
+      },
+      "properties": {
+        "buildingCode": "MN",
+        "label": "Side entrance",
+        "kind": "exterior_entrance",
+        "routability": "routable",
+        "publicAccess": "unknown",
+        "barrierFree": "unknown",
+        "geometryConfidence": "mapped",
+        "reconciliation": null
       }
     },
     {

@@ -221,8 +221,8 @@ test("campus explorer supports public building deep links and local search", asy
   await search.press("Enter");
   await expect(page.getByRole("heading", { name: "Deerfield Hall" })).toBeVisible();
   const deerfieldDetails = page.getByRole("region", { name: "Deerfield Hall" });
-  await expect(deerfieldDetails.getByRole("button", { name: /^Main entrance A / })).toBeVisible();
-  await expect(deerfieldDetails.getByRole("button", { name: /^Main entrance B / })).toBeVisible();
+  await expect(deerfieldDetails.getByRole("button", { name: /^Front entrance / })).toBeVisible();
+  await expect(deerfieldDetails.getByRole("button", { name: /^Back entrance / })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("building")).toBe("DH");
 
   await search.fill("MN 3120");

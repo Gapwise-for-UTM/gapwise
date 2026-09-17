@@ -59,14 +59,28 @@ function mappedCoordinates(
 
   const graph = serverRoutingGraph();
   const nodeIds = new Set(graph.nodes.map((node) => node.id));
-  const starts = fromResolution.building.entrances
-    .map((entrance) => entrance.routingNodeId)
-    .filter((id) => nodeIds.has(id));
-  const ends = toResolution.building.entrances
-    .map((entrance) => entrance.routingNodeId)
-    .filter((id) => nodeIds.has(id));
+  const routableEntrances = (building: typeof fromResolution.building) =>
+    building.entrances.filter((entrance) => nodeIds.has(entrance.routingNodeId));
+  const starts = routableEntrances(fromResolution.building);
+  const ends = routableEntrances(toResolution.building);
+  const preferredStart = starts.find((entrance) => entrance.preferredForRouting);
+  const preferredEnd = ends.find((entrance) => entrance.preferredForRouting);
+  const routePreferences = sanitizeRoutePreferences(preferences);
+  const preferredRoute = findBestRoute(
+    graph,
+    (preferredStart ? [preferredStart] : starts).map((entrance) => entrance.routingNodeId),
+    (preferredEnd ? [preferredEnd] : ends).map((entrance) => entrance.routingNodeId),
+    routePreferences,
+  );
+  if (preferredRoute) return preferredRoute.coordinates;
+  if (!preferredStart && !preferredEnd) return [];
   return (
-    findBestRoute(graph, starts, ends, sanitizeRoutePreferences(preferences))?.coordinates ?? []
+    findBestRoute(
+      graph,
+      starts.map((entrance) => entrance.routingNodeId),
+      ends.map((entrance) => entrance.routingNodeId),
+      routePreferences,
+    )?.coordinates ?? []
   );
 }
 

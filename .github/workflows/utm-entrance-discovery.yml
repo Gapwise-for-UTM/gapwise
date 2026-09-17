@@ -41,7 +41,7 @@ jobs:
       - name: Show generated change scope
         run: git diff --stat && git diff --numstat
       - name: Commit reviewed unique OSM entrance matches
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name == 'workflow_dispatch'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

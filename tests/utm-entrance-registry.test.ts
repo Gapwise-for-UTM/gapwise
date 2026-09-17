@@ -47,8 +47,10 @@ describe("UTM entrance truth registry", () => {
     );
 
     expect(osmDoors.length).toBeGreaterThan(0);
-    expect(new Set(osmDoors.map((feature) => feature.properties.lastVerified))).toEqual(
-      new Set([entranceData.metadata.lastVerified]),
+    const verificationDates = osmDoors.map((feature) => feature.properties.lastVerified).sort();
+    expect(verificationDates.every((date) => /^\d{4}-\d{2}-\d{2}$/.test(date))).toBe(true);
+    expect(verificationDates.every((date) => date <= entranceData.metadata.lastVerified)).toBe(
+      true,
     );
   });
 
@@ -78,23 +80,23 @@ describe("UTM entrance truth registry", () => {
     }
   });
 
-  test("keeps unresolved MN main-tagged OSM candidates out of production entrances", () => {
+  test("keeps all three field-verified MN OSM doors in production", () => {
     const entranceData = JSON.parse(entranceDataRaw) as {
-      features: Array<{ id: string }>;
+      features: Array<{ id: string; properties: { buildingCode: string } }>;
     };
-    const unresolvedMnOsmIds = ["13736687034", "13736687041"];
-    const productionEntranceIds = entranceData.features.map((feature) => feature.id);
-    const registryIds = UTM_ENTRANCE_REGISTRY.map((item) => item.id);
+    const expectedMnDoorIds = ["mn-13736687034", "mn-13736687041", "mn-13738201127"];
 
-    for (const osmId of unresolvedMnOsmIds) {
-      expect(productionEntranceIds.some((id) => id.includes(osmId))).toBe(false);
-      expect(registryIds.some((id) => id.includes(osmId))).toBe(false);
-    }
+    const productionMnDoorIds = entranceData.features
+      .filter((feature) => feature.properties.buildingCode === "MN")
+      .map((feature) => feature.id)
+      .sort();
+    expect(productionMnDoorIds).toEqual(expectedMnDoorIds);
 
     const mappedMnDoors = UTM_ENTRANCE_REGISTRY.filter(
       (item) => item.buildingCode === "MN" && item.id.startsWith("mn-"),
-    );
-    expect(mappedMnDoors.map((item) => item.id)).toEqual(["mn-13738201127"]);
+    ).sort((a, b) => a.id.localeCompare(b.id));
+    expect(mappedMnDoors.map((item) => item.id)).toEqual(expectedMnDoorIds);
+    expect(mappedMnDoors.every((item) => item.kind === "exterior_entrance")).toBe(true);
     expect(mappedMnDoors.every((item) => item.direction === "unknown")).toBe(true);
 
     const officialMnIdentities = UTM_ENTRANCE_REGISTRY.filter(
@@ -108,6 +110,26 @@ describe("UTM entrance truth registry", () => {
     expect(officialMnIdentities.every((item) => item.coordinates === undefined)).toBe(true);
     expect(officialMnIdentities.every((item) => item.routingNodeId === undefined)).toBe(true);
     expect(officialMnIdentities.every((item) => item.direction === "unknown")).toBe(true);
+  });
+
+  test("keeps the field-rejected DH side node out of production entrances", () => {
+    const entranceData = JSON.parse(entranceDataRaw) as {
+      features: Array<{ id: string; properties: { buildingCode: string } }>;
+    };
+    const dhDoors = entranceData.features
+      .filter((feature) => feature.properties.buildingCode === "DH")
+      .map((feature) => feature.id)
+      .sort();
+
+    expect(dhDoors).toEqual(["dh-13568164836", "dh-13568164837"]);
+    expect(dhDoors).not.toContain("dh-13751172451");
+
+    const registryDhDoors = UTM_ENTRANCE_REGISTRY.filter(
+      (item) => item.buildingCode === "DH" && item.id.startsWith("dh-"),
+    )
+      .map((item) => item.id)
+      .sort();
+    expect(registryDhDoors).toEqual(dhDoors);
   });
 
   test("preserves current restrictive access without inventing OPH entrance identities", () => {

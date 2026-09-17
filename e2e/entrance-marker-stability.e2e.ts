@@ -13,9 +13,9 @@ type MarkerGeometry = {
 };
 
 const MN_ENTRANCE = {
-  id: "mn-13738201127",
-  longitude: -79.6654141,
-  latitude: 43.5513221,
+  id: "mn-13736687034",
+  longitude: -79.66564442734699,
+  latitude: 43.55091595384269,
 } as const;
 
 async function markerGeometry(anchor: Locator): Promise<MarkerGeometry> {
@@ -208,15 +208,19 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
 
   await mnButton.focus();
   await expect(mnButton).toHaveClass(/is-selected/);
-  const focused = await expectMarkerCentered(mnAnchor);
-  expectStationaryProjection(original, focused);
+  // With multiple mapped entrances, keyboard focus can intentionally select the
+  // entrance and refit the camera. The geographic anchor must remain identical,
+  // but its screen pixel is allowed to move with that camera transition.
+  const focused = await waitForProjectionSettled(mnAnchor);
+  expectSameGeographicAnchor(original, focused);
+  expectAuditedMnCoordinate(focused);
   await page.keyboard.press("Tab");
 
   // Force the camera away from the building-selection fit, then require route
   // fitting to produce a real MapLibre-owned geographic reprojection while the
   // marker remains bound to the exact audited WGS84 entrance coordinate.
   await page.getByRole("button", { name: "Zoom in" }).click();
-  const zoomed = await expectProjectionMoved(mnAnchor, original);
+  const zoomed = await expectProjectionMoved(mnAnchor, focused);
   expectAuditedMnCoordinate(zoomed);
 
   await page.getByRole("button", { name: "Fit the active day route" }).click();
@@ -241,7 +245,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   expectAuditedMnCoordinate(themed);
 
   await selectBuilding(page, "Deerfield", "Deerfield Hall");
-  await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(3);
+  await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(2);
   for (const anchor of await page.locator(".map-entrance-marker-anchor").all()) {
     await waitForProjectionSettled(anchor);
   }
@@ -256,7 +260,7 @@ test("entrance markers keep MapLibre projection isolated from interactive stylin
   expectAuditedMnCoordinate(restored);
 
   await selectBuilding(page, "Deerfield", "Deerfield Hall");
-  await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(3);
+  await expect(page.locator(".map-entrance-marker-anchor")).toHaveCount(2);
   for (const anchor of await page.locator(".map-entrance-marker-anchor").all()) {
     await waitForProjectionSettled(anchor);
   }
