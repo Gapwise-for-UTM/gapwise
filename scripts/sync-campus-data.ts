@@ -12,9 +12,11 @@ const checkOnly = args.includes("--check");
 const write = args.includes("--write");
 const publish = args.includes("--publish");
 const sourceArg = args.find((arg) => arg.startsWith("--source="))?.slice("--source=".length);
-const sourceRoot = resolve(repoRoot, sourceArg ?? "../gapwise-data/data/utm");
+const sourceRoot = resolve(repoRoot, sourceArg ?? "../data/data/utm");
 const dataRepoRoot = resolve(sourceRoot, "../..");
 const ignoredFiles = new Set(["SHA256SUMS"]);
+const sourceSnapshot = resolve(dataRepoRoot, "public/data/utm-campus-v1.json");
+const targetSnapshot = resolve(repoRoot, "public/data/utm-campus-v1.json");
 
 if ([checkOnly, write, publish].filter(Boolean).length !== 1) {
   console.error("Choose exactly one mode: --check, --write, or --publish.");
@@ -24,7 +26,7 @@ if ([checkOnly, write, publish].filter(Boolean).length !== 1) {
 if (!existsSync(sourceRoot)) {
   console.error(
     `Canonical campus data was not found at ${sourceRoot}. ` +
-      "Check out Gapwise-for-UTM/gapwise-data next to gapwise, or pass --source=<path>.",
+      "Check out Gapwise-for-UTM/data next to gapwise, or pass --source=<path>.",
   );
   process.exit(2);
 }
@@ -84,11 +86,9 @@ if (publish) {
   const publishedFiles = await filesUnder(sourceRoot);
   await writeCanonicalChecksums(publishedFiles);
 
-  const coreSnapshot = resolve(repoRoot, "public/data/utm-campus-v1.json");
-  const dataSnapshot = resolve(dataRepoRoot, "public/data/utm-campus-v1.json");
-  if (existsSync(coreSnapshot)) {
-    await mkdir(dirname(dataSnapshot), { recursive: true });
-    await copyFile(coreSnapshot, dataSnapshot);
+  if (existsSync(targetSnapshot)) {
+    await mkdir(dirname(sourceSnapshot), { recursive: true });
+    await copyFile(targetSnapshot, sourceSnapshot);
   }
 
   console.log(
@@ -116,9 +116,23 @@ for (const path of targetFiles) {
   if (!sourceSet.has(path)) differences.push(`extra in gapwise mirror: ${path}`);
 }
 
+if (!existsSync(sourceSnapshot)) {
+  differences.push("canonical public snapshot is missing");
+} else if (!existsSync(targetSnapshot)) {
+  differences.push("public snapshot is missing in gapwise");
+} else {
+  const [sourceSnapshotBytes, targetSnapshotBytes] = await Promise.all([
+    readFile(sourceSnapshot),
+    readFile(targetSnapshot),
+  ]);
+  if (!sourceSnapshotBytes.equals(targetSnapshotBytes)) {
+    differences.push("content differs: public/data/utm-campus-v1.json");
+  }
+}
+
 if (checkOnly) {
   if (differences.length > 0) {
-    console.error("Campus data mirror differs from Gapwise-for-UTM/gapwise-data:");
+    console.error("Campus data mirror differs from Gapwise-for-UTM/data:");
     for (const difference of differences) console.error(`- ${difference}`);
     process.exit(1);
   }
@@ -127,4 +141,12 @@ if (checkOnly) {
 }
 
 await mirror(sourceRoot, targetRoot, sourceFiles, targetFiles);
-console.log(`Synced ${sourceFiles.length} canonical campus data files into src/data/utm.`);
+if (!existsSync(sourceSnapshot)) {
+  console.error(`Canonical public snapshot was not found at ${sourceSnapshot}.`);
+  process.exit(2);
+}
+await mkdir(dirname(targetSnapshot), { recursive: true });
+await copyFile(sourceSnapshot, targetSnapshot);
+console.log(
+  `Synced ${sourceFiles.length} canonical campus data files and public/data/utm-campus-v1.json.`,
+);
