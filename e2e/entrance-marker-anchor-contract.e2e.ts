@@ -18,7 +18,9 @@ test("entrance geographic anchor stays dimensionless and MapLibre-owned", async 
   const search = page.getByRole("searchbox", { name: "Search UTM buildings" });
   await search.fill("MN");
   await search.press("Enter");
-  await expect(page.getByRole("heading", { name: "Maanjiwe nendamowinan", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Maanjiwe nendamowinan", exact: true }),
+  ).toBeVisible();
 
   const anchor = page.locator(".map-entrance-marker-anchor").first();
   const button = anchor.locator(":scope > .map-entrance-marker");
