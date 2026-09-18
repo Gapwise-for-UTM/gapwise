@@ -423,6 +423,7 @@ function userRoutePreferences(route: PublicRouteResponse): UserPreferences {
     avoidStairs: route.preferences.mode === "step-free",
     preferIndoor: route.preferences.mode === "prefer-indoor",
     dayOrigin: "commute",
+    mainCampus: "utm",
     residenceBuildingCode: null,
     commuteMode: null,
     campusAccessPointId: null,
