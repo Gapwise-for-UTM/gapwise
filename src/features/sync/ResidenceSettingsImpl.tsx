@@ -80,10 +80,9 @@ export function ResidenceSettings({
     preferences.mainCampus,
     preferences.residenceBuildingCode,
   );
-  const selectedAccessPoint =
-    preferences.mainCampus === "utm"
-      ? getCampusAccessPoint(preferences.campusAccessPointId)
-      : null;
+  const selectedAccessPoint = preferences.mainCampus === "utm"
+    ? getCampusAccessPoint(preferences.campusAccessPointId)
+    : null;
   const activeOption = ARRIVAL_OPTIONS.find(
     (option) =>
       option.dayOrigin === preferences.dayOrigin &&
@@ -112,10 +111,8 @@ export function ResidenceSettings({
       update({
         dayOrigin: "residence",
         residenceBuildingCode:
-          getResidenceBuildingForCampus(
-            preferences.mainCampus,
-            preferences.residenceBuildingCode,
-          )?.code ??
+          getResidenceBuildingForCampus(preferences.mainCampus, preferences.residenceBuildingCode)
+            ?.code ??
           residences[0]?.code ??
           null,
         commuteMode: null,
@@ -219,7 +216,10 @@ export function ResidenceSettings({
               id="residence-building"
               value={preferences.residenceBuildingCode ?? residences[0]?.code ?? ""}
               onChange={(event) =>
-                update({ dayOrigin: "residence", residenceBuildingCode: event.target.value || null })
+                update({
+                  dayOrigin: "residence",
+                  residenceBuildingCode: event.target.value || null,
+                })
               }
               className="mt-2 min-h-11 w-full rounded-lg border border-input bg-card px-3 text-sm"
             >
