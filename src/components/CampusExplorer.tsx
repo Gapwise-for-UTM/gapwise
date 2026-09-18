@@ -25,17 +25,17 @@ function meetingGapwiseCampus(meeting: CampusMapProps["meetings"][number]): Gapw
   return gapwiseCampusIdForCampus(meetingCampus(meeting));
 }
 
-function inferredCampusForMeetings(
-  meetings: CampusMapProps["meetings"],
-): GapwiseCampusId {
+function inferredCampusForMeetings(meetings: CampusMapProps["meetings"]): GapwiseCampusId {
   const counts = new Map<GapwiseCampusId, number>(CAMPUS_IDS.map((campus) => [campus, 0]));
   for (const meeting of meetings) {
     const campus = meetingGapwiseCampus(meeting);
     if (campus) counts.set(campus, (counts.get(campus) ?? 0) + 1);
   }
-  return [...counts.entries()].sort(
-    (a, b) => b[1] - a[1] || CAMPUS_IDS.indexOf(a[0]) - CAMPUS_IDS.indexOf(b[0]),
-  )[0]?.[0] ?? "utm";
+  return (
+    [...counts.entries()].sort(
+      (a, b) => b[1] - a[1] || CAMPUS_IDS.indexOf(a[0]) - CAMPUS_IDS.indexOf(b[0]),
+    )[0]?.[0] ?? "utm"
+  );
 }
 
 function floorStatusLabel(result: BuildingSearchResult) {
@@ -74,10 +74,7 @@ export function CampusExplorer({
   );
   const activeCampusId = campusOverride ?? selectedMeetingCampus ?? inferredCampusId;
   const activeMeetings = useMemo(
-    () =>
-      mapProps.meetings.filter(
-        (meeting) => meetingGapwiseCampus(meeting) === activeCampusId,
-      ),
+    () => mapProps.meetings.filter((meeting) => meetingGapwiseCampus(meeting) === activeCampusId),
     [activeCampusId, mapProps.meetings],
   );
   // UTSG/UTSC building maps are live before their pedestrian graphs are promoted
