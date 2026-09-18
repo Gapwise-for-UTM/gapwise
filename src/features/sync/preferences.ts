@@ -48,9 +48,8 @@ export function sanitizeUserPreferences(
       value?.commuteMode === "pickup")
       ? value.commuteMode
       : null;
-  const requestedAccessPoint = mainCampus === "utm"
-    ? getCampusAccessPoint(value?.campusAccessPointId ?? null)
-    : null;
+  const requestedAccessPoint =
+    mainCampus === "utm" ? getCampusAccessPoint(value?.campusAccessPointId ?? null) : null;
   const campusAccessPointId =
     commuteMode && requestedAccessPoint?.kind === commuteMode ? requestedAccessPoint.id : null;
   return {
