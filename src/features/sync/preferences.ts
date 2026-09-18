@@ -1,5 +1,8 @@
 import { DEFAULT_ROUTE_PREFERENCES, sanitizeRoutePreferences } from "@/config/routing";
-import { UTM_RESIDENCES } from "@/data/utm/building-registry";
+import {
+  getResidenceBuildingForCampus,
+  type GapwiseCampusId,
+} from "@/data/campuses";
 import { getCampusAccessPoint, type CampusAccessKind } from "@/data/utm/campus-access-points";
 import type { RoutePreferences } from "@/features/routing/types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
@@ -10,13 +13,13 @@ export type UserPreferences = RoutePreferences & {
   avoidStairs: boolean;
   preferIndoor: boolean;
   dayOrigin: DayOrigin;
+  mainCampus: GapwiseCampusId;
   residenceBuildingCode: string | null;
   commuteMode: CampusAccessKind | null;
   campusAccessPointId: string | null;
 };
 
 const LOCAL_PREFERENCES_KEY = "gapwise:user-preferences:v1";
-const RESIDENCE_CODES = new Set(UTM_RESIDENCES.map((building) => building.code));
 type PreferenceStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -24,6 +27,7 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   avoidStairs: false,
   preferIndoor: false,
   dayOrigin: "commute",
+  mainCampus: "utm",
   residenceBuildingCode: null,
   commuteMode: null,
   campusAccessPointId: null,
@@ -33,9 +37,11 @@ export function sanitizeUserPreferences(
   value: Partial<UserPreferences> | null | undefined,
 ): UserPreferences {
   const route = sanitizeRoutePreferences(value);
+  const mainCampus =
+    value?.mainCampus === "utsg" || value?.mainCampus === "utsc" ? value.mainCampus : "utm";
   const requestedResidence = value?.residenceBuildingCode?.trim().toUpperCase() ?? null;
   const residenceBuildingCode =
-    requestedResidence && RESIDENCE_CODES.has(requestedResidence) ? requestedResidence : null;
+    getResidenceBuildingForCampus(mainCampus, requestedResidence)?.code ?? null;
   const dayOrigin =
     value?.dayOrigin === "residence" && residenceBuildingCode ? "residence" : "commute";
   const commuteMode =
@@ -45,7 +51,8 @@ export function sanitizeUserPreferences(
       value?.commuteMode === "pickup")
       ? value.commuteMode
       : null;
-  const requestedAccessPoint = getCampusAccessPoint(value?.campusAccessPointId ?? null);
+  const requestedAccessPoint =
+    mainCampus === "utm" ? getCampusAccessPoint(value?.campusAccessPointId ?? null) : null;
   const campusAccessPointId =
     commuteMode && requestedAccessPoint?.kind === commuteMode ? requestedAccessPoint.id : null;
   return {
@@ -53,6 +60,7 @@ export function sanitizeUserPreferences(
     avoidStairs: value?.avoidStairs === true || route.mode === "step-free",
     preferIndoor: value?.preferIndoor === true || route.mode === "prefer-indoor",
     dayOrigin,
+    mainCampus,
     residenceBuildingCode: dayOrigin === "residence" ? residenceBuildingCode : null,
     commuteMode,
     campusAccessPointId,
