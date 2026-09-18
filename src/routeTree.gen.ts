@@ -26,6 +26,7 @@ import { Route as ReplayRouteImport } from './routes/replay'
 import { Route as SecurityRouteImport } from './routes/security'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SupportRouteImport } from './routes/support'
+import { Route as SurveyRouteImport } from './routes/survey'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as TrustRouteImport } from './routes/trust'
 import { Route as UtmTimetableRouteImport } from './routes/utm-timetable'
@@ -121,6 +122,11 @@ const SupportRoute = SupportRouteImport.update({
   path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SurveyRoute = SurveyRouteImport.update({
+  id: '/survey',
+  path: '/survey',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/support': typeof SupportRoute
+  '/survey': typeof SurveyRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/utm-timetable': typeof UtmTimetableRoute
@@ -217,6 +224,7 @@ export interface FileRoutesByTo {
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/support': typeof SupportRoute
+  '/survey': typeof SurveyRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/utm-timetable': typeof UtmTimetableRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/security': typeof SecurityRoute
   '/settings': typeof SettingsRoute
   '/support': typeof SupportRoute
+  '/survey': typeof SurveyRoute
   '/terms': typeof TermsRoute
   '/trust': typeof TrustRoute
   '/utm-timetable': typeof UtmTimetableRoute
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/settings'
     | '/support'
+    | '/survey'
     | '/terms'
     | '/trust'
     | '/utm-timetable'
@@ -305,6 +315,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/settings'
     | '/support'
+    | '/survey'
     | '/terms'
     | '/trust'
     | '/utm-timetable'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/security'
     | '/settings'
     | '/support'
+    | '/survey'
     | '/terms'
     | '/trust'
     | '/utm-timetable'
@@ -364,6 +376,7 @@ export interface RootRouteChildren {
   SecurityRoute: typeof SecurityRoute
   SettingsRoute: typeof SettingsRoute
   SupportRoute: typeof SupportRoute
+  SurveyRoute: typeof SurveyRoute
   TermsRoute: typeof TermsRoute
   TrustRoute: typeof TrustRoute
   UtmTimetableRoute: typeof UtmTimetableRoute
@@ -491,6 +504,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/survey': {
+      id: '/survey'
+      path: '/survey'
+      fullPath: '/survey'
+      preLoaderRoute: typeof SurveyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -611,6 +631,7 @@ const rootRouteChildren: RootRouteChildren = {
   SecurityRoute: SecurityRoute,
   SettingsRoute: SettingsRoute,
   SupportRoute: SupportRoute,
+  SurveyRoute: SurveyRoute,
   TermsRoute: TermsRoute,
   TrustRoute: TrustRoute,
   UtmTimetableRoute: UtmTimetableRoute,
