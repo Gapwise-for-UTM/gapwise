@@ -6,11 +6,16 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { MAP_CONFIG } from "@/config/map";
 import { getCampusBuilding, UTM_ROUTING_GRAPH } from "@/data/utm/campus";
 import {
-  buildingCodeAtCoordinate,
-  footprintGeometryPoints,
-  getCampusBuildingFootprint,
-  representativePointForFootprint,
-} from "@/data/utm/building-footprints";
+  CAMPUS_LABELS,
+  buildingCodeAtCampusCoordinate,
+  campusCameraBounds,
+  campusCenter,
+  campusFootprintCollection,
+  campusFootprintGeometryPoints,
+  getBuildingFootprintForCampus,
+  representativePointForCampusFootprint,
+  type GapwiseCampusId,
+} from "@/data/campuses";
 import { getCampusCameraBounds } from "@/features/routing/campus-region";
 import { getCampusLocationDisplay } from "@/features/routing/location-presentation";
 import { groupedVerticalMarkerOffsets } from "@/features/routing/map-marker-layout";
@@ -47,6 +52,7 @@ export type MapFocusPadding = {
 };
 
 export type CampusMapProps = {
+  campusId?: GapwiseCampusId;
   meetings: Meeting[];
   segments: MapSegment[];
   selectedMeetingId: string | null;
@@ -66,6 +72,7 @@ export type CampusMapProps = {
 };
 
 type MapData = {
+  campusId: GapwiseCampusId;
   meetings: Meeting[];
   segments: MapSegment[];
   selectedMeetingId: string | null;
@@ -98,6 +105,9 @@ const BUILDING_HOVER_LINE_LAYER_ID = "gapwise-building-hover-line";
 const BUILDING_SELECTED_SOURCE_ID = "gapwise-building-selected";
 const BUILDING_SELECTED_FILL_LAYER_ID = "gapwise-building-selected-fill";
 const BUILDING_SELECTED_LINE_LAYER_ID = "gapwise-building-selected-line";
+const CANONICAL_EXTERNAL_SOURCE_ID = "gapwise-canonical-campus-buildings";
+const CANONICAL_EXTERNAL_FILL_LAYER_ID = "gapwise-canonical-campus-buildings-fill";
+const CANONICAL_EXTERNAL_LINE_LAYER_ID = "gapwise-canonical-campus-buildings-line";
 
 function mapAccentColor(theme: MapTheme) {
   return theme === "dark" ? "#60a5fa" : "#146bb8";
@@ -350,6 +360,57 @@ function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
     },
     firstSymbolLayerId,
   );
+}
+
+function ensureCanonicalExternalBuildingLayer(
+  map: MapLibreMap,
+  campusId: GapwiseCampusId,
+  theme: MapTheme,
+) {
+  if (campusId === "utm") return;
+  const firstSymbolLayerId = (map.getStyle().layers ?? []).find(
+    (layer) => layer.type === "symbol",
+  )?.id;
+  const accentColor = mapAccentColor(theme);
+  const collection = campusFootprintCollection(campusId);
+
+  if (!map.getSource(CANONICAL_EXTERNAL_SOURCE_ID)) {
+    map.addSource(CANONICAL_EXTERNAL_SOURCE_ID, {
+      type: "geojson",
+      data: collection,
+    });
+  } else {
+    (map.getSource(CANONICAL_EXTERNAL_SOURCE_ID) as GeoJSONSource).setData(collection);
+  }
+  if (!map.getLayer(CANONICAL_EXTERNAL_FILL_LAYER_ID)) {
+    map.addLayer(
+      {
+        id: CANONICAL_EXTERNAL_FILL_LAYER_ID,
+        type: "fill",
+        source: CANONICAL_EXTERNAL_SOURCE_ID,
+        paint: {
+          "fill-color": accentColor,
+          "fill-opacity": theme === "dark" ? 0.16 : 0.1,
+        },
+      },
+      firstSymbolLayerId,
+    );
+  }
+  if (!map.getLayer(CANONICAL_EXTERNAL_LINE_LAYER_ID)) {
+    map.addLayer(
+      {
+        id: CANONICAL_EXTERNAL_LINE_LAYER_ID,
+        type: "line",
+        source: CANONICAL_EXTERNAL_SOURCE_ID,
+        paint: {
+          "line-color": accentColor,
+          "line-width": 1.35,
+          "line-opacity": theme === "dark" ? 0.72 : 0.58,
+        },
+      },
+      firstSymbolLayerId,
+    );
+  }
 }
 
 function ensureBuildingHighlightLayers(map: MapLibreMap, theme: MapTheme) {
