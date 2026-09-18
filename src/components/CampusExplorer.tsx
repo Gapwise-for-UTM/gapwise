@@ -7,12 +7,36 @@ import {
   type BuildingSearchResult,
 } from "@/features/routing/building-explorer";
 import { getCampusLocationDisplay } from "@/features/routing/location-presentation";
-import { formatTime, locationLabel } from "@/lib/timetable-types";
+import {
+  CAMPUS_SHORT_LABELS,
+  gapwiseCampusIdForCampus,
+  type GapwiseCampusId,
+} from "@/data/campuses";
+import { formatTime, locationLabel, meetingCampus } from "@/lib/timetable-types";
 
 type CampusExplorerProps = Omit<CampusMapProps, "selectedBuildingCode" | "onSelectBuilding"> & {
   selectedBuildingCode: string | null;
   onSelectBuilding: (code: string | null) => void;
 };
+
+const CAMPUS_IDS: GapwiseCampusId[] = ["utm", "utsg", "utsc"];
+
+function meetingGapwiseCampus(meeting: CampusMapProps["meetings"][number]): GapwiseCampusId | null {
+  return gapwiseCampusIdForCampus(meetingCampus(meeting));
+}
+
+function inferredCampusForMeetings(
+  meetings: CampusMapProps["meetings"],
+): GapwiseCampusId {
+  const counts = new Map<GapwiseCampusId, number>(CAMPUS_IDS.map((campus) => [campus, 0]));
+  for (const meeting of meetings) {
+    const campus = meetingGapwiseCampus(meeting);
+    if (campus) counts.set(campus, (counts.get(campus) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort(
+    (a, b) => b[1] - a[1] || CAMPUS_IDS.indexOf(a[0]) - CAMPUS_IDS.indexOf(b[0]),
+  )[0]?.[0] ?? "utm";
+}
 
 function floorStatusLabel(result: BuildingSearchResult) {
   if (result.floorVerification === "verified") return "verified";
@@ -27,6 +51,7 @@ export function CampusExplorer({
   ...mapProps
 }: CampusExplorerProps) {
   const [query, setQuery] = useState("");
+  const [campusOverride, setCampusOverride] = useState<GapwiseCampusId | null>(null);
   const [activeEntranceId, setActiveEntranceId] = useState<string | null>(null);
   const [mapDetailMeetingId, setMapDetailMeetingId] = useState<string | null>(null);
   const [focusPadding, setFocusPadding] = useState<MapFocusPadding>({
@@ -38,19 +63,43 @@ export function CampusExplorer({
   const explorerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLElement>(null);
+  const selectedMeeting = useMemo(
+    () => mapProps.meetings.find((meeting) => meeting.id === mapProps.selectedMeetingId) ?? null,
+    [mapProps.meetings, mapProps.selectedMeetingId],
+  );
+  const selectedMeetingCampus = selectedMeeting ? meetingGapwiseCampus(selectedMeeting) : null;
+  const inferredCampusId = useMemo(
+    () => inferredCampusForMeetings(mapProps.meetings),
+    [mapProps.meetings],
+  );
+  const activeCampusId = campusOverride ?? selectedMeetingCampus ?? inferredCampusId;
+  const activeMeetings = useMemo(
+    () =>
+      mapProps.meetings.filter(
+        (meeting) => meetingGapwiseCampus(meeting) === activeCampusId,
+      ),
+    [activeCampusId, mapProps.meetings],
+  );
+  // UTSG/UTSC building maps are live before their pedestrian graphs are promoted
+  // into the product route engine. Never reinterpret external-campus segments as UTM routes.
+  const activeSegments = activeCampusId === "utm" ? mapProps.segments : [];
+
   const routeContentKey = useMemo(
     () =>
-      mapProps.meetings
+      activeMeetings
         .map((meeting) => `${meeting.term}:${meeting.weekday}:${meeting.id}`)
         .sort()
         .join("|"),
-    [mapProps.meetings],
+    [activeMeetings],
   );
   const previousRouteContentKeyRef = useRef(routeContentKey);
-  const results = useMemo(() => searchCampusBuildings(query), [query]);
+  const results = useMemo(
+    () => searchCampusBuildings(query, 6, activeCampusId),
+    [activeCampusId, query],
+  );
   const details = useMemo(
-    () => getBuildingExplorerDetails(selectedBuildingCode),
-    [selectedBuildingCode],
+    () => getBuildingExplorerDetails(selectedBuildingCode, activeCampusId),
+    [activeCampusId, selectedBuildingCode],
   );
   const mapDetailMeeting = useMemo(
     () => mapProps.meetings.find((meeting) => meeting.id === mapDetailMeetingId) ?? null,
@@ -68,6 +117,10 @@ export function CampusExplorer({
   useEffect(() => {
     setActiveEntranceId(null);
   }, [selectedBuildingCode]);
+
+  useEffect(() => {
+    setCampusOverride(null);
+  }, [mapProps.selectedMeetingId]);
 
   useEffect(() => {
     if (mapDetailMeetingId && !mapDetailMeeting) setMapDetailMeetingId(null);
@@ -153,6 +206,10 @@ export function CampusExplorer({
     <div ref={explorerRef} className="campus-explorer relative">
       <CampusMap
         {...mapProps}
+        campusId={activeCampusId}
+        meetings={activeMeetings}
+        segments={activeSegments}
+        dayAnchor={activeCampusId === "utm" ? mapProps.dayAnchor : null}
         onSelectMeeting={selectMeetingFromMap}
         selectedBuildingCode={selectedBuildingCode}
         onSelectBuilding={selectFromMap}
@@ -248,8 +305,33 @@ export function CampusExplorer({
         ref={searchRef}
         className="campus-explorer-search absolute left-3 top-3 z-20 w-[min(22rem,calc(100%-5.75rem))]"
       >
+        <div
+          className="mb-2 grid grid-cols-3 gap-1 rounded-xl border border-border bg-popover/96 p-1 shadow-lg backdrop-blur"
+          aria-label="Campus map"
+        >
+          {CAMPUS_IDS.map((campus) => (
+            <button
+              key={campus}
+              type="button"
+              onClick={() => {
+                setCampusOverride(campus);
+                setMapDetailMeetingId(null);
+                setQuery("");
+                onSelectBuilding(null);
+              }}
+              aria-pressed={activeCampusId === campus}
+              className={`min-h-9 rounded-lg px-2 font-mono text-[0.7rem] font-bold tracking-[0.08em] transition-colors ${
+                activeCampusId === campus
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              {CAMPUS_SHORT_LABELS[campus]}
+            </button>
+          ))}
+        </div>
         <label htmlFor="campus-building-search" className="sr-only">
-          Search UTM buildings
+          Search {CAMPUS_SHORT_LABELS[activeCampusId]} buildings
         </label>
         <div className="relative">
           <Search
@@ -269,7 +351,13 @@ export function CampusExplorer({
                 selectResult(results[0]);
               }
             }}
-            placeholder="Search MN, Deerfield, Kaneff…"
+            placeholder={
+              activeCampusId === "utm"
+                ? "Search MN, Deerfield, Kaneff…"
+                : activeCampusId === "utsg"
+                  ? "Search BA, Bahen, Sidney Smith…"
+                  : "Search AA, Highland, Kina Wiya…"
+            }
             aria-describedby="campus-search-help"
             className="h-11 w-full rounded-xl border border-border bg-popover/96 pl-10 pr-3 text-sm text-popover-foreground shadow-lg outline-none backdrop-blur focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
           />
@@ -281,7 +369,10 @@ export function CampusExplorer({
         {query.trim() ? (
           <div className="mt-1.5 overflow-hidden rounded-xl border border-border bg-popover/98 p-1.5 text-popover-foreground shadow-xl backdrop-blur">
             {results.length > 0 ? (
-              <ul aria-label="UTM building search results" className="max-h-64 overflow-y-auto">
+              <ul
+                aria-label={`${CAMPUS_SHORT_LABELS[activeCampusId]} building search results`}
+                className="max-h-64 overflow-y-auto"
+              >
                 {results.map((result) => (
                   <li key={result.building.code}>
                     <button
@@ -312,7 +403,7 @@ export function CampusExplorer({
               </ul>
             ) : (
               <p className="px-3 py-3 text-sm text-muted-foreground" role="status">
-                No mapped UTM building matches that search.
+                No mapped {CAMPUS_SHORT_LABELS[activeCampusId]} building matches that search.
               </p>
             )}
           </div>
@@ -326,7 +417,7 @@ export function CampusExplorer({
       {details ? (
         <section
           ref={cardRef}
-          className="campus-building-card absolute bottom-3 left-3 right-3 z-10 max-h-[46%] overflow-y-auto rounded-xl border border-border bg-popover/96 p-4 text-popover-foreground shadow-xl backdrop-blur sm:bottom-auto sm:right-auto sm:top-[4.75rem] sm:max-h-[calc(100%-5.5rem)] sm:w-[min(23rem,calc(100%-1.5rem))]"
+          className="campus-building-card absolute bottom-3 left-3 right-3 z-10 max-h-[46%] overflow-y-auto rounded-xl border border-border bg-popover/96 p-4 text-popover-foreground shadow-xl backdrop-blur sm:bottom-auto sm:right-auto sm:top-[8rem] sm:max-h-[calc(100%-8.75rem)] sm:w-[min(23rem,calc(100%-1.5rem))]"
           aria-labelledby="selected-building-title"
         >
           <div className="flex items-start justify-between gap-3">
