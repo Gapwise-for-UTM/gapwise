@@ -801,13 +801,14 @@ function applyEntranceMarkerActiveState(
 function syncEntranceMarkers(
   map: MapLibreMap,
   maplibregl: MapLibreModule,
+  campusId: GapwiseCampusId,
   buildingCode: string | null,
   activeEntranceId: string | null,
   onActiveEntranceChange: ((id: string | null) => void) | undefined,
   markers: EntranceMarkerRecord[],
   theme: MapTheme,
 ) {
-  const building = getCampusBuilding(buildingCode);
+  const building = campusId === "utm" ? getCampusBuilding(buildingCode) : null;
   const targetEntrances = building?.entrances ?? [];
   const targetIds = new Set(targetEntrances.map((entrance) => entrance.id));
 
@@ -1433,7 +1434,7 @@ export function CampusMap({
   }, [liveLocation, status]);
 
   const hasRouteContent =
-    meetings.some((meeting) => mapBuildingAnchor(data.campusId, meeting.buildingCode)) ||
+    meetings.some((meeting) => mapBuildingAnchor(campusId, meeting.buildingCode)) ||
     segments.some((segment) => segment.route.displayCoordinates.length > 0) ||
     Boolean(dayAnchor);
 
