@@ -482,6 +482,7 @@ function ensureBuildingHighlightLayers(map: MapLibreMap, theme: MapTheme) {
 
 function syncBuildingHighlight(
   map: MapLibreMap,
+  campusId: GapwiseCampusId,
   buildingCode: string | null,
   kind: "hover" | "selected",
 ) {
@@ -493,7 +494,7 @@ function syncBuildingHighlight(
   const source = map.getSource(sourceId) as GeoJSONSource | undefined;
   if (!source) return;
 
-  const feature = buildingCode ? getCampusBuildingFootprint(buildingCode) : null;
+  const feature = buildingCode ? getBuildingFootprintForCampus(campusId, buildingCode) : null;
   source.setData(
     feature ? { type: "FeatureCollection", features: [feature] } : emptyFeatureCollection(),
   );
@@ -515,11 +516,15 @@ function syncBuildingHighlight(
   }
 }
 
-function mapBuildingAnchor(code: string | null) {
-  const campus = getCampusBuilding(code);
-  if (campus) return { code: campus.code, navigationPoint: campus.navigationPoint };
-  const footprint = getCampusBuildingFootprint(code);
-  const navigationPoint = footprint ? representativePointForFootprint(footprint) : null;
+function mapBuildingAnchor(campusId: GapwiseCampusId, code: string | null) {
+  if (campusId === "utm") {
+    const campus = getCampusBuilding(code);
+    if (campus) return { code: campus.code, navigationPoint: campus.navigationPoint };
+  }
+  const footprint = getBuildingFootprintForCampus(campusId, code);
+  const navigationPoint = footprint
+    ? representativePointForCampusFootprint(campusId, footprint)
+    : null;
   return footprint && navigationPoint
     ? { code: footprint.properties.buildingCode, navigationPoint }
     : null;
