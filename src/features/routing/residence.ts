@@ -5,7 +5,7 @@ import type { Meeting, Term, Weekday } from "../../lib/timetable-types.js";
 const HOME_MEETING_PREFIX = "gapwise-home:";
 
 export function selectedResidence(preferences: UserPreferences) {
-  if (preferences.dayOrigin !== "residence") return null;
+  if (preferences.dayOrigin !== "residence" || preferences.mainCampus !== "utm") return null;
   const code = preferences.residenceBuildingCode;
   if (!code) return null;
   return (
