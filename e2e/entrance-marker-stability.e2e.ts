@@ -147,7 +147,7 @@ async function selectBuilding(page: Page, query: string, heading: string) {
   const search = page.getByRole("searchbox", { name: "Search UTM buildings" });
   await search.fill(query);
   await search.press("Enter");
-  await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+  await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible();
 }
 
 test("entrance markers keep MapLibre projection isolated from interactive styling", async ({
