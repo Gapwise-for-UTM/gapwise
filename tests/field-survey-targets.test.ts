@@ -21,8 +21,7 @@ describe("UTM field survey targets", () => {
         expect(FIELD_SURVEY_SOURCE_RECORDS[sourceId]).toBeDefined();
       if (target.officialCandidateId)
         expect(candidateIds.has(target.officialCandidateId)).toBe(true);
-      if (target.officialIdentityId)
-        expect(identityIds.has(target.officialIdentityId)).toBe(true);
+      if (target.officialIdentityId) expect(identityIds.has(target.officialIdentityId)).toBe(true);
     }
   });
 
