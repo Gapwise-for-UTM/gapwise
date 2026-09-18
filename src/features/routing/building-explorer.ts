@@ -168,9 +168,9 @@ export function getBuildingExplorerDetails(
   const building =
     campusId === "utm"
       ? getRecognizedBuilding(code)
-      : campusBuildingConfigurations(campusId).find(
+      : (campusBuildingConfigurations(campusId).find(
           (candidate) => candidate.code.toUpperCase() === code.toUpperCase(),
-        ) ?? null;
+        ) ?? null);
   if (!building || !getBuildingFootprintForCampus(campusId, code)) return null;
 
   if (campusId !== "utm") {
