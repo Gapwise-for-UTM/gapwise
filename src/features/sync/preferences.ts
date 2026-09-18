@@ -1,8 +1,5 @@
 import { DEFAULT_ROUTE_PREFERENCES, sanitizeRoutePreferences } from "@/config/routing";
-import {
-  getResidenceBuildingForCampus,
-  type GapwiseCampusId,
-} from "@/data/campuses";
+import { getResidenceBuildingForCampus, type GapwiseCampusId } from "@/data/campuses";
 import { getCampusAccessPoint, type CampusAccessKind } from "@/data/utm/campus-access-points";
 import type { RoutePreferences } from "@/features/routing/types";
 import { isEncryptedPrivateCloudAuthoritative } from "@/features/security/private-cloud-mode";
@@ -51,8 +48,9 @@ export function sanitizeUserPreferences(
       value?.commuteMode === "pickup")
       ? value.commuteMode
       : null;
-  const requestedAccessPoint =
-    mainCampus === "utm" ? getCampusAccessPoint(value?.campusAccessPointId ?? null) : null;
+  const requestedAccessPoint = mainCampus === "utm"
+    ? getCampusAccessPoint(value?.campusAccessPointId ?? null)
+    : null;
   const campusAccessPointId =
     commuteMode && requestedAccessPoint?.kind === commuteMode ? requestedAccessPoint.id : null;
   return {
