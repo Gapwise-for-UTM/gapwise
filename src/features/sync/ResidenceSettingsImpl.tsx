@@ -80,9 +80,8 @@ export function ResidenceSettings({
     preferences.mainCampus,
     preferences.residenceBuildingCode,
   );
-  const selectedAccessPoint = preferences.mainCampus === "utm"
-    ? getCampusAccessPoint(preferences.campusAccessPointId)
-    : null;
+  const selectedAccessPoint =
+    preferences.mainCampus === "utm" ? getCampusAccessPoint(preferences.campusAccessPointId) : null;
   const activeOption = ARRIVAL_OPTIONS.find(
     (option) =>
       option.dayOrigin === preferences.dayOrigin &&
