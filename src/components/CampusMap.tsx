@@ -1005,7 +1005,9 @@ function focusBuilding(
 }
 
 function activeCampusCameraBounds(campusId: GapwiseCampusId) {
-  return campusId === "utm" ? getCampusCameraBounds(UTM_ROUTING_GRAPH) : campusCameraBounds(campusId);
+  return campusId === "utm"
+    ? getCampusCameraBounds(UTM_ROUTING_GRAPH)
+    : campusCameraBounds(campusId);
 }
 
 function showCampusOverview(map: MapLibreMap, campusId: GapwiseCampusId) {
@@ -1213,7 +1215,10 @@ export function CampusMap({
         });
         let mapHoveredBuildingCode: string | null = null;
         map.on("mousemove", (event) => {
-          const nextCode = buildingCodeAtCampusCoordinate(campusId, [event.lngLat.lng, event.lngLat.lat]);
+          const nextCode = buildingCodeAtCampusCoordinate(campusId, [
+            event.lngLat.lng,
+            event.lngLat.lat,
+          ]);
           if (nextCode === mapHoveredBuildingCode) return;
           mapHoveredBuildingCode = nextCode;
           map.getCanvas().style.cursor = nextCode ? "pointer" : "";
@@ -1231,7 +1236,10 @@ export function CampusMap({
           ) {
             return;
           }
-          const code = buildingCodeAtCampusCoordinate(campusId, [event.lngLat.lng, event.lngLat.lat]);
+          const code = buildingCodeAtCampusCoordinate(campusId, [
+            event.lngLat.lng,
+            event.lngLat.lat,
+          ]);
           if (code) latestData.current.onSelectBuilding(code);
         });
         map.on("error", () => {
@@ -1296,7 +1304,13 @@ export function CampusMap({
           if (
             selectedBuilding &&
             selectedFocusKey !== lastFocusedBuildingRef.current &&
-            focusBuilding(map, maplibregl, latestData.current.campusId, selectedBuilding, selectedPadding)
+            focusBuilding(
+              map,
+              maplibregl,
+              latestData.current.campusId,
+              selectedBuilding,
+              selectedPadding,
+            )
           ) {
             lastFocusedBuildingRef.current = selectedFocusKey;
             userHasMovedRef.current = true;
