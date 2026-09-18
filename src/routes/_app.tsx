@@ -61,8 +61,11 @@ import {
   type AcademicState,
 } from "@/features/academic/state";
 import { plannedWorkMeetings } from "@/features/academic/integration";
+import {
+  CAMPUS_SHORT_LABELS,
+  getResidenceBuildingForCampus,
+} from "@/data/campuses";
 import { getCampusAccessPoint } from "@/data/utm/campus-access-points";
-import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 
 const DayRoute = lazy(() =>
   import("@/components/DayRoute").then((module) => ({ default: module.DayRoute })),
@@ -167,10 +170,18 @@ function AppLayout() {
   const [arrivalSettingsRequest, setArrivalSettingsRequest] = useState(0);
   const replacementInputRef = useRef<HTMLInputElement>(null);
   const authenticatedUserId = user?.id ?? null;
+  const arrivalResidence = getResidenceBuildingForCampus(
+    preferences.mainCampus,
+    preferences.residenceBuildingCode,
+  );
+  const arrivalAccessPoint =
+    preferences.mainCampus === "utm"
+      ? getCampusAccessPoint(preferences.campusAccessPointId)
+      : null;
   const arrivalLabel =
-    UTM_RESIDENCES.find((building) => building.code === preferences.residenceBuildingCode)?.code ??
-    getCampusAccessPoint(preferences.campusAccessPointId)?.label ??
-    "Campus arrival";
+    arrivalResidence?.code || arrivalAccessPoint?.label
+      ? `${CAMPUS_SHORT_LABELS[preferences.mainCampus]} · ${arrivalResidence?.code ?? arrivalAccessPoint?.label}`
+      : CAMPUS_SHORT_LABELS[preferences.mainCampus];
   const {
     destination,
     selectedBuildingCode,
