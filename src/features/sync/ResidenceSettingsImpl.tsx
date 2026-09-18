@@ -2,11 +2,16 @@ import type { User } from "@supabase/supabase-js";
 import { Building2, BusFront, CarFront, Home, MapPin } from "lucide-react";
 import { useEffect, useState, type ComponentType } from "react";
 import {
+  CAMPUS_SHORT_LABELS,
+  campusResidenceBuildings,
+  getResidenceBuildingForCampus,
+  type GapwiseCampusId,
+} from "@/data/campuses";
+import {
   campusAccessPointsFor,
   getCampusAccessPoint,
   type CampusAccessKind,
 } from "@/data/utm/campus-access-points";
-import { UTM_RESIDENCES } from "@/data/utm/building-registry";
 import {
   Dialog,
   DialogContent,
@@ -70,10 +75,13 @@ export function ResidenceSettings({
 }) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const selectedResidence = UTM_RESIDENCES.find(
-    (building) => building.code === preferences.residenceBuildingCode,
+  const residences = campusResidenceBuildings(preferences.mainCampus);
+  const selectedResidence = getResidenceBuildingForCampus(
+    preferences.mainCampus,
+    preferences.residenceBuildingCode,
   );
-  const selectedAccessPoint = getCampusAccessPoint(preferences.campusAccessPointId);
+  const selectedAccessPoint =
+    preferences.mainCampus === "utm" ? getCampusAccessPoint(preferences.campusAccessPointId) : null;
   const activeOption = ARRIVAL_OPTIONS.find(
     (option) =>
       option.dayOrigin === preferences.dayOrigin &&
@@ -87,11 +95,25 @@ export function ResidenceSettings({
     );
   }
 
+  function selectMainCampus(mainCampus: GapwiseCampusId) {
+    const nextResidences = campusResidenceBuildings(mainCampus);
+    update({
+      mainCampus,
+      residenceBuildingCode:
+        preferences.dayOrigin === "residence" ? (nextResidences[0]?.code ?? null) : null,
+      campusAccessPointId: null,
+    });
+  }
+
   function selectOption(option: ArrivalOption) {
     if (option.dayOrigin === "residence") {
       update({
         dayOrigin: "residence",
-        residenceBuildingCode: preferences.residenceBuildingCode ?? UTM_RESIDENCES[0]!.code,
+        residenceBuildingCode:
+          getResidenceBuildingForCampus(preferences.mainCampus, preferences.residenceBuildingCode)
+            ?.code ??
+          residences[0]?.code ??
+          null,
         commuteMode: null,
         campusAccessPointId: null,
       });
@@ -105,8 +127,14 @@ export function ResidenceSettings({
     });
   }
 
-  const points = preferences.commuteMode ? campusAccessPointsFor(preferences.commuteMode) : [];
-  const triggerLabel = selectedResidence?.code ?? selectedAccessPoint?.label ?? "Arrival";
+  const points =
+    preferences.mainCampus === "utm" && preferences.commuteMode
+      ? campusAccessPointsFor(preferences.commuteMode)
+      : [];
+  const triggerLabel =
+    selectedResidence?.code || selectedAccessPoint?.label
+      ? `${CAMPUS_SHORT_LABELS[preferences.mainCampus]} · ${selectedResidence?.code ?? selectedAccessPoint?.label}`
+      : CAMPUS_SHORT_LABELS[preferences.mainCampus];
 
   useEffect(() => {
     if (openRequest > 0) setOpen(true);
@@ -131,6 +159,27 @@ export function ResidenceSettings({
             Gapwise only stores where your campus walk begins — not your home address.
           </DialogDescription>
         </DialogHeader>
+
+        <fieldset>
+          <legend className="text-sm font-medium">Main campus</legend>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {(["utm", "utsg", "utsc"] as GapwiseCampusId[]).map((campus) => (
+              <button
+                key={campus}
+                type="button"
+                aria-pressed={preferences.mainCampus === campus}
+                onClick={() => selectMainCampus(campus)}
+                className={`min-h-10 rounded-lg border px-3 font-mono text-xs font-bold tracking-[0.08em] transition-colors ${
+                  preferences.mainCampus === campus
+                    ? "border-accent/60 bg-accent/10 text-foreground"
+                    : "border-border bg-card/80 text-muted-foreground hover:bg-muted/60"
+                }`}
+              >
+                {CAMPUS_SHORT_LABELS[campus]}
+              </button>
+            ))}
+          </div>
+        </fieldset>
 
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Campus day origin">
           {ARRIVAL_OPTIONS.map((option) => {
@@ -164,23 +213,32 @@ export function ResidenceSettings({
             Residence building
             <select
               id="residence-building"
-              value={preferences.residenceBuildingCode ?? UTM_RESIDENCES[0]!.code}
+              value={preferences.residenceBuildingCode ?? residences[0]?.code ?? ""}
               onChange={(event) =>
-                update({ dayOrigin: "residence", residenceBuildingCode: event.target.value })
+                update({
+                  dayOrigin: "residence",
+                  residenceBuildingCode: event.target.value || null,
+                })
               }
               className="mt-2 min-h-11 w-full rounded-lg border border-input bg-card px-3 text-sm"
             >
-              {UTM_RESIDENCES.map((building) => (
+              {residences.map((building) => (
                 <option key={building.code} value={building.code}>
                   {building.name} ({building.code})
                 </option>
               ))}
             </select>
             <span className="mt-2 block text-xs font-normal leading-relaxed text-muted-foreground">
-              Residence approaches come from the bundled campus map. Unverified doors are clearly
-              marked in route details.
+              {preferences.mainCampus === "utm"
+                ? "Residence approaches come from the bundled campus map. Unverified doors are clearly marked in route details."
+                : `${CAMPUS_SHORT_LABELS[preferences.mainCampus]} residence selection is saved now. Residence-to-class routing is only enabled when that campus route data is supported.`}
             </span>
           </label>
+        ) : preferences.mainCampus !== "utm" && preferences.commuteMode ? (
+          <p className="rounded-lg border border-border bg-muted/45 p-3 text-sm text-muted-foreground">
+            Verified {CAMPUS_SHORT_LABELS[preferences.mainCampus]} arrival points aren&apos;t mapped
+            yet. Your main campus is still saved.
+          </p>
         ) : preferences.commuteMode === "pickup" && points.length === 0 ? (
           <p className="rounded-lg border border-border bg-muted/45 p-3 text-sm text-muted-foreground">
             Verified pickup/drop-off handoff points aren&apos;t mapped yet.

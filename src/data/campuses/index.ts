@@ -142,6 +142,54 @@ const CONFIGURATIONS: Record<GapwiseCampusId, BuildingConfiguration[]> = {
   utsc: externalConfigurations("utsc"),
 };
 
+// U of T Student Life's current St. George residence map groups these canonical
+// buildings as student residences. Some are mixed-use college buildings, so residence
+// membership is intentionally kept separate from the single building category field.
+// Source: https://studentlife.utoronto.ca/wp-content/uploads/Housing-Map.pdf
+const UTSG_RESIDENCE_CODES = new Set([
+  "013", // Whitney Hall
+  "029", // Sir Daniel Wilson Residence
+  "064", // Graduate House
+  "101", // Morrison Hall
+  "131", // New College III / 45 Willcocks
+  "133", // Innis College Student Residence
+  "158", // Chestnut Residence
+  "505", // Burwash Residence (Lower Houses)
+  "505A", // Burwash Residence (Upper Houses)
+  "506", // Annesley Hall
+  "508", // Margaret Addison Hall
+  "518", // Rowell Jackman Hall
+  "575", // Knox College
+  "608", // St. Hilda's College
+  "790", // University Family Housing, 30 Charles
+  "791", // University Family Housing, 35 Charles
+  "BR", // Brennan Hall, St. Michael's College
+  "TC", // Trinity College
+  "WE", // Wetmore Hall
+  "WI", // Wilson Hall
+  "WO", // Woodsworth College Residence
+]);
+
+export function campusResidenceBuildings(campusId: GapwiseCampusId): BuildingConfiguration[] {
+  if (campusId === "utsg") {
+    return CONFIGURATIONS.utsg.filter((building) => UTSG_RESIDENCE_CODES.has(building.code));
+  }
+  return CONFIGURATIONS[campusId].filter((building) => building.category === "residence");
+}
+
+export function getResidenceBuildingForCampus(
+  campusId: GapwiseCampusId,
+  code: string | null | undefined,
+): BuildingConfiguration | null {
+  if (!code) return null;
+  const normalized = code.trim().toUpperCase();
+  return (
+    campusResidenceBuildings(campusId).find(
+      (building) => building.code.toUpperCase() === normalized,
+    ) ?? null
+  );
+}
+
 export function campusBuildingConfigurations(campusId: GapwiseCampusId) {
   return CONFIGURATIONS[campusId];
 }

@@ -53,6 +53,7 @@ describe("encrypted client sync boundary", () => {
       gapPreferences: DEFAULT_GAP_PREFERENCES,
     });
     const {
+      mainCampus: _mainCampus,
       commuteMode: _commuteMode,
       campusAccessPointId: _accessPoint,
       ...legacyPreferences

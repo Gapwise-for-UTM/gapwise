@@ -52,10 +52,47 @@ describe("guest-safe cloud services", () => {
     expect(sanitizeUserPreferences({ walkingSpeedMps: 99 }).walkingSpeedMps).toBe(1.35);
   });
 
-  test("accepts only a listed residence and otherwise preserves commuter defaults", () => {
+  test("accepts only a residence that belongs to the selected main campus", () => {
     expect(
       sanitizeUserPreferences({ dayOrigin: "residence", residenceBuildingCode: "OPH" }),
-    ).toMatchObject({ dayOrigin: "residence", residenceBuildingCode: "OPH" });
+    ).toMatchObject({
+      mainCampus: "utm",
+      dayOrigin: "residence",
+      residenceBuildingCode: "OPH",
+    });
+    expect(
+      sanitizeUserPreferences({
+        mainCampus: "utsg",
+        dayOrigin: "residence",
+        residenceBuildingCode: "WI",
+      }),
+    ).toMatchObject({
+      mainCampus: "utsg",
+      dayOrigin: "residence",
+      residenceBuildingCode: "WI",
+    });
+    expect(
+      sanitizeUserPreferences({
+        mainCampus: "utsc",
+        dayOrigin: "residence",
+        residenceBuildingCode: "N",
+      }),
+    ).toMatchObject({
+      mainCampus: "utsc",
+      dayOrigin: "residence",
+      residenceBuildingCode: "N",
+    });
+    expect(
+      sanitizeUserPreferences({
+        mainCampus: "utsg",
+        dayOrigin: "residence",
+        residenceBuildingCode: "OPH",
+      }),
+    ).toMatchObject({
+      mainCampus: "utsg",
+      dayOrigin: "commute",
+      residenceBuildingCode: null,
+    });
     expect(
       sanitizeUserPreferences({ dayOrigin: "residence", residenceBuildingCode: "NOT-A-HOME" }),
     ).toMatchObject({ dayOrigin: "commute", residenceBuildingCode: null });
@@ -77,6 +114,18 @@ describe("guest-safe cloud services", () => {
         campusAccessPointId: "miway-utm-bus-station",
       }),
     ).toMatchObject({ commuteMode: "transit", campusAccessPointId: "miway-utm-bus-station" });
+    expect(
+      sanitizeUserPreferences({
+        mainCampus: "utsg",
+        dayOrigin: "commute",
+        commuteMode: "transit",
+        campusAccessPointId: "miway-utm-bus-station",
+      }),
+    ).toMatchObject({
+      mainCampus: "utsg",
+      commuteMode: "transit",
+      campusAccessPointId: null,
+    });
     expect(
       sanitizeUserPreferences({
         dayOrigin: "commute",
