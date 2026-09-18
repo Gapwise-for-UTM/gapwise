@@ -13,6 +13,11 @@ import {
   WEEKDAYS,
 } from "./timetable-types";
 import { resolveAcornLocation } from "@/features/routing/location-resolver";
+import {
+  gapwiseCampusIdForCampus,
+  getBuildingFootprintForCampus,
+  resolveCampusBuildingLocation,
+} from "@/data/campuses";
 
 export class IcsParseError extends Error {
   override name = "IcsParseError";
@@ -122,15 +127,18 @@ function parseLocation(
     };
   }
 
-  // St. George and Scarborough rooms are valid timetable locations even though
-  // Gapwise intentionally has no campus map/routing model for those campuses.
+  const campusId = gapwiseCampusIdForCampus(campus);
+  const resolved = campusId ? resolveCampusBuildingLocation(campusId, value) : null;
   return {
-    buildingCode: null,
-    room: null,
+    buildingCode: resolved?.building.code ?? null,
+    room: resolved?.room ?? null,
     sourceLocation: value,
     locationUnknown: false,
     locationType: "physical",
-    warning: null,
+    warning:
+      resolved && campusId && !getBuildingFootprintForCampus(campusId, resolved.building.code)
+        ? `${resolved.building.code} is recognized at ${campus}, but its Gapwise map footprint is still unresolved.`
+        : null,
   };
 }
 
