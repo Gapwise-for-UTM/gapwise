@@ -21,6 +21,17 @@ describe("residence-aware campus routing", () => {
     expect(selectedResidence(residentPreferences)?.name).toBe("Erindale Hall");
   });
 
+  test("does not reinterpret a non-UTM residence as a UTM route origin", () => {
+    expect(
+      selectedResidence({
+        ...DEFAULT_USER_PREFERENCES,
+        mainCampus: "utsg",
+        dayOrigin: "residence",
+        residenceBuildingCode: "WI",
+      }),
+    ).toBeNull();
+  });
+
   test("creates explicit private synthetic endpoints without changing class data", () => {
     const home = createResidenceMeeting({
       buildingCode: "EH",
