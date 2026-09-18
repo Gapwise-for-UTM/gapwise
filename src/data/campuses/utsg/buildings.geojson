@@ -15346,67 +15346,6 @@
           ]
         ]
       }
-    },
-    {
-      "type": "Feature",
-      "id": "utsg:facility:006C",
-      "properties": {
-        "campus": "utsg",
-        "buildingId": "utsg:facility:006C",
-        "buildingCode": "006C",
-        "name": "Robarts Common",
-        "timetableCodes": [],
-        "facilityCodes": [
-          "006C"
-        ],
-        "geometrySource": "openstreetmap",
-        "geometrySourceRef": "way/627629970",
-        "reconciliationMethod": "exact_identity_match",
-        "addressEvidence": "369 Huron Street",
-        "refEvidence": null,
-        "pointEvidence": null,
-        "nameEvidence": "Robarts Common",
-        "verificationStatus": "verified"
-      },
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [
-          [
-            [
-              -79.4003064,
-              43.6641609
-            ],
-            [
-              -79.4002762,
-              43.6640908
-            ],
-            [
-              -79.4001976,
-              43.6639084
-            ],
-            [
-              -79.3997907,
-              43.6640001
-            ],
-            [
-              -79.3998616,
-              43.6641646
-            ],
-            [
-              -79.3999301,
-              43.6643235
-            ],
-            [
-              -79.400337,
-              43.6642318
-            ],
-            [
-              -79.4003064,
-              43.6641609
-            ]
-          ]
-        ]
-      }
     }
   ]
 }
