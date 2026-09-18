@@ -105,9 +105,9 @@ const BUILDING_HOVER_LINE_LAYER_ID = "gapwise-building-hover-line";
 const BUILDING_SELECTED_SOURCE_ID = "gapwise-building-selected";
 const BUILDING_SELECTED_FILL_LAYER_ID = "gapwise-building-selected-fill";
 const BUILDING_SELECTED_LINE_LAYER_ID = "gapwise-building-selected-line";
-const CANONICAL_EXTERNAL_SOURCE_ID = "gapwise-canonical-campus-buildings";
-const CANONICAL_EXTERNAL_FILL_LAYER_ID = "gapwise-canonical-campus-buildings-fill";
-const CANONICAL_EXTERNAL_LINE_LAYER_ID = "gapwise-canonical-campus-buildings-line";
+const CANONICAL_CAMPUS_SOURCE_ID = "gapwise-canonical-campus-buildings";
+const CANONICAL_CAMPUS_FILL_LAYER_ID = "gapwise-canonical-campus-buildings-fill";
+const CANONICAL_CAMPUS_LINE_LAYER_ID = "gapwise-canonical-campus-buildings-line";
 
 function mapAccentColor(theme: MapTheme) {
   return theme === "dark" ? "#60a5fa" : "#146bb8";
@@ -288,124 +288,64 @@ function addRouteLayers(map: MapLibreMap, theme: MapTheme) {
   });
 }
 
-function styleCampusBuildings(map: MapLibreMap, theme: MapTheme) {
-  const fillColor = theme === "dark" ? "#202a35" : "#dde5eb";
-  const outlineColor = theme === "dark" ? "#43566a" : "#9fb0bd";
+function hideBasemapBuildings(map: MapLibreMap) {
   const layers = map.getStyle().layers ?? [];
-  let styledBuildingLayer = false;
 
   for (const layer of layers) {
     if (!("source-layer" in layer) || layer["source-layer"] !== "building") continue;
-    if (layer.type === "fill") {
-      map.setLayoutProperty(layer.id, "visibility", "visible");
-      map.setPaintProperty(layer.id, "fill-color", fillColor);
-      map.setPaintProperty(layer.id, "fill-outline-color", outlineColor);
-      map.setPaintProperty(layer.id, "fill-opacity", theme === "dark" ? 0.86 : 0.88);
-      styledBuildingLayer = true;
-    }
-    if (layer.type === "fill-extrusion") {
-      map.setLayoutProperty(layer.id, "visibility", "visible");
-      map.setPaintProperty(layer.id, "fill-extrusion-color", fillColor);
-      map.setPaintProperty(layer.id, "fill-extrusion-opacity", theme === "dark" ? 0.92 : 0.9);
-      styledBuildingLayer = true;
-    }
+    map.setLayoutProperty(layer.id, "visibility", "none");
   }
 
-  if (!map.getSource("openmaptiles")) return;
-
-  const firstSymbolLayerId = layers.find((layer) => layer.type === "symbol")?.id;
-
-  if (theme === "dark") {
-    if (!map.getLayer("gapwise-campus-buildings-3d")) {
-      map.addLayer(
-        {
-          id: "gapwise-campus-buildings-3d",
-          type: "fill-extrusion",
-          source: "openmaptiles",
-          "source-layer": "building",
-          minzoom: 13,
-          paint: {
-            "fill-extrusion-color": fillColor,
-            "fill-extrusion-height": ["coalesce", ["get", "render_height"], ["get", "height"], 8],
-            "fill-extrusion-base": [
-              "coalesce",
-              ["get", "render_min_height"],
-              ["get", "min_height"],
-              0,
-            ],
-            "fill-extrusion-opacity": 0.92,
-            "fill-extrusion-vertical-gradient": true,
-          },
-        },
-        firstSymbolLayerId,
-      );
-    }
-    return;
+  // Older Gapwise builds could synthesize fallback OpenMapTiles building layers.
+  // Keep them hidden if a cached map/style instance still contains them.
+  for (const layerId of ["gapwise-campus-buildings", "gapwise-campus-buildings-3d"]) {
+    if (map.getLayer(layerId)) map.setLayoutProperty(layerId, "visibility", "none");
   }
-
-  if (styledBuildingLayer) return;
-
-  map.addLayer(
-    {
-      id: "gapwise-campus-buildings",
-      type: "fill",
-      source: "openmaptiles",
-      "source-layer": "building",
-      minzoom: 13,
-      paint: {
-        "fill-color": fillColor,
-        "fill-outline-color": outlineColor,
-        "fill-opacity": 0.88,
-      },
-    },
-    firstSymbolLayerId,
-  );
 }
 
-function ensureCanonicalExternalBuildingLayer(
+function ensureCanonicalCampusBuildingLayer(
   map: MapLibreMap,
   campusId: GapwiseCampusId,
   theme: MapTheme,
 ) {
-  if (campusId === "utm") return;
   const firstSymbolLayerId = (map.getStyle().layers ?? []).find(
     (layer) => layer.type === "symbol",
   )?.id;
   const accentColor = mapAccentColor(theme);
   const collection = campusFootprintCollection(campusId);
 
-  if (!map.getSource(CANONICAL_EXTERNAL_SOURCE_ID)) {
-    map.addSource(CANONICAL_EXTERNAL_SOURCE_ID, {
+  if (!map.getSource(CANONICAL_CAMPUS_SOURCE_ID)) {
+    map.addSource(CANONICAL_CAMPUS_SOURCE_ID, {
       type: "geojson",
       data: collection,
     });
   } else {
-    (map.getSource(CANONICAL_EXTERNAL_SOURCE_ID) as GeoJSONSource).setData(collection);
+    (map.getSource(CANONICAL_CAMPUS_SOURCE_ID) as GeoJSONSource).setData(collection);
   }
-  if (!map.getLayer(CANONICAL_EXTERNAL_FILL_LAYER_ID)) {
+  if (!map.getLayer(CANONICAL_CAMPUS_FILL_LAYER_ID)) {
     map.addLayer(
       {
-        id: CANONICAL_EXTERNAL_FILL_LAYER_ID,
+        id: CANONICAL_CAMPUS_FILL_LAYER_ID,
         type: "fill",
-        source: CANONICAL_EXTERNAL_SOURCE_ID,
+        source: CANONICAL_CAMPUS_SOURCE_ID,
         paint: {
           "fill-color": accentColor,
-          "fill-opacity": theme === "dark" ? 0.16 : 0.1,
+          "fill-opacity": theme === "dark" ? 0.24 : 0.16,
         },
       },
       firstSymbolLayerId,
     );
   }
-  if (!map.getLayer(CANONICAL_EXTERNAL_LINE_LAYER_ID)) {
+  if (!map.getLayer(CANONICAL_CAMPUS_LINE_LAYER_ID)) {
     map.addLayer(
       {
-        id: CANONICAL_EXTERNAL_LINE_LAYER_ID,
+        id: CANONICAL_CAMPUS_LINE_LAYER_ID,
         type: "line",
-        source: CANONICAL_EXTERNAL_SOURCE_ID,
+        source: CANONICAL_CAMPUS_SOURCE_ID,
         paint: {
           "line-color": accentColor,
-          "line-width": 1.35,
-          "line-opacity": theme === "dark" ? 0.72 : 0.58,
+          "line-width": 2.6,
+          "line-opacity": theme === "dark" ? 0.92 : 0.82,
         },
       },
       firstSymbolLayerId,
@@ -470,13 +410,13 @@ function ensureBuildingHighlightLayers(map: MapLibreMap, theme: MapTheme) {
     sourceId: BUILDING_HOVER_SOURCE_ID,
     fillLayerId: BUILDING_HOVER_FILL_LAYER_ID,
     lineLayerId: BUILDING_HOVER_LINE_LAYER_ID,
-    lineWidth: 1.75,
+    lineWidth: 3.25,
   });
   ensureLayers({
     sourceId: BUILDING_SELECTED_SOURCE_ID,
     fillLayerId: BUILDING_SELECTED_FILL_LAYER_ID,
     lineLayerId: BUILDING_SELECTED_LINE_LAYER_ID,
-    lineWidth: 3.25,
+    lineWidth: 4.5,
   });
 }
 
@@ -1249,8 +1189,8 @@ export function CampusMap({
           if (disposed) return;
           ready = true;
           if (loadTimeout) clearTimeout(loadTimeout);
-          styleCampusBuildings(map, themeRef.current);
-          ensureCanonicalExternalBuildingLayer(map, campusId, themeRef.current);
+          hideBasemapBuildings(map);
+          ensureCanonicalCampusBuildingLayer(map, campusId, themeRef.current);
           ensureBuildingHighlightLayers(map, themeRef.current);
           syncMapData(
             map,
