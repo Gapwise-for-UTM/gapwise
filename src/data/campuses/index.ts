@@ -74,10 +74,7 @@ const EXTERNAL_FOOTPRINTS = {
   utsc: utscFootprints,
 } as const;
 
-const CAMPUS_FALLBACK_BOUNDS: Record<
-  GapwiseCampusId,
-  [[number, number], [number, number]]
-> = {
+const CAMPUS_FALLBACK_BOUNDS: Record<GapwiseCampusId, [[number, number], [number, number]]> = {
   utm: [
     [-79.6765, 43.5415],
     [-79.6535, 43.5585],
@@ -225,7 +222,11 @@ export function campusFootprintGeometryPoints(geometry: CampusFootprintGeometry)
   return geometryPolygons(geometry).flat(2) as FootprintCoordinate[];
 }
 
-function pointOnSegment(point: FootprintCoordinate, start: FootprintCoordinate, end: FootprintCoordinate) {
+function pointOnSegment(
+  point: FootprintCoordinate,
+  start: FootprintCoordinate,
+  end: FootprintCoordinate,
+) {
   const dx = end[0] - start[0];
   const dy = end[1] - start[1];
   const squaredLength = dx * dx + dy * dy;
