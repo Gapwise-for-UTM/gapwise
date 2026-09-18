@@ -1296,7 +1296,7 @@ export function CampusMap({
           if (
             selectedBuilding &&
             selectedFocusKey !== lastFocusedBuildingRef.current &&
-            focusBuilding(map, maplibregl, selectedBuilding, selectedPadding)
+            focusBuilding(map, maplibregl, latestData.current.campusId, selectedBuilding, selectedPadding)
           ) {
             lastFocusedBuildingRef.current = selectedFocusKey;
             userHasMovedRef.current = true;
