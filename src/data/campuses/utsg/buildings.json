@@ -167,6 +167,47 @@
       "status": "active"
     },
     {
+      "id": "utsg:facility:006C",
+      "campus": "utsg",
+      "code": "006C",
+      "name": "Robarts Common",
+      "category": "facility",
+      "aliases": [
+        "Robarts Commons"
+      ],
+      "timetableCodes": [],
+      "facilityCodes": [
+        "006C"
+      ],
+      "mapUrls": [],
+      "geometryAddresses": [
+        {
+          "address": "369 Huron Street, Toronto, Ontario, Canada",
+          "sourceId": "uoft-fs-campus-elevators",
+          "sourceUrl": "https://www.fs.utoronto.ca/services/elevators/campus-elevators/"
+        }
+      ],
+      "geometryRefs": [
+        {
+          "type": "openstreetmap",
+          "ref": "way/627629970",
+          "sourceId": "openstreetmap"
+        }
+      ],
+      "geometryPoints": [],
+      "hostBuildingCode": null,
+      "hostEvidence": null,
+      "identityEvidence": [
+        "uoft-fs-campus-elevators",
+        "uoft-library-robarts-common"
+      ],
+      "sourceNames": [
+        "Robarts Common",
+        "ROBARTS COMMON BUILDING"
+      ],
+      "status": "active"
+    },
+    {
       "id": "utsg:facility:008A",
       "campus": "utsg",
       "code": "008A",
