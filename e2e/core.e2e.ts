@@ -304,9 +304,9 @@ test("live map location appears only for accurate on-campus positions", async ({
     if (body) postBodies.push(body);
   });
   await page.goto("/route");
-  await expect(page.getByRole("button", { name: "Show my location" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use my location for routes" })).toBeVisible();
   await expect(page.getByTestId("user-location-marker")).toHaveCount(0);
-  await page.getByRole("button", { name: "Show my location" }).click();
+  await page.getByRole("button", { name: "Use my location for routes" }).click();
   await expect(page.getByText("Finding you…")).toBeVisible();
 
   const emitPosition = (longitude: number, latitude: number, accuracy: number) =>
@@ -345,7 +345,7 @@ test("live map location appears only for accurate on-campus positions", async ({
 
   await emitPosition(-79.66346, 43.54786, 8);
   await expect(page.getByTestId("user-location-marker")).toBeVisible();
-  await page.getByRole("button", { name: "Hide my location" }).click();
+  await page.getByRole("button", { name: "Stop using my location" }).click();
   await expect(page.getByTestId("user-location-marker")).toHaveCount(0);
   expect(
     await page.evaluate(
