@@ -43,9 +43,9 @@ describe("UTM field survey targets", () => {
     expect(new Set(candidates.map((candidate) => candidate.osmNodeId))).toEqual(
       new Set([13738728068, 1728224590]),
     );
-    expect(
-      candidates.every((candidate) => candidate.kind === "physical_door_unreconciled"),
-    ).toBe(true);
+    expect(candidates.every((candidate) => candidate.kind === "physical_door_unreconciled")).toBe(
+      true,
+    );
   });
 
   test("covers MN perimeter completion, all Facilities identities, and the north 2F identity", () => {
