@@ -61,10 +61,7 @@ import {
   type AcademicState,
 } from "@/features/academic/state";
 import { plannedWorkMeetings } from "@/features/academic/integration";
-import {
-  CAMPUS_SHORT_LABELS,
-  getResidenceBuildingForCampus,
-} from "@/data/campuses";
+import { CAMPUS_SHORT_LABELS, getResidenceBuildingForCampus } from "@/data/campuses";
 import { getCampusAccessPoint } from "@/data/utm/campus-access-points";
 
 const DayRoute = lazy(() =>
@@ -174,10 +171,9 @@ function AppLayout() {
     preferences.mainCampus,
     preferences.residenceBuildingCode,
   );
-  const arrivalAccessPoint =
-    preferences.mainCampus === "utm"
-      ? getCampusAccessPoint(preferences.campusAccessPointId)
-      : null;
+  const arrivalAccessPoint = preferences.mainCampus === "utm"
+    ? getCampusAccessPoint(preferences.campusAccessPointId)
+    : null;
   const arrivalLabel =
     arrivalResidence?.code || arrivalAccessPoint?.label
       ? `${CAMPUS_SHORT_LABELS[preferences.mainCampus]} · ${arrivalResidence?.code ?? arrivalAccessPoint?.label}`
