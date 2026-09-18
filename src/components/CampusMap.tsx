@@ -107,6 +107,7 @@ const BUILDING_SELECTED_FILL_LAYER_ID = "gapwise-building-selected-fill";
 const BUILDING_SELECTED_LINE_LAYER_ID = "gapwise-building-selected-line";
 const CANONICAL_CAMPUS_SOURCE_ID = "gapwise-canonical-campus-buildings";
 const CANONICAL_CAMPUS_FILL_LAYER_ID = "gapwise-canonical-campus-buildings-fill";
+const CANONICAL_CAMPUS_EXTRUSION_LAYER_ID = "gapwise-canonical-campus-buildings-3d";
 const CANONICAL_CAMPUS_LINE_LAYER_ID = "gapwise-canonical-campus-buildings-line";
 
 function mapAccentColor(theme: MapTheme) {
@@ -331,6 +332,26 @@ function ensureCanonicalCampusBuildingLayer(
         paint: {
           "fill-color": accentColor,
           "fill-opacity": theme === "dark" ? 0.24 : 0.16,
+        },
+      },
+      firstSymbolLayerId,
+    );
+  }
+  if (!map.getLayer(CANONICAL_CAMPUS_EXTRUSION_LAYER_ID)) {
+    map.addLayer(
+      {
+        id: CANONICAL_CAMPUS_EXTRUSION_LAYER_ID,
+        type: "fill-extrusion",
+        source: CANONICAL_CAMPUS_SOURCE_ID,
+        minzoom: 14,
+        paint: {
+          "fill-extrusion-color": accentColor,
+          // Canonical footprint data does not yet carry authoritative heights.
+          // Use a uniform visual extrusion rather than re-enabling basemap
+          // buildings, which would bring non-U of T buildings back onto the map.
+          "fill-extrusion-height": 12,
+          "fill-extrusion-base": 0,
+          "fill-extrusion-opacity": theme === "dark" ? 0.52 : 0.42,
         },
       },
       firstSymbolLayerId,
