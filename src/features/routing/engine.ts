@@ -153,14 +153,34 @@ function buildAdjacency(graph: RoutingGraph): Map<string, Traversal[]> {
 // Compilation is cached by object identity; replace a graph object instead of mutating it in place.
 const compiledGraphs = new WeakMap<
   RoutingGraph,
-  { nodes: Map<string, RoutingNode>; adjacency: Map<string, Traversal[]> }
+  { nodes: Map<string, RoutingNode>; adjacency: Map<string, Traversal[]>; metricSafe: boolean }
 >();
 
 function compileGraph(graph: RoutingGraph) {
   const cached = compiledGraphs.get(graph);
   if (cached) return cached;
+  const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
+  // The metric heuristic is used only when every edge has located endpoints and
+  // its routing distance dominates endpoint geodesic distance. Otherwise h=0
+  // gives Dijkstra and preserves optimality for mixed indoor/outdoor graphs.
+  const metricSafe = graph.edges.every((edge) => {
+    const a = nodes.get(edge.from);
+    const b = nodes.get(edge.to);
+    if (
+      !a ||
+      !b ||
+      a.longitude === undefined ||
+      a.latitude === undefined ||
+      b.longitude === undefined ||
+      b.latitude === undefined
+    ) {
+      return false;
+    }
+    return straightLineMeters(a, b) <= edge.distanceMeters + 1e-6;
+  });
   const compiled = {
-    nodes: new Map(graph.nodes.map((node) => [node.id, node])),
+    nodes,
+    metricSafe,
     adjacency: buildAdjacency(graph),
   };
   compiledGraphs.set(graph, compiled);
@@ -283,7 +303,7 @@ export function findBestRoute(
   endNodeIds: readonly string[],
   preferences: RoutePreferences,
 ): RouteResult | null {
-  const { nodes, adjacency } = compileGraph(graph);
+  const { nodes, adjacency, metricSafe } = compileGraph(graph);
   const starts = [...new Set(startNodeIds)].filter((id) => nodes.has(id)).sort();
   const targets = [...new Set(endNodeIds)].filter((id) => nodes.has(id)).sort();
   if (
@@ -313,24 +333,6 @@ export function findBestRoute(
   const distances = new Map<string, number>(starts.map((id) => [id, 0]));
   const previous = new Map<string, Traversal>();
   const frontier = new MinPriorityQueue();
-  // The metric heuristic is used only when every edge has located endpoints and
-  // its routing distance dominates endpoint geodesic distance. Otherwise h=0
-  // gives Dijkstra and preserves optimality for mixed indoor/outdoor graphs.
-  const metricSafe = graph.edges.every((edge) => {
-    const a = nodes.get(edge.from);
-    const b = nodes.get(edge.to);
-    if (
-      !a ||
-      !b ||
-      a.longitude === undefined ||
-      a.latitude === undefined ||
-      b.longitude === undefined ||
-      b.latitude === undefined
-    ) {
-      return false;
-    }
-    return straightLineMeters(a, b) <= edge.distanceMeters + 1e-6;
-  });
   const heuristic = (nodeId: string) =>
     metricSafe
       ? Math.min(

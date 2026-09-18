@@ -82,14 +82,18 @@ if (publish) {
     console.error(`Gapwise campus mirror was not found at ${targetRoot}.`);
     process.exit(2);
   }
+  // Validate and read the required public snapshot before mutating the canonical tree.
+  if (!existsSync(targetSnapshot)) {
+    console.error(`Gapwise public snapshot was not found at ${targetSnapshot}.`);
+    process.exit(2);
+  }
+  const snapshotBytes = await readFile(targetSnapshot);
   await mirror(targetRoot, sourceRoot, targetFiles, sourceFiles);
   const publishedFiles = await filesUnder(sourceRoot);
   await writeCanonicalChecksums(publishedFiles);
 
-  if (existsSync(targetSnapshot)) {
-    await mkdir(dirname(sourceSnapshot), { recursive: true });
-    await copyFile(targetSnapshot, sourceSnapshot);
-  }
+  await mkdir(dirname(sourceSnapshot), { recursive: true });
+  await writeFile(sourceSnapshot, snapshotBytes);
 
   console.log(
     `Published ${publishedFiles.length} campus data files to ${sourceRoot} and refreshed checksums.`,
@@ -140,13 +144,14 @@ if (checkOnly) {
   process.exit(0);
 }
 
-await mirror(sourceRoot, targetRoot, sourceFiles, targetFiles);
 if (!existsSync(sourceSnapshot)) {
   console.error(`Canonical public snapshot was not found at ${sourceSnapshot}.`);
   process.exit(2);
 }
+const snapshotBytes = await readFile(sourceSnapshot);
+await mirror(sourceRoot, targetRoot, sourceFiles, targetFiles);
 await mkdir(dirname(targetSnapshot), { recursive: true });
-await copyFile(sourceSnapshot, targetSnapshot);
+await writeFile(targetSnapshot, snapshotBytes);
 console.log(
   `Synced ${sourceFiles.length} canonical campus data files and public/data/utm-campus-v1.json.`,
 );
