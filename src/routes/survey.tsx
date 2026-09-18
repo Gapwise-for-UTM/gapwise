@@ -302,8 +302,7 @@ function FieldSurveyPage() {
         date: localDate(),
         source: "UTM campus field survey",
         connectionId: "cct-hm-link",
-        note:
-          "Evidence capture only. Convert to indoor local-coordinate nodes and edges after the corridor geometry and level transitions are independently defensible.",
+        note: "Evidence capture only. Convert to indoor local-coordinate nodes and edges after the corridor geometry and level transitions are independently defensible.",
       },
       segments: draft.walkthroughSegments,
     });
@@ -325,8 +324,8 @@ function FieldSurveyPage() {
           Field survey
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Resolve the exact door identities Gapwise refuses to guess. Drafts stay in this browser until
-          exported.
+          Resolve the exact door identities Gapwise refuses to guess. Drafts stay in this browser
+          until exported.
         </p>
 
         <section className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-6">
@@ -495,8 +494,8 @@ function FieldSurveyPage() {
             </div>
           ) : (
             <p className="mt-5 rounded-xl border border-accent/30 bg-accent/5 p-4 text-sm leading-6">
-              Do not trace the CCT/HMALC Link with indoor GPS. Use the segment recorder below; convert
-              the walkthrough to local floor geometry only after the route is defensible.
+              Do not trace the CCT/HMALC Link with indoor GPS. Use the segment recorder below;
+              convert the walkthrough to local floor geometry only after the route is defensible.
             </p>
           )}
         </section>
