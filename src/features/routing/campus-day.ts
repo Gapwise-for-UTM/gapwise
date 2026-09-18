@@ -44,6 +44,7 @@ export function mappableWeekdaysForMeetings(meetings: readonly Meeting[]): Weekd
 
 export function selectedCampusDayAnchor(preferences: UserPreferences): CampusDayAnchor | null {
   if (preferences.dayOrigin === "residence") {
+    if (preferences.mainCampus !== "utm") return null;
     const residence = getResidenceBuilding(preferences.residenceBuildingCode);
     return residence
       ? {
