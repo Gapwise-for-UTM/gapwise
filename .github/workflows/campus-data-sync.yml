@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - src/data/utm/**
+      - src/data/campuses/utsg/**
+      - src/data/campuses/utsc/**
       - public/data/utm-campus-v1.json
       - scripts/sync-campus-data.ts
       - campus-data.source.json
@@ -13,13 +15,15 @@ on:
       - main
     paths:
       - src/data/utm/**
+      - src/data/campuses/utsg/**
+      - src/data/campuses/utsc/**
       - public/data/utm-campus-v1.json
       - scripts/sync-campus-data.ts
       - campus-data.source.json
       - .github/workflows/campus-data-sync.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify-mirror:
@@ -28,12 +32,12 @@ jobs:
       - name: Check out Gapwise
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
+          persist-credentials: true
 
       - name: Check out canonical campus data
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          repository: Gapwise-for-UTM/data
+          repository: Gapwise-for-UofT/data
           ref: main
           path: .canonical-data
           persist-credentials: false
@@ -43,5 +47,24 @@ jobs:
         with:
           bun-version: 1.3.14
 
-      - name: Verify vendored campus snapshot
+      - name: Verify UTM canonical mirror
         run: bun scripts/sync-campus-data.ts --check --source=.canonical-data/data/utm
+
+      - name: Synchronize UTSG and UTSC canonical snapshots on the sync branch
+        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'automation/final-tri-campus-data-sync' }}
+        run: |
+          set -euo pipefail
+          mkdir -p src/data/campuses/utsg src/data/campuses/utsc
+          cp .canonical-data/data/utsg/buildings.json src/data/campuses/utsg/buildings.json
+          cp .canonical-data/data/utsg/buildings.geojson src/data/campuses/utsg/buildings.geojson
+          cp .canonical-data/data/utsc/buildings.json src/data/campuses/utsc/buildings.json
+          cp .canonical-data/data/utsc/buildings.geojson src/data/campuses/utsc/buildings.geojson
+          if git diff --quiet -- src/data/campuses/utsg src/data/campuses/utsc; then
+            echo "UTSG/UTSC snapshots already match canonical Data."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/data/campuses/utsg src/data/campuses/utsc
+          git commit -m "data: sync final UTSG and UTSC canonical snapshots"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
