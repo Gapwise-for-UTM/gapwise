@@ -9,6 +9,12 @@ import {
   type CampusBuilding,
 } from "@/data/utm/routing-buildings";
 import { getCampusBuildingFootprint } from "@/data/utm/building-footprints";
+import {
+  campusBuildingConfigurations,
+  getBuildingFootprintForCampus,
+  resolveCampusBuildingLocation,
+  type GapwiseCampusId,
+} from "@/data/campuses";
 import { officialEntranceCandidatesForBuilding } from "@/data/utm/official-entrance-candidates";
 import { resolveAcornLocation } from "./location-resolver";
 import type { VerificationStatus } from "./types";
@@ -77,27 +83,53 @@ function resultFor(
   room: string | null = null,
   floor: string | null = null,
   floorVerification: VerificationStatus = "unknown",
+  campusId: GapwiseCampusId = "utm",
 ): BuildingSearchResult | null {
-  if (!getCampusBuildingFootprint(building.code)) return null;
-  const campus = getCampusBuilding(building.code);
+  if (!getBuildingFootprintForCampus(campusId, building.code)) return null;
+  const campus = campusId === "utm" ? getCampusBuilding(building.code) : null;
   return { building, campus, room, floor, floorVerification };
 }
 
-/** Local-only UTM building search. Room-like queries resolve to a building, never a room pin. */
-export function searchCampusBuildings(query: string, limit = 6): BuildingSearchResult[] {
+/** Campus-scoped building search. Room-like queries resolve to a building, never a room pin. */
+export function searchCampusBuildings(
+  query: string,
+  limit = 6,
+  campusId: GapwiseCampusId = "utm",
+): BuildingSearchResult[] {
   const normalized = normalizeSearchText(query);
   if (!normalized) return [];
 
-  const location = resolveAcornLocation(query);
-  if (location.status === "known" && location.buildingCode) {
-    const building = getRecognizedBuilding(location.buildingCode);
-    const direct = building
-      ? resultFor(building, location.room, location.floor, location.floorVerification)
-      : null;
-    if (direct) return [direct];
+  if (campusId === "utm") {
+    const location = resolveAcornLocation(query);
+    if (location.status === "known" && location.buildingCode) {
+      const building = getRecognizedBuilding(location.buildingCode);
+      const direct = building
+        ? resultFor(building, location.room, location.floor, location.floorVerification, campusId)
+        : null;
+      if (direct) return [direct];
+    }
+  } else {
+    const location = resolveCampusBuildingLocation(campusId, query);
+    if (location) {
+      const compactRoom = location.room?.replace(/[^A-Z0-9]/gi, "").toUpperCase() ?? "";
+      const floor =
+        compactRoom.match(/^(LL|L|G)/)?.[1] ??
+        compactRoom.match(/^(\d)\d{2,3}[A-Z]?$/)?.[1] ??
+        null;
+      const direct = resultFor(
+        location.building,
+        location.room,
+        floor,
+        floor ? "inferred" : "unknown",
+        campusId,
+      );
+      if (direct) return [direct];
+    }
   }
 
-  return UTM_BUILDINGS.map((building) => ({ building, score: searchScore(building, query) }))
+  const buildings = campusId === "utm" ? UTM_BUILDINGS : campusBuildingConfigurations(campusId);
+  return buildings
+    .map((building) => ({ building, score: searchScore(building, query) }))
     .filter(
       (candidate): candidate is { building: BuildingConfiguration; score: number } =>
         candidate.score !== null,
@@ -108,7 +140,7 @@ export function searchCampusBuildings(query: string, limit = 6): BuildingSearchR
         a.building.code.localeCompare(b.building.code, "en", { sensitivity: "base" }),
     )
     .flatMap(({ building }) => {
-      const result = resultFor(building);
+      const result = resultFor(building, null, null, "unknown", campusId);
       return result ? [result] : [];
     })
     .slice(0, Math.max(0, limit));
@@ -128,11 +160,35 @@ function currentCoverageStatus(mappedEntrances: number): EntranceCoverageStatus 
   return mappedEntrances === 0 ? "unmapped" : "partial";
 }
 
-export function getBuildingExplorerDetails(code: string | null): BuildingExplorerDetails | null {
+export function getBuildingExplorerDetails(
+  code: string | null,
+  campusId: GapwiseCampusId = "utm",
+): BuildingExplorerDetails | null {
   if (!code) return null;
-  const building = getRecognizedBuilding(code);
+  const building =
+    campusId === "utm"
+      ? getRecognizedBuilding(code)
+      : campusBuildingConfigurations(campusId).find(
+          (candidate) => candidate.code.toUpperCase() === code.toUpperCase(),
+        ) ?? null;
+  if (!building || !getBuildingFootprintForCampus(campusId, code)) return null;
+
+  if (campusId !== "utm") {
+    return {
+      building,
+      campus: null,
+      mappedEntrances: 0,
+      verifiedEntrances: 0,
+      inferredApproaches: 0,
+      accessibleEntrances: 0,
+      accessibilityUnknown: 0,
+      officialBarrierFreeEntranceInstances: 0,
+      coverageStatus: "unmapped",
+      latestVerificationDate: null,
+    };
+  }
+
   const campus = getCampusBuilding(code);
-  if (!building || !getCampusBuildingFootprint(code)) return null;
   const entrances = campus?.entrances ?? [];
   const mappedEntrances = entrances.filter((entrance) => entrance.kind === "entrance").length;
   const officialBarrierFreeEntranceInstances = officialEntranceCandidatesForBuilding(code)
