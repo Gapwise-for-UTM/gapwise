@@ -1,8 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import {
-  campusResidenceBuildings,
-  getResidenceBuildingForCampus,
-} from "@/data/campuses";
+import { campusResidenceBuildings, getResidenceBuildingForCampus } from "@/data/campuses";
 
 describe("tri-campus residence inventories", () => {
   test("keeps each campus residence list scoped to that campus", () => {
