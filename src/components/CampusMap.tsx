@@ -1471,10 +1471,14 @@ export function CampusMap({
         ref={containerRef}
         className="h-full w-full"
         role="region"
-        aria-label={`Interactive map of ${CAMPUS_LABELS[campusId]}`}
+        aria-label={
+          campusId === "utm"
+            ? "Interactive map of the University of Toronto Mississauga campus"
+            : `Interactive map of ${CAMPUS_LABELS[campusId]}`
+        }
       />
       {status === "ready" ? (
-        <div className="campus-map-actions absolute right-3 top-[5.35rem] z-10 flex max-w-[min(13rem,calc(100%-1.5rem))] flex-col items-end gap-2">
+        <div className="campus-map-actions absolute right-3 top-[8.25rem] z-10 flex max-w-[min(13rem,calc(100%-1.5rem))] flex-col items-end gap-2">
           <button
             type="button"
             onClick={resetCamera}
