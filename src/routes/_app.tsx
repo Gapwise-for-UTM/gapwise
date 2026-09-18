@@ -171,9 +171,8 @@ function AppLayout() {
     preferences.mainCampus,
     preferences.residenceBuildingCode,
   );
-  const arrivalAccessPoint = preferences.mainCampus === "utm"
-    ? getCampusAccessPoint(preferences.campusAccessPointId)
-    : null;
+  const arrivalAccessPoint =
+    preferences.mainCampus === "utm" ? getCampusAccessPoint(preferences.campusAccessPointId) : null;
   const arrivalLabel =
     arrivalResidence?.code || arrivalAccessPoint?.label
       ? `${CAMPUS_SHORT_LABELS[preferences.mainCampus]} · ${arrivalResidence?.code ?? arrivalAccessPoint?.label}`
