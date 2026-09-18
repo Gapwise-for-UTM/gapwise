@@ -15,7 +15,6 @@ Do not add new source-of-truth campus facts or public data documentation here. C
 
 The runtime app does **not** fetch `data.gapwise.ca` or GitHub on student requests. The snapshot is pinned and tested at build time for reliability.
 
-
 ## Consumer sync
 
 After a canonical data PR is merged, the consumer update is intentionally one command:

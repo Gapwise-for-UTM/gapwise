@@ -32,17 +32,8 @@
       "typescript-sdk",
       "python-sdk"
     ],
-    "mobile": [
-      "native-mobile-ux",
-      "device-integration",
-      "mobile-distribution"
-    ],
-    "ai": [
-      "oauth",
-      "mcp",
-      "delegation",
-      "bounded-ai-actions"
-    ],
+    "mobile": ["native-mobile-ux", "device-integration", "mobile-distribution"],
+    "ai": ["oauth", "mcp", "delegation", "bounded-ai-actions"],
     "data": [
       "canonical-public-campus-facts",
       "campus-geometry",
@@ -55,13 +46,8 @@
       "validation",
       "reuse"
     ],
-    "docs": [
-      "released-developer-documentation"
-    ],
-    "status": [
-      "service-health",
-      "incident-communication"
-    ]
+    "docs": ["released-developer-documentation"],
+    "status": ["service-health", "incident-communication"]
   },
   "campusData": {
     "canonicalRepository": "https://github.com/Gapwise-for-UTM/data",
@@ -75,16 +61,8 @@
       "package": "@gapwise/sdk",
       "source": "sdk/javascript",
       "registries": {
-        "npm": {
-          "version": "0.1.1",
-          "state": "published",
-          "role": "canonical"
-        },
-        "jsr": {
-          "version": "0.1.1",
-          "state": "published",
-          "role": "canonical"
-        },
+        "npm": { "version": "0.1.1", "state": "published", "role": "canonical" },
+        "jsr": { "version": "0.1.1", "state": "published", "role": "canonical" },
         "githubPackages": {
           "package": "@gapwise-for-utm/sdk",
           "version": "0.1.1",
@@ -92,23 +70,14 @@
           "role": "mirror"
         }
       },
-      "runtimeTargets": [
-        "node",
-        "bun",
-        "deno",
-        "browser"
-      ],
+      "runtimeTargets": ["node", "bun", "deno", "browser"],
       "model": "single-portable-implementation"
     },
     "python": {
       "package": "gapwise",
       "source": "sdk/python",
       "registries": {
-        "pypi": {
-          "version": "0.1.0",
-          "state": "published",
-          "role": "canonical"
-        },
+        "pypi": { "version": "0.1.0", "state": "published", "role": "canonical" },
         "githubReleases": {
           "version": "0.1.0",
           "tag": "python-v0.1.0",
@@ -116,10 +85,7 @@
           "role": "mirror"
         }
       },
-      "clients": [
-        "sync",
-        "async"
-      ]
+      "clients": ["sync", "async"]
     }
   },
   "contract": {
