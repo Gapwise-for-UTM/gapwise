@@ -80,16 +80,16 @@ describe("all-campus timetable compatibility", () => {
       sourceLocation: "BA 1170",
       locationType: "physical",
       locationUnknown: false,
-      buildingCode: null,
-      room: null,
+      buildingCode: "BA",
+      room: "1170",
     });
     expect(utsc).toMatchObject({
       campus: "UTSC",
       sourceLocation: "SW 319",
       locationType: "physical",
       locationUnknown: false,
-      buildingCode: null,
-      room: null,
+      buildingCode: "SW",
+      room: "319",
     });
     expect(utm).toMatchObject({
       campus: "UTM",
@@ -106,7 +106,7 @@ describe("all-campus timetable compatibility", () => {
     expect(parsed.warnings.join(" ")).not.toContain("not in the recognized UTM building registry");
   });
 
-  test("shows source-backed rooms in timetable surfaces without pretending they are on the UTM map", () => {
+  test("maps source-backed rooms to their own campus without reinterpreting them as UTM", () => {
     const parsed = parseIcs(crossCampusCalendar());
     const utsg = parsed.meetings.find((meeting) => meeting.courseCode === "CSC108H1")!;
     const utsc = parsed.meetings.find((meeting) => meeting.courseCode === "CSCA08H3")!;
@@ -123,8 +123,20 @@ describe("all-campus timetable compatibility", () => {
       detail: "Class location.",
     });
 
-    expect(resolveMeetingLocation(utsg).status).toBe("unknown");
-    expect(resolveMeetingLocation(utsc).status).toBe("unknown");
+    expect(resolveMeetingLocation(utsg)).toMatchObject({
+      status: "known",
+      buildingCode: "BA",
+      buildingName: "Bahen Centre for Information Technology",
+      room: "1170",
+      routingDataStatus: "inferred",
+    });
+    expect(resolveMeetingLocation(utsc)).toMatchObject({
+      status: "known",
+      buildingCode: "SW",
+      buildingName: "Science Wing",
+      room: "319",
+      routingDataStatus: "inferred",
+    });
     expect(resolveMeetingLocation(utm).status).toBe("known");
   });
 

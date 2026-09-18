@@ -11,6 +11,10 @@ src/data/utm/outdoor-edges.json
 src/data/utm/outdoor-nodes.geojson
 src/data/utm/generated/campus-access-audit.json
 src/data/utm/generated/entrance-audit.geojson
+src/data/campuses/utsg/buildings.json
+src/data/campuses/utsg/buildings.geojson
+src/data/campuses/utsc/buildings.json
+src/data/campuses/utsc/buildings.geojson
 public/openapi.json
 public/data/utm-campus-v1.json
 

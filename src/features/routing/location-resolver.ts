@@ -5,6 +5,11 @@ import {
   hasMappedRoutingData,
   hasVerifiedRoutingData,
 } from "@/data/utm/routing-buildings";
+import {
+  gapwiseCampusIdForCampus,
+  getBuildingFootprintForCampus,
+  resolveCampusBuildingLocation,
+} from "@/data/campuses";
 import type { Campus } from "@/lib/timetable-types";
 import type { RoutingNode, VerificationStatus } from "./types";
 
@@ -197,18 +202,59 @@ export function resolveAcornLocation(
   };
 }
 
-function unsupportedCampusResolution(raw: string): LocationResolution {
+function externalCampusResolution(raw: string, campus: Campus): LocationResolution {
+  const campusId = gapwiseCampusIdForCampus(campus);
+  if (!campusId || campusId === "utm") {
+    return {
+      raw,
+      buildingCode: null,
+      buildingName: null,
+      room: null,
+      status: "unknown",
+      buildingRecognition: "unrecognized",
+      routingDataStatus: "unverified",
+      floor: null,
+      floorVerification: "unknown",
+      warning: "The campus location could not be resolved.",
+    };
+  }
+  const resolved = resolveCampusBuildingLocation(campusId, raw);
+  if (!resolved) {
+    return {
+      raw,
+      buildingCode: null,
+      buildingName: null,
+      room: null,
+      status: "unknown",
+      buildingRecognition: "unrecognized",
+      routingDataStatus: "unverified",
+      floor: null,
+      floorVerification: "unknown",
+      warning: `“${raw}” could not be matched to a ${campus} building.`,
+    };
+  }
+
+  const room = resolved.room;
+  const compactRoom = room?.replace(/[^A-Z0-9]/gi, "").toUpperCase() ?? "";
+  const explicitLevel = compactRoom.match(/^(LL|L|G)/)?.[1] ?? null;
+  const standardNumber = compactRoom.match(/^(\d)\d{2,3}[A-Z]?$/)?.[1] ?? null;
+  const floor = explicitLevel ?? standardNumber;
+  const mapped = Boolean(getBuildingFootprintForCampus(campusId, resolved.building.code));
   return {
     raw,
-    buildingCode: null,
-    buildingName: null,
-    room: null,
-    status: "unknown",
-    buildingRecognition: "unrecognized",
-    routingDataStatus: "unverified",
-    floor: null,
-    floorVerification: "unknown",
-    warning: "Campus routing is currently available only for UTM.",
+    buildingCode: resolved.building.code,
+    buildingName: resolved.building.name,
+    room,
+    status: "known",
+    buildingRecognition: "recognized",
+    routingDataStatus: mapped ? "inferred" : "unverified",
+    floor,
+    floorVerification: floor ? "inferred" : "unknown",
+    warning: mapped
+      ? floor
+        ? `Floor ${floor} is inferred from the room label; the building map position is source-backed but its entrance is not yet verified.`
+        : null
+      : `${resolved.building.code} is recognized at ${campus}, but its Gapwise map footprint is still unresolved.`,
   };
 }
 
@@ -227,11 +273,10 @@ export function resolveMeetingLocation(meeting: {
     meeting.sourceLocation?.trim() ||
     [meeting.buildingCode, meeting.room].filter(Boolean).join(" ");
 
-  // St. George and Scarborough can share short building codes with UTM. Once the
-  // source course identifies either campus, never reinterpret that room against
-  // the UTM registry. It remains fully usable in the timetable, but unroutable.
+  // St. George and Scarborough can share short building codes with UTM, so resolve
+  // against the meeting's own campus-scoped registry and never reinterpret them as UTM.
   if (meeting.campus === "UTSG" || meeting.campus === "UTSC") {
-    return unsupportedCampusResolution(suppliedLocation);
+    return externalCampusResolution(suppliedLocation, meeting.campus);
   }
 
   if (meeting.locationType === "unknown") {
