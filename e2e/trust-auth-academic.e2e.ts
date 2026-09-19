@@ -7,7 +7,7 @@ test("privacy and terms are public, responsive, and independent of an account", 
 }, testInfo) => {
   const guard = watchForAppFailures(page, String(testInfo.project.use.baseURL));
   await page.goto("/privacy");
-  await expect(page).toHaveTitle("Privacy — Gapwise for UTM");
+  await expect(page).toHaveTitle("Privacy — Gapwise for UofT");
   await expect(page.getByRole("heading", { name: "Your schedule stays yours." })).toBeVisible();
   await expect(page.getByText("The original file is not uploaded")).toBeVisible();
   await expect(
@@ -23,7 +23,7 @@ test("privacy and terms are public, responsive, and independent of an account", 
     page.getByText(/Delete your account and associated application cloud data/),
   ).toBeVisible();
   await page.getByRole("link", { name: "Terms" }).click();
-  await expect(page).toHaveTitle("Terms — Gapwise for UTM");
+  await expect(page).toHaveTitle("Terms — Gapwise for UofT");
   await expect(page.getByRole("heading", { name: "A practical student utility." })).toBeVisible();
   await expect(page.getByText(/without paid feature tiers or a product checkout/)).toBeVisible();
   await expect(
@@ -40,7 +40,7 @@ test("accessibility statement publishes scoped evidence and limitations", async 
   await expect(page.getByText(/No documented, repeatable manual screen-reader/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Gapwise GitHub repository" })).toHaveAttribute(
     "href",
-    "https://github.com/Gapwise-for-UTM/gapwise/issues",
+    "https://github.com/Gapwise-for-UofT/gapwise/issues",
   );
   const results = await new AxeBuilder({ page }).analyze();
   expect(
@@ -52,7 +52,7 @@ test("accessibility statement publishes scoped evidence and limitations", async 
 
 test("trust center exposes evidence-backed boundaries and limitations", async ({ page }) => {
   await page.goto("/trust");
-  await expect(page).toHaveTitle("Trust Center — Gapwise for UTM");
+  await expect(page).toHaveTitle("Trust Center — Gapwise for UofT");
   await expect(page.getByRole("heading", { name: "Evidence before promises." })).toBeVisible();
   await expect(page.getByText("Gapwise does not ask for your ACORN password.")).toBeVisible();
   await expect(
@@ -75,7 +75,7 @@ test("trust center exposes evidence-backed boundaries and limitations", async ({
   );
   await expect(page.getByRole("link", { name: "Data and trust inventory" })).toHaveAttribute(
     "href",
-    "https://github.com/Gapwise-for-UTM/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md",
+    "https://github.com/Gapwise-for-UofT/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md",
   );
   const results = await new AxeBuilder({ page }).analyze();
   expect(
@@ -87,13 +87,13 @@ test("trust center exposes evidence-backed boundaries and limitations", async ({
 
 test("vulnerability policy and canonical security contact are public", async ({ page }) => {
   await page.goto("/security");
-  await expect(page).toHaveTitle("Vulnerability Disclosure — Gapwise for UTM");
+  await expect(page).toHaveTitle("Vulnerability Disclosure — Gapwise for UofT");
   await expect(
     page.getByRole("heading", { name: "Vulnerability Disclosure Policy" }),
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "private vulnerability reporting form" }),
-  ).toHaveAttribute("href", "https://github.com/Gapwise-for-UTM/gapwise/security/advisories/new");
+  ).toHaveAttribute("href", "https://github.com/Gapwise-for-UofT/gapwise/security/advisories/new");
   await expect(page.getByText("operational goals, not guaranteed")).toBeVisible();
 
   const response = await page.request.get("/.well-known/security.txt");
@@ -103,7 +103,7 @@ test("vulnerability policy and canonical security contact are public", async ({ 
   expect(securityTxt).toContain("Canonical: https://gapwise.ca/.well-known/security.txt");
   expect(securityTxt).toContain("Policy: https://gapwise.ca/security");
   expect(securityTxt).toContain(
-    "Contact: https://github.com/Gapwise-for-UTM/gapwise/security/advisories/new",
+    "Contact: https://github.com/Gapwise-for-UofT/gapwise/security/advisories/new",
   );
 });
 
