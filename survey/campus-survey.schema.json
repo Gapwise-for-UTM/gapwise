@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "campus-survey.schema.json",
-  "title": "Gapwise UTM campus field survey",
+  "title": "Gapwise UofT campus field survey",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "survey", "buildings", "nodes", "edges"],

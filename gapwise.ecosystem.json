@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "self": "gapwise",
-  "githubOrganization": "Gapwise-for-UTM",
+  "githubOrganization": "Gapwise-for-UofT",
   "canonical": {
     "app": "https://gapwise.ca",
     "api": "https://api.gapwise.ca/v1",
@@ -13,12 +13,13 @@
     "status": "https://status.gapwise.ca"
   },
   "repositories": {
-    "core": "https://github.com/Gapwise-for-UTM/gapwise",
-    "mobile": "https://github.com/Gapwise-for-UTM/gapwise-mobile",
-    "ai": "https://github.com/Gapwise-for-UTM/gapwise-ai",
-    "data": "https://github.com/Gapwise-for-UTM/data",
-    "docs": "https://github.com/Gapwise-for-UTM/gapwise-docs",
-    "status": "https://github.com/Gapwise-for-UTM/gapwise-status"
+    "core": "https://github.com/Gapwise-for-UofT/gapwise",
+    "android": "https://github.com/Gapwise-for-UofT/android",
+    "ios": "https://github.com/Gapwise-for-UofT/ios",
+    "ai": "https://github.com/Gapwise-for-UofT/ai",
+    "data": "https://github.com/Gapwise-for-UofT/data",
+    "docs": "https://github.com/Gapwise-for-UofT/docs",
+    "status": "https://github.com/Gapwise-for-UofT/status"
   },
   "ownership": {
     "core": [
@@ -32,7 +33,8 @@
       "typescript-sdk",
       "python-sdk"
     ],
-    "mobile": ["native-mobile-ux", "device-integration", "mobile-distribution"],
+    "android": ["native-android-ux", "android-device-integration", "android-distribution"],
+    "ios": ["native-ios-ux", "ios-device-integration", "ios-distribution"],
     "ai": ["oauth", "mcp", "delegation", "bounded-ai-actions"],
     "data": [
       "canonical-public-campus-facts",
@@ -50,7 +52,7 @@
     "status": ["service-health", "incident-communication"]
   },
   "campusData": {
-    "canonicalRepository": "https://github.com/Gapwise-for-UTM/data",
+    "canonicalRepository": "https://github.com/Gapwise-for-UofT/data",
     "canonicalPath": "data/utm",
     "coreMirrorPath": "src/data/utm",
     "runtimeFetchRequired": false,
@@ -64,7 +66,7 @@
         "npm": { "version": "0.1.1", "state": "published", "role": "canonical" },
         "jsr": { "version": "0.1.1", "state": "published", "role": "canonical" },
         "githubPackages": {
-          "package": "@gapwise-for-utm/sdk",
+          "package": "@gapwise-for-uoft/sdk",
           "version": "0.1.1",
           "state": "published",
           "role": "mirror"

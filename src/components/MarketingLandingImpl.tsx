@@ -87,13 +87,13 @@ export function MarketingLandingImpl({
     <div ref={rootRef} className="marketing-home" data-active-product={activeProduct}>
       <section className="marketing-hero" aria-labelledby="marketing-title">
         <div className="marketing-hero-copy">
-          <p className="marketing-eyebrow">Gapwise for UTM</p>
+          <p className="marketing-eyebrow">Gapwise for UofT</p>
           <h1 id="marketing-title">
             Make every <span>gap</span> on campus count.
           </h1>
           <p className="marketing-lede">
-            One precise workspace for your timetable, the time between classes, and moving across
-            UTM.
+            One precise workspace for your U of T timetable, the time between classes, and
+            source-backed campus context where available.
           </p>
           <div className="marketing-hero-links">
             <a href="#gapwise">Explore Gapwise</a>

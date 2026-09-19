@@ -63,4 +63,4 @@ The “minimum unresolved accessible coordinates” column is a conservative low
 | OPH | 2 | 2 | 2 | 0 | 2 | Main; Rear |
 | RIH | 1 | 1 | 0 | 0 | 1 | Main |
 
-The same official Facilities source also names **Early Learning Centre: Main**. Early Learning Centre is not currently in the Gapwise UTM building registry, so it is recorded here as an upstream coverage gap rather than silently assigned to another building. Absence from the barrier-free list does not prove that a building is inaccessible.
+The same official Facilities source also names **Early Learning Centre: Main**. Early Learning Centre is not currently in the Gapwise UofT building registry, so it is recorded here as an upstream coverage gap rather than silently assigned to another building. Absence from the barrier-free list does not prove that a building is inaccessible.

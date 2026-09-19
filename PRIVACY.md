@@ -2,7 +2,7 @@
 
 _Last updated: 2026-08-30_
 
-Gapwise for UTM is an independent student project. It is not affiliated with, endorsed by, or an official service of the University of Toronto.
+Gapwise for UofT is an independent student project. It is not affiliated with, endorsed by, or an official service of the University of Toronto.
 
 This notice describes the implementation-backed data handling of the public Gapwise application at `gapwise.ca` and the optional Gapwise AI integration service. It is not a legal opinion about which privacy law applies to every user or circumstance.
 

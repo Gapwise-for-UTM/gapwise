@@ -31,4 +31,4 @@ Small OpenStreetMap-derived campus data files distributed in `src/data/utm/` rem
 
 ## Names and trademarks
 
-University of Toronto and third-party names, marks, and logos belong to their respective owners. Their mention does not imply affiliation, endorsement, or sponsorship. Gapwise for UTM is an independent student project and is not an official University of Toronto service.
+University of Toronto and third-party names, marks, and logos belong to their respective owners. Their mention does not imply affiliation, endorsement, or sponsorship. Gapwise for UofT is an independent student project and is not an official University of Toronto service.

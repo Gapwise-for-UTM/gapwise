@@ -10,7 +10,7 @@ The canonical JavaScript package identity is `@gapwise/sdk`.
 
 - **npm:** `@gapwise/sdk@0.1.1` is published with provenance and is the primary package for Node.js, Bun, browser bundlers, and npm-compatible tooling.
 - **JSR:** `@gapwise/sdk@0.1.1` is published from the same TypeScript source through GitHub Actions OIDC with provenance. JSR publishes the source entry point directly from `src/index.ts`.
-- **GitHub Packages:** `@gapwise-for-utm/sdk@0.1.1` is the organization-scoped mirror of the same JavaScript package.
+- **GitHub Packages:** `@gapwise-for-uoft/sdk@0.1.1` is the organization-scoped mirror of the same JavaScript package.
 - **Node.js:** supported through the npm package; package metadata requires Node 20+.
 - **Bun:** first-party test/runtime target using the same package and source.
 - **Deno:** first-party portability target using the same TypeScript source/package; release verification runs JSR validation and Deno type/runtime checks before publication.

@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { hasPendingFirstValue } from "@/features/onboarding/first-value";
 
 export const Route = createFileRoute("/_app/timetable")({
-  head: () => ({ meta: [{ title: "Timetable — Gapwise for UTM" }] }),
+  head: () => ({ meta: [{ title: "Timetable — Gapwise for UofT" }] }),
   component: RouteBoundary,
 });
 
