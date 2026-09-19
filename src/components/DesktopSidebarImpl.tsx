@@ -63,7 +63,7 @@ export function DesktopSidebar({
 
   return (
     <aside className="desktop-sidebar" aria-label="Desktop navigation">
-      <Link to="/" className="desktop-brand" aria-label="Gapwise for UTM home">
+      <Link to="/" className="desktop-brand" aria-label="Gapwise for UofT home">
         <span className="brand-mark-shell">
           <img src="/logo-mark.svg" alt="" aria-hidden="true" />
         </span>
