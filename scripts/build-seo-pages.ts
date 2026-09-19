@@ -31,12 +31,12 @@ const FEATURE_PAGES: readonly SeoPage[] = Object.values(PUBLIC_FEATURE_PAGES).ma
 const PAGES: readonly SeoPage[] = [
   {
     path: "/",
-    title: "Gapwise — UTM Timetable, Gap Planner & Campus Routes",
+    title: "Gapwise — UofT Timetable, Gap Planner & Campus Routes",
     description:
       "Gapwise is a privacy-first campus planner for University of Toronto students: import your ACORN timetable locally, understand gaps, and plan campus routes.",
     heading: "Make the time between classes count.",
     detail:
-      "Import an ACORN .ics timetable in your browser, understand the usable time between classes, and navigate source-backed UTM campus routes. Guest mode and a demo work without an account.",
+      "Import an ACORN .ics timetable in your browser, understand the usable time between classes, and navigate source-backed UofT campus routes. Guest mode and a demo work without an account.",
     sections: [
       {
         title: "Your timetable, connected to campus context",
