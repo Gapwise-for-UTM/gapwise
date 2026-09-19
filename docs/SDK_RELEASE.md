@@ -56,7 +56,7 @@ The manual `python-github` target can repair/backfill the GitHub Release mirror 
 
 The package's GitHub Actions Trusted Publisher should be configured with the current canonical repository identity:
 
-- repository owner: `Gapwise-for-UTM`
+- repository owner: `Gapwise-for-UofT`
 - repository: `gapwise`
 - workflow filename: `release-sdks.yml`
 - allowed action: `npm publish`
@@ -67,7 +67,7 @@ Prefer npm's strongest publishing-access setting that keeps OIDC enabled while d
 
 ## JSR OIDC publishing
 
-The JSR package identity is also `@gapwise/sdk`. The package should be linked on JSR to the current canonical repository, `Gapwise-for-UTM/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
+The JSR package identity is also `@gapwise/sdk`. The package should be linked on JSR to the current canonical repository, `Gapwise-for-UofT/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
 
 JSR configuration lives in `sdk/javascript/jsr.json` and exports the TypeScript source entry point directly from `src/index.ts`. The JSR package intentionally reuses the same implementation and version line as npm.
 
@@ -88,7 +88,7 @@ No JSR token belongs in GitHub secrets. The JSR publish job receives only `conte
 The publisher should be configured with the current canonical repository identity:
 
 - PyPI project name: `gapwise`
-- repository owner: `Gapwise-for-UTM`
+- repository owner: `Gapwise-for-UofT`
 - repository: `gapwise`
 - workflow filename: `release-sdks.yml`
 - environment name: blank
@@ -97,12 +97,12 @@ No PyPI API token belongs in GitHub secrets. Future releases should continue usi
 
 ## Post-transfer provider verification
 
-The repository moved from the personal `andrewmuratov/gapwise` namespace to `Gapwise-for-UTM/gapwise`. GitHub repository redirects are useful for ordinary web and Git traffic, but they are not a substitute for verifying the repository identity expected by third-party OIDC/trusted-publisher providers.
+The repository moved from the personal `andrewmuratov/gapwise` namespace to `Gapwise-for-UofT/gapwise`. GitHub repository redirects are useful for ordinary web and Git traffic, but they are not a substitute for verifying the repository identity expected by third-party OIDC/trusted-publisher providers.
 
 Before the next npm, JSR, or PyPI publication:
 
 1. Open the provider-side trusted-publisher or GitHub-link configuration.
-2. Confirm it names `Gapwise-for-UTM/gapwise` and `.github/workflows/release-sdks.yml` where the provider exposes those fields.
+2. Confirm it names `Gapwise-for-UofT/gapwise` and `.github/workflows/release-sdks.yml` where the provider exposes those fields.
 3. If the provider still shows `andrewmuratov/gapwise`, relink or update the trusted publisher before publishing.
 4. Do not work around a stale provider link by introducing a long-lived registry token.
 5. After the first post-transfer version publishes, record the successful run and exact registry version as the new evidence baseline.
