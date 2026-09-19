@@ -18,8 +18,8 @@ for (const needle of [
   '"@type":"WebSite"',
   '"@type":"Organization"',
   '"name":"Gapwise"',
-  '"alternateName":["Gapwise UTM","Gapwise for UTM"]',
-  "https://github.com/Gapwise-for-UTM",
+  '"alternateName":["Gapwise UTM","Gapwise for UofT"]',
+  "https://github.com/Gapwise-for-UofT",
 ])
   requireText(home, needle, "homepage metadata");
 
