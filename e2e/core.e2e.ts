@@ -341,7 +341,7 @@ test("live map location appears only for accurate on-campus positions", async ({
 
   await emitPosition(-79.7, 43.57, 10);
   await expect(page.getByTestId("user-location-marker")).toHaveCount(0);
-  await expect(page.getByText("You're outside the mapped UTM campus")).toBeVisible();
+  await expect(page.getByText("You're outside the mapped campus")).toBeVisible();
 
   await emitPosition(-79.66346, 43.54786, 8);
   await expect(page.getByTestId("user-location-marker")).toBeVisible();
