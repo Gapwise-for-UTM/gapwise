@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/LegalPage";
 export const Route = createFileRoute("/support")({
   head: () => ({
     meta: [
-      { title: "Support — Gapwise for UTM" },
+      { title: "Support — Gapwise for UofT" },
       {
         name: "description",
         content:
@@ -126,7 +126,7 @@ function SupportPage() {
         </p>
         <a
           className="text-accent underline"
-          href="https://github.com/Gapwise-for-UTM/gapwise/issues"
+          href="https://github.com/Gapwise-for-UofT/gapwise/issues"
         >
           Gapwise issues
         </a>
