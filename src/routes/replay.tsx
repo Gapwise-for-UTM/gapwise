@@ -19,7 +19,7 @@ import { TERMS, type Meeting, type Term } from "@/lib/timetable-types";
 export const Route = createFileRoute("/replay")({
   head: () => ({
     meta: [
-      { title: "Day Replay — Gapwise for UTM" },
+      { title: "Day Replay — Gapwise for UofT" },
       {
         name: "description",
         content:
