@@ -1,13 +1,13 @@
-# Contributing to Gapwise for UTM
+# Contributing to Gapwise for UofT
 
-Gapwise for UTM is an independent student project. Contributions should preserve its local-first privacy model, accessibility, honest campus-data confidence, and sustainable free-tier operating model.
+Gapwise for UofT is an independent student project. Contributions should preserve its local-first privacy model, accessibility, honest campus-data confidence, and sustainable free-tier operating model.
 
 ## Before starting
 
 1. Search existing GitHub issues and pull requests.
 2. Use the repository issue forms for public bug/feature reports.
 3. Report security vulnerabilities privately through the repository security policy.
-4. Maintainer-planned implementation work is tracked in the **Gapwise for UTM** Linear project.
+4. Maintainer-planned implementation work is tracked in the **Gapwise for UofT** Linear project.
 
 GitHub is the public engineering record. Linear is the maintainer's planning/execution system; contributors do not need Linear access to report a problem.
 
@@ -102,7 +102,7 @@ Do not add ACORN scraping, automated enrolment, background location tracking, pa
 
 ## Campus data
 
-Campus-data changes belong in [`Gapwise-for-UTM/data`](https://github.com/Gapwise-for-UTM/data), not in the core compatibility mirror. For a missing or incorrect UTM entrance, use the visual [Gapwise Data entrance contributor](https://data.gapwise.ca/contribute); it creates reviewable evidence without requiring a GeoJSON edit. Use Data repository pull requests for validators, schemas, data-production tooling, or other maintainer-owned changes. Follow the public [Gapwise Data contribution guide](https://docs.gapwise.ca/data/contributing/) for the evidence and review rules.
+Campus-data changes belong in [`Gapwise-for-UofT/data`](https://github.com/Gapwise-for-UofT/data), not in the core compatibility mirror. For a missing or incorrect UTM entrance, use the visual [Gapwise Data entrance contributor](https://data.gapwise.ca/contribute); it creates reviewable evidence without requiring a GeoJSON edit. Use Data repository pull requests for validators, schemas, data-production tooling, or other maintainer-owned changes. Follow the public [Gapwise Data contribution guide](https://docs.gapwise.ca/data/contributing/) for the evidence and review rules.
 
 Core keeps a tested snapshot for runtime reliability. Do not promote an estimate or inferred approach to a verified entrance/route without provenance and review. Unknown accessibility is not equivalent to step-free accessibility.
 
