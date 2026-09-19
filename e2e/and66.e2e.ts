@@ -43,7 +43,7 @@ test("AND-66 first-run landing keeps activation clear on a narrow phone", async 
   ).toBeVisible();
   await expect(
     page.getByText(
-      "One precise workspace for your timetable, the time between classes, and moving across UTM.",
+      "One precise workspace for your U of T timetable, the time between classes, and source-backed campus context where available.",
     ),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Try a demo" })).toBeVisible();

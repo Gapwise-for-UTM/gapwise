@@ -19,9 +19,9 @@ export const PUBLIC_FEATURE_PAGES = {
     path: "/about",
     eyebrow: "About Gapwise",
     title: "A campus planner built around the time between classes.",
-    seoTitle: "About Gapwise — Campus Planning for UTM",
+    seoTitle: "About Gapwise for UofT — Student Planning",
     description:
-      "See how Gapwise connects a UTM timetable, gap planning, campus routing, and day context in one focused student-built product.",
+      "See how Gapwise connects University of Toronto timetables, gap planning, and source-backed campus context in one focused student-built product.",
     lead: "Gapwise is built for the part of university life a timetable leaves blank: what to do next, how much time you actually have, and where you need to go.",
     sections: [
       {
@@ -39,8 +39,8 @@ export const PUBLIC_FEATURE_PAGES = {
         body: "Gapwise turns the space between commitments into something you can act on, with travel time and the next class already part of the calculation.",
       },
       {
-        title: "Made for UTM",
-        body: "The product is shaped around UTM buildings, class patterns, campus movement, and the practical rhythm of a student day.",
+        title: "Made for U of T",
+        body: "Timetable identity supports UTM, UTSG, UTSC, and mixed-campus schedules. Current source-backed map and routing coverage remains focused on UTM.",
       },
     ],
   },
@@ -73,7 +73,7 @@ export const PUBLIC_FEATURE_PAGES = {
     title: "Explore UTM with a map built around your day.",
     seoTitle: "UTM Campus Map — Gapwise",
     description:
-      "Explore University of Toronto Mississauga buildings, entrances, campus places, and route context with the Gapwise UTM campus map.",
+      "Explore University of Toronto Mississauga buildings, entrances, campus places, and route context with the Gapwise UofT campus map.",
     lead: "The Gapwise map connects UTM buildings, entrances, routes, and schedule context so campus navigation feels like part of the planner instead of a separate map tab.",
     sections: [
       {

@@ -4,7 +4,7 @@ import { LegalPage } from "@/components/LegalPage";
 export const Route = createFileRoute("/trust")({
   head: () => ({
     meta: [
-      { title: "Trust Center — Gapwise for UTM" },
+      { title: "Trust Center — Gapwise for UofT" },
       {
         name: "description",
         content:
@@ -28,11 +28,11 @@ function TrustPage() {
     >
       <section>
         <p>
-          Gapwise is an independent student project for UTM. It is not an official University of
-          Toronto service and does not claim university review, sponsorship, endorsement,
-          certification, or procurement approval. This page separates implementation-backed facts
-          from operating commitments and items that still require provider, legal, or human
-          confirmation.
+          Gapwise is an independent student project for University of Toronto students. It is not an
+          official University of Toronto service and does not claim university review, sponsorship,
+          endorsement, certification, or procurement approval. This page separates
+          implementation-backed facts from operating commitments and items that still require
+          provider, legal, or human confirmation.
         </p>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           <Link to="/privacy" className={cardClass}>
@@ -143,7 +143,7 @@ function TrustPage() {
           maintained inventory records those unknowns instead of guessing them.
         </p>
         <a
-          href="https://github.com/Gapwise-for-UTM/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md"
+          href="https://github.com/Gapwise-for-UofT/gapwise/blob/main/docs/TRUST_DATA_INVENTORY.md"
           className="text-accent hover:underline"
         >
           Data and trust inventory
@@ -165,7 +165,7 @@ function TrustPage() {
             Privacy page
           </Link>
           <a
-            href="https://github.com/Gapwise-for-UTM/gapwise-docs/tree/main/governance/privacy"
+            href="https://github.com/Gapwise-for-UofT/docs/tree/main/governance/privacy"
             className="text-accent hover:underline"
           >
             Privacy governance package
@@ -195,7 +195,7 @@ function TrustPage() {
             Service status
           </a>
           <a
-            href="https://github.com/Gapwise-for-UTM/gapwise/blob/main/docs/INCIDENT_RESPONSE.md"
+            href="https://github.com/Gapwise-for-UofT/gapwise/blob/main/docs/INCIDENT_RESPONSE.md"
             className="text-accent hover:underline"
           >
             Incident-response runbook
@@ -236,7 +236,7 @@ function TrustPage() {
             Developer-platform changelog
           </a>
           <a
-            href="https://github.com/Gapwise-for-UTM/gapwise/commits/main"
+            href="https://github.com/Gapwise-for-UofT/gapwise/commits/main"
             className="text-accent hover:underline"
           >
             Source history

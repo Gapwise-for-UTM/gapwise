@@ -549,7 +549,7 @@ function AppLayout() {
         <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link
             to="/"
-            aria-label="Gapwise for UTM home"
+            aria-label="Gapwise for UofT home"
             className="brand-lockup group flex min-w-0 items-center gap-3"
           >
             <span className="brand-mark-shell">
@@ -557,7 +557,7 @@ function AppLayout() {
             </span>
             <div className="min-w-0">
               <p className="flex items-center gap-2 truncate font-display text-base font-semibold tracking-[-0.035em]">
-                Gapwise <span className="brand-utm-pill">UTM</span>
+                Gapwise <span className="brand-utm-pill">UofT</span>
               </p>
             </div>
           </Link>
@@ -934,7 +934,7 @@ function AppLayout() {
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
               <p className="flex items-center gap-2 font-display font-semibold text-foreground">
                 <img src="/logo-mark.svg" alt="" aria-hidden="true" className="h-4 w-4" />
-                Gapwise <span className="font-normal text-muted-foreground">Built for UTM</span>
+                Gapwise <span className="font-normal text-muted-foreground">Built for UofT</span>
               </p>
               <nav aria-label="Gapwise ecosystem" className="flex flex-wrap gap-x-4 gap-y-2">
                 <Link to="/about" className="hover:text-foreground">
@@ -956,7 +956,7 @@ function AppLayout() {
                   Support
                 </Link>
                 <a
-                  href="https://github.com/Gapwise-for-UTM/gapwise"
+                  href="https://github.com/Gapwise-for-UofT/gapwise"
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-foreground"

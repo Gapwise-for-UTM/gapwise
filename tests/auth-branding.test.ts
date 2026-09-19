@@ -171,7 +171,7 @@ describe("branding metadata", () => {
     expect(rootRoute).toContain('name: "apple-mobile-web-app-capable"');
     expect(rootRoute).toContain('rel: "manifest"');
 
-    expect(indexRoute).toContain('const TITLE = "Gapwise for UTM"');
+    expect(indexRoute).toContain('const TITLE = "Gapwise for UofT"');
     expect(indexRoute).toContain('{ name: "description", content: DESCRIPTION }');
   });
 });
@@ -198,8 +198,8 @@ describe("production content security policy", () => {
 describe("public legal surfaces", () => {
   test("provide public, app-state-independent routes with titles", async () => {
     for (const [path, title] of [
-      ["privacy", "Privacy — Gapwise for UTM"],
-      ["terms", "Terms — Gapwise for UTM"],
+      ["privacy", "Privacy — Gapwise for UofT"],
+      ["terms", "Terms — Gapwise for UofT"],
     ]) {
       const source = await readFile(`src/routes/${path}.tsx`, "utf8");
       expect(source).toContain(`createFileRoute("/${path}")`);

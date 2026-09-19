@@ -23,7 +23,7 @@ When Codex substantially authors a Git commit in this repository:
 
 ## Project
 
-Gapwise for UTM is a privacy-first web application for University of Toronto Mississauga students, served from `https://gapwise.ca`.
+Gapwise for UofT is a privacy-first web application for University of Toronto students, served from `https://gapwise.ca`. Timetable identity supports UTM, UTSG, UTSC, and mixed-campus schedules; the current first-party map, routing, and public campus-data layer remains UTM-focused.
 
 The current product:
 

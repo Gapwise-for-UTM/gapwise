@@ -16,13 +16,13 @@ The release workflow is `.github/workflows/release-sdks.yml`. npm publishing is 
 | -------------- | ------------ | ------------------ | ----------------------- | ------------- |
 | TypeScript | npm | `@gapwise/sdk` | Primary Node.js, Bun, browser-bundler, and npm-compatible distribution | `0.1.1` published |
 | TypeScript | JSR | `@gapwise/sdk` | Deno-first/portable TypeScript distribution plus Node/Bun-compatible JSR consumption | `0.1.1` published |
-| TypeScript | GitHub Packages | `@gapwise-for-utm/sdk` | Source-adjacent GitHub npm registry mirror of the same JavaScript SDK artifact | `0.1.1` published, public |
+| TypeScript | GitHub Packages | `@gapwise-for-uoft/sdk` | Source-adjacent GitHub npm registry mirror of the same JavaScript SDK artifact | `0.1.1` published, public |
 | Python | PyPI | `gapwise` | Canonical Python sync + async package index distribution | `0.1.0` published |
 | Python | GitHub Releases | `gapwise-<version>-py3-none-any.whl` + source distribution | Source-adjacent mirror of the exact tagged Python release artifacts | automated from `python-v*` tags |
 
 The initial TypeScript `0.1.0` publication established the npm/JSR package identities and trusted-publishing paths. The current verified TypeScript release is `@gapwise/sdk@0.1.1` on both npm and JSR. Future registry claims remain evidence-based: update release-state documentation only after the relevant publish job and registry confirm the version.
 
-GitHub Packages requires the npm scope to match the GitHub organization owner, so its public mirror is named `@gapwise-for-utm/sdk` rather than `@gapwise/sdk`. This is a registry-specific package identity for the same built implementation, not a fork or a fourth SDK. npm remains the primary npm-compatible installation channel; consumers choosing GitHub Packages must configure `@gapwise-for-utm` for `https://npm.pkg.github.com` and follow GitHub's registry-authentication requirements.
+GitHub Packages requires the npm scope to match the GitHub organization owner, so its public mirror is named `@gapwise-for-uoft/sdk` rather than `@gapwise/sdk`. This is a registry-specific package identity for the same built implementation, not a fork or a fourth SDK. npm remains the primary npm-compatible installation channel; consumers choosing GitHub Packages must configure `@gapwise-for-uoft` for `https://npm.pkg.github.com` and follow GitHub's registry-authentication requirements.
 
 ## GitHub Packages publishing
 
@@ -56,7 +56,7 @@ The manual `python-github` target can repair/backfill the GitHub Release mirror 
 
 The package's GitHub Actions Trusted Publisher should be configured with the current canonical repository identity:
 
-- repository owner: `Gapwise-for-UTM`
+- repository owner: `Gapwise-for-UofT`
 - repository: `gapwise`
 - workflow filename: `release-sdks.yml`
 - allowed action: `npm publish`
@@ -67,7 +67,7 @@ Prefer npm's strongest publishing-access setting that keeps OIDC enabled while d
 
 ## JSR OIDC publishing
 
-The JSR package identity is also `@gapwise/sdk`. The package should be linked on JSR to the current canonical repository, `Gapwise-for-UTM/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
+The JSR package identity is also `@gapwise/sdk`. The package should be linked on JSR to the current canonical repository, `Gapwise-for-UofT/gapwise`, so GitHub Actions can publish with OIDC and provenance without a long-lived JSR token.
 
 JSR configuration lives in `sdk/javascript/jsr.json` and exports the TypeScript source entry point directly from `src/index.ts`. The JSR package intentionally reuses the same implementation and version line as npm.
 
@@ -88,7 +88,7 @@ No JSR token belongs in GitHub secrets. The JSR publish job receives only `conte
 The publisher should be configured with the current canonical repository identity:
 
 - PyPI project name: `gapwise`
-- repository owner: `Gapwise-for-UTM`
+- repository owner: `Gapwise-for-UofT`
 - repository: `gapwise`
 - workflow filename: `release-sdks.yml`
 - environment name: blank
@@ -97,12 +97,12 @@ No PyPI API token belongs in GitHub secrets. Future releases should continue usi
 
 ## Post-transfer provider verification
 
-The repository moved from the personal `andrewmuratov/gapwise` namespace to `Gapwise-for-UTM/gapwise`. GitHub repository redirects are useful for ordinary web and Git traffic, but they are not a substitute for verifying the repository identity expected by third-party OIDC/trusted-publisher providers.
+The repository moved from the personal `andrewmuratov/gapwise` namespace to `Gapwise-for-UofT/gapwise`. GitHub repository redirects are useful for ordinary web and Git traffic, but they are not a substitute for verifying the repository identity expected by third-party OIDC/trusted-publisher providers.
 
 Before the next npm, JSR, or PyPI publication:
 
 1. Open the provider-side trusted-publisher or GitHub-link configuration.
-2. Confirm it names `Gapwise-for-UTM/gapwise` and `.github/workflows/release-sdks.yml` where the provider exposes those fields.
+2. Confirm it names `Gapwise-for-UofT/gapwise` and `.github/workflows/release-sdks.yml` where the provider exposes those fields.
 3. If the provider still shows `andrewmuratov/gapwise`, relink or update the trusted publisher before publishing.
 4. Do not work around a stale provider link by introducing a long-lived registry token.
 5. After the first post-transfer version publishes, record the successful run and exact registry version as the new evidence baseline.
@@ -158,11 +158,11 @@ Manual targets `jsr`, `javascript`, `python-github`, and `all` remain available 
 A registry release is not complete merely because a package upload succeeds. After a new SDK release:
 
 - `gapwise` updates the canonical developer platform/release state;
-- `gapwise-docs` updates installation and runtime guidance;
-- `gapwise-data` updates developer examples only when the released API/SDK contract changes;
-- `gapwise-mobile` consumes the same canonical platform semantics without forking SDK behavior;
-- `gapwise-ai` keeps public campus SDKs distinct from the private OAuth/MCP boundary;
-- `gapwise-status` treats registry availability as release metadata, not as a substitute for live API/service monitoring.
+- `docs` updates installation and runtime guidance;
+- `data` updates developer examples only when the released API/SDK contract changes;
+- `android` and `ios` consume the same canonical platform semantics without forking SDK behavior;
+- `ai` keeps public campus SDKs distinct from the private OAuth/MCP boundary;
+- `status` treats registry availability as release metadata, not as a substitute for live API/service monitoring.
 
 All six repositories should link back to the canonical SDK source and documentation rather than reproducing an independent contract.
 

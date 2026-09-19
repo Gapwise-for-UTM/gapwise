@@ -4,7 +4,7 @@
 
 ## Product and audience
 
-Gapwise for UTM is an independent, privacy-focused web application for University of Toronto Mississauga students. It turns a student-provided ACORN `.ics` timetable export into Today, Timetable, Gap Plan, and campus day-route views. It is not an official University of Toronto service, and this draft does not claim university review, approval, sponsorship, or endorsement.
+Gapwise for UofT is an independent, privacy-focused web application for University of Toronto students. It turns a student-provided ACORN `.ics` timetable export into Today, Timetable, Gap Plan, and campus day-route views. Timetable identity supports UTM, UTSG, UTSC, and mixed-campus schedules; current first-party map and routing coverage remains UTM-focused. It is not an official University of Toronto service, and this draft does not claim university review, approval, sponsorship, or endorsement.
 
 ## Current product boundary
 
@@ -13,7 +13,7 @@ Gapwise for UTM is an independent, privacy-focused web application for Universit
 - Optional sign-in uses Supabase Auth with user-selected Google, Microsoft, or GitHub identity providers.
 - Optional private cloud state is encrypted in the browser before storage. Gapwise does **not** describe the design as end-to-end encrypted or zero knowledge because the deployed origin/session/key-broker trust boundary remains relevant.
 - Live location is opt-in and foreground-only; background tracking is outside the product guardrail.
-- Optional AI/MCP delegation is permissioned and separate from public campus APIs and ordinary private account state. The exact delegated-resource contract must be reconciled with current `gapwise-ai` deployment before institutional reliance.
+- Optional AI/MCP delegation is permissioned and separate from public campus APIs and ordinary private account state. The exact delegated-resource contract must be reconciled with the current `ai` deployment before institutional reliance.
 
 ## System shape
 

@@ -24,7 +24,7 @@ test("developer entrypoint exposes the public platform contract and resources", 
   );
   await expect(page.getByRole("link", { name: "GitHub" })).toHaveAttribute(
     "href",
-    "https://github.com/Gapwise-for-UTM/gapwise",
+    "https://github.com/Gapwise-for-UofT/gapwise",
   );
 
   const example = page.locator("pre").first();

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "canonicalRepository": "Gapwise-for-UTM/data",
+  "canonicalRepository": "Gapwise-for-UofT/data",
   "canonicalPath": "data/utm",
-  "consumerRepository": "Gapwise-for-UTM/gapwise",
+  "consumerRepository": "Gapwise-for-UofT/gapwise",
   "mirrorPath": "src/data/utm",
   "runtimeFetchRequired": false,
   "sync": {
