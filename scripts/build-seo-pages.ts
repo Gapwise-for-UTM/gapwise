@@ -4,7 +4,7 @@ import { PUBLIC_FEATURE_PAGES } from "../src/content/public-feature-pages";
 
 const SITE_ORIGIN = "https://gapwise.ca";
 const SOCIAL_IMAGE = `${SITE_ORIGIN}/og-gapwise.png`;
-const GITHUB_ORGANIZATION = "https://github.com/Gapwise-for-UTM";
+const GITHUB_ORGANIZATION = "https://github.com/Gapwise-for-UofT";
 const GITHUB_CORE = `${GITHUB_ORGANIZATION}/gapwise`;
 
 type SeoSection = { title: string; body: string; bullets?: readonly string[] };
@@ -33,7 +33,7 @@ const PAGES: readonly SeoPage[] = [
     path: "/",
     title: "Gapwise — UTM Timetable, Gap Planner & Campus Routes",
     description:
-      "Gapwise is a privacy-first campus planner for University of Toronto Mississauga students: import your ACORN timetable locally, understand gaps, and plan campus routes.",
+      "Gapwise is a privacy-first campus planner for University of Toronto students: import your ACORN timetable locally, understand gaps, and plan campus routes.",
     heading: "Make the time between classes count.",
     detail:
       "Import an ACORN .ics timetable in your browser, understand the usable time between classes, and navigate source-backed UTM campus routes. Guest mode and a demo work without an account.",
@@ -205,10 +205,10 @@ function homepageStructuredData(page: SeoPage) {
         "@type": "Organization",
         "@id": organizationId,
         name: "Gapwise",
-        alternateName: ["Gapwise UTM", "Gapwise for UTM"],
+        alternateName: ["Gapwise UTM", "Gapwise for UofT"],
         url: `${SITE_ORIGIN}/`,
         description:
-          "Privacy-first campus intelligence and day planning for University of Toronto Mississauga students.",
+          "Privacy-first campus intelligence and day planning for University of Toronto students.",
         logo: {
           "@type": "ImageObject",
           url: `${SITE_ORIGIN}/icon-512.png`,
@@ -227,7 +227,7 @@ function homepageStructuredData(page: SeoPage) {
         "@type": "WebSite",
         "@id": websiteId,
         name: "Gapwise",
-        alternateName: ["Gapwise UTM", "Gapwise for UTM"],
+        alternateName: ["Gapwise UTM", "Gapwise for UofT"],
         url: `${SITE_ORIGIN}/`,
         description: page.description,
         inLanguage: "en-CA",
@@ -237,7 +237,7 @@ function homepageStructuredData(page: SeoPage) {
         "@type": "WebApplication",
         "@id": appId,
         name: "Gapwise",
-        alternateName: ["Gapwise UTM", "Gapwise for UTM"],
+        alternateName: ["Gapwise UTM", "Gapwise for UofT"],
         url: `${SITE_ORIGIN}/`,
         description: page.description,
         applicationCategory: "EducationalApplication",
@@ -253,7 +253,7 @@ function homepageStructuredData(page: SeoPage) {
         },
         audience: {
           "@type": "Audience",
-          audienceType: "University of Toronto Mississauga students",
+          audienceType: "University of Toronto students",
         },
         featureList: [
           "Browser-local ACORN timetable import",
