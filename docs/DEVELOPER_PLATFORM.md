@@ -1,6 +1,6 @@
 # Gapwise developer platform
 
-Gapwise exposes a small, source-backed public campus API for applications serving the University of Toronto Mississauga community. The canonical base URL is `https://api.gapwise.ca/v1`; the machine-readable contract is `https://api.gapwise.ca/openapi.json`. Visiting `https://api.gapwise.ca/` redirects to the versioned `/v1` discovery root, but clients and SDKs should continue using the explicit `/v1` base URL. Public v1 requires **no authentication** and never reads a Gapwise user's session.
+Gapwise exposes a small, source-backed public campus API for applications serving the University of Toronto community. The canonical base URL is `https://api.gapwise.ca/v1`; the machine-readable contract is `https://api.gapwise.ca/openapi.json`. Visiting `https://api.gapwise.ca/` redirects to the versioned `/v1` discovery root, but clients and SDKs should continue using the explicit `/v1` base URL. Public v1 requires **no authentication** and never reads a Gapwise user's session.
 
 ## Quickstarts
 
