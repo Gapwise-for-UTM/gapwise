@@ -165,7 +165,7 @@ function professionalHtml(text: string, sender: ReturnType<typeof senderForMailb
             </tr>
             <tr>
               <td style="border-top:1px solid #edf1f5;padding:14px 30px 16px;font-size:11px;line-height:1.5;color:#7a8799;">
-                Gapwise · Independent campus tools for University of Toronto Mississauga students
+                Gapwise · Independent campus tools for University of Toronto students
               </td>
             </tr>
           </table>
