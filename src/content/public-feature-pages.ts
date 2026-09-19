@@ -21,7 +21,7 @@ export const PUBLIC_FEATURE_PAGES = {
     title: "A campus planner built around the time between classes.",
     seoTitle: "About Gapwise — Campus Planning for UTM",
     description:
-      "See how Gapwise connects a UTM timetable, gap planning, campus routing, and day context in one focused student-built product.",
+      "See how Gapwise connects a University of Toronto timetable, gap planning, campus routing, and day context in one focused student-built product.",
     lead: "Gapwise is built for the part of university life a timetable leaves blank: what to do next, how much time you actually have, and where you need to go.",
     sections: [
       {
@@ -50,7 +50,7 @@ export const PUBLIC_FEATURE_PAGES = {
     title: "Turn an ACORN export into a timetable that understands your day.",
     seoTitle: "UTM Timetable Planner — Gapwise",
     description:
-      "Import a University of Toronto ACORN .ics calendar into Gapwise and get a UTM timetable connected to gaps, buildings, and campus routes.",
+      "Import a University of Toronto ACORN .ics calendar into Gapwise and get a University of Toronto timetable connected to gaps, buildings, and campus routes.",
     lead: "Gapwise turns the calendar file ACORN already gives you into a weekly timetable that can power Today, Gap Plan, and campus navigation.",
     sections: [
       {
@@ -70,11 +70,11 @@ export const PUBLIC_FEATURE_PAGES = {
   map: {
     path: "/campus-map",
     eyebrow: "Campus map",
-    title: "Explore UTM with a map built around your day.",
-    seoTitle: "UTM Campus Map — Gapwise",
+    title: "Explore UofT with a map built around your day.",
+    seoTitle: "UofT Campus Map — Gapwise",
     description:
-      "Explore University of Toronto Mississauga buildings, entrances, campus places, and route context with the Gapwise UTM campus map.",
-    lead: "The Gapwise map connects UTM buildings, entrances, routes, and schedule context so campus navigation feels like part of the planner instead of a separate map tab.",
+      "Explore University of Toronto buildings, entrances, campus places, and route context across UTM, UTSG, and UTSC with the Gapwise campus map.",
+    lead: "The Gapwise map connects UofT buildings, entrances, routes, and schedule context so campus navigation feels like part of the planner instead of a separate map tab.",
     sections: [
       {
         title: "Explore without setup",
