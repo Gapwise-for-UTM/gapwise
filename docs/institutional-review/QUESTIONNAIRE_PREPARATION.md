@@ -6,7 +6,7 @@ Answers below are scoped to repository evidence. `Not established` means this pa
 
 ## Preparation answers
 
-- **Service description:** Gapwise is an independent UTM student timetable and campus-planning web app with guest and optional account features. Evidence: [PRODUCT_OVERVIEW.md](PRODUCT_OVERVIEW.md). Owner approval and intended institutional use remain unconfirmed.
+- **Service description:** Gapwise is an independent University of Toronto student timetable and campus-planning web app with guest and optional account features. Evidence: [PRODUCT_OVERVIEW.md](PRODUCT_OVERVIEW.md). Owner approval and intended institutional use remain unconfirmed.
 - **Data minimization:** original `.ics` parsing is browser-local under the current product contract. Evidence: `../TRUST_DATA_INVENTORY.md` and privacy/platform documentation. Re-verify the exact deployed implementation before answering externally.
 - **Authentication:** optional account authentication uses Supabase Auth with user-selected Google, Microsoft, or GitHub providers. Evidence: auth/platform source. Production provider configuration requires authorized dashboard evidence.
 - **Private-state protection:** optional private cloud state uses browser-side encryption within the documented trust model. Evidence: trust inventory and security architecture. This is not an end-to-end-encryption or zero-knowledge claim, and no independent cryptographic assessment is claimed.
