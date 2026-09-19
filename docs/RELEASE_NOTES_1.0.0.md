@@ -1,4 +1,4 @@
-# Gapwise for UTM 1.0.0 release notes
+# Gapwise for UofT 1.0.0 release notes
 
 These notes are prepared for the stable `v1.0.0` release and are published only after the 1.0 release-candidate gates and final production smoke check pass.
 
