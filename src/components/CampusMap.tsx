@@ -734,7 +734,7 @@ function syncUserLocationMarker(
 function locationStatusLabel(status: LocationControlState["status"]) {
   if (status === "requesting") return "Finding you…";
   if (status === "on-campus") return "Your on-campus location is shown";
-  if (status === "off-campus") return "You're outside the mapped UTM campus";
+  if (status === "off-campus") return "You're outside the mapped campus";
   if (status === "permission-denied") return "Location permission is off";
   if (status === "unavailable") return "Location is unavailable";
   return null;
