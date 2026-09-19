@@ -87,7 +87,7 @@ export function MarketingLandingImpl({
     <div ref={rootRef} className="marketing-home" data-active-product={activeProduct}>
       <section className="marketing-hero" aria-labelledby="marketing-title">
         <div className="marketing-hero-copy">
-          <p className="marketing-eyebrow">Gapwise for UTM</p>
+          <p className="marketing-eyebrow">Gapwise for UofT</p>
           <h1 id="marketing-title">
             Make every <span>gap</span> on campus count.
           </h1>
@@ -283,8 +283,8 @@ export function MarketingLandingImpl({
           <div>
             <ProductHeading
               label="Gapwise Data"
-              title="UTM facts with provenance."
-              body="The open data layer owns canonical campus identity, geometry, entrances, routing inputs, provenance, and validation — including 30 UTM buildings and facilities in the published snapshot."
+              title="UofT facts with provenance."
+              body="The open data layer owns canonical campus identity, geometry, entrances, routing inputs, provenance, and validation — with canonical building/facility coverage across UTM, UTSG, and UTSC in the published snapshot."
             />
             <div className="product-story-actions">
               <ExternalProductLink href="https://data.gapwise.ca">Explore Data</ExternalProductLink>
