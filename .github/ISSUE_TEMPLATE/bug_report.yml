@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a reproducible problem in Gapwise for UTM
+description: Report a reproducible problem in Gapwise for UofT
 title: "bug: "
 labels:
   - Bug
@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve Gapwise for UTM. Do not include credentials, access tokens, real timetable files, student numbers, or private floor plans. Report security vulnerabilities through the repository security policy instead of a public issue.
+        Thanks for helping improve Gapwise for UofT. Do not include credentials, access tokens, real timetable files, student numbers, or private floor plans. Report security vulnerabilities through the repository security policy instead of a public issue.
   - type: textarea
     id: observed
     attributes:
