@@ -549,7 +549,7 @@ function AppLayout() {
         <div className="mx-auto flex min-h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link
             to="/"
-            aria-label="Gapwise for UTM home"
+            aria-label="Gapwise for UofT home"
             className="brand-lockup group flex min-w-0 items-center gap-3"
           >
             <span className="brand-mark-shell">
@@ -956,7 +956,7 @@ function AppLayout() {
                   Support
                 </Link>
                 <a
-                  href="https://github.com/Gapwise-for-UTM/gapwise"
+                  href="https://github.com/Gapwise-for-UofT/gapwise"
                   target="_blank"
                   rel="noreferrer"
                   className="hover:text-foreground"
