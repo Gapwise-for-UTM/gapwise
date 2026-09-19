@@ -1,6 +1,6 @@
 # Gapwise Platform
 
-Gapwise exposes a small public campus-intelligence surface for University of Toronto Mississauga projects. It is the same deterministic building/routing/gap-planning layer used by Gapwise product surfaces, with no private student timetable or account data required.
+Gapwise exposes a small public campus-intelligence surface for University of Toronto projects. It is the same deterministic building/routing/gap-planning layer used by Gapwise product surfaces, with no private student timetable or account data required.
 
 ## Public resources
 
