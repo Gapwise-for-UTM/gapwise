@@ -631,7 +631,7 @@ function AppLayout() {
         ) : !meetings ? (
           <>
             <section className="rise-in mb-5">
-              <p className="eyebrow text-accent">UTM campus explorer</p>
+              <p className="eyebrow text-accent">UofT campus explorer</p>
               <h1 className="mt-2 font-display text-3xl font-medium tracking-[-0.045em] sm:text-4xl">
                 Find your way around campus
               </h1>
