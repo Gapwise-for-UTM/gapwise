@@ -64,7 +64,7 @@ describe("Gapwise searchability and entity metadata", () => {
     ]);
 
     expect(packageJson.scripts.build).toContain("bun scripts/check-seo-output.ts");
-    expect(builder).toContain('title: "Gapwise — UTM Timetable, Gap Planner & Campus Routes"');
+    expect(builder).toContain('title: "Gapwise — UofT Timetable, Gap Planner & Campus Routes"');
     expect(builder).toContain('name="application-name" content="Gapwise"');
     expect(builder).toContain('property="og:site_name" content="Gapwise"');
     expect(builder).toContain('name="twitter:card" content="summary_large_image"');
