@@ -82,8 +82,8 @@ export function TimetableHeatmapExportDialog({
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
-          title: `My ${selection === "all" ? "all-terms" : selection} UTM timetable heatmap`,
-          text: "UTM timetable heatmap by Gapwise.",
+          title: `My ${selection === "all" ? "all-terms" : selection} University of Toronto timetable heatmap`,
+          text: "University of Toronto timetable heatmap by Gapwise.",
         });
       } else {
         downloadBlob(blob, filename);
