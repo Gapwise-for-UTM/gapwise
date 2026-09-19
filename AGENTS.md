@@ -23,7 +23,7 @@ When Codex substantially authors a Git commit in this repository:
 
 ## Project
 
-Gapwise for UTM is a privacy-first web application for University of Toronto Mississauga students, served from `https://gapwise.ca`.
+Gapwise for UofT is a privacy-first web application for University of Toronto students, served from `https://gapwise.ca`.
 
 The current product:
 
