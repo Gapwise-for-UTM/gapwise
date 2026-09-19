@@ -28,7 +28,7 @@ export const Route = createFileRoute("/replay")({
       { property: "og:title", content: "Gapwise Day Replay" },
       {
         property: "og:description",
-        content: "Watch a UTM timetable unfold across classes, gaps, and campus routes.",
+        content: "Watch a University of Toronto timetable unfold across classes, gaps, and campus routes.",
       },
     ],
   }),
