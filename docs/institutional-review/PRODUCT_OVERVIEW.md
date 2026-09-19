@@ -4,7 +4,7 @@
 
 ## Product and audience
 
-Gapwise for UTM is an independent, privacy-focused web application for University of Toronto Mississauga students. It turns a student-provided ACORN `.ics` timetable export into Today, Timetable, Gap Plan, and campus day-route views. It is not an official University of Toronto service, and this draft does not claim university review, approval, sponsorship, or endorsement.
+Gapwise for UofT is an independent, privacy-focused web application for University of Toronto students. It turns a student-provided ACORN `.ics` timetable export into Today, Timetable, Gap Plan, and campus day-route views. It is not an official University of Toronto service, and this draft does not claim university review, approval, sponsorship, or endorsement.
 
 ## Current product boundary
 
