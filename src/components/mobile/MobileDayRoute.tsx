@@ -460,7 +460,7 @@ export function MobileDayRoute({
     return (
       <div className="rise-in space-y-3">
         <section className="surface p-4">
-          <p className="eyebrow text-accent">UTM campus explorer</p>
+          <p className="eyebrow text-accent">UofT campus explorer</p>
           <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-[-0.035em]">
             Explore campus
           </h1>
