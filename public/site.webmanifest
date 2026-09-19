@@ -1,7 +1,7 @@
 {
   "name": "Gapwise",
   "short_name": "Gapwise",
-  "description": "UTM timetable, gap planning, and campus routing in one focused student app.",
+  "description": "University of Toronto timetable, gap planning, and campus routing in one focused student app.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#111113",
