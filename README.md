@@ -4,12 +4,12 @@
 
 # Gapwise
 
-### A privacy-first campus-intelligence ecosystem for UTM.
+### A privacy-first campus-intelligence ecosystem for UofT.
 
 **Gapwise is a connected software platform for understanding and acting on a student's day: timetable intelligence, gap planning, campus routing, leave-by timing, open campus data, public APIs and SDKs, native Android and iOS clients, permissioned AI, developer documentation, and independent service monitoring.**
 
 [![Open Gapwise](https://img.shields.io/badge/Open_Gapwise-gapwise.ca-0A84FF?style=for-the-badge&logo=vercel&logoColor=white)](https://gapwise.ca)
-[![CI](https://img.shields.io/github/actions/workflow/status/Gapwise-for-UTM/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Gapwise-for-UTM/gapwise/actions/workflows/ci.yml)
+[![CI](https://img.shields.io/github/actions/workflow/status/Gapwise-for-UofT/gapwise/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/Gapwise-for-UofT/gapwise/actions/workflows/ci.yml)
 [![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-6BA539?style=for-the-badge&logo=openapiinitiative&logoColor=white)](https://api.gapwise.ca/openapi.json)
 [![MIT](https://img.shields.io/badge/License-MIT-111111?style=for-the-badge)](LICENSE)
 
@@ -17,7 +17,7 @@
 
 <br />
 
-**[App](https://gapwise.ca)** · **[API](https://api.gapwise.ca/v1)** · **[Android](https://github.com/Gapwise-for-UTM/android)** · **[iOS](https://github.com/Gapwise-for-UTM/ios)** · **[AI](https://ai.gapwise.ca)** · **[Data](https://data.gapwise.ca)** · **[Docs](https://docs.gapwise.ca)** · **[Status](https://status.gapwise.ca)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)**
+**[App](https://gapwise.ca)** · **[API](https://api.gapwise.ca/v1)** · **[Android](https://github.com/Gapwise-for-UofT/android)** · **[iOS](https://github.com/Gapwise-for-UofT/ios)** · **[AI](https://ai.gapwise.ca)** · **[Data](https://data.gapwise.ca)** · **[Docs](https://docs.gapwise.ca)** · **[Status](https://status.gapwise.ca)** · **[OpenAPI](https://api.gapwise.ca/openapi.json)**
 
 </div>
 
@@ -27,7 +27,7 @@
 
 Gapwise began with a simple student problem: a timetable says **when** class happens, but not what to do with the time around it.
 
-The platform turns a UTM ACORN `.ics` timetable export into a local-first model of a student's day and answers practical questions such as:
+The platform turns a University of Toronto ACORN `.ics` timetable export into a local-first model of a student's day and answers practical questions such as:
 
 - What is next?
 - Where do I need to go?
@@ -54,15 +54,15 @@ The project is designed as an integrated software ecosystem rather than a collec
 
 | Repository | Role | Primary surface |
 | --- | --- | --- |
-| **[`gapwise`](https://github.com/Gapwise-for-UTM/gapwise)** | Core web/PWA, canonical timetable/gap/routing semantics, public API, OpenAPI, and SDK source | [gapwise.ca](https://gapwise.ca) / [api.gapwise.ca](https://api.gapwise.ca/v1) |
-| **[`android`](https://github.com/Gapwise-for-UTM/android)** | Native Kotlin + Jetpack Compose Android client | Android app |
-| **[`ios`](https://github.com/Gapwise-for-UTM/ios)** | Native Swift + SwiftUI iOS client | iOS app |
-| **[`ai`](https://github.com/Gapwise-for-UTM/ai)** | OAuth/MCP layer for public UTM intelligence and explicitly delegated student context | [ai.gapwise.ca](https://ai.gapwise.ca) |
-| **[`data`](https://github.com/Gapwise-for-UTM/data)** | Canonical public UTM campus data, provenance, schemas, validation, and distribution | [data.gapwise.ca](https://data.gapwise.ca) |
-| **[`docs`](https://github.com/Gapwise-for-UTM/docs)** | Canonical public developer documentation | [docs.gapwise.ca](https://docs.gapwise.ca) |
-| **[`status`](https://github.com/Gapwise-for-UTM/status)** | Independent service-health monitoring and incident communication | [status.gapwise.ca](https://status.gapwise.ca) |
+| **[`gapwise`](https://github.com/Gapwise-for-UofT/gapwise)** | Core web/PWA, canonical timetable/gap/routing semantics, public API, OpenAPI, and SDK source | [gapwise.ca](https://gapwise.ca) / [api.gapwise.ca](https://api.gapwise.ca/v1) |
+| **[`android`](https://github.com/Gapwise-for-UofT/android)** | Native Kotlin + Jetpack Compose Android client | Android app |
+| **[`ios`](https://github.com/Gapwise-for-UofT/ios)** | Native Swift + SwiftUI iOS client | iOS app |
+| **[`ai`](https://github.com/Gapwise-for-UofT/ai)** | OAuth/MCP layer for public University of Toronto campus intelligence and explicitly delegated student context | [ai.gapwise.ca](https://ai.gapwise.ca) |
+| **[`data`](https://github.com/Gapwise-for-UofT/data)** | Canonical public University of Toronto campus data, provenance, schemas, validation, and distribution | [data.gapwise.ca](https://data.gapwise.ca) |
+| **[`docs`](https://github.com/Gapwise-for-UofT/docs)** | Canonical public developer documentation | [docs.gapwise.ca](https://docs.gapwise.ca) |
+| **[`status`](https://github.com/Gapwise-for-UofT/status)** | Independent service-health monitoring and incident communication | [status.gapwise.ca](https://status.gapwise.ca) |
 
-All seven repositories are separate implementation and trust boundaries within one Gapwise product ecosystem. Organization-wide GitHub defaults live in [`.github`](https://github.com/Gapwise-for-UTM/.github).
+All seven repositories are separate implementation and trust boundaries within one Gapwise product ecosystem. Organization-wide GitHub defaults live in [`.github`](https://github.com/Gapwise-for-UofT/.github).
 
 The architectural rule across every surface is simple:
 
@@ -74,7 +74,7 @@ The architectural rule across every surface is simple:
 
 ### ACORN timetable import
 
-- Import a UTM ACORN `.ics` file directly in the browser.
+- Import a University of Toronto ACORN `.ics` file directly in the browser.
 - The raw calendar file is not uploaded merely to build the timetable.
 - Guest mode is first-class.
 - A synthetic demo timetable allows exploration without personal data.
@@ -150,7 +150,7 @@ Current platform capabilities include:
 
 | Capability | Purpose |
 | --- | --- |
-| Buildings | Canonical UTM building/facility identity, aliases, coverage, accessibility state, and provenance |
+| Buildings | Canonical University of Toronto building/facility identity, aliases, campus, coverage, accessibility state, and provenance |
 | Places | Canonical campus places with freshness and provenance |
 | Routing | Deterministic building-to-building route computation |
 | Gap planning | Route-aware assessment of an explicit free interval |
@@ -167,7 +167,7 @@ Official developer surfaces include:
 - **Python SDK source:** [`sdk/python`](sdk/python)
 - **Versioned public campus snapshot:** https://gapwise.ca/data/utm-campus-v1.json
 
-The current public snapshot contains **30 canonical UTM buildings/facilities** with normalized identity, routing/accessibility state, and provenance.
+The current public snapshot publishes canonical building/facility coverage across **UTM, UTSG, and UTSC** with normalized identity, campus, routing/accessibility state, and provenance.
 
 ---
 
@@ -193,7 +193,7 @@ This matters because campus software should be able to explain **why** it believ
 
 ## Gapwise AI
 
-[Gapwise AI](https://ai.gapwise.ca) is a separately deployed provider-neutral OAuth/MCP service for public campus intelligence and explicitly delegated student context.
+[Gapwise AI](https://ai.gapwise.ca) is a separately deployed provider-neutral OAuth/MCP service for public University of Toronto campus intelligence and explicitly delegated student context.
 
 Canonical MCP endpoint:
 
@@ -221,13 +221,13 @@ Gapwise now has separate first-party native repositories for each mobile platfor
 
 ### Android
 
-[`android`](https://github.com/Gapwise-for-UTM/android) is the native **Kotlin + Jetpack Compose** Android client. It already includes local ACORN import, all-campus timetable identity, encrypted on-device persistence, Today/Timetable/Gap Plan/Map/More surfaces, optional Gapwise account continuity and encrypted sync, and a UTM-focused native MapLibre map.
+[`android`](https://github.com/Gapwise-for-UofT/android) is the native **Kotlin + Jetpack Compose** Android client. It already includes local ACORN import, all-campus timetable identity, encrypted on-device persistence, Today/Timetable/Gap Plan/Map/More surfaces, optional Gapwise account continuity and encrypted sync, and a UTM-focused native MapLibre map.
 
 The Android client is a real native application rather than a WebView wrapper and keeps platform behavior, lifecycle, storage, authentication hand-off, navigation, and rendering Android-native while consuming canonical Gapwise semantics.
 
 ### iOS
 
-[`ios`](https://github.com/Gapwise-for-UTM/ios) is the native **Swift + SwiftUI** iPhone client. The repository currently establishes the product boundary, architecture, privacy posture, visual identity, and ecosystem integration while the application implementation is built out.
+[`ios`](https://github.com/Gapwise-for-UofT/ios) is the native **Swift + SwiftUI** iPhone client. The repository currently establishes the product boundary, architecture, privacy posture, visual identity, and ecosystem integration while the application implementation is built out.
 
 The iOS timetable direction supports UTM, UTSG, UTSC, and mixed-campus schedules, with UTM-first native map/routing coverage until equally grounded first-party data exists for other campuses.
 
@@ -343,7 +343,7 @@ Requirements:
 - Node 24.x where Node-based tooling is required
 
 ```bash
-git clone https://github.com/Gapwise-for-UTM/gapwise.git
+git clone https://github.com/Gapwise-for-UofT/gapwise.git
 cd gapwise
 bun install --frozen-lockfile
 bun run dev
