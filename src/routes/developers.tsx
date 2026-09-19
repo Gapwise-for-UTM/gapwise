@@ -15,7 +15,7 @@ import { useTheme } from "@/hooks/use-preferences";
 export const Route = createFileRoute("/developers")({
   head: () => ({
     meta: [
-      { title: "Gapwise Developers — UTM campus intelligence API" },
+      { title: "Gapwise Developers — UofT campus intelligence API" },
       {
         name: "description",
         content:
